@@ -351,7 +351,7 @@ effect =
   shouldParseAs
     "effect definition"
     Parser.parse
-    "effect Pure = let pure : x -> string"
+    "effect Pure = let pure : x -> string end"
     $ AST.NoHeader
       [ [ AST.Name ("string" :| [])
             |> AST.Inf (AST.Name ("x" :| [])) ("->" :| [])
@@ -367,7 +367,7 @@ fullEffect =
   shouldParseAs
     "effect full definition"
     Parser.parse
-    "effect Print = let print : string -> unit let pure : x -> string"
+    "effect Print = let print : string -> unit let pure : x -> string end"
     $ AST.NoHeader
       [ AST.Eff
           "Print"
@@ -388,7 +388,7 @@ ret =
   shouldParseAs
     "effect handler of pure effect"
     Parser.parse
-    "handler pureEff = let pure x = toString x"
+    "handler pureEff = let pure x = toString x end"
     $ AST.NoHeader
       [ [ AST.Name ("x" :| []) :| []
             |> AST.App (AST.Name ("toString" :| []))
@@ -426,7 +426,7 @@ handler =
   shouldParseAs
     "effect handler with op"
     Parser.parse
-    "handler printer = let print x = print x let pure x = toString x"
+    "handler printer = let print x k = print x let pure x = toString x end"
     $ AST.NoHeader
       [ [ AST.Name ("x" :| []) :| []
             |> AST.App ("print" :| [] |> AST.Name)
@@ -435,6 +435,8 @@ handler =
             |> AST.Like
               "print"
               [ AST.MatchLogic (AST.MatchName "x") Nothing
+                  |> AST.ConcreteA,
+                AST.MatchLogic (AST.MatchName "x") Nothing
                   |> AST.ConcreteA
               ]
             |> AST.Op,
@@ -477,7 +479,6 @@ do_ =
       |> AST.Func
       |> AST.Function
     ]
-    -- [ AST.Function (AST.Func (AST.Like "prog" [] (AST.Body (AST.Do (AST.Do'' (AST.DoBody Nothing (AST.DoOp (AST.DoOp' (AST.Name ("print" :| [])) (AST.Constant (AST.String (AST.Sho "hello world"))) :| [])) :| [AST.DoBody Nothing (AST.DoPure (AST.DoPure' {pureArg = ))]))))))]
 
 --------------------------------------------------------------------------------
 -- Type tests

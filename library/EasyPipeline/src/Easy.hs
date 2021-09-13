@@ -221,17 +221,17 @@ desugarMinimalPrelude = desugarLibrary def
 contextifyGen ::
   (NonEmpty (NameSymb.T, [Sexp.T]) -> IO b) -> ByteString -> Options primTy primVal -> IO b
 contextifyGen f text def = do
-  lib <- desugarLibrary def
+  -- lib <- desugarLibrary def
   let dusugared = desugar text
-  f ((currentContextName def, dusugared) :| lib)
+  f ((currentContextName def, dusugared) :| [])
 
 -- | @contextifyFileGen@ is like @contextifyGen@ but for the file variants
 contextifyFileGen ::
   (NonEmpty (NameSymb.T, [Sexp.T]) -> IO b) -> FilePath -> Options primTy primVal -> IO b
 contextifyFileGen f file def = do
-  lib <- desugarLibrary def
+  -- lib <- desugarLibrary def
   dusugared <- desugarFile file
-  f ((currentContextName def, dusugared) :| lib)
+  f ((currentContextName def, dusugared) :| [])
 
 -- | Here is our third stop in the compiler, we are now upon the
 -- context. For this phase we'll want some version of the standard
@@ -431,10 +431,10 @@ printTimeLapse byteString option = do
   Right context <- contextifyDesugar byteString option
   printDefModule option context
   --
-  let currentDefinedItems = definedFunctionsInModule option context
+  -- let currentDefinedItems = definedFunctionsInModule option context
   --
-  cored <- coreify byteString option
-  traverse_ (printCoreFunction cored option) currentDefinedItems
+  -- cored <- coreify byteString option
+  -- traverse_ (printCoreFunction cored option) currentDefinedItems
 
 printTimeLapseFile ::
   (Show primTy2, Show primVal2) => FilePath -> Options primTy2 primVal2 -> IO ()

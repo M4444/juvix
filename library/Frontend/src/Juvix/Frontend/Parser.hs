@@ -96,11 +96,11 @@ topLevel =
   P.try (Types.Type <$> typeP)
     <|> P.try fun
     <|> P.try modT
-    <|> P.try (Types.Handler <$> handlerParser)
     <|> P.try (Types.ModuleOpen <$> moduleOpen)
     <|> P.try (Types.Signature <$> signature')
     <|> P.try (Types.Declaration <$> declaration)
     <|> P.try (Types.Effect <$> effParser)
+    <|> P.try (Types.Handler <$> handlerParser)
 
 expressionGen' ::
   Parser Types.Expression -> Parser Types.Expression
@@ -463,6 +463,7 @@ handlerParser = do
   name <- prefixSymbolSN
   J.skipLiner J.equals
   ops <- P.many (J.spaceLiner opParser)
+  reserved "end"
   pure $ Types.Hand name ops
 
 opParser :: Parser Types.Operation
@@ -481,6 +482,7 @@ effParser = do
   name <- prefixSymbolSN
   J.skipLiner J.equals
   ops <- P.many (J.spaceLiner opSig)
+  reserved "end"
   pure $ Types.Eff {effName = name, effOps = ops}
 
 opSig :: Parser Types.Signature
@@ -500,8 +502,6 @@ via_ = do
   reserved "via"
   name <- spaceLiner (expressionGen' (fail ""))
   pure (Types.Via name args)
-
-
 
 --------------------------------------------------
 -- Arrow Type parser

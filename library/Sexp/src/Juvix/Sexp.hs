@@ -8,12 +8,15 @@ module Juvix.Sexp
     foldr1,
     butLast,
     last,
+    init,
     list,
     listStar,
     addMetaToCar,
     car,
     cdr,
     atom,
+    actualAtom,
+    suffixAtom,
     number,
     isAtomNamed,
     nameFromT,
@@ -153,6 +156,14 @@ last (Cons _ xs) = last xs
 last (Atom a) = Atom a
 last Nil = Nil
 
+-- | @init@ gives back the list back minus the last element, for an atom or nil
+-- it will be the identity
+init :: T -> T
+init (Cons _ Nil) = Nil
+init (Cons x xs) = Cons x (init xs)
+init (Atom a) = Atom a
+init Nil = Nil
+
 -- | @list@ takes a foldable structure of Sexps and gives back a list of
 -- those structures
 list :: Foldable t => t T -> T
@@ -193,6 +204,14 @@ cadr = car . cdr
 -- | @atom@ creates a @Sexp@ @Atom@ from a @NameSymbol.T@
 atom :: NameSymbol.T -> T
 atom x = Atom $ A x Nothing
+
+-- | @actualAtom@ creates an @Atom@ from a @NameSymbol.T@
+actualAtom :: NameSymbol.T -> Atom
+actualAtom x = A x Nothing
+
+suffixAtom :: NameSymbol.T -> T -> T
+suffixAtom name (Atom (A name' cdr)) = (Atom (A (NameSymbol.append name' name) cdr))
+suffixAtom _ sexp = sexp
 
 -- | @number@ creates a @Sexp@ @Number@ from an @Integer@
 number :: Integer -> T
@@ -262,7 +281,7 @@ findKey :: (T -> T) -> T -> T -> Maybe T
 findKey f k (x :> xs)
   | f x == k = Just x
   | otherwise = findKey f k xs
-findKey _f _k _ = Nothing
+findKey _ _ _ = Nothing
 
 -- | @flatten@ totally flattens a list, removing any extra Nils as well
 -- >>> fmap flatten (parse "((1) (2 3 4) (1 2) () (1 2 (3 ())))")

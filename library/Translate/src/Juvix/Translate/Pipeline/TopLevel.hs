@@ -14,10 +14,11 @@ transTopLevel (Types.Declaration i) = Sexp.atom "declare" Sexp.:> transDeclarati
 transTopLevel (Types.Signature sig) = Sexp.atom ":defsig" Sexp.:> transSig sig
 transTopLevel (Types.Function f) = transDefun f
 transTopLevel (Types.Effect eff) = transEffect eff
-transTopLevel (Types.Handler h) = transHand h
 transTopLevel (Types.Module m) = transModule m
 transTopLevel Types.TypeClass = Sexp.atom ":type-class"
 transTopLevel (Types.Type t) = transType t
+transTopLevel (Types.Handler h) = transHand h
+
 
 transExpr :: Types.Expression -> Sexp.T
 transExpr (Types.UniverseName n) = transUniverseExpression n

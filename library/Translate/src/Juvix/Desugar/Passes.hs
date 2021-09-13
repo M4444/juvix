@@ -428,18 +428,18 @@ grabNames _ acc = acc
 handlerTransform :: Sexp.T -> Sexp.T
 handlerTransform xs = Sexp.foldPred xs (== Structure.nameDefHandler) handTrans
   where
-    handTrans atom cdr
-      | Just mod <- Structure.toDefHandler (Sexp.Atom atom Sexp.:> cdr) =
+    handTrans atom _
+      | Just mod <- Structure.toDefHandler xs =
         let (ret_, ops_) = filterRet (mod ^. Structure.ops)
-         in Structure.LetHandler (mod ^. Structure.name) ops_ ret_
-              |> Structure.fromLetHandler
-              |> Sexp.addMetaToCar atom
+        in Structure.LetHandler (mod ^. Structure.name) ops_ ret_
+           |> Structure.fromLetHandler
+           |> Sexp.addMetaToCar atom
     handTrans _ _ = error "malformed defhandler"
 
 filterRet :: Sexp.T -> (Sexp.T, Sexp.T)
 filterRet form = Sexp.foldr removeRet (Sexp.Nil, Sexp.Nil) form
   where
-    removeRet form@(_ Sexp.:> name Sexp.:> _) (ret, acc)
-      | Sexp.isAtomNamed name "pure" = (form, acc)
-      | otherwise = (ret, form Sexp.:> acc)
+    removeRet form@(_ Sexp.:> name Sexp.:> args Sexp.:> body) (ret, acc)
+      | Sexp.isAtomNamed name "pure" = (Sexp.atom ":defret" Sexp.:> args Sexp.:> body, acc)
+      | otherwise = (ret, Sexp.snoc form acc)
     removeRet _ _ = error "can't happen"

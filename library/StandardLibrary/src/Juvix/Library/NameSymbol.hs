@@ -100,6 +100,12 @@ takePrefixOfInternal (s :| smaller) (b :| bigger)
 cons :: Symbol -> T -> T
 cons = NonEmpty.cons
 
+append :: T -> T -> T
+append ls ms =
+  let ls' = NonEmpty.toList ls
+      ms' = NonEmpty.toList ms
+  in NonEmpty.fromList (ls' <> ms')
+
 hd :: T -> Symbol
 hd = NonEmpty.head
 

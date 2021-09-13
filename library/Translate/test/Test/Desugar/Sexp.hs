@@ -17,7 +17,8 @@ top =
       sigWorksAsExpcted,
       recordsWorkAsExpected,
       modulesWorkAsExpected,
-      modLetWorkAsExpected
+      modLetWorkAsExpected,
+      handlerWorkAsExpected
     ]
 
 condWorksAsExpected :: T.TestTree
@@ -224,7 +225,7 @@ modLetWorkAsExpected =
   T.testGroup
     "module let desugar tests"
     [ T.testCase
-        "basic expnasion expansion work"
+        "basic module expansion work"
         (expected T.@=? fmap Desugar.moduleLetTransform form)
     ]
   where
@@ -242,3 +243,23 @@ modLetWorkAsExpected =
         \            (:let-type foo () ((XTZ))\
         \               (:record (bar) (foo))))\
         \     foo))"
+
+handlerWorkAsExpected :: T.TestTree
+handlerWorkAsExpected =
+  T.testGroup
+    "handler let desugar tests"
+    [ T.testCase
+        "defhandler -desugar-> lethandler"
+        (expected T.@=? fmap Desugar.handlerTransform form)
+    ]
+  where
+    form =
+      Sexp.parse
+        ("(:defhandler printer                     " <>
+         "  ((:defop print () printLn)             " <>
+         "   (:defop pure (x) (toString x))))      ")
+    expected =
+      Sexp.parse
+        ("(:lethandler printer                     " <>
+         "  (:ops (:defop print () printLn))       " <>
+         "  (:defret (x) (toString x)))            ")

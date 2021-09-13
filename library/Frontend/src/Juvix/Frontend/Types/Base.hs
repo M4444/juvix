@@ -26,11 +26,11 @@ data TopLevel
   | Signature Signature
   | Module Module
   | Function Function
-  | Handler Handler
   | Effect Effect
   | Declaration Declaration
   | TypeClass
   | TypeClassInstance
+  | Handler Handler
   deriving (Show, Read, Eq)
 
 --------------------------------------------------------------------------------

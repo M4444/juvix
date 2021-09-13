@@ -1,20 +1,21 @@
-name:                translate
+name:                ANF-IR
 version:             0.1.0.0
-github:              "heliaxdev/juvix"
-license:             GPL-3
-author:              "Heliax AG <hello@heliax.dev>"
-maintainer:          "Heliax AG <hello@heliax.dev>"
-copyright:           "2020 Heliax AG"
+github:              "githubuser/ANF-IR"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2020 Author name here"
 
 description:         Please see the README on GitHub at <https://github.com/githubuser/Translate#readme>
 
 dependencies:
 - base >= 4.11 && < 5
 - standard-library
-- Sexp
 - core
 - frontend
+- Sexp
 - Context
+- translate
 - extensible-data
 - unordered-containers
 - stm-containers
@@ -24,8 +25,11 @@ dependencies:
 - dlist
 - syb
 - megaparsec
-- pretty-simple
-- extra
+- EasyPipeline
+- tasty
+- tasty-hunit
+- tasty-silver
+- tasty-quickcheck
 
 default-extensions:
   - NoImplicitPrelude
@@ -69,27 +73,24 @@ library:
   source-dirs: src
 
 tests:
-  translate-test:
+  anf-test:
     main:                Main.hs
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -g
     dependencies:
-    - bytestring
-    - directory
-    - filepath
-    - megaparsec
-    - pretty-simple
-    - pretty-show
-    - Sexp
-    - strict
     - translate
     - tasty
-    - tasty-golden
     - tasty-hunit
     - tasty-silver
     - tasty-quickcheck
     - text
+    - bytestring
+    - pretty-simple
+    - ANF-IR
+    - Pipeline
+    - Sexp
     - Context

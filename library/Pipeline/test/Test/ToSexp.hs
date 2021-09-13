@@ -8,6 +8,7 @@ import qualified Juvix.Sexp as Sexp
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 import Prelude (error, head)
+import qualified Juvix.Desugar as Desugar
 
 --------------------------------------------------------------------------------
 -- Exported top level test
@@ -37,7 +38,10 @@ top =
       condTest,
       caseTest,
       handlerTest,
-      effectTest
+      handlerTest2,
+      effectTest,
+      -- doTest,
+      viaTest
     ]
 
 --------------------------------------------------------------------------------
@@ -388,11 +392,27 @@ handlerTest =
   where
     basic =
       Parser.parse
-        "handler print = let print x = print x let pure x = toString x"
+        "handler print = let print x = print x let pure x = toString x end"
         |> singleEleErr
     basicExpected =
       Sexp.parse
         "(:defhandler print ((:defop print (x) (print x)) (:defop pure (x) (toString x))))"
+
+handlerTest2 :: T.TestTree
+handlerTest2 =
+  T.testGroup
+    "handler from syntax to desugared sexp"
+    [ T.testCase "basic" (basic T.@=? basicExpected)
+    ]
+  where
+    basic =
+      Parser.parse
+        "handler print = let print x = print x let pure x = toString x end"
+        |> singleEleErr
+        |> desugar
+    basicExpected =
+      Sexp.parse
+        "(:lethandler print (:ops (:defop print (x) (print x))) (:defret (x) (toString x)))"
 
 effectTest :: T.TestTree
 effectTest =
@@ -403,7 +423,7 @@ effectTest =
   where
     basic =
       Parser.parse
-        "effect Print = let print : string -> unit let pure : x -> string"
+        "effect Print = let print : string -> unit let pure : x -> string end"
         |> singleEleErr
     basicExpected =
       Sexp.parse
@@ -412,7 +432,7 @@ effectTest =
 doTest :: T.TestTree
 doTest =
    T.testGroup
-    "effect sexp parser"
+    "do sexp parser"
     [ T.testCase "basic" (basic T.@=? basicExpected)
     ]
   where
@@ -422,11 +442,29 @@ doTest =
         |> singleEleErr
     basicExpected =
       Sexp.parse
-        ""
+        "(:defun prog () (:do ((print \"yolo\") (pure 42))))"
+
+viaTest :: T.TestTree
+viaTest =
+  T.testGroup
+    "_ via _ sexp parser"
+    [ T.testCase "basic" (basic T.@=? basicExpected)
+    ]
+  where
+    basic =
+      Parser.parse
+        "let foo = prog via printer"
+        |> singleEleErr
+    basicExpected =
+      Sexp.parse
+        "(:defun foo () (:via printer prog))"
 
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
+
+desugar :: Functor f => f Sexp.T -> f Sexp.T
+desugar = fmap head . fmap Desugar.op . fmap pure
 
 singleEleErr :: Functor f => f (Types.Header Types.TopLevel) -> f Sexp.T
 singleEleErr = fmap (ToSexp.transTopLevel . head . noHeaderErr)

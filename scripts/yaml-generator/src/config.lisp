@@ -320,13 +320,7 @@ common ones to include"
                      *standard-library-extra-deps*
                      *eac-solver*)))
 
-(defparameter *anf*
-  (make-stack-yaml
-   :name "ANF"
-   :packages   (list *core* *frontend* *standard-library* *translate*)
-   :extra-deps (list (make-general-dependencies *capability* *extensible* *prettiest*)
-                     *standard-library-extra-deps*
-                     *eac-solver*)))
+
 
 ;; Define these before pipeline due to mutual recursion
 (defparameter *Pipeline*
@@ -410,6 +404,22 @@ common ones to include"
                    *sexp*)
    ;; hack name, for sub dirs
    :name "EasyPipeline"
+   :extra-deps (big-dep-list)
+   :extra "allow-newer: true"))
+
+(defparameter *anf*
+  (make-stack-yaml
+   :name "ANF"
+   :packages   (list *core*
+                     *frontend*
+                     *standard-library*
+                     *translate*
+                     *context*
+                     *sexp*
+                     *pipeline*
+                     *plonk*
+                     *Michelson*
+                     *Easy-Pipeline*)
    :extra-deps (big-dep-list)
    :extra "allow-newer: true"))
 
