@@ -16,7 +16,7 @@ import qualified Juvix.Core.IR.Typechecker.API.History as Hist
 -- | of Types and Terms if needed
 -- | History-related combinators not available since it should be part
 -- | of each modifying operation
-class Monad m => MetaProg primTy primVal a b m | m -> a where
+class Monad m => MetaProg m a | m -> a where
   -- | `proofGoal` returns the current sub-goal
   proofGoal     :: m b
 
@@ -63,38 +63,37 @@ class Monad m => MetaProg primTy primVal a b m | m -> a where
 
   -- TODO: Check with Andy if we need more primitives
 
-instance MetaProg (ProofState ext primTy primVal a b) where
-  proofGoal = do
-    g <- get @"proofGoals"
-    pure g
+-- instance MetaProg (Types.ProofState ext primTy primVal a) a where
+  -- proofGoal = undefined
+  --   g <- get @"proofGoals"
+  --   pure g
 
-  proofTerm = do
-    p <- get @"proofTerm"
-    pure p
+  -- proofTerm = undefined
+  --   p <- get @"proofTerm"
+  --   pure p
 
-  proofContext = do
-    l <- get @"proofTerm"
-    pure l
+  -- proofContext = undefined
+  --   l <- get @"proofTerm"
+  --   pure l
 
   -- TODO: find out which functions to put here
-  check = undefined
-  normalise = undefined
-  unify = undefined
-  newProof = undefined
-  newTerm = undefined
-  focus = undefined
-  primUnify = undefined
+  -- check = undefined
+  -- normalise = undefined
+  -- unify = undefined
+  -- newProof = undefined
+  -- newTerm = undefined
+  -- focus = undefined
+  -- primUnify = undefined
 
-  getState = do
-    s <- get @"globals"
-    pure s
+  -- getState = undefined
+    -- s <- get @"globals"
+    -- pure s
 
-  putState s = do
-    set @"globals"
-    set @"history" (Hist.GlobalSet, s)
-    pure ()
+  -- putState s = undefined
+    -- put @"globals" s
+    -- put @"history" (Hist.GlobalSet, s)
+    -- pure ()
 
-  throwErr err = throw @"proofError" err
+  -- throwErr err = undefined
 
-  trace op a = do
-    set @"history" (Hist.UserOp op, a)
+  -- trace a = undefined
