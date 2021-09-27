@@ -21,7 +21,7 @@ data Error primTy primVal
   | HolesErr         -- Uni.HolesErr
   | LocalContextErr  -- Uni.TermContextErr
   | GlobalContextErr -- TODO: create specific context error, currently it's "fromFrontendError"
-  | MetaProgErr      MetaProgErr
+  | MetaProgErr      MetaProgError
   | TypecheckerErr   (Typed.TypecheckError primTy primVal)
   | PrimError        -- Generic Primitive Error?
 
@@ -34,7 +34,7 @@ data ProofState ext primTy primVal a b = Env
     -- requires unification
     -- TODO: check with Andy how the unification goal works
 
-    proofGoal      :: a, -- Uni.UnificationGoal primTy primVal,
+    proofGoal      :: (), -- Uni.UnificationGoal primTy primVal,
 
     -- current proof
     -- TODO: check with Andy how to deal with bidirectional typecheking here
@@ -45,7 +45,7 @@ data ProofState ext primTy primVal a b = Env
 
     -- local context of `proofTerm`
     -- requires unification
-    locals         :: a, -- Uni.TermConxtext primTy primVal,
+    locals         :: (), -- Uni.TermConxtext primTy primVal,
 
     -- queue of current holes and guesses
     -- requires unification
@@ -55,51 +55,51 @@ data ProofState ext primTy primVal a b = Env
 
 type ProofStateA primTy primVal a b =
   ExceptT
-    (Error primTy primVal a)
+    (Error primTy primVal)
     (State (ProofState IR.T primTy primVal a b))
 
-newtype ProofStateT primTy primVal sumRep a b c
-  = ProofStateT (ProofStateA primTy primVal sumRep a b c)
+newtype ProofStateT ext primTy primVal a b
+  = ProofStateT (ProofStateA primTy primVal a b)
   deriving (Functor, Applicative, Monad)
   deriving
     ( HasState  "history" (Hist.History a b),
       HasSink   "history" (Hist.History a b),
       HasSource "history" (Hist.History a b)
     )
-    via StateField "history" (ProofStateA primTy primVal sumRep a b)
+  via StateField "history" (ProofStateA primTy primVal a b)
   -- deriving
   --   ( HasState  "globals" (),
   --     HasSink   "globals" (),
   --     HasSource "globals" ()
   --   )
-  --   via StateField "history" (ProofStateA primTy primVal sumRep a b)
+  --   via StateField "history" (ProofStateA primTy primVal a b)
   -- deriving
   --   ( HasState "proofTerm" (),
   --     HasSink "proofTerm" (),
   --     HasSource "proofTerm" ()
   --   )
-  --   via StateField "proofTerm" (ProofStateA primTy primVal sumRep a b)
+  --   via StateField "proofTerm" (ProofStateA primTy primVal a b)
   -- deriving
   --   ( HasState "proofGoal" (),
   --     HasSink "proofGoal" (),
   --     HasSource "proofGoal" ()
   --   )
-  --   via StateField "" (ProofStateA primTy primVal sumRep a b)
+  --   via StateField "" (ProofStateA primTy primVal a b)
   -- deriving
   --   ( HasState "locals" (),
   --     HasSink "locals" (),
   --     HasSource "locals" ()
   --   )
-  --   via StateField "" (ProofStateA primTy primVal sumRep a b)
+  --   via StateField "" (ProofStateA primTy primVal a b)
   -- deriving
   --   ( HasState "holes" (),
   --     HasSink "holes" (),
   --     HasSource "holes" ()
   --   )
-  -- via StateField "" (ProofStateA primTy primVal sumRep a b)
+  -- via StateField "" (ProofStateA primTy primVal a b)
   deriving
     (HasThrow "proofErr" (Error primTy primVal))
-    via MonadError (ProofStateA primTy primVal sumRep a b)
+    via MonadError (ProofStateA primTy primVal a b)
 
 data MetaProgError
   = MetaProgError -- not sure what errors can happen here, but will leave a placeholder
