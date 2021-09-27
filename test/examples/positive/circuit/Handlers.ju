@@ -4,15 +4,24 @@ open Prelude
 open Circuit
 open Circuit.Field
 
+
+-- print effect signature
+effect Print =
+  let print : string -> unit
+  let pure  : x      -> string
+end
+
 handler printer =
   let print = printLn
   let pure x = toString x
 end
 
-sig prog : a -> a -- effect
+sig prog : field -> field -- effect
 let prog a =
   print a;
   pure a
 
-sig main : a
+sig main : field
 let main = prog via printer
+
+
