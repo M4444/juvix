@@ -26,25 +26,26 @@ data Error primTy primVal
   | PrimError        -- Generic Primitive Error?
 
  -- `a` is a placeholder for the actual types
-data ProofState primTy primVal sumRep a b = Env
+data ProofState ext primTy primVal a b = Env
   { -- captures all changes to proof term
     history        :: Hist.History a b,
 
     -- unsolved unification problems
     -- requires unification
     -- TODO: check with Andy how the unification goal works
-    proofGoal      :: (), -- Uni.UnificationGoal primTy primVal,
+
+    proofGoal      :: a, -- Uni.UnificationGoal primTy primVal,
 
     -- current proof
     -- TODO: check with Andy how to deal with bidirectional typecheking here
-    proofTerm      :: Core.Term primTy primVal sumRep,
+    proofTerm      :: Core.Term ext primTy primVal,
 
      -- global context with all types
-    globals        :: Core.RawGlobal primTy primVal sumRep,
+    globals        :: Core.RawGlobal ext primTy primVal,
 
     -- local context of `proofTerm`
     -- requires unification
-    locals         :: (), -- Uni.TermConxtext primTy primVal,
+    locals         :: a, -- Uni.TermConxtext primTy primVal,
 
     -- queue of current holes and guesses
     -- requires unification
@@ -52,10 +53,10 @@ data ProofState primTy primVal sumRep a b = Env
   }
   deriving (Generic)
 
-type ProofStateA primTy primVal sumRep a b =
+type ProofStateA primTy primVal a b =
   ExceptT
-    (Error primTy primVal)
-    (State (ProofState primTy primVal sumRep a b))
+    (Error primTy primVal a)
+    (State (ProofState IR.T primTy primVal a b))
 
 newtype ProofStateT primTy primVal sumRep a b c
   = ProofStateT (ProofStateA primTy primVal sumRep a b c)
@@ -72,7 +73,6 @@ newtype ProofStateT primTy primVal sumRep a b c
   --     HasSource "globals" ()
   --   )
   --   via StateField "history" (ProofStateA primTy primVal sumRep a b)
-
   -- deriving
   --   ( HasState "proofTerm" (),
   --     HasSink "proofTerm" (),
@@ -101,5 +101,5 @@ newtype ProofStateT primTy primVal sumRep a b c
     (HasThrow "proofErr" (Error primTy primVal))
     via MonadError (ProofStateA primTy primVal sumRep a b)
 
-data MetaProgErr
-  = MPErr -- not sure what errors can happen here, but will leave a placeholder
+data MetaProgError
+  = MetaProgError -- not sure what errors can happen here, but will leave a placeholder

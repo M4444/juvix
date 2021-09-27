@@ -5,8 +5,8 @@ import Juvix.Core.IR.Typechecker.Env as Env
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.IR.Evaluator as Eval
 import qualified Juvix.Core.IR.Types as IR
-import qualified Juvix.Core.Typechecker.API.Types as Types
-import qualified Juvix.Core.Typechecker.API.History as Hist
+import qualified Juvix.Core.IR.Typechecker.API.Types as Types
+import qualified Juvix.Core.IR.Typechecker.API.History as Hist
 
 -- | This API is based on Idris's v1 proof state
 -- | Check "Idris, a General Purpose Dependently Typed Programming Language"
