@@ -58,8 +58,8 @@ type ProofStateA primTy primVal a b =
     (Error primTy primVal)
     (State (ProofState IR.T primTy primVal a b))
 
-newtype ProofStateT ext primTy primVal a b
-  = ProofStateT (ProofStateA primTy primVal a b)
+newtype ProofStateT ext primTy primVal a b c
+  = ProofStateT (ProofStateA primTy primVal a b c)
   deriving (Functor, Applicative, Monad)
   deriving
     ( HasState  "history" (Hist.History a b),
@@ -96,7 +96,7 @@ newtype ProofStateT ext primTy primVal a b
   --     HasSink "holes" (),
   --     HasSource "holes" ()
   --   )
-  -- via StateField "" (ProofStateA primTy primVal a b)
+  via StateField "" (ProofStateA primTy primVal a b)
   deriving
     (HasThrow "proofErr" (Error primTy primVal))
     via MonadError (ProofStateA primTy primVal a b)
