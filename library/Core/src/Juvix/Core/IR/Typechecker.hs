@@ -1,7 +1,7 @@
 -- | This file contains the functions and aux functions to typecheck
 -- datatype and function declarations.
 -- Datatype declarations are typechecked by @checkDataType@ in CheckDataType.hs.
--- Function declarations are typechecked by @typeCheckFuns@ in CheckFunction.hs.
+-- Terms are typechecked by @typeTerm@ in CheckTerm.hs.
 -- Typechecked declarations are added to the signature.
 module Juvix.Core.IR.Typechecker
   ( module Juvix.Core.IR.Typechecker,
@@ -31,15 +31,19 @@ typeCheckDeclaration ::
     Show primVal,
     Show extT,
     ShowExt extT primTy primVal,
+    Show (Core.Pattern extT primTy primVal),
+    Show (Core.RawGlobal extT primTy primVal),
+    Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
     Eval.CanEval extT IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy (Param.TypedPrim primTy primVal),
-    Eval.NoExtensions extT primTy (Param.TypedPrim primTy primVal),
+    Eval.NoExtensions extT (Typed.PrimTy primTy) (Typed.Prim primTy primVal),
     Eval.NoExtensions extT primTy primVal,
     Env.CanTC' extT primTy primVal m,
-    Param.CanApply (Param.TypedPrim primTy primVal),
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
     HasReader "globals" (Typed.GlobalsT IR.T extT primTy primVal) m,
-    Eval.HasPatSubstTerm
+    Eval.HasPatSubstType
       (OnlyExts.T T)
       primTy
       (Param.TypedPrim primTy primVal)

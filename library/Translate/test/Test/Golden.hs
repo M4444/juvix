@@ -143,6 +143,7 @@ discoverGoldenTestsContext =
     handleDiscoverFunction contextPass filePath = do
       let directory = FP.dropFileName filePath
       deps <- liftIO (fmap (directory <>) <$> findFileDependencies filePath)
+      print deps
       desugaredPath <- fullyDesugarPath (filePath : (deps <> library))
       handleContextPass desugaredPath contextPass
 
@@ -163,11 +164,13 @@ fromOpen (Open s) = List.intercalate "/" (unintern <$> NonEmpty.toList s) <> ".j
 findFileDependencies :: FilePath -> IO [FilePath]
 findFileDependencies f = do
   contract <- ByteString.readFile f
+  print contract
   pure $ either (const []) (filter (\f -> not $ elem f stdlibs) . fmap fromOpen) (parseOpen contract)
 
 stdlibs :: [FilePath]
 stdlibs =
   [ "Circuit.ju",
+    "Circuit/Field.ju",
     "LLVM.ju",
     "MichelsonAlias.ju",
     "Michelson.ju",
@@ -207,7 +210,9 @@ discoverContext =
   discoverPrefix
     [ (contextifySexp, "contextify-sexp"),
       (resolveModuleContext, "resolve-module"),
-      (resolveInfixContext, "resolve-infix")
+      (resolveInfixContext, "resolve-infix"),
+      (resolveRecordDeclaration, "record-declaration"),
+      (resolveSymbolToLookup, "symbol-to-lookup")
     ]
     (fmap (: []) ['A' .. 'Z'])
 
@@ -258,22 +263,35 @@ contextifySexp names = do
 
 resolveModuleContext ::
   (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
-resolveModuleContext names = do
-  ctx <- contextifySexp names
-  (newCtx, _) <- liftIO $ Environment.runMIO (Contextify.resolveModule ctx)
-  case newCtx of
-    Right ctx -> pure ctx
-    Left _err -> Feedback.fail "not valid pass"
+resolveModuleContext =
+  runPass (contextifySexp, Contextify.resolveModule) "not valid pass"
 
 resolveInfixContext ::
-  (MonadIO m, MonadFail m) =>
-  NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  m Environment.SexpContext
-resolveInfixContext names = do
-  ctx <- resolveModuleContext names
-  let (infix', _) = Environment.runM (Contextify.inifixSoloPass ctx)
-  case infix' of
-    Left _err -> Feedback.fail "can't resolve infix symbols"
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+resolveInfixContext =
+  "can't resolve infix symbols"
+    |> runPass (resolveModuleContext, Contextify.inifixSoloPass)
+
+resolveRecordDeclaration ::
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+resolveRecordDeclaration =
+  "Record to function can't be properly dealt with"
+    |> runPass (resolveInfixContext, Contextify.recordDeclaration)
+
+resolveSymbolToLookup ::
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+resolveSymbolToLookup =
+  "NameSymbol Resolution to Lookup failed"
+    |> runPass (resolveRecordDeclaration, Contextify.notFoundSymbolToLookup)
+
+runPass ::
+  (MonadIO m, MonadFail m) => (t1 -> m t2, t2 -> Environment.MinimalMIO b) -> String -> t1 -> m b
+runPass (previousPass, currentPass) errString names = do
+  ctx <- previousPass names
+  -- Only the module transform requires IO here!
+  (record, _) <- liftIO $ Environment.runMIO (currentPass ctx)
+  case record of
+    Left _err -> Feedback.fail errString
     Right ctx -> pure ctx
 
 ----------------------------------------------------------------------

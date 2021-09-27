@@ -1,5 +1,6 @@
 module Juvix.Pipeline.ToHR.Env where
 
+import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.HR as HR
@@ -18,7 +19,10 @@ data FFState ext primTy primVal = FFState
     coreDefs :: CoreDefs ext primTy primVal,
     patVars :: HashMap.T Core.GlobalName Core.PatternVar,
     nextPatVar :: Core.PatternVar,
-    ffOrder :: [NonEmpty NameSymbol.T]
+    ffOrder :: [NonEmpty NameSymbol.T],
+    -- | closure represents the local names in scope that can't be
+    -- registered by other means
+    closure :: Closure.T
   }
   deriving (Generic)
 
@@ -70,6 +74,13 @@ newtype Env ext primTy primVal a = Env {unEnv :: EnvAlias ext primTy primVal a}
       HasState "ffOrder" [NonEmpty NameSymbol.T]
     )
     via StateField "ffOrder" (EnvAlias ext primTy primVal)
+  -- we should move this to a reader at some point
+  deriving
+    ( HasSource "closure" Closure.T,
+      HasSink "closure" Closure.T,
+      HasState "closure" Closure.T
+    )
+    via StateField "closure" (EnvAlias ext primTy primVal)
 
 type HasThrowFF ext primTy primVal =
   HasThrow "fromFrontendError" (Error ext primTy primVal)
@@ -95,6 +106,9 @@ type HasNextPatVar =
 type HasOrder =
   HasState "ffOrder" [NonEmpty NameSymbol.T]
 
+type HasClosure =
+  HasState "closure" Closure.T
+
 type ReduceEff ext primTy primVal m =
   ( HasThrowFF ext primTy primVal m,
     HasParam primTy primVal m,
@@ -117,6 +131,16 @@ evalEnv ::
 evalEnv ctx param env =
   snd $ runEnv ctx param env
 
+evalEnvEither ::
+  Ctx.T Sexp.T Sexp.T Sexp.T ->
+  P.Parameterisation primTy primVal ->
+  Env ext primTy primVal a ->
+  Either (Error ext primTy primVal) (FFState ext primTy primVal)
+evalEnvEither ctx param env =
+  case runEnv ctx param env of
+    (Left err, _) -> Left err
+    (Right _, state) -> Right state
+
 runEnv ::
   Ctx.T Sexp.T Sexp.T Sexp.T ->
   P.Parameterisation primTy primVal ->
@@ -133,7 +157,8 @@ runEnv ctx param (Env env) =
           coreDefs = mempty,
           patVars = mempty,
           nextPatVar = 0,
-          ffOrder = []
+          ffOrder = [],
+          closure = Closure.empty
         }
 
 throwFF :: HasThrowFF ext primTy primVal m => Error ext primTy primVal -> m a

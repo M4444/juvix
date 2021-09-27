@@ -4,7 +4,6 @@
 module Test.Golden where
 
 import qualified Data.ByteString as ByteString (readFile)
-import Data.Curve.Weierstrass.BLS12381 (Fr)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Backends.Plonk as Plonk
@@ -12,11 +11,11 @@ import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import qualified Juvix.Core.HR as HR
 import qualified Juvix.Core.IR as IR
 import Juvix.Library
+import Juvix.Library.BLS12381 (Fr)
 import qualified Juvix.Library.Feedback as Feedback
 import Juvix.Library.Test.Golden
 import Juvix.Pipeline (Pipeline)
 import qualified Juvix.Pipeline as Pipeline
-import Test.Orphan
 import Test.Tasty
 import Text.Pretty.Simple (pPrint)
 
@@ -28,7 +27,7 @@ juvixRootPath :: FilePath
 juvixRootPath = "../../../"
 
 libs :: IsString a => [a]
-libs = ["stdlib/Prelude.ju", "stdlib/Circuit.ju"]
+libs = ["stdlib/Prelude.ju", "stdlib/Circuit.ju", "stdlib/Circuit/Field.ju"]
 
 withJuvixRootPath :: FilePath -> FilePath
 withJuvixRootPath p = juvixRootPath <> p
@@ -49,7 +48,7 @@ compileTests =
   testGroup "Plonk compile"
     <$> sequence
       [ compileTestsPos "test/examples/positive/circuit",
-        compileTestsNeg "test/examples/negative/circuit"
+        compileTestsNeg "test/examples/negative/circuit/compile"
       ]
   where
     compileTestsPos = plonkGoldenTests ".circuit" (expectSuccess . compile)
@@ -61,11 +60,11 @@ typecheckTests =
   testGroup "Plonk typecheck"
     <$> sequence
       [ typecheckTestsPos "test/examples/positive/circuit",
-        typecheckTestsNeg "test/examples/negative/circuit"
+        typecheckTestsNeg "test/examples/negative/circuit/typecheck"
       ]
   where
-    typecheckTestsPos = plonkGoldenTests ".typecheck" (expectSuccess . typecheck)
-    typecheckTestsNeg = plonkGoldenTests ".typecheck" (expectFailure . typecheck)
+    typecheckTestsPos = plonkGoldenTests ".typecheck" (expectSuccess . toNoQuotes typecheck)
+    typecheckTestsNeg = plonkGoldenTests ".typecheck" (expectFailure . toNoQuotes typecheck)
 
 typecheck file = do
   contract <- liftIO $ readFile file
@@ -77,11 +76,11 @@ hrTests =
   testGroup "Plonk HR"
     <$> sequence
       [ hrTestsPos "test/examples/positive/circuit",
-        hrTestsNeg "test/examples/negative/circuit"
+        hrTestsNeg "test/examples/negative/circuit/hr"
       ]
   where
     hrTestsPos = plonkGoldenTestsNoQuotes ".hr" (expectSuccess . toNoQuotes pipelineToHR)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".hr" (expectFailure . toNoQuotes pipelineToHR)
+    hrTestsNeg = plonkGoldenTestsNoQuotes ".hr" (expectFailure . toNoQuotesEmpty pipelineToHR)
 
 pipelineToHR file =
   do
@@ -101,22 +100,22 @@ irTests =
   testGroup "Plonk IR"
     <$> sequence
       [ hrTestsPos "test/examples/positive/circuit",
-        hrTestsNeg "test/examples/negative/circuit"
+        hrTestsNeg "test/examples/negative/circuit/ir"
       ]
   where
     hrTestsPos = plonkGoldenTestsNoQuotes ".ir" (expectSuccess . toNoQuotes pipelineToIR)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".ir" (expectFailure . toNoQuotes pipelineToIR)
+    hrTestsNeg = plonkGoldenTestsNoQuotes ".ir" (expectFailure . toNoQuotesEmpty pipelineToIR)
 
 erasedTests :: IO TestTree
 erasedTests =
   testGroup "Plonk Erased"
     <$> sequence
       [ hrTestsPos "test/examples/positive/circuit",
-        hrTestsNeg "test/examples/negative/circuit"
+        hrTestsNeg "test/examples/negative/circuit/erased"
       ]
   where
     hrTestsPos = plonkGoldenTestsNoQuotes ".erased" (expectSuccess . toNoQuotes toErased)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".erased" (expectFailure . toNoQuotes toErased)
+    hrTestsNeg = plonkGoldenTestsNoQuotes ".erased" (expectFailure . toNoQuotesEmpty toErased)
     toErased file =
       do
         liftIO (readFile file)
@@ -124,7 +123,7 @@ erasedTests =
         >>= Pipeline.toSexp (Plonk.BPlonk @Fr)
         >>= Pipeline.toHR (Plonk.param @Fr)
         >>= Pipeline.toIR
-        >>= Pipeline.toErased (Plonk.param @Fr) Plonk.PField
+        >>= Pipeline.toErased (Plonk.param @Fr)
 
     isNotPrelude (p NonEmpty.:| _) _ = p /= "Prelude"
 

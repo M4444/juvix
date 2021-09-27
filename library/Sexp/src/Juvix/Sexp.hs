@@ -3,17 +3,26 @@
 module Juvix.Sexp
   ( module Juvix.Sexp.Types,
     module Juvix.Sexp.Parser,
+
+    -- * Folding Functionality
     foldPred,
+    foldSearchPred,
+    foldSearchPredManualRecurse,
     foldr,
     foldr1,
+
+    -- * General Functionality
     butLast,
     last,
+    init,
     list,
     listStar,
     addMetaToCar,
     car,
     cdr,
     atom,
+    actualAtom,
+    suffixAtom,
     number,
     isAtomNamed,
     nameFromT,
@@ -21,7 +30,6 @@ module Juvix.Sexp
     groupBy2,
     assoc,
     cadr,
-    foldSearchPred,
     unGroupBy2,
     snoc,
     findKey,
@@ -29,14 +37,18 @@ module Juvix.Sexp
   )
 where
 
-import Juvix.Library hiding (foldr, list, show, toList)
+import Juvix.Library hiding (foldr, init, list, show, toList)
 import qualified Juvix.Library as Std
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Sexp.Parser
 import Juvix.Sexp.Types
 import Prelude (error)
 
--- | @foldSearchPred@ is like foldPred with some notable exceptions.
+--------------------------------------------------------------------------------
+-- Folding Capabilities
+--------------------------------------------------------------------------------
+
+-- | @foldSearchPred@ is like @foldPred@ with some notable exceptions.
 -- 1. Instead of recusing on the @predChange@ form, it will just leave
 --    the main form in tact.
 --    - This is because in this sort of task we
@@ -65,7 +77,28 @@ foldSearchPred ::
   (NameSymbol.T -> Bool, Atom -> T -> f T) ->
   (NameSymbol.T -> Bool, Atom -> T -> (T -> f T) -> f T) ->
   f T
-foldSearchPred t p1@(predChange, f) p2@(predBind, g) =
+foldSearchPred t (predChange, automaticF) p2 =
+  let manualF atom xs recurse =
+        -- reserve the old behavior with this case
+        case xs of
+          Atom {} -> automaticF atom xs
+          _ -> do
+            newCons <- automaticF atom xs
+            case newCons of
+              Cons {} -> Cons (car newCons) <$> recurse (cdr newCons)
+              _______ -> pure newCons
+   in foldSearchPredManualRecurse t (predChange, manualF) p2
+
+-- | @foldSearchPredManualRecurse@ is just like @foldsSearchPred@
+-- except the function which changes the sexp form manually has to
+-- recurse, it no longer automatically does this.
+foldSearchPredManualRecurse ::
+  Monad f =>
+  T ->
+  (NameSymbol.T -> Bool, Atom -> T -> (T -> f T) -> f T) ->
+  (NameSymbol.T -> Bool, Atom -> T -> (T -> f T) -> f T) ->
+  f T
+foldSearchPredManualRecurse t p1@(predChange, f) p2@(predBind, g) =
   case t of
     Cons a@(Atom atom@(A name _)) xs
       -- this case is a bit special as we wish to remove the form but
@@ -77,21 +110,17 @@ foldSearchPred t p1@(predChange, f) p2@(predBind, g) =
       | predBind name -> bindCase
       where
         changeCase xs = do
-          newCons <- f atom xs
-          case newCons of
-            Cons _ _ ->
-              Cons (car newCons) <$> foldSearchPred (cdr newCons) p1 p2
-            _ ->
-              pure newCons
+          f atom xs (\xs -> foldSearchPredManualRecurse xs p1 p2)
         -- G takes the computation, as its changes are scoped over the
         -- calls.
         bindCase =
-          Cons a <$> g atom xs (\xs -> foldSearchPred xs p1 p2)
+          Cons a <$> g atom xs (\xs -> foldSearchPredManualRecurse xs p1 p2)
     Cons cs xs ->
-      Cons <$> foldSearchPred cs p1 p2 <*> foldSearchPred xs p1 p2
+      Cons <$> foldSearchPredManualRecurse cs p1 p2 <*> foldSearchPredManualRecurse xs p1 p2
     Nil -> pure Nil
     Atom a
-      | predChange ":atom" -> f a t
+      | predChange ":atom" -> do
+        f a (Atom a) (\xs -> foldSearchPredManualRecurse xs p1 p2)
       | otherwise -> pure $ Atom a
 
 -- | @foldPred@ searches the sexp structure given to it with a given
@@ -137,6 +166,10 @@ foldr1 f (Cons x xs) = Just $ unsafe (Cons x xs)
         Nil -> error "doesn't happen"
 foldr1 _ _empty = Nothing
 
+--------------------------------------------------------------------------------
+-- General Functionality
+--------------------------------------------------------------------------------
+
 -- | @butLast@ takes a list and removes the last element of the list,
 -- if handed an atom, it will return the atom
 butLast :: T -> T
@@ -152,6 +185,14 @@ last (Cons x Nil) = x
 last (Cons _ xs) = last xs
 last (Atom a) = Atom a
 last Nil = Nil
+
+-- | @init@ gives back the list back minus the last element, for an atom or nil
+-- it will be the identity
+init :: T -> T
+init (Cons _ Nil) = Nil
+init (Cons x xs) = Cons x (init xs)
+init (Atom a) = Atom a
+init Nil = Nil
 
 -- | @list@ takes a foldable structure of Sexps and gives back a list of
 -- those structures
@@ -193,6 +234,14 @@ cadr = car . cdr
 -- | @atom@ creates a @Sexp@ @Atom@ from a @NameSymbol.T@
 atom :: NameSymbol.T -> T
 atom x = Atom $ A x Nothing
+
+-- | @actualAtom@ creates an @Atom@ from a @NameSymbol.T@
+actualAtom :: NameSymbol.T -> Atom
+actualAtom x = A x Nothing
+
+suffixAtom :: NameSymbol.T -> T -> T
+suffixAtom name (Atom (A name' cdr)) = (Atom (A (NameSymbol.append name' name) cdr))
+suffixAtom _ sexp = sexp
 
 -- | @number@ creates a @Sexp@ @Number@ from an @Integer@
 number :: Integer -> T
@@ -262,7 +311,7 @@ findKey :: (T -> T) -> T -> T -> Maybe T
 findKey f k (x :> xs)
   | f x == k = Just x
   | otherwise = findKey f k xs
-findKey _f _k _ = Nothing
+findKey _ _ _ = Nothing
 
 -- | @flatten@ totally flattens a list, removing any extra Nils as well
 -- >>> fmap flatten (parse "((1) (2 3 4) (1 2) () (1 2 (3 ())))")

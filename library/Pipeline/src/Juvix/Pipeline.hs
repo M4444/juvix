@@ -7,6 +7,7 @@ module Juvix.Pipeline
   )
 where
 
+------------------------------------------------------------------------------
 import Control.Arrow (left)
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
@@ -47,6 +48,8 @@ import qualified Text.Megaparsec as P
 import Text.Pretty.Simple (pShowNoColor)
 import qualified Text.PrettyPrint.Leijen.Text as Pretty
 
+------------------------------------------------------------------------------
+
 -- TODO: Change error type to Error
 type Pipeline = Feedback.FeedbackT [] [Char] IO
 
@@ -58,31 +61,40 @@ type Constraints b =
     Show (Err b),
     Show (Val b),
     Show (Ty b),
-    Show (ApplyErrorExtra (Ty b)),
-    Show (ApplyErrorExtra (TypedPrim (Ty b) (Val b))),
-    Show (Arg (Ty b)),
-    Show (Arg (TypedPrim (Ty b) (Val b))),
-    CanApply (Ty b),
-    CanApply (TypedPrim (Ty b) (Val b)),
+    Show (Core.PrimApplyError (Ty b)),
+    Show (Core.PrimApplyError (Val b)),
+    Core.CanPrimApply Param.Star (Ty b),
+    Core.CanPrimApply (Ty b) (Val b),
     IR.HasWeak (Val b),
-    IR.HasSubstValue IR.T (Ty b) (TypedPrim (Ty b) (Val b)) (Ty b),
-    IR.HasPatSubstTerm (OnlyExts.T IR.T) (Ty b) (Val b) (Ty b),
+    IR.HasPatSubstType (OnlyExts.T IR.T) (Ty b) (Val b) (Ty b),
     IR.HasPatSubstTerm (OnlyExts.T IR.T) (Ty b) (Val b) (Val b),
-    IR.HasPatSubstTerm (OnlyExts.T IR.T) (Ty b) (TypedPrim (Ty b) (Val b)) (Ty b),
-    IR.HasPatSubstTerm (OnlyExts.T TypeChecker.T) (Ty b) (TypedPrim (Ty b) (Val b)) (Ty b)
+    IR.HasPatSubstType
+      (OnlyExts.T TypeChecker.T)
+      (Ty b)
+      (TypedPrim (Ty b) (Val b))
+      (Ty b),
+    -- TODO remove these constraints when inlining is no longer necessary?
+    IR.HasPatSubstType (OnlyExts.T IR.T) (Ty b) (TypedPrim (Ty b) (Val b)) (Ty b),
+    IR.HasSubstValueType IR.T (Ty b) (TypedPrim (Ty b) (Val b)) (Ty b)
   )
 
 data Error
   = FrontendErr ToSexp.Error
-  | ParseErr ParserError
+  | ParseErr Frontend.Error
   -- TODO: CoreError
   deriving (Show)
+
+------------------------------------------------------------------------------
 
 createTmpPath :: Text -> IO FilePath
 createTmpPath code = Temp.writeSystemTempFile "juvix-tmp.ju" (Text.unpack code)
 
 prelude :: FilePath
 prelude = "stdlib/Prelude.ju"
+
+-- ! This should be given as a default for the command-line.
+
+------------------------------------------------------------------------------
 
 class HasBackend b where
   type Ty b = ty | ty -> b
@@ -98,7 +110,15 @@ class HasBackend b where
     fp <- createTmpPath code
     e <- Frontend.parseFiles (libs ++ [fp])
     case e of
-      Left err -> Feedback.fail . toS . pShowNoColor . P.errorBundlePretty $ err
+      Left (Frontend.NoHeaderErr file) ->
+        Feedback.fail
+          ( "File "
+              <> file
+              <> " does not contain a module header"
+              <> ", please specify module name in the file"
+          )
+      Left (Frontend.ParseError err) ->
+        Feedback.fail $ toS $ pShowNoColor $ P.errorBundlePretty err
       Right x -> pure x
 
   -- | Parse juvix source code using prelude and the default set of libraries of the backend
@@ -117,7 +137,10 @@ class HasBackend b where
     Param.Parameterisation (Ty b) (Val b) ->
     Context.T Sexp.T Sexp.T Sexp.T ->
     Pipeline (Core.RawGlobals HR.T (Ty b) (Val b))
-  toHR param sexp = pure $ ToHR.contextToHR sexp param
+  toHR param sexp =
+    case ToHR.contextToHR sexp param of
+      Right r -> pure r
+      Left er -> Feedback.fail ("Error on toHR: " <> toS (pShowNoColor er))
 
   toIR ::
     Core.RawGlobals HR.T (Ty b) (Val b) ->
@@ -127,10 +150,9 @@ class HasBackend b where
   toErased ::
     Constraints b =>
     Param.Parameterisation (Ty b) (Val b) ->
-    Ty b ->
     (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T (Ty b) (Val b)) ->
     Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
-  toErased param ty (patToSym, globalDefs) = do
+  toErased param (patToSym, globalDefs) = do
     (usage, term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
     let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
@@ -145,14 +167,14 @@ class HasBackend b where
       -- Type primitive values, i.e.
       --      RawGlobal (Ty b) (Val b)
       -- into RawGlobal (Ty b) (TypedPrim (Ty b) (Val b))
-      typedGlobals = map (typePrims ty) globalDefs
+      typedGlobals = map typePrims globalDefs
       evaluatedGlobals = HM.map (unsafeEvalGlobal typedGlobals) typedGlobals
       getMain = case HM.elems $ HM.filter isMain globalDefs of
         [] -> Feedback.fail $ "No main function found in " <> toS (pShowNoColor globalDefs)
         main : _ -> pure main
       toLambda main =
         case TransformExt.extForgetE <$> IR.toLambdaR @IR.T main of
-          Just (IR.Ann usage term ty _) -> pure (usage, term, ty)
+          Just (IR.Ann usage term mainTy _) -> pure (usage, term, mainTy)
           _ -> Feedback.fail $ "Unable to convert main to lambda" <> toS (pShowNoColor main)
 
   -------------
@@ -182,12 +204,11 @@ class HasBackend b where
     Constraints b =>
     Context.T Sexp.T Sexp.T Sexp.T ->
     Param.Parameterisation (Ty b) (Val b) ->
-    Ty b ->
     Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
-  typecheck' ctx param ty = do
+  typecheck' ctx param = do
     toHR param ctx
       >>= toIR
-      >>= toErased param ty
+      >>= toErased param
 
   compile ::
     FilePath ->

@@ -1,4 +1,33 @@
 * Changelog for Juvix
+
+** 0.1.1.20
+- Merged changes that implemented primTy in terms of return. (see PR #979)
+** 0.1.1.19
+- Introduce algebraic product and coproduct types (see PR #985)
+** 0.1.1.18
+- Adds record lookup transformation for record symbols
+  + Technically to all symbols with an unknown context address/path
+** 0.1.1.17
+- Adds record declarations to the Core S-expression representation.
+** 0.1.1.16
+- Add a test suite and tooling to =Juvix.Library.Test.Golden= for
+  expecting at least 1 test to fail.
+** 0.1.1.15
+- Added module 'Juvix.Library.BLS12381' to remove Orphan related files.
+- New instances and reviews for 'Juvix.Library.Usage'.
+- Other minor fixes and clean-ups.
+** 0.1.1.14
+- Creates an HTTP server to debug code.
+  + goto the http library and read the README to run
+** 0.1.1.13
+- Creates generic tooling for Context Pass transformations
+** 0.1.1.12
+- Disables modules which are not explicitly named
+** 0.1.1.11
+- Extended EasyPipeline to support inline and erasure
+** 0.1.1.10
+- Put =Contextify= passes into proper sections
+- Minor cleanup in running the =Contextify= passes
 ** 0.1.1.9
 - Added explicit exports for the IR/Evaluator modules.
 - Removed unused functions in the IR/Evaluator modules.

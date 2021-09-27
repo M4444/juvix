@@ -19,15 +19,14 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/Sexp#readme>
 
 dependencies:
+- aeson
 - base >= 4.7 && < 5
 - standard-library
 - containers
-- unordered-containers
-- stm-containers
 - lens
 - text
 - megaparsec
-- bytestring
+- hashable
 
 default-extensions:
   - NoImplicitPrelude

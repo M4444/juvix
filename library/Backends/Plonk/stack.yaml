@@ -3,11 +3,11 @@ resolver: lts-17.3
 packages:
 - .
 - ../../StandardLibrary
+- ../../Translate
 - ../../Frontend
 - ../../Core
 - ../../Context
 - ../../Pipeline
-- ../../Translate
 - ../../Sexp
 
 extra-deps:

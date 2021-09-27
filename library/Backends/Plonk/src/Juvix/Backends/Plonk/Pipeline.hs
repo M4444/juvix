@@ -3,11 +3,13 @@
 module Juvix.Backends.Plonk.Pipeline
   ( BPlonk (..),
     compileCircuit,
+    prettifyCircuit,
   )
 where
 
 import qualified Data.Aeson as A
 import Data.Field.Galois (GaloisField)
+import qualified Data.Text.Lazy as LazyText
 import qualified Juvix.Backends.Plonk.Builder as Builder
 import qualified Juvix.Backends.Plonk.Circuit as Circuit
 import qualified Juvix.Backends.Plonk.Compiler as Compiler
@@ -34,38 +36,8 @@ instance
   ( GaloisField f,
     Eq f,
     Integral f,
-    CanApply (Param.TypedPrim (Types.PrimTy f) (Types.PrimVal f)),
-    CanApply (Types.PrimTy f),
-    IR.HasPatSubstTerm
-      (OnlyExts.T IR.T)
-      (Types.PrimTy f)
-      (Param.TypedPrim (Types.PrimTy f) (Types.PrimVal f))
-      (Types.PrimTy f),
-    IR.HasWeak (Types.PrimVal f),
-    IR.HasSubstValue
-      IR.T
-      (Types.PrimTy f)
-      (Param.TypedPrim (Types.PrimTy f) (Types.PrimVal f))
-      (Types.PrimTy f),
-    IR.HasPatSubstTerm
-      (OnlyExts.T IR.T)
-      (Types.PrimTy f)
-      (Types.PrimVal f)
-      (Types.PrimTy f),
-    IR.HasPatSubstTerm
-      (OnlyExts.T IR.T)
-      (Types.PrimTy f)
-      (Types.PrimVal f)
-      (Types.PrimVal f),
-    IR.HasPatSubstTerm
-      (OnlyExts.T TypeChecker.T)
-      (Types.PrimTy f)
-      (TypedPrim (Types.PrimTy f) (Types.PrimVal f))
-      (Types.PrimTy f),
-    Show (Arg (Types.PrimTy f)),
-    Show (ApplyErrorExtra (Types.PrimTy f)),
-    Show
-      (ApplyErrorExtra (TypedPrim (Types.PrimTy f) (Types.PrimVal f))),
+    Show (Param.PrimApplyError (Types.PrimTy f)),
+    Show (Param.PrimApplyError (Types.PrimVal f)),
     A.ToJSON (Circuit.ArithCircuit f)
   ) =>
   HasBackend (BPlonk f)
@@ -73,22 +45,19 @@ instance
   type Ty (BPlonk f) = Types.PrimTy f
   type Val (BPlonk f) = Types.PrimVal f
   type Err (BPlonk f) = Types.CompilationError f
-  stdlibs _ = ["stdlib/Circuit.ju"]
-  typecheck ctx = Pipeline.typecheck' ctx (Parameterization.param @f) Types.PField
+  stdlibs _ = ["stdlib/Circuit.ju", "stdlib/Circuit/Field.ju"]
+  typecheck ctx = Pipeline.typecheck' ctx (Parameterization.param @f)
   compile out term = do
     let circuit = compileCircuit term
     liftIO $ Dot.dotWriteSVG out (Dot.arithCircuitToDot circuit)
-    writeout (out <> ".pretty") $
-      let pretty = toS . Pretty.displayT . Pretty.renderPretty 1 120 . Pretty.pretty
-       in pretty circuit
-    writeout (out <> ".json") $
-      let json = show $ A.encode circuit
-       in json
+    writeout (out <> ".pretty") $ prettifyCircuit circuit
+    writeout (out <> ".json") $ show $ A.encode circuit
+
+prettifyCircuit :: (ConvertText LazyText.Text c, Pretty.Pretty a) => a -> c
+prettifyCircuit = toS . Pretty.displayT . Pretty.renderPretty 1 120 . Pretty.pretty
 
 compileCircuit ::
   (Integral f, Show f) =>
-  ErasedAnn.AnnTerm
-    (Types.PrimTy f)
-    (ErasedAnn.TypedPrim (Types.PrimTy f) (Types.PrimVal f)) ->
+  ErasedAnn.AnnTermT (Types.PrimTy f) (Types.PrimVal f) ->
   Circuit.ArithCircuit f
 compileCircuit term = Builder.execCircuitBuilder . Compiler.compileTermWithWire $ ErasedAnn.toRaw term

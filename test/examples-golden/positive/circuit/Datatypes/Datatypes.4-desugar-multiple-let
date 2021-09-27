@@ -3,64 +3,78 @@
 ,
     ( "open" "Circuit" )
 ,
-    ( ":defsig" "field" "ty" )
+    ( "open" "Circuit.Field" )
 ,
-    ( ":defun" "field" () ( ":primitive" "Circuit.field" ) )
+    ( "type" "verySimpleType" () ( "One" "field" ) )
 ,
-    ( ":defsig" "+"
-        ( ":infix" "->" "field" ( ":infix" "->" "field" "field" ) ) )
+    ( ":defsig" "verySimpleTerm" "verySimpleType" )
 ,
-    ( ":defun" "+" () ( ":primitive" "Circuit.add" ) )
-,
-    ( "declare" "infixl" "+" 5 )
-,
-    ( ":defsig" "^"
-        ( ":infix" "->" "field" ( ":infix" "->" "field" "field" ) ) )
-,
-    ( ":defun" "^" () ( ":primitive" "Circuit.exp" ) )
-,
-    ( "declare" "infixl" "^" 8 )
-,
-    ( ":defsig" "*"
-        ( ":infix" "->" "field" ( ":infix" "->" "field" "field" ) ) )
-,
-    ( ":defun" "*" () ( ":primitive" "Circuit.mul" ) )
-,
-    ( "declare" "infixl" "*" 7 )
-,
-    ( ":defsig" "=="
-        ( ":infix" "->" "field" ( ":infix" "->" "field" "bool" ) ) )
-,
-    ( ":defun" "==" () ( ":primitive" "Circuit.eq" ) )
-,
-    ( "declare" "infixl" "==" 2 )
-,
-    ( ":defsig" "x" "field" )
-,
-    ( ":defun" "x" () 3 )
+    ( ":defun" "verySimpleTerm" () ( "One" 0 ) )
 ,
     ( "type"
-        ( "Bar" ":type" "ty" ) ()
+        ( "bar" ":type" "ty" ) ()
         ( "P" "field" "field" )
         ( "Q" "field" "field" "field" ) )
 ,
-    ( ":defsig" "t" ( ":infix" "->" "field" "field" ) )
+    ( ":defsig" "patternMatch" ( ":infix" "->" "bar" "field" ) )
 ,
-    ( ":defun" "t" ( "x" ) ( ":infix" "+" "x" 5 ) )
-,
-    ( ":defsig" "norm" ( ":infix" "->" "Bar" "field" ) )
-,
-    ( ":defun" "norm"
+    ( ":defun" "patternMatch"
         ( ( "P" "x" "y" ) )
         ( ":infix" "^" "x" ( ":infix" "+" 2 ( ":infix" "^" "y" 2 ) ) ) )
 ,
-    ( ":defun" "norm"
+    ( ":defun" "patternMatch"
         ( ( "Q" "x" "y" "z" ) )
         ( ":infix" "^" "x"
             ( ":infix" "+" 2
                 ( ":infix" "^" "y"
                     ( ":infix" "+" 2 ( ":infix" "^" "z" 2 ) ) ) ) ) )
 ,
+    ( "type"
+        ( "functionTypeInConstructor" ":type" "ty" ) ()
+        ( "FTIC_Left" "field" )
+        ( "FTIC_Right" ( ":infix" "->" "field" "field" ) ) )
+,
+    ( ":defsig" "fticTestFunc" ( ":infix" "->" "field" "field" ) )
+,
+    ( ":defun" "fticTestFunc" ( "x" ) "x" )
+,
+    ( ":defsig" "fticTestTerm" "functionTypeInConstructor" )
+,
+    ( ":defun" "fticTestTerm" () ( "FTIC_Right" "fticTestFunc" ) )
+,
+    ( "type" "sExpField" ()
+        ( "Atom" "field" )
+        ( "SPair" "sExpField" "sExpField" ) )
+,
+    ( ":defsig" "s1" "sExpField" )
+,
+    ( ":defun" "s1" ()
+        ( "SPair"
+            ( ":paren" ( "Atom" 1 ) )
+            ( ":paren"
+                ( "SPair"
+                    ( ":paren"
+                        ( "SPair"
+                            ( ":paren" ( "Atom" 2 ) )
+                            ( ":paren" ( "Atom" 3 ) ) ) )
+                    ( ":paren" ( "Atom" 4 ) ) ) ) ) )
+,
+    ( ":defsig" "ssize" ( ":infix" "->" "sExpField" "field" ) )
+,
+    ( ":defun" "ssize" ( ( "Atom" "x" ) ) 1 )
+,
+    ( ":defun" "ssize"
+        ( ( "SPair" "x" "y" ) )
+        ( ":infix" "+" ( "ssize" "x" ) ( "ssize" "y" ) ) )
+,
     ( ":defsig" "main" "field" )
 ,
-    ( ":defun" "main" () 3 ) ]
+    ( ":defun" "main" ()
+        ( ":let-match" "vst"
+            ( () "verySimpleTerm" )
+            ( ":let-match" "pm"
+                ( () ( "patternMatch" ( ":paren" ( "Q" 0 1 2 ) ) ) )
+                ( ":let-match" "ftict"
+                    ( () "fticTestTerm" )
+                    ( ":let-match" "sexpTest"
+                        ( () ( "ssize" "s1" ) ) 3 ) ) ) ) ) ]

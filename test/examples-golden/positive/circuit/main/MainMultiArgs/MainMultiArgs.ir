@@ -1,63 +1,12 @@
 ( fromList []
 , fromList
     [
-        ( "MainMultArgs" :| [ "+" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "MainMultArgs" :| [ "+" ]
-                , rawFunUsage = GOmega
-                , rawFunType = Pi Omega
-                    ( Elim
-                        ( Free
-                            ( Global
-                                ( "Prelude" :|
-                                    [ "Circuit"
-                                    , "field"
-                                    ]
-                                )
-                            ) ()
-                        ) ()
-                    )
-                    ( Pi Omega
-                        ( Elim
-                            ( Free
-                                ( Global
-                                    ( "Prelude" :|
-                                        [ "Circuit"
-                                        , "field"
-                                        ]
-                                    )
-                                ) ()
-                            ) ()
-                        )
-                        ( Elim
-                            ( Free
-                                ( Global
-                                    ( "Prelude" :|
-                                        [ "Circuit"
-                                        , "field"
-                                        ]
-                                    )
-                                ) ()
-                            ) ()
-                        ) ()
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim PAdd ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
         ( "MainMultArgs" :| [ "main" ]
         , RawGFunction
             ( RawFunction
                 { rawFunName = "MainMultArgs" :| [ "main" ]
-                , rawFunUsage = GOmega
-                , rawFunType = Pi Omega
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
                     ( Elim
                         ( Free
                             ( Global
@@ -69,7 +18,7 @@
                             ) ()
                         ) ()
                     )
-                    ( Pi Omega
+                    ( Pi SAny
                         ( Elim
                             ( Free
                                 ( Global
@@ -104,7 +53,12 @@
                             ( App
                                 ( Free
                                     ( Global
-                                        ( "MainMultArgs" :| [ "+" ] )
+                                        ( "Prelude" :|
+                                            [ "Circuit"
+                                            , "Field"
+                                            , "+"
+                                            ]
+                                        )
                                     ) ()
                                 )
                                 ( Elim

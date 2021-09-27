@@ -17,11 +17,15 @@ import Juvix.Core.Parameterisation
 import Juvix.Library
 import qualified Juvix.Library.PrettyPrint as PP
 
+-- | Errors used throughout the pipeline.
 data PipelineError primTy primVal compErr
   = InternalInconsistencyError Text
-  | TypecheckerError (Typed.TypecheckError primTy primVal)
+  | -- | Currently, we exit with this when a user program doesn't typecheck.
+    --   I expect the long-term plan is to convert it to a human-readable
+    --   error.
+    TypecheckerError (Typed.TypecheckError primTy primVal)
   | -- EACError (EAC.Errors primTy primVal)
-    ErasureError (Erasure.Error primTy (TypedPrim primTy primVal))
+    ErasureError (Erasure.Error (KindedType primTy) (TypedPrim primTy primVal))
   | PrimError compErr
   deriving (Generic)
 
@@ -29,19 +33,18 @@ deriving instance
   ( Show primTy,
     Show primVal,
     Show compErr,
-    Show (Arg primTy),
-    Show (Arg (Typed.Prim primTy primVal)),
-    Show (ApplyErrorExtra primTy),
-    Show (ApplyErrorExtra (Typed.Prim primTy primVal))
+    Show (PrimApplyError primTy),
+    Show (PrimApplyError primVal)
   ) =>
   Show (PipelineError primTy primVal compErr)
 
 type instance PP.Ann (PipelineError _ _ _) = HR.PPAnn
 
 instance
-  ( HR.PrettyText compErr,
-    HR.PrettyText (ApplyErrorExtra primTy),
-    HR.PrettyText (ApplyErrorExtra (TypedPrim primTy primVal)),
+  ( HR.PrettyText' compErr,
+    HR.PrettyText' (PrimApplyError primTy),
+    HR.PrettyText' (ApplyErrorExtra primTy),
+    HR.PrettyText' (ApplyErrorExtra (TypedPrim primTy primVal)),
     HR.PrimPretty primTy (TypedPrim primTy primVal),
     HR.PrimPretty (Arg primTy) (Arg (TypedPrim primTy primVal)),
     HR.PrimPretty1 primVal
@@ -59,6 +62,7 @@ data PipelineLog primTy primVal
   | LogRanZ3 Double
   deriving (Show, Generic)
 
+-- | Map from a term to a formula of Elementary Affine Logic (EAL).
 -- compErr serves to resolve the compilation error type
 -- needed to promote a backend specific compilation error
 data TermAssignment primTy primVal compErr = Assignment
@@ -67,6 +71,7 @@ data TermAssignment primTy primVal compErr = Assignment
   }
   deriving (Show, Generic)
 
+-- | A 'TermAssignment' additionally annotated with a type.
 data AssignWithType primTy primVal compErr = WithType
   { termAssign :: TermAssignment primTy primVal compErr,
     type' :: EC.Type primTy

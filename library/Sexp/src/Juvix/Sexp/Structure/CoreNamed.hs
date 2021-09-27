@@ -30,9 +30,10 @@
 --        can automatically fill in this meta data
 module Juvix.Sexp.Structure.CoreNamed where
 
-import Juvix.Library hiding (Meta, fromInteger, toInteger)
+import Juvix.Library hiding (Field, Meta, fromInteger, toInteger)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import Juvix.Sexp.Structure
 import Juvix.Sexp.Structure.Helpers
 
 newtype Star = Star {starUniverse :: Integer} deriving (Show)
@@ -113,10 +114,27 @@ data RawFunClause = RawFunClause
   }
   deriving (Show)
 
+data Field = Field
+  { fieldName :: NameSymbol.T,
+    fieldUsage :: Sexp.T,
+    fieldTy :: Sexp.T
+  }
+  deriving (Show)
+
+newtype RecordTy = RecordTy
+  { recordTyFields :: [Field]
+  }
+  deriving (Show)
+
+data Lookup = Lookup
+  { lookupBase :: Sexp.T,
+    lookupNames :: [Symbol]
+  }
+  deriving (Show)
+
 --------------------------------------------------------------------------------
 -- Automatically Generated code
 --------------------------------------------------------------------------------
-
 ----------------------------------------
 -- Star
 ----------------------------------------
@@ -144,6 +162,10 @@ fromStar :: Star -> Sexp.T
 fromStar (Star integer1) =
   Sexp.list [Sexp.atom nameStar, fromInteger integer1]
 
+instance Structure Star where
+  to = toStar
+  from = fromStar
+
 ----------------------------------------
 -- PrimTy
 ----------------------------------------
@@ -170,6 +192,10 @@ fromPrimTy :: PrimTy -> Sexp.T
 fromPrimTy (PrimTy sexp1) =
   Sexp.list [Sexp.atom namePrimTy, sexp1]
 
+instance Structure PrimTy where
+  to = toPrimTy
+  from = fromPrimTy
+
 ----------------------------------------
 -- Prim
 ----------------------------------------
@@ -195,6 +221,10 @@ toPrim form
 fromPrim :: Prim -> Sexp.T
 fromPrim (Prim sexp1) =
   Sexp.list [Sexp.atom namePrim, sexp1]
+
+instance Structure Prim where
+  to = toPrim
+  from = fromPrim
 
 ----------------------------------------
 -- Pi
@@ -223,6 +253,10 @@ fromPi :: Pi -> Sexp.T
 fromPi (Pi binder1 sexp2) =
   Sexp.list [Sexp.atom namePi, fromBinder binder1, sexp2]
 
+instance Structure Pi where
+  to = toPi
+  from = fromPi
+
 ----------------------------------------
 -- Binder
 ----------------------------------------
@@ -239,6 +273,10 @@ toBinder form =
 fromBinder :: Binder -> Sexp.T
 fromBinder (Binder nameSymbol1 sexp2 sexp3) =
   Sexp.list [fromNameSymbol nameSymbol1, sexp2, sexp3]
+
+instance Structure Binder where
+  to = toBinder
+  from = fromBinder
 
 ----------------------------------------
 -- Lam
@@ -267,6 +305,10 @@ fromLam :: Lam -> Sexp.T
 fromLam (Lam nameSymbol1 sexp2) =
   Sexp.list [Sexp.atom nameLam, fromNameSymbol nameSymbol1, sexp2]
 
+instance Structure Lam where
+  to = toLam
+  from = fromLam
+
 ----------------------------------------
 -- Sigma
 ----------------------------------------
@@ -294,6 +336,10 @@ fromSigma :: Sigma -> Sexp.T
 fromSigma (Sigma binder1 sexp2) =
   Sexp.list [Sexp.atom nameSigma, fromBinder binder1, sexp2]
 
+instance Structure Sigma where
+  to = toSigma
+  from = fromSigma
+
 ----------------------------------------
 -- Pair
 ----------------------------------------
@@ -319,6 +365,10 @@ toPair form
 fromPair :: Pair -> Sexp.T
 fromPair (Pair sexp1 sexp2) =
   Sexp.list [Sexp.atom namePair, sexp1, sexp2]
+
+instance Structure Pair where
+  to = toPair
+  from = fromPair
 
 ----------------------------------------
 -- Let
@@ -347,6 +397,10 @@ fromLet :: Let -> Sexp.T
 fromLet (Let binder1 sexp2) =
   Sexp.list [Sexp.atom nameLet, fromBinder binder1, sexp2]
 
+instance Structure Let where
+  to = toLet
+  from = fromLet
+
 ----------------------------------------
 -- Var
 ----------------------------------------
@@ -364,6 +418,10 @@ fromVar :: Var -> Sexp.T
 fromVar (Var nameSymbol1) =
   Sexp.list [fromNameSymbol nameSymbol1]
 
+instance Structure Var where
+  to = toVar
+  from = fromVar
+
 ----------------------------------------
 -- App
 ----------------------------------------
@@ -379,6 +437,10 @@ toApp form =
 fromApp :: App -> Sexp.T
 fromApp (App sexp1 sexp2) =
   Sexp.list [sexp1, sexp2]
+
+instance Structure App where
+  to = toApp
+  from = fromApp
 
 ----------------------------------------
 -- Ann
@@ -407,6 +469,10 @@ fromAnn :: Ann -> Sexp.T
 fromAnn (Ann sexp1 meta2 sexp3) =
   Sexp.list [Sexp.atom nameAnn, sexp1, fromMeta meta2, sexp3]
 
+instance Structure Ann where
+  to = toAnn
+  from = fromAnn
+
 ----------------------------------------
 -- Meta
 ----------------------------------------
@@ -424,18 +490,89 @@ fromMeta :: Meta -> Sexp.T
 fromMeta (Meta sexp1 integer2) =
   Sexp.list [sexp1, fromInteger integer2]
 
+instance Structure Meta where
+  to = toMeta
+  from = fromMeta
+
 ----------------------------------------
--- RawFunClause
+-- Field
 ----------------------------------------
 
-toRawFunClause :: Sexp.T -> Maybe RawFunClause
-toRawFunClause form =
+toField :: Sexp.T -> Maybe Field
+toField form =
   case form of
-    sexp1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> sexp4 Sexp.:> Sexp.Nil ->
-      RawFunClause sexp1 sexp2 sexp3 sexp4 |> Just
+    nameSymbol1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil
+      | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+        Field nameSymbol1 sexp2 sexp3 |> Just
     _ ->
       Nothing
 
-fromRawFunClause :: RawFunClause -> Sexp.T
-fromRawFunClause (RawFunClause sexp1 sexp2 sexp3 sexp4) =
-  Sexp.list [sexp1, sexp2, sexp3, sexp4]
+fromField :: Field -> Sexp.T
+fromField (Field nameSymbol1 sexp2 sexp3) =
+  Sexp.list [fromNameSymbol nameSymbol1, sexp2, sexp3]
+
+instance Structure Field where
+  to = toField
+  from = fromField
+
+----------------------------------------
+-- RecordTy
+----------------------------------------
+
+nameRecordTy :: NameSymbol.T
+nameRecordTy = ":record-ty"
+
+isRecordTy :: Sexp.T -> Bool
+isRecordTy (Sexp.Cons form _) = Sexp.isAtomNamed form nameRecordTy
+isRecordTy _ = False
+
+toRecordTy :: Sexp.T -> Maybe RecordTy
+toRecordTy form
+  | isRecordTy form =
+    case form of
+      _nameRecordTy Sexp.:> field1
+        | Just field1 <- toField `fromStarList` field1 ->
+          RecordTy field1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromRecordTy :: RecordTy -> Sexp.T
+fromRecordTy (RecordTy field1) =
+  Sexp.listStar [Sexp.atom nameRecordTy, fromField `toStarList` field1]
+
+instance Structure RecordTy where
+  to = toRecordTy
+  from = fromRecordTy
+
+----------------------------------------
+-- Lookup
+----------------------------------------
+
+nameLookup :: NameSymbol.T
+nameLookup = ":lookup"
+
+isLookup :: Sexp.T -> Bool
+isLookup (Sexp.Cons form _) = Sexp.isAtomNamed form nameLookup
+isLookup _ = False
+
+toLookup :: Sexp.T -> Maybe Lookup
+toLookup form
+  | isLookup form =
+    case form of
+      _nameLookup Sexp.:> sexp1 Sexp.:> symbol2
+        | Just symbol2 <- toSymbol `fromStarList` symbol2 ->
+          Lookup sexp1 symbol2 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromLookup :: Lookup -> Sexp.T
+fromLookup (Lookup sexp1 symbol2) =
+  Sexp.listStar [Sexp.atom nameLookup, sexp1, fromSymbol `toStarList` symbol2]
+
+instance Structure Lookup where
+  to = toLookup
+  from = fromLookup

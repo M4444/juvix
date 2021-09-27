@@ -18,7 +18,7 @@ import Prelude (error)
 -- N.B. doesn't deal with pattern variables since HR doesn't have them.
 -- 'transformTermIR' does that.
 transformTermHR ::
-  (Show primTy, Show primVal, ReduceEff HR.T primTy primVal m) =>
+  (Show primTy, Show primVal, ReduceEff HR.T primTy primVal m, HasClosure m) =>
   NameSymbol.Mod ->
   Sexp.T ->
   m (HR.Term primTy primVal)
@@ -85,7 +85,7 @@ transformTermHR q p@(name Sexp.:> form)
         args <- traverse parseVarArg xs
         cbody <- transformTermHR q cbody
         rhs <- toElim (Sexp.Cons (Sexp.atom ":let-match=") e) $ foldr HR.Lam cbody args
-        HR.Let Usage.Omega atomName rhs <$> transformTermHR q body
+        HR.Let Usage.SAny atomName rhs <$> transformTermHR q body
     transformSimpleLet (Sexp.List [_name, fun, _body]) =
       throwFF $ ExprUnimplemented fun
     transformSimpleLet _ = error "malformed let"
@@ -116,7 +116,8 @@ pattern NamedArgTerm x ty <-
 transformApplication ::
   ( Show primVal,
     Show primTy,
-    ReduceEff HR.T primTy primVal m
+    ReduceEff HR.T primTy primVal m,
+    HasClosure m
   ) =>
   NameSymbol.Mod ->
   Sexp.T ->
@@ -146,6 +147,47 @@ transformApplication q a@(f Sexp.:> args)
         ~[xa, b] <- nargs s 2 xs
         (x, a) <- namedArg q xa
         HR.Sig π x a <$> transformTermHR q b
+      CatProductS -> do
+        ~[a, b] <- nargs s 2 xs
+        a <- transformTermHR q a
+        b <- transformTermHR q b
+        pure $ HR.CatProduct a b
+      CatCoproductS -> do
+        ~[a, b] <- nargs s 2 xs
+        a <- transformTermHR q a
+        b <- transformTermHR q b
+        pure $ HR.CatCoproduct a b
+      CatProductIntroS -> do
+        ~[a, b] <- nargs s 2 xs
+        a <- transformTermHR q a
+        b <- transformTermHR q b
+        pure $ HR.CatProductIntro a b
+      CatProductElimLeftS -> do
+        ~[t, a] <- nargs s 2 xs
+        t <- transformTermHR q t
+        a <- transformTermHR q a
+        pure $ HR.CatProductElimLeft t a
+      CatProductElimRightS -> do
+        ~[t, a] <- nargs s 2 xs
+        t <- transformTermHR q t
+        a <- transformTermHR q a
+        pure $ HR.CatProductElimRight t a
+      CatCoproductIntroLeftS -> do
+        ~[a] <- nargs s 1 xs
+        a <- transformTermHR q a
+        pure $ HR.CatCoproductIntroLeft a
+      CatCoproductIntroRightS -> do
+        ~[a] <- nargs s 1 xs
+        a <- transformTermHR q a
+        pure $ HR.CatCoproductIntroRight a
+      CatCoproductElimS -> do
+        ~[t1, t2, c, a, b] <- nargs s 5 xs
+        t1 <- transformTermHR q t1
+        t2 <- transformTermHR q t2
+        c <- transformTermHR q c
+        a <- transformTermHR q a
+        b <- transformTermHR q b
+        pure $ HR.CatCoproductElim t1 t2 c a b
       ColonS -> do
         ~[a, b] <- nargs s 2 xs
         a <- transformTermHR q a
@@ -155,8 +197,8 @@ transformApplication q a@(f Sexp.:> args)
       TypeS -> do
         ~[i] <- nargs s 1 xs
         HR.Star <$> transformUniverse i
-      OmegaS ->
-        throwFF UnexpectedOmega
+      SAnyS ->
+        throwFF UnexpectedSAny
     nargs s n xs
       | length xs == n = pure xs
       | otherwise = throwFF $ WrongNumberBuiltinArgs s n args

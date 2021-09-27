@@ -5,6 +5,7 @@
 module Juvix.Core.IR.Evaluator.PatSubst
   ( HasPatSubst (..),
     patSubst,
+    HasPatSubstType (..),
     HasPatSubstTerm (..),
   )
 where
@@ -51,7 +52,7 @@ patSubst ::
   Either Core.PatternVar a
 patSubst = patSubst' 0
 
--- | Class of terms that support pattern substitution, returns an `IR.Term`
+-- | Class of **terms** that support pattern substitution, returns an `IR.Term`
 -- instead of an @a@.
 class HasWeak a => HasPatSubstTerm extT primTy primVal a where
   -- | Substitution of patterns, returns either a substituted term or an
@@ -65,11 +66,25 @@ class HasWeak a => HasPatSubstTerm extT primTy primVal a where
     a ->
     Either Core.PatternVar (Core.Term extT primTy primVal)
 
+-- | Class of **types** that support pattern substitution, returns an `IR.Term`
+-- instead of an @a@.
+class HasWeak a => HasPatSubstType extT primTy primVal a where
+  -- | Substitution of patterns, returns either a substituted term or an
+  -- unbound pattern var.
+  -- TODO: use @validation@ to return all unbound vars
+  patSubstType' ::
+    -- | How many bindings have been traversed so far.
+    Natural ->
+    -- | Mapping of pattern variables to matched subterms.
+    Core.PatternMap (Core.Elim extT primTy primVal) ->
+    a ->
+    Either Core.PatternVar (Core.Term extT primTy primVal)
+
 -- | Constraint for terms and eliminations that support pattern substitution.
 type AllPatSubst ext primTy primVal =
   ( Core.TermAll (HasPatSubst ext primTy primVal) ext primTy primVal,
     Core.ElimAll (HasPatSubst ext primTy primVal) ext primTy primVal,
-    HasPatSubstTerm ext primTy primVal primTy,
+    HasPatSubstType ext primTy primVal primTy,
     HasPatSubstTerm ext primTy primVal primVal
   )
 
@@ -81,7 +96,7 @@ instance
     Core.Star u <$> patSubst' b m a
   patSubst' b m (Core.PrimTy t _) =
     -- FIXME annotation?
-    patSubstTerm' b m t
+    patSubstType' b m t
   patSubst' b m (Core.Prim p _) =
     -- FIXME annotation?
     patSubstTerm' b m p
@@ -98,6 +113,34 @@ instance
       <*> patSubst' b m a
   patSubst' b m (Core.Pair s t a) =
     Core.Pair <$> patSubst' b m s
+      <*> patSubst' b m t
+      <*> patSubst' b m a
+  patSubst' b m (Core.CatProduct s t a) =
+    Core.CatProduct <$> patSubst' b m s
+      <*> patSubst' (succ b) m t
+      <*> patSubst' b m a
+  patSubst' b m (Core.CatCoproduct s t a) =
+    Core.CatCoproduct <$> patSubst' b m s
+      <*> patSubst' (succ b) m t
+      <*> patSubst' b m a
+  patSubst' b m (Core.CatProductIntro s t a) =
+    Core.CatProductIntro <$> patSubst' b m s
+      <*> patSubst' b m t
+      <*> patSubst' b m a
+  patSubst' b m (Core.CatProductElimLeft t s a) =
+    Core.CatProductElimLeft <$> patSubst' b m t <*> patSubst' b m s <*> patSubst' b m a
+  patSubst' b m (Core.CatProductElimRight t s a) =
+    Core.CatProductElimRight <$> patSubst' b m t <*> patSubst' b m s <*> patSubst' b m a
+  patSubst' b m (Core.CatCoproductIntroLeft s a) =
+    Core.CatCoproductIntroLeft <$> patSubst' b m s <*> patSubst' b m a
+  patSubst' b m (Core.CatCoproductIntroRight s a) =
+    Core.CatCoproductIntroRight <$> patSubst' b m s <*> patSubst' b m a
+  patSubst' b m (Core.CatCoproductElim t1 t2 cp s t a) =
+    Core.CatCoproductElim
+      <$> patSubst' b m t1
+      <*> patSubst' b m t2
+      <*> patSubst' b m cp
+      <*> patSubst' b m s
       <*> patSubst' b m t
       <*> patSubst' b m a
   patSubst' b m (Core.UnitTy a) =
@@ -252,7 +295,7 @@ instance
   ) =>
   HasPatSubstTerm
     (OnlyExts.T ext)
-    primTy
+    (Param.KindedType primTy)
     (Param.TypedPrim primTy primVal)
     (Param.TypedPrim primTy primVal)
   where
@@ -262,36 +305,71 @@ instance
   patSubstTerm' _ _ ret@(App.Return {}) =
     pure $ IR.Prim ret
 
--- | Transform a `App.Take` into an `IR.Elim`.
+instance
+  ( HasWeak primTy,
+    HasWeak primVal
+  ) =>
+  HasPatSubstType
+    (OnlyExts.T ext)
+    (Param.KindedType primTy)
+    (Param.TypedPrim primTy primVal)
+    (Param.KindedType primTy)
+  where
+  -- FIXME pat vars can't yet show up here
+  patSubstType' _ _ (App.Cont {fun, args}) =
+    pure $ IR.Elim $ foldl (\f a -> IR.App f $ argToType a) (takeToElimTy fun) args
+  patSubstType' _ _ ret@(App.Return {}) =
+    pure $ IR.PrimTy ret
+
+-- | Transform a `App.Take` into an `IR.Elim` as a type.
+-- TODO: move this function somewhere else?
+takeToElimTy ::
+  App.Take (Param.PrimType Param.Star) primTy ->
+  Core.Elim (OnlyExts.T ext) (Param.KindedType primTy) val
+takeToElimTy (App.Take {type', term}) =
+  let term' = IR.PrimTy (App.Return {retType = type', retTerm = term})
+   in IR.Ann Usage.SAny term' (IR.Star 0) 0
+
+-- | Transform a `App.Arg` into a `IR.Term`.
+-- TODO: move this function somewhere else?
+argToType ::
+  App.Arg (Param.PrimType Param.Star) primTy ->
+  Core.Term (OnlyExts.T ext) (Param.KindedType primTy) primVal
+argToType = \case
+  App.TermArg ret -> IR.PrimTy ret
+  App.BoundArg i -> IR.Elim $ IR.Bound i
+  App.FreeArg x -> IR.Elim $ IR.Free $ Core.Global x
+
+-- | Transform a `App.Take` into an `IR.Elim` as a value.
 -- TODO: move this function somewhere else?
 takeToElim ::
   App.Take (Param.PrimType primTy) primVal ->
-  Core.Elim (OnlyExts.T ext) primTy (Param.TypedPrim primTy primVal)
+  Core.Elim (OnlyExts.T ext) (Param.KindedType primTy) (Param.TypedPrim primTy primVal)
 takeToElim (App.Take {type', term}) =
   let term' = IR.Prim (App.Return {retType = type', retTerm = term})
       ty' = typeToTerm type'
-   in IR.Ann Usage.Omega term' ty' 0
+   in IR.Ann Usage.SAny term' ty' 0
 
 -- | Transform a `App.Arg` into a `IR.Term`.
 -- TODO: move this function somewhere else?
 argToTerm ::
   App.Arg (Param.PrimType primTy) primVal ->
-  Core.Term (OnlyExts.T ext) primTy (Param.TypedPrim primTy primVal)
+  Core.Term (OnlyExts.T ext) (Param.KindedType primTy) (Param.TypedPrim primTy primVal)
 argToTerm = \case
-  App.TermArg (App.Take {type', term}) ->
-    IR.Prim $ App.Return {retType = type', retTerm = term}
+  App.TermArg ret -> IR.Prim ret
   App.BoundArg i -> IR.Elim $ IR.Bound i
   App.FreeArg x -> IR.Elim $ IR.Free $ Core.Global x
 
 -- | Transform a `Param.PrimType` into a `IR.Term`.
 -- TODO: move this function somewhere else?
 typeToTerm ::
-  ( Monoid (Core.XPi ext primTy primVal),
-    Monoid (Core.XPrimTy ext primTy primVal)
+  ( Monoid (Core.XPi ext (Param.KindedType primTy) primVal),
+    Monoid (Core.XPrimTy ext (Param.KindedType primTy) primVal)
   ) =>
   Param.PrimType primTy ->
-  Core.Term ext primTy primVal
+  Core.Term ext (Param.KindedType primTy) primVal
 typeToTerm tys = foldr1 arr $ map prim tys
   where
-    prim ty = Core.PrimTy ty mempty
-    arr s t = Core.Pi Usage.Omega s t mempty
+    star = Param.PrimType $ Param.STAR :| []
+    prim ty = Core.PrimTy (App.Return {retType = star, retTerm = ty}) mempty
+    arr s t = Core.Pi Usage.SAny s t mempty

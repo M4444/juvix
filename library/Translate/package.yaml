@@ -12,19 +12,15 @@ dependencies:
 - base >= 4.11 && < 5
 - standard-library
 - Sexp
-- core
 - frontend
 - Context
-- extensible-data
 - unordered-containers
 - stm-containers
-- list-t
 - lens
 - containers
 - dlist
 - syb
 - megaparsec
-- pretty-simple
 - extra
 
 default-extensions:
@@ -78,17 +74,11 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - bytestring
-    - directory
     - filepath
     - megaparsec
     - pretty-simple
-    - pretty-show
     - Sexp
-    - strict
     - translate
     - tasty
-    - tasty-golden
     - tasty-hunit
-    - tasty-silver
-    - tasty-quickcheck
-    - text
+    - Context

@@ -11,16 +11,16 @@ data BMichelson = BMichelson
   deriving (Eq, Show)
 
 instance HasBackend BMichelson where
-  type Ty BMichelson = Param.PrimTy
+  type Ty BMichelson = Param.RawPrimTy
   type Val BMichelson = Param.RawPrimVal
   type Err BMichelson = Param.CompilationError
 
   stdlibs _ = ["stdlib/Michelson.ju", "stdlib/MichelsonAlias.ju"]
 
-  typecheck ctx = Pipeline.typecheck' ctx Param.michelson Param.Set
+  typecheck ctx = Pipeline.typecheck' ctx Param.michelson
 
   compile out term = do
-    let (res, _logs) = M.compileContract $ ErasedAnn.toRaw term
+    let (res, _logs) = M.compileContract term
     case res of
       Right c -> do
         writeout out $ M.untypedContractToSource (fst c)
@@ -28,12 +28,10 @@ instance HasBackend BMichelson where
 
 compileMichelson ::
   MonadFail f =>
-  Param.AnnTerm
-    Param.PrimTy
-    (ErasedAnn.TypedPrim Param.PrimTy Param.RawPrimVal) ->
+  ErasedAnn.AnnTermT Param.RawPrimTy Param.RawPrimVal ->
   f Text
 compileMichelson term = do
-  let (res, _logs) = M.compileContract $ ErasedAnn.toRaw term
+  let (res, _logs) = M.compileContract term
   case res of
     Right c -> pure $ M.untypedContractToSource (fst c)
     Left err -> Feedback.fail $ show err

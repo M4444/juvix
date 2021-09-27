@@ -14,16 +14,17 @@ transTopLevel (Types.Declaration i) = Sexp.atom "declare" Sexp.:> transDeclarati
 transTopLevel (Types.Signature sig) = Sexp.atom ":defsig" Sexp.:> transSig sig
 transTopLevel (Types.Function f) = transDefun f
 transTopLevel (Types.Effect eff) = transEffect eff
-transTopLevel (Types.Handler h) = transHand h
 transTopLevel (Types.Module m) = transModule m
 transTopLevel Types.TypeClass = Sexp.atom ":type-class"
 transTopLevel (Types.Type t) = transType t
+transTopLevel (Types.Handler h) = transHand h
 
 transExpr :: Types.Expression -> Sexp.T
 transExpr (Types.UniverseName n) = transUniverseExpression n
 transExpr (Types.DeclarationE d) = transDeclarationExpression d
 transExpr (Types.Application p) = transApplication p
 transExpr (Types.NamedTypeE t) = transNamedType t
+transExpr (Types.RecordDec r) = transRecord r
 transExpr (Types.Primitive p) = transPrimitive p
 transExpr (Types.ExpRecord r) = transExpRecord r
 transExpr (Types.RefinedE i) = transTypeRefine i
@@ -34,6 +35,7 @@ transExpr (Types.LetType l) = transLetType l
 transExpr (Types.ModuleE m) = transModuleE m
 transExpr (Types.ArrowE a) = transArrowE a
 transExpr (Types.Lambda l) = transLambda l
+transExpr (Types.EffApp e) = transVia e
 transExpr (Types.Tuple t) = transTuple t
 transExpr (Types.Match m) = transMatch m
 transExpr (Types.Block b) = transBlock b
@@ -98,10 +100,14 @@ transRecord :: Types.Record -> Sexp.T
 transRecord (Types.Record'' fields sig) =
   sigFun (Sexp.listStar [Sexp.atom ":record-d", Sexp.list newName])
   where
-    newName = NonEmpty.toList fields >>= f
+    newName = NonEmpty.toList fields >>| f
       where
-        f (Types.NameType' sig name) =
-          [transName name, transExpr sig]
+        f (Types.NameType' sig name usage) =
+          let newUsage =
+                case usage of
+                  Nothing -> Sexp.list [Sexp.atom ":primitive", Sexp.atom "Builtin.SAny"]
+                  Just usage -> transExpr usage
+           in Sexp.list [transName name, newUsage, transExpr sig]
     sigFun expr =
       case sig of
         Nothing ->
@@ -211,6 +217,14 @@ transOperation :: Types.Operation -> Sexp.T
 transOperation (Types.Op like) = Sexp.list [Sexp.atom ":defop", name, args, body]
   where
     (name, args, body) = transLike False transExpr like
+
+transVia :: Types.EffApp -> Sexp.T
+transVia (Types.Via effappHand effappArg) =
+  Sexp.list
+    [ Sexp.atom ":via",
+      transExpr effappHand,
+      transExpr effappArg
+    ]
 
 --------------------------------------------------------------------------------
 -- Match Expansion
@@ -356,9 +370,21 @@ transDo (Types.Do'' bs) =
 
 transDoBody :: Types.DoBody -> Sexp.T
 transDoBody (Types.DoBody Nothing expr) =
-  transExpr expr
+  transComp expr
 transDoBody (Types.DoBody (Just n) expr) =
-  Sexp.list [Sexp.atom "%<-", Sexp.atom (NameSymbol.fromSymbol n), transExpr expr]
+  Sexp.list [Sexp.atom ":<-", Sexp.atom (NameSymbol.fromSymbol n), transComp expr]
+
+transComp :: Types.Computation -> Sexp.T
+transComp (Types.DoOp op) = transDoOp op
+transComp (Types.DoPure op) = transDoPure op
+
+transDoOp :: Types.DoOp -> Sexp.T
+transDoOp (Types.DoOp' name args) =
+  Sexp.list [Sexp.atom ":do-op", transExpr name, Sexp.list (NonEmpty.toList (transExpr <$> args))]
+
+transDoPure :: Types.DoPure -> Sexp.T
+transDoPure (Types.DoPure' arg) =
+  Sexp.list [Sexp.atom ":do-pure", transExpr arg]
 
 transArrowE :: Types.ArrowExp -> Sexp.T
 transArrowE (Types.Arr' l u r) =

@@ -8,6 +8,7 @@ where
 
 import qualified Data.IntMap.Strict as IntMap
 import Data.List.NonEmpty ((<|))
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Core.Application as App
 import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.Base.Types as Core
@@ -35,7 +36,10 @@ leftoversOk (Leftovers {loLocals, loPatVars}) =
   all leftoverOk loLocals && all leftoverOk loPatVars
 
 leftoverOk :: Usage.T -> Bool
-leftoverOk ρ = ρ == Usage.Omega || ρ == mempty
+leftoverOk ρ = ρ == Usage.SAny || ρ == mempty
+
+star0Ann :: Usage.T -> Typed.AnnotationT IR.T primTy primVal
+star0Ann σ = Typed.Annotation σ (IR.VStar 0)
 
 -- | Checks a 'Term against an annotation and returns a decorated term if
 -- successful.
@@ -47,9 +51,9 @@ typeTerm ::
     Show ext,
     ShowExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -69,9 +73,9 @@ typeTermWith ::
     Show ext,
     ShowExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -96,9 +100,9 @@ typeElim ::
     Show ext,
     ShowExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -119,9 +123,9 @@ typeElimWith ::
     Show ext,
     ShowExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -155,9 +159,9 @@ typeTerm' ::
     Show primTy,
     (Show (Core.ElimX ext primTy primVal)),
     Env.CanInnerTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -175,8 +179,12 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       pure $ Typed.Star i ann
     Core.PrimTy t _ -> do
       requireZero σ
-      void $ requireStar ty
-      pure $ Typed.PrimTy t ann
+      void $ requirePrimStars (Param.primArity t) ty
+      let t' = App.Return {
+        retTerm = t,
+        retType = Param.getPrimTypeKind t
+      }
+      pure $ Typed.PrimTy t' ann
     Core.Prim p _ -> do
       p' <- typePrim p ty
       pure $ Typed.Prim p' $ Typed.Annotation σ ty
@@ -208,6 +216,56 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       tAnn <- Typed.Annotation σ <$> substApp b s'
       t' <- typeTerm' t tAnn
       pure $ Typed.Pair s' t' ann
+    Core.CatProduct a b _ -> do
+      requireZero σ
+      void $ requireStar ty
+      a' <- typeTerm' a ann
+      b' <- typeTerm' b ann
+      pure $ Typed.CatProduct a' b' ann
+    Core.CatCoproduct a b _ -> do
+      requireZero σ
+      void $ requireStar ty
+      a' <- typeTerm' a ann
+      b' <- typeTerm' b ann
+      pure $ Typed.CatCoproduct a' b' ann
+    Core.CatProductIntro s t _ -> do
+      (π, a, b) <- requireCatProduct ty
+      let sAnn = Typed.Annotation (σ <.> π) a
+      let tAnn = Typed.Annotation (σ <.> π) b
+      s' <- typeTerm' s sAnn
+      t' <- typeTerm' t tAnn
+      pure $ Typed.CatProductIntro s' t' ann
+    Core.CatProductElimLeft a s _ -> do
+      a' <- typeTerm' a (star0Ann σ)
+      av <- evalTC a'
+      let sAnn = Typed.Annotation σ (IR.VCatProduct ty av)
+      s' <- typeTerm' s sAnn
+      pure $ Typed.CatProductElimLeft a' s' ann
+    Core.CatProductElimRight a s _ -> do
+      a' <- typeTerm' a (star0Ann σ)
+      av <- evalTC a'
+      let sAnn = Typed.Annotation σ (IR.VCatProduct av ty)
+      s' <- typeTerm' s sAnn
+      pure $ Typed.CatProductElimRight a' s' ann
+    Core.CatCoproductIntroLeft s _ -> do
+      (π, a, _b) <- requireCatCoproduct ty
+      let sAnn = Typed.Annotation (σ <.> π) a
+      s' <- typeTerm' s sAnn
+      pure $ Typed.CatCoproductIntroLeft s' ann
+    Core.CatCoproductIntroRight s _ -> do
+      (π, _a, b) <- requireCatCoproduct ty
+      let sAnn = Typed.Annotation (σ <.> π) b
+      s' <- typeTerm' s sAnn
+      pure $ Typed.CatCoproductIntroRight s' ann
+    Core.CatCoproductElim a b cp s t _ -> do
+      a' <- typeTerm' a (star0Ann σ)
+      av <- evalTC a'
+      b' <- typeTerm' b (star0Ann σ)
+      bv <- evalTC b'
+      cp' <- typeTerm' cp (Typed.Annotation σ (IR.VCatCoproduct av bv))
+      s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av ty))
+      t' <- typeTerm' t (Typed.Annotation σ (IR.VPi σ bv ty))
+      pure $ Typed.CatCoproductElim a' b' cp' s' t' ann
     Core.UnitTy _ -> do
       requireZero σ
       void $ requireStar ty
@@ -238,9 +296,9 @@ typeElim' ::
     Show ext,
     ShowExt ext primTy primVal,
     Env.CanInnerTC' ext primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -321,6 +379,19 @@ requireStar ::
 requireStar (IR.VStar j) = pure j
 requireStar ty = Error.throwTC (Error.ShouldBeStar ty)
 
+-- | Given the arity of a type, require all of them to be Star. We expect the
+-- arguments to be written in a right-associative way, e.g: @* -> (* -> *)@.
+requirePrimStars ::
+  Error.HasThrowTC' IR.T ext primTy primVal m =>
+  Natural ->
+  Typed.ValueT IR.T primTy primVal ->
+  m Core.Universe
+requirePrimStars 0 ty = requireStar ty
+requirePrimStars n ty = do
+  (π, l, r) <- requirePi ty
+  void $ requireStar l
+  requirePrimStars (n - 1) r
+
 requireUniverseLT ::
   Error.HasThrowTC' IR.T ext primTy primVal m =>
   Core.Universe ->
@@ -344,11 +415,20 @@ toPrimTy ::
   Env.CanInnerTC' ext primTy primVal m =>
   Typed.ValueT IR.T primTy primVal ->
   m (Param.PrimType primTy)
-toPrimTy ty = maybe (Error.throwTC $ Error.NotPrimTy ty) (pure . Param.PrimType) $ go ty
+toPrimTy ty =
+  maybe
+    (Error.throwTC $ Error.NotPrimTy ty)
+    (pure . Param.PrimType)
+    $ go ty
   where
-    go (IR.VPrimTy t) = pure $ t :| []
-    go (IR.VPi _ (IR.VPrimTy s) t) = (s <|) <$> go t
+    go (IR.VPrimTy t) = (:| []) <$> groundPrimTy t
+    go (IR.VPi _ (IR.VPrimTy s) t) = (<|) <$> groundPrimTy s <*> go t
     go _ = empty
+
+-- FIXME support variables too
+groundPrimTy :: Alternative f => Typed.PrimTy primTy -> f primTy
+groundPrimTy (App.Cont {}) = empty
+groundPrimTy (App.Return {retTerm}) = pure retTerm
 
 type TyParts primTy primVal =
   (Usage.T, Typed.ValueT IR.T primTy primVal, Typed.ValueT IR.T primTy primVal)
@@ -366,6 +446,20 @@ requireSig ::
   m (TyParts primTy primVal)
 requireSig (IR.VSig π a b) = pure (π, a, b)
 requireSig ty = Error.throwTC (Error.ShouldBePairType ty)
+
+requireCatProduct ::
+  Error.HasThrowTC' IR.T ext primTy primVal m =>
+  Typed.ValueT IR.T primTy primVal ->
+  m (TyParts primTy primVal)
+requireCatProduct (IR.VCatProduct a b) = pure (Usage.SAny, a, b)
+requireCatProduct ty = Error.throwTC (Error.ShouldBeCatProductType ty)
+
+requireCatCoproduct ::
+  Error.HasThrowTC' IR.T ext primTy primVal m =>
+  Typed.ValueT IR.T primTy primVal ->
+  m (TyParts primTy primVal)
+requireCatCoproduct (IR.VCatCoproduct a b) = pure (Usage.SAny, a, b)
+requireCatCoproduct ty = Error.throwTC (Error.ShouldBeCatCoproductType ty)
 
 requireUnitTy ::
   Error.HasThrowTC' IR.T ext primTy primVal m =>
@@ -425,9 +519,16 @@ usePatVar π var = do
     Nothing -> do
       Error.throwTC (Error.UnboundPatVar var)
 
+type TCEvalError primTy primVal =
+  Eval.Error
+    IR.T
+    Typed.T
+    (Param.KindedType primTy)
+    (Param.TypedPrim primTy primVal)
+
 liftEval ::
   Error.HasThrowTC' extV extT primTy primVal m =>
-  Either (Eval.Error IR.T Typed.T primTy (Param.TypedPrim primTy primVal)) a ->
+  Either (TCEvalError primTy primVal) a ->
   m a
 liftEval = either (Error.throwTC . Error.EvalError) pure
 
@@ -436,37 +537,36 @@ substApp ::
     Error.HasThrowTC' IR.T extT primTy primVal m,
     Env.HasGlobals primTy primVal m,
     Eval.HasWeak primVal,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
     Env.PrimSubstValue primTy primVal,
     Env.PrimPatSubstTerm primTy primVal,
-    Eval.HasPatSubstTerm
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
-      primTy
+      primTy,
+    Show primVal,
+    Show primTy
   ) =>
   Typed.ValueT IR.T primTy primVal ->
   Typed.Term primTy primVal ->
   m (Typed.ValueT IR.T primTy primVal)
 substApp ty arg = do
   arg' <- evalTC arg
-  liftEval $ Eval.substV arg' ty
+  liftEval $ first Eval.ErrorValue (Eval.substV arg' ty)
 
 evalTC ::
   ( Error.HasThrowTC' IR.T ext primTy primVal m,
     Env.HasGlobals primTy primVal m,
-    Param.CanApply primTy,
-    Param.CanApply (Param.TypedPrim primTy primVal),
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
     Eval.HasWeak primTy,
     Eval.HasWeak primVal,
     Env.PrimSubstValue primTy primVal,
     Env.PrimPatSubstTerm primTy primVal,
-    Eval.HasPatSubstTerm
-      (OnlyExts.T Typed.T)
-      primTy
-      (Param.TypedPrim primTy primVal)
-      primTy
+    Show primVal,
+    Show primTy
   ) =>
   Typed.Term primTy primVal ->
   m (Typed.ValueT IR.T primTy primVal)

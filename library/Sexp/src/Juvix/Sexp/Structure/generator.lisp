@@ -1,4 +1,4 @@
-;;; Hello, this is code that generators the functions in Structure.hs
+;;; Hello, this is code that generates the functions in Structure.hs
 ;;; Please ignore this file if you don't want to generate any more.
 ;;; However, if you want to generate more please provide a spec like
 
@@ -75,11 +75,12 @@ is replaced with replacement."
 and a rhs that may contain a guard, so no = is assumed for the rhs"
   (indent-new-lines-by
    2
-   (if (listp args)
-       (format nil "~a ~{~a ~}~a" name args rhs)
-       (if (equalp (elt rhs 0) #\newline)
-           (format nil "~a ~a~a" name args rhs)
-           (format nil "~a ~a ~a" name args rhs)))))
+   (cond ((listp args)
+          (format nil "~a ~{~a ~}~a" name args rhs))
+         ((equalp (elt rhs 0) #\newline)
+          (format nil "~a ~a~a" name args rhs))
+         (t
+          (format nil "~a ~a ~a" name args rhs)))))
 
 (defun body (body &optional (new-line t))
   "constructs a haskell definition body"
@@ -124,8 +125,8 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
         (t
          (format nil
                  (if new-line
-                     "~%| ~a,~%~{  ~a~^~% ~} ->~%  ~a"
-                     "~%| ~a,~%~{  ~a~^~% ~} -> ~a")
+                     "~%| ~a,~%~{  ~a~^,~% ~} ->~%  ~a"
+                     "~%| ~a,~%~{  ~a~^,~% ~} -> ~a")
                  (car guards)
                  (cdr guards)
                  (indent-new-lines-by 2 body)))))
@@ -153,6 +154,15 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 (defun deconstruct-constructor (con-name field-names)
   "generates a pattern match form of a constructor"
   (format nil "(~a ~a)" con-name (sep-list-by-space field-names)))
+
+(defun type-class-of (type-class-name name &rest instances)
+  (format nil
+          "instance ~A ~A where~A"
+          type-class-name
+          name
+          (indent-new-lines-by
+           2
+           (format nil "~%~{~A~^~%~}" instances))))
 
 ;; ***********************************************************
 ;; Generator Helpers
@@ -261,6 +271,12 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
                   (fun from-name
                        (deconstruct-constructor con-name arg-names)
                        (body from-body))
+                  ""
+                  ;; Type class Instance
+                  (type-class-of "Structure"
+                                 con-name
+                                 (fun "to" nil (body (to-name con-name) nil))
+                                 (fun "from" nil (body (from-name con-name) nil)))
                   "")))))))
 
 (defun frontend-types ()
@@ -294,6 +310,8 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "NotPunned" '("sexp" "sexp") nil)
 
+  (generate-haskell "NameUsage" (repeat 3 "sexp") nil)
+
   (generate-haskell "Record" '("nameBind") ":record" :list-star t)
 
   (generate-haskell "Infix" (repeat 3 "sexp") ":infix")
@@ -308,11 +326,31 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "DefModule" (repeat 3 "sexp") ":defmodule" :list-star t)
 
+  (generate-haskell "Do" '("sexp") ":do" :list-star t)
+
   (generate-haskell "LetModule" (repeat 4 "sexp") ":let-mod")
 
   (generate-haskell "Effect" (repeat 2 "sexp") ":defeff")
 
-  (generate-haskell "DefHandler" (repeat 2 "sexp") ":defHandler"))
+  (generate-haskell "DefHandler" (repeat 2 "sexp") ":defhandler")
+
+  (generate-haskell "LetRet" (repeat 2 "sexp") ":defret")
+
+  (generate-haskell "LetOp" (repeat 3 "sexp") ":defop")
+
+  (generate-haskell "RecordDec" '("nameUsage") ":record-d" :list-star t)
+
+  (generate-haskell "Primitive" '("sexp") ":primitive")
+
+  (generate-haskell "Binder" '("nameSymbol" "sexp") ":<-")
+
+  (generate-haskell "DoDeep" '("doBodyFull") ":do" :list-star t)
+
+  (generate-haskell "DoPure" '("sexp") ":do-pure")
+
+  (generate-haskell "DoOp" (repeat 2 "sexp") ":do-op")
+
+  (generate-haskell "Via" (repeat 2 "sexp") ":via"))
 
 (defun transition-types ()
   (generate-haskell "ArgBody" '("sexp" "sexp") nil)
@@ -325,14 +363,17 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "DefunSigMatch" '("sexp" "sexp" "argBody") ":defsig-match" :list-star t)
 
-  ;; bodys here, as there are multiple!
   (generate-haskell "LetMatch" '("sexp" "argBodys" "sexp") ":let-match")
 
-  (generate-haskell "LetHandler" (repeat 3 "sexp") ":let-handler")
-
   (generate-haskell "RecordNoPunned" '("notPunnedGroup") ":record-no-pun"
-                  :list-star t
-                  :un-grouped t))
+                    :list-star t
+                    :un-grouped t)
+
+  (generate-haskell "LambdaCase" '("argBody") ":lambda-case" :list-star t)
+
+  (generate-haskell "LetHandler" (repeat 3 "sexp") ":lethandler")
+
+  (generate-haskell "Handler" '("sexp" "letRet" "letOp") ":lethandler" :list-star t))
 
 (defun core-named-representation ()
   (generate-haskell "Star" '("integer") ":star")
@@ -361,4 +402,8 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "Meta" '("sexp" "integer") nil)
 
-  (generate-haskell "RawFunClause" (repeat 4 "sexp") nil))
+  (generate-haskell "Field" (list "nameSymbol" "sexp" "sexp") nil)
+
+  (generate-haskell "RecordTy" (list "field") ":record-ty" :list-star t)
+
+  (generate-haskell "Lookup" (list "sexp" "symbol") ":lookup" :list-star t))

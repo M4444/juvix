@@ -1,9 +1,12 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Juvix.Contextify.Environment
   ( ErrorS (..),
     ErrS,
     SexpContext,
     HasClosure,
-    passContextSingle,
     passContext,
     Pass (..),
     extractInformation,
@@ -17,6 +20,9 @@ module Juvix.Contextify.Environment
     runM,
     namedForms,
     onExpression,
+    singlePass,
+    PassChange (..),
+    PassManual (..),
   )
 where
 
@@ -24,6 +30,7 @@ import Control.Lens hiding ((|>))
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
+import qualified Juvix.Context.Traversal as Context
 import qualified Juvix.Contextify.InfixPrecedence.ShuntYard as Shunt
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -33,6 +40,7 @@ import Prelude (error)
 data ErrorS
   = CantResolve [Sexp.T]
   | UnknownSymbol NameSymbol.T
+  | ImproperForm Sexp.T
   | ImpossibleMoreEles
   | Clash
       (Shunt.Precedence Sexp.T)
@@ -49,7 +57,7 @@ type ErrS m = HasThrow "error" ErrorS m
 -- Runner environment
 ------------------------------------------------------------
 
-data Minimal = Minimal
+newtype Minimal = Minimal
   { closure :: Closure.T
   }
   deriving (Generic, Show)
@@ -92,48 +100,18 @@ runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty)
 -- Main Functionality
 ------------------------------------------------------------
 
-data Pass m = Pass
-  { sumF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T,
-    termF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T,
-    tyF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T
-  }
-
--- | @passContextSingle@ Traverses the context firing off sexp
--- traversals based on the given trigger.
-passContextSingle ::
-  (HasClosure m, ErrS m) =>
-  -- | the context in which our code resides in
-  SexpContext ->
-  -- | the trigger function that states what forms to fire off
-  -- on. :atom for firing on every atom
-  (NameSymbol.T -> Bool) ->
-  -- | Our transformation function that is responsible for handling the triggers
-  (SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T) ->
-  m SexpContext
-passContextSingle ctx trigger f =
-  passContext ctx trigger (Pass f f f)
-
 -- | @passContext@ like @passContextSingle@ but we supply a different
 -- function for each type term and sum representation form.
 passContext ::
-  (HasClosure m, ErrS m) => SexpContext -> (NameSymbol.T -> Bool) -> Pass m -> m SexpContext
-passContext ctx trigger Pass {sumF, termF, tyF} =
+  (ToContextTraversal pass _f, HasClosure m, ErrS m) =>
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  (NameSymbol.T -> Bool) ->
+  pass m ->
+  m (Context.T Sexp.T Sexp.T Sexp.T)
+passContext ctx trigger pass =
   Context.mapWithContext
     ctx
-    Context.CtxForm
-      { -- Need to do this consing of type to figure out we are in a type
-        -- we then need to remove it, as it shouldn't be there
-        sumF = \form ->
-          fmap Sexp.cdr . pass sumF (Sexp.Cons (Sexp.atom "type") form),
-        termF = pass termF,
-        tyF = pass tyF
-      }
-  where
-    pass func form ctx =
-      Sexp.foldSearchPred
-        form
-        (trigger, func ctx)
-        (bindingForms, searchAndClosure ctx)
+    (promotePass pass trigger)
 
 -- | @onExpression@ runs an algorithm similar to @passContext@ however
 -- only on a single expression instead of an entire context. For this
@@ -151,6 +129,102 @@ onExpression form trigger func =
     (trigger, func)
     (bindingForms, searchAndClosureNoCtx)
 
+------------------------------------------------------------
+-- Pass infrastructure
+------------------------------------------------------------
+
+-- | @Pass@ a standard pass that just changes the syntax, not the
+-- context type.
+data Pass m = Pass
+  { sumF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T,
+    termF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T,
+    tyF :: SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T
+  }
+  deriving (Show)
+
+singlePass :: (SexpContext -> Sexp.Atom -> Sexp.T -> m Sexp.T) -> Pass m
+singlePass f = Pass f f f
+
+-- | @PassManual@ is a single function variant of @Pass@ that the given
+-- change function must manual recurse on the body rather than it being
+-- automatic. See @Passes.notFoundSymbolToLookup@ for an example
+newtype PassManual m
+  = PassManual
+      (SexpContext -> Sexp.Atom -> Sexp.T -> (Sexp.T -> m Sexp.T) -> m Sexp.T)
+  deriving (Show)
+
+-- | @PassChange@ Instead of recursing on the sexp structure, we check
+-- the top form and see if it needs to be changed.
+newtype PassChange m
+  = PassChange
+      ( SexpContext ->
+        Sexp.Atom ->
+        Sexp.T ->
+        NameSpace.From Symbol ->
+        m (Maybe (NameSpace.From Symbol, Context.Definition Sexp.T Sexp.T Sexp.T))
+      )
+  deriving (Show)
+
+class
+  Context.ToContextFormGeneral contextTo =>
+  ToContextTraversal (pass :: (* -> *) -> *) contextTo
+    | pass -> contextTo
+  where
+  promotePass ::
+    (HasReader "closure" Closure.T m, HasThrow "error" ErrorS m) =>
+    pass m ->
+    (NameSymbol.T -> Bool) ->
+    contextTo m Sexp.T Sexp.T Sexp.T
+
+instance ToContextTraversal PassManual Context.ContextForms where
+  promotePass (PassManual pass) trigger =
+    let f form ctx =
+          Sexp.foldSearchPredManualRecurse
+            form
+            (trigger, pass ctx)
+            -- Hack? We unbind the primtiive form for being a
+            -- binder. Which is needed for the symbol resolution pass
+            -- so we don't try to resolve it to a different name
+            (bindingFormsNoPrimitive, searchAndClosure ctx)
+     in Context.CtxSingle f |> Context.promote
+
+instance ToContextTraversal Pass Context.ContextForms where
+  promotePass Pass {sumF, termF, tyF} trigger =
+    Context.CtxForm
+      { -- Need to do this consing of type to figure out we are in a type
+        -- we then need to remove it, as it shouldn't be there
+        sumF = foldSearchContextClosure sumF trigger,
+        termF = foldSearchContextClosure termF trigger,
+        tyF = foldSearchContextClosure tyF trigger
+      }
+
+instance ToContextTraversal PassChange Context.ContextFormGeneral where
+  promotePass (PassChange f) trigger =
+    let onRepresentation sexp ctx Context.Extra {name}
+          | Just atom <- Sexp.atomFromT (Sexp.car sexp),
+            Just atomName <- Sexp.nameFromT (Sexp.car sexp),
+            trigger atomName =
+            f ctx atom (Sexp.cdr sexp) name
+          | otherwise = pure Nothing
+     in Context.CtxChangeSumRep onRepresentation |> Context.promote
+
+foldSearchContextClosure ::
+  (HasReader "closure" Closure.T f, HasThrow "error" ErrorS f) =>
+  (Context.T Sexp.T Sexp.T Sexp.T -> Sexp.Atom -> Sexp.T -> f Sexp.T) ->
+  (NameSymbol.T -> Bool) ->
+  Sexp.T ->
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  f Sexp.T
+foldSearchContextClosure func trigger form ctx =
+  Sexp.foldSearchPred
+    form
+    (trigger, func ctx)
+    (bindingForms, searchAndClosure ctx)
+
+------------------------------------------------------------
+-- Binding form infrastructure
+------------------------------------------------------------
+
 -- | @bindingForms@ is a predicate that answers true for every form
 -- that instantiates a new variable
 bindingForms :: (Eq a, IsString a) => a -> Bool
@@ -165,6 +239,20 @@ bindingForms x =
              ":declaim",
              ":lambda",
              ":primitive",
+             ":defop"
+           ]
+
+bindingFormsNoPrimitive :: (Eq a, IsString a) => a -> Bool
+bindingFormsNoPrimitive x =
+  x
+    `elem` [ "type",
+             ":open-in",
+             ":let-type",
+             ":let-match",
+             "case",
+             ":lambda-case",
+             ":declaim",
+             ":lambda",
              ":defop"
            ]
 
@@ -194,7 +282,8 @@ namedForms =
     ":defeff",
     ":defhandler",
     ":defop",
-    ":opsig"
+    ":opsig",
+    ":via"
   ]
 
 -- | @searchAndClosureNoCtx@ like searchAndClosure but does not rely on
@@ -220,6 +309,7 @@ searchAndClosureNoCtx a as cont
   | named ":let-type" = letType as cont
   | named "type" = type' as cont
   | named ":lambda" = lambda as cont
+  | named "handler" = handler as cont
   where
     named = Sexp.isAtomNamed (Sexp.Atom a)
 searchAndClosureNoCtx _ _ _ = error "improper closure call"
@@ -377,6 +467,11 @@ letMatch (Sexp.List [name, bindings, body]) cont
       bod <- cont body
       pure $ Sexp.list [name, Sexp.unGroupBy2 form, bod]
 letMatch _ _ = error "malformed let-match"
+
+-- | @handler@ follows the exact same logic as @let-match@
+handler :: HasClosure m => Sexp.T -> (Sexp.T -> m Sexp.T) -> m Sexp.T
+handler sexp@(Sexp.List [name, bindings, body]) cont = letMatch sexp cont
+handler _ _ = error "malformed handler"
 
 -- | @case'@ is similar to @lambdaCase@ except that it has a term it's
 -- matching on that it must first change without having an extra

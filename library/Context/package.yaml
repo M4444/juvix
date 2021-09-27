@@ -19,14 +19,15 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/Context#readme>
 
 dependencies:
+- aeson
 - base >= 4.7 && < 5
 - standard-library
 - Sexp
-- containers
 - unordered-containers
 - stm-containers
 - lens
 - text
+- hashable
 
 default-extensions:
   - NoImplicitPrelude

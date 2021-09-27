@@ -29,7 +29,7 @@ type EnvAlias ext primTy primVal =
 
 newtype EnvTypecheck' ext primTy primVal a
   = EnvTyp (EnvAlias ext primTy primVal a)
-  deriving (Functor, Applicative, Monad)
+  deriving newtype (Functor, Applicative, Monad)
   deriving
     ( HasThrow "typecheckError" (Error.TypecheckError' IR.T ext primTy primVal)
     )
@@ -48,16 +48,29 @@ type PrimSubstValue1 primTy primVal a =
   Eval.HasSubstValue IR.T primTy (Typed.Prim primTy primVal) a
 
 type PrimSubstValue primTy primVal =
-  ( PrimSubstValue1 primTy primVal primTy,
-    PrimSubstValue1 primTy primVal (Typed.Prim primTy primVal)
+  ( Eval.HasSubstValueType
+      IR.T
+      (Typed.PrimTy primTy)
+      (Typed.Prim primTy primVal)
+      (Typed.PrimTy primTy),
+    Eval.HasSubstValue
+      IR.T
+      (Typed.PrimTy primTy)
+      (Typed.Prim primTy primVal)
+      (Typed.Prim primTy primVal)
   )
 
-type PrimPatSubstTerm1 primTy primVal a =
-  Eval.HasPatSubstTerm (OnlyExts.T IR.T) primTy (Typed.Prim primTy primVal) a
-
 type PrimPatSubstTerm primTy primVal =
-  ( PrimPatSubstTerm1 primTy primVal primTy,
-    PrimPatSubstTerm1 primTy primVal (Typed.Prim primTy primVal)
+  ( Eval.HasPatSubstType
+      (OnlyExts.T IR.T)
+      (Typed.PrimTy primTy)
+      (Typed.Prim primTy primVal)
+      (Typed.PrimTy primTy),
+    Eval.HasPatSubstTerm
+      (OnlyExts.T IR.T)
+      (Typed.PrimTy primTy)
+      (Typed.Prim primTy primVal)
+      (Typed.Prim primTy primVal)
   )
 
 type CanTC' ext primTy primVal m =
@@ -103,7 +116,7 @@ lookupGlobal x = do
     makeGAnn (Core.GDatatype (Core.Datatype {dataArgs, dataLevel})) =
       (foldr makePi (Core.VStar dataLevel mempty) dataArgs, Core.GZero)
     makeGAnn (Core.GDataCon (Core.DataCon {dataConType})) =
-      (dataConType, Core.GOmega)
+      (dataConType, Core.GSAny)
     makeGAnn (Core.GFunction (Core.Function {funType, funUsage})) =
       (funType, funUsage)
     makeGAnn (Core.GAbstract (Core.Abstract {absUsage, absType})) =

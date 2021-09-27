@@ -12,7 +12,6 @@ module Juvix.Backends.Plonk.Parameterization
     toArg,
     toTakes,
     fromReturn,
-    applyProper,
   )
 where
 
@@ -21,6 +20,8 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Juvix.Backends.Plonk.Types as Types
 import qualified Juvix.Core.Application as App
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Erased.Ann.Conversion as ErasedAnn
+import qualified Juvix.Core.Erased.Ann.Prim as Prim
 import qualified Juvix.Core.Erased.Ann.Types as ErasedAnn
 import qualified Juvix.Core.IR.Evaluator as Eval
 import qualified Juvix.Core.Parameterisation as Param
@@ -105,17 +106,22 @@ param =
 integerToPrimVal :: forall f. GaloisField f => Integer -> Maybe (PrimVal f)
 integerToPrimVal x = Just . PConst $ fromInteger x
 
-instance Core.CanApply (PrimTy f) where
-  arity (PApplication hd rest) =
-    Core.arity hd - fromIntegral (length rest)
-  arity x = 0 -- TODO: Refine if/when extending PrimTy
+-- copied from michelson; TODO abstract this
+instance Core.CanPrimApply Core.Star (PrimTy f) where
+  primArity (PApplication hd rest) =
+    Core.primArity hd - fromIntegral (length rest)
+  primArity x = 0 -- TODO: Refine if/when extending PrimTy
 
-  apply (PApplication fn args1) args2 =
-    PApplication fn (args1 <> args2)
-      |> Right
-  apply fun args =
-    PApplication fun args
-      |> Right
+  primApply (App.Take {type', term}) args = pure $ foldl ap1 (type', term) args
+    where
+      ap1 (Core.PrimType tys0, term) (App.Take {term = arg})
+        | (_ :| ty : tys) <- tys0 =
+          (Core.PrimType (ty :| tys), ap1' term arg)
+        | otherwise =
+          -- (ill-typed application)
+          panic "primApply @_ @Plonk.PrimTy: too many arguments"
+      ap1' (PApplication fun args) arg = PApplication fun (args <> pure arg)
+      ap1' fun arg = PApplication fun (pure arg)
 
 data ApplyError f
   = CompilationError (CompilationError f)
@@ -154,57 +160,70 @@ arityRaw = \case
   PLte -> 2
   PEq -> 2
 
-toArg :: App.Return' ext1 ty term -> Maybe (App.Arg' ext2 ty term)
-toArg App.Cont {} = Nothing
-toArg App.Return {retType, retTerm} =
-  Just $
-    App.TermArg $
-      App.Take
-        { usage = Usage.Omega,
-          type' = retType,
-          term = retTerm
-        }
+toArg :: App.Return' ext1 ty term -> Maybe (App.Arg' ext1 ty term)
+toArg = Just . App.TermArg
 
 toTakes :: PrimVal' ext f -> (Take f, [Arg' ext f], Natural)
 toTakes App.Cont {fun, args, numLeft} = (fun, args, numLeft)
 toTakes App.Return {retType, retTerm} = (fun, [], arityRaw retTerm)
   where
-    fun = App.Take {usage = Usage.Omega, type' = retType, term = retTerm}
+    fun = App.Take {usage = Usage.SAny, type' = retType, term = retTerm}
 
 fromReturn :: Return' ext f -> PrimVal' ext f
 fromReturn = identity
 
-instance App.IsParamVar ext => Core.CanApply (PrimVal' ext f) where
-  type ApplyErrorExtra (PrimVal' ext f) = ApplyError f
+instance (Integral f, GaloisField f) => Core.CanPrimApply (PrimTy f) (PrimVal f) where
+  type PrimApplyError (PrimVal f) = ApplyError f
+  primArity = arityRaw
+  primApply fun@(App.Take {type', term}) args = do
+    retType <- toPrimType $ ErasedAnn.type' newTerm
+    pure $
+      (retType, PConst $ evalTerm term $ NonEmpty.toList $ App.term <$> args)
+    where
+      annTerm = ErasedAnn.takeToTerm fun
+      annTerms = ErasedAnn.takeToTerm <$> toList args
+      newTerm = applyPrimOnArgs annTerm annTerms
 
-  type Arg (PrimVal' ext f) = Arg' ext f
+evalBinOp :: (Fractional f, Integral f) => PrimVal f -> f -> f -> f
+evalBinOp op x y = case op of
+  PAdd -> x + y
+  PSub -> x - y
+  PMul -> x * y
+  PDiv -> x / y
+  PExp -> x ^ y
+  PMod -> x `mod` y
+  PAnd -> if x == 0 || y == 0 then 0 else 1
+  POr -> if x == 0 then y else x
+  PXor -> if (x == 0 && y /= 0) || (x /= 0 && y == 0) then 1 else 0
+  PGt -> if x > y then 1 else 0
+  PGte -> if x >= y then 1 else 0
+  PLt -> if x < y then 1 else 0
+  PLte -> if x <= y then 1 else 0
+  PEq -> if x == y then 1 else 0
 
-  pureArg = toArg
+evalTerm :: (Fractional f, Integral f) => PrimVal f -> [PrimVal f] -> f
+evalTerm val vals = case val of
+  PConst f -> f
+  _ | (PConst x : PConst y : _) <- vals -> evalBinOp val x y
+  _ | (PConst x : _) <- vals -> panic "TODO: Implement evalUnOp" --evalUnOp val x y
+  _ -> panic "Not implemented"
 
-  freeArg _ = fmap App.VarArg . App.freeVar (Proxy @ext)
-  boundArg _ = fmap App.VarArg . App.boundVar (Proxy @ext)
+-- | Given a type, translate it to a type in the Plonk backend.
+toPrimType :: ErasedAnn.Type (PrimTy f) -> Either (ApplyError f) (Core.PrimType (PrimTy f))
+toPrimType ty = maybe err (Right . Core.PrimType) $ go ty
+  where
+    err = Left $ ReturnTypeNotPrimitive ty
+    go ty = goPi ty <|> (pure <$> goPrim ty)
+    goPi (ErasedAnn.Pi _ s t) = NonEmpty.cons <$> goPrim s <*> go t
+    goPi _ = Nothing
+    goPrim (ErasedAnn.PrimTy p) = Just p
+    goPrim _ = Nothing
 
-  arity App.Cont {numLeft} = numLeft
-  arity App.Return {retTerm} = arityRaw retTerm
-
-  apply fun' args2
-    | (fun, args1, ar) <- toTakes fun' =
-      do
-        let argLen = lengthN args2
-            args = foldr NonEmpty.cons args2 args1
-        case argLen `compare` ar of
-          LT ->
-            Right $
-              App.Cont {fun, args = toList args, numLeft = ar - argLen}
-          EQ
-            | Just takes <- traverse App.argToTake args ->
-              applyProper fun takes |> first Core.Extra
-            | otherwise ->
-              Right $ App.Cont {fun, args = toList args, numLeft = 0}
-          GT -> Left $ Core.ExtraArguments fun' args2
-
-applyProper :: Take f -> NonEmpty (Take f) -> Either (ApplyError f) (Return' ext f)
-applyProper fun args = panic "Apply proper not implemented"
+applyPrimOnArgs :: Types.AnnTerm f -> [Types.AnnTerm f] -> Types.AnnTerm f
+applyPrimOnArgs prim arguments =
+  let newTerm = ErasedAnn.AppM prim arguments
+      retType = ErasedAnn.piToReturnType (ErasedAnn.type' prim)
+   in ErasedAnn.Ann one retType newTerm
 
 instance Eval.HasWeak (PrimTy f) where weakBy' _ _ t = t
 
@@ -212,15 +231,15 @@ instance Eval.HasWeak (PrimVal f) where weakBy' _ _ t = t
 
 instance
   Monoid (Core.XVPrimTy ext (PrimTy f) primVal) =>
-  Eval.HasSubstValue ext (PrimTy f) primVal (PrimTy f)
+  Eval.HasSubstValueType ext (PrimTy f) primVal (PrimTy f)
   where
-  substValueWith _ _ _ t = pure $ Core.VPrimTy t mempty
+  substValueTypeWith _ _ _ t = pure $ Core.VPrimTy t mempty
 
 instance
   Monoid (Core.XPrimTy ext (PrimTy f) primVal) =>
-  Eval.HasPatSubstTerm ext (PrimTy f) primVal (PrimTy f)
+  Eval.HasPatSubstType ext (PrimTy f) primVal (PrimTy f)
   where
-  patSubstTerm' _ _ t = pure $ Core.PrimTy t mempty
+  patSubstType' _ _ t = pure $ Core.PrimTy t mempty
 
 instance
   Monoid (Core.XPrim ext primTy (PrimVal f)) =>

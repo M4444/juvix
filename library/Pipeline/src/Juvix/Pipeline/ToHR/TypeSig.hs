@@ -9,12 +9,14 @@ import Juvix.Pipeline.ToHR.Env
 import Juvix.Pipeline.ToHR.Term
 import Juvix.Pipeline.ToHR.Types
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Frontend as Structure
 import Prelude (error)
 
 transformTypeSig ::
   ( ReduceEff HR.T primTy primVal m,
     HasPatVars m,
     HasParam primTy primVal m,
+    HasClosure m,
     Show primTy,
     Show primVal
   ) =>
@@ -22,7 +24,7 @@ transformTypeSig ::
   NameSymbol.T ->
   Sexp.T ->
   m [CoreSig HR.T primTy primVal]
-transformTypeSig q _name (typeCon Sexp.:> args Sexp.:> typeForm)
+transformTypeSig q _name (_name2 Sexp.:> typeCon Sexp.:> args Sexp.:> typeForm)
   | Just typeArgs <- Sexp.toList args >>= traverse eleToSymbol = do
     (baseTy, hd) <- transformIndices typeArgs typeCon
     let sigDataType = foldr makeTPi baseTy typeArgs
@@ -38,7 +40,13 @@ transformTypeSig q _name (typeCon Sexp.:> args Sexp.:> typeForm)
 transformTypeSig _ _ _ = error "malformed type"
 
 transformConSigs ::
-  (ReduceEff HR.T primTy primVal m, HasPatVars m, HasParam primTy primVal m, Show primTy, Show primVal) =>
+  ( HasClosure m,
+    ReduceEff HR.T primTy primVal m,
+    HasPatVars m,
+    HasParam primTy primVal m,
+    Show primTy,
+    Show primVal
+  ) =>
   -- | namespace containing declaration
   NameSymbol.Mod ->
   -- | datatype head
@@ -52,14 +60,17 @@ transformConSigs pfx hd typeCon =
   traverse (transformProduct pfx hd typeCon) <=< toProducts
   where
     -- We have a single constructor, which is a record
-    toProducts (r@(record Sexp.:> _) Sexp.:> Sexp.Nil)
-      | Sexp.isAtomNamed record ":record-d" = do
+    toProducts (record Sexp.:> Sexp.Nil)
+      | Structure.isRecordDec record = do
         -- E.g.
-        -- ((":record-d" "x" "TopLevel.Prelude.Circuit.field" "y" "TopLevel.Prelude.Circuit.field" "z" "TopLevel.Prelude.Circuit.field"),
+        -- ((:record-d
+        --      (x ω TopLevel.Prelude.Circuit.field)
+        --      (y ω TopLevel.Prelude.Circuit.field)
+        --      (z ω TopLevel.Prelude.Circuit.field)))
         --   ":record-d",
         --   ["Datatypes"],
-        --   Nothing)
-        throwFF $ RecordUnimplemented r
+        --   Nothing
+        throwFF $ RecordUnimplemented record
     -- we can't have another standalone product here, so just send to
     -- sum
     toProducts sums
@@ -76,6 +87,7 @@ transformProduct ::
     HasThrowFF HR.T primTy primVal m,
     HasParam primTy primVal m,
     HasCoreSigs HR.T primTy primVal m,
+    HasClosure m,
     Show primTy,
     Show primVal
   ) =>
@@ -93,7 +105,7 @@ transformProduct q hd typeCon (x, prod) =
     makeSig ty = CoreSig (Core.ConSig {sigConType = Just ty})
 
 transformConSig ::
-  (ReduceEff HR.T primTy primVal m, HasPatVars m, Show primTy, Show primVal) =>
+  (HasCallStack, ReduceEff HR.T primTy primVal m, HasPatVars m, Show primTy, Show primVal, HasClosure m) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
   -- | datatype head

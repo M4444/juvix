@@ -1,73 +1,36 @@
 name:                juvix
-version:             0.0.0.0
-github:              "cryptiumlabs/juvix"
+version:             0.1.1.19
+github:              "anoma/juvix"
 license:             GPL-3
-homepage:            https://github.com/cryptiumlabs/juvix#readme
+homepage:            https://github.com/anoma/juvix#readme
 synopsis:            Juvix smart contract language compiler, debugging toolkit, & stateful deployment system
 category:            Web3
-description:         Please see the README on GitHub at <https://github.com/cryptiumlabs/juvix#readme>
-author:              Cryptium Labs
-maintainer:          cwgoes@cryptium.ch, jeremy@cryptium.ch, marty@cryptium.ch, andy@cryptium.ch
-copyright:           2018 Christopher Goes, 2018-2019 Cryptium Labs
+description:         Please see the README on GitHub at <https://github.com/anoma/juvix#readme>
+author:              Heliax AG
+maintainer:          cwgoes@heliax.dev, jeremy@heliax.dev, marty@heliax.dev, andy@heliax.dev
+copyright:           2018 Christopher Goes, 2018-2019 Cryptium Labs, 2019- Heliax AG
 
 extra-source-files:
 - README.md
 
 dependencies:
-  - aeson
   - base >= 4.11 && < 5
-  - Cabal
-  - capability >= 0.2.0.0
   - directory
-  - extensible-data
-  - galois-field
-  - lens
-  - megaparsec
-  - scientific
-  - syb
-  - temporary
-  - wl-pprint-text
+  - pretty-simple
+  ###########################
+  # Juvix Libraries
+  ###########################
   - Pipeline
-  ###########################
-  # Libraries
-  ###########################
   - standard-library
   - Sexp
   - frontend
   - core
   - translate
+  - Witch
   - michelson
   - plonk
   - EasyPipeline
   - llvm
-  # - interaction-net
-  # - InteractionNetIR
-  ###########################
-  # Dependency for OS
-  ###########################
-  - turtle
-  - time
-  - filepath
-  ###########################
-  # Dependency for Structs
-  ###########################
-  - text
-  - mtl
-  - containers
-  - unordered-containers
-  - hashable
-  - fgl
-  - fgl-visualize
-  - bytestring
-
-  ###########################
-  # Dependency for Morley
-  ###########################
-  - morley
-  ###########################
-  # Dependency for debugging 
-  ###########################
-  - pretty-simple
 
 default-extensions:
   - NoImplicitPrelude
@@ -146,13 +109,8 @@ executables:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - aeson
       - ansi-wl-pprint
-      - elliptic-curve
       - gitrev
-      - haskeline
       - juvix
       - optparse-applicative
       - pretty-simple
-      - raw-strings-qq
-      - yaml

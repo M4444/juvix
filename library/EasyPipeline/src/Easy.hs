@@ -20,7 +20,14 @@
 -- with any stage of the compiler while modifying the source code.
 module Easy where
 
+import qualified Data.ByteString as BS
+import qualified Data.Field.Galois as Field
+import qualified Data.HashMap.Strict as HM
+import qualified Juvix.Backends.LLVM.Parameterization as LLVM.Param
+import qualified Juvix.Backends.LLVM.Pipeline as LLVM
+import qualified Juvix.Backends.LLVM.Primitive as LLVM.Prim
 import qualified Juvix.Backends.Michelson.Parameterisation as Michelson.Param
+import qualified Juvix.Backends.Michelson.Pipeline as Michelson
 import qualified Juvix.Backends.Plonk as Plonk
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
@@ -28,9 +35,13 @@ import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Contextify.ToContext.Types as ContextifyT
 import qualified Juvix.Core.Base as Core
+import qualified Juvix.Core.Base.TransformExt as TransformExt
+import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.Common.Context.Traverse as Traverse
+import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.Parameterisation as Param
+import qualified Juvix.Core.Types as Types
 import qualified Juvix.Desugar as Desugar
 import qualified Juvix.Frontend as Frontend
 import qualified Juvix.Frontend.Parser as Parser
@@ -38,15 +49,17 @@ import qualified Juvix.Frontend.Types as FrontendT
 import qualified Juvix.Frontend.Types as Initial
 import qualified Juvix.Frontend.Types.Base as Frontend
 import Juvix.Library
+import Juvix.Library.BLS12381 (Fr)
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymb
+import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Pipeline as Pipeline
 import qualified Juvix.Pipeline.Compile as Compile
 import qualified Juvix.Pipeline.ToHR as ToHR
 import qualified Juvix.Pipeline.ToIR as ToIR
-import qualified Juvix.Pipeline.ToSexp as ToSexp
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Translate.Pipeline.TopLevel as SexpTrans
 import qualified Text.Pretty.Simple as Pretty
 import Prelude (error)
 import qualified Prelude (Show (..))
@@ -61,7 +74,8 @@ instance Prelude.Show (Param.Parameterisation primTy primVal) where
 data Options primTy primVal = Opt
   { prelude :: [FilePath],
     currentContextName :: NameSymb.T,
-    param :: Param.Parameterisation primTy primVal
+    param :: Param.Parameterisation primTy primVal,
+    typeAgainst :: primTy
   }
   deriving (Show)
 
@@ -75,11 +89,12 @@ def =
       prelude = ["juvix/minimal.ju"],
       -- by default our code will live in Juvix-User
       currentContextName = "Juvix-User",
-      param = undefined
+      param = undefined,
+      typeAgainst = undefined
     }
 
 -- @defMichelson@ gives us Michelson prelude
-defMichelson :: Options Michelson.Param.PrimTy Michelson.Param.RawPrimVal
+defMichelson :: Options Michelson.Param.RawPrimTy Michelson.Param.RawPrimVal
 defMichelson =
   def
     { prelude =
@@ -88,19 +103,41 @@ defMichelson =
           "../../stdlib/Michelson.ju",
           "../../stdlib/MichelsonAlias.ju"
         ],
-      param = Michelson.Param.michelson
+      param = Michelson.Param.michelson,
+      typeAgainst = Michelson.Param.Set
+    }
+
+-- @defLLVM@ gives us LLVM prelude
+defLLVM :: Options LLVM.Prim.PrimTy LLVM.Prim.RawPrimVal
+defLLVM =
+  def
+    { prelude =
+        -- TODO: Avoid relative paths
+        [ "../../stdlib/Prelude.ju",
+          "../../stdlib/LLVM.ju"
+        ],
+      param = LLVM.Param.llvm,
+      typeAgainst = LLVM.Prim.Set
     }
 
 -- @defCircuit@ gives us the circuit prelude
 -- defCircuit :: Options
-defCircuit =
+defCircuitGeneric ::
+  Field.GaloisField f =>
+  Options (Plonk.PrimTy f) (Plonk.PrimVal f)
+defCircuitGeneric =
   def
     { prelude =
         [ "../../stdlib/Prelude.ju",
-          "../../stdlib/Circuit.ju"
+          "../../stdlib/Circuit.ju",
+          "../../stdlib/Circuit/Field.ju"
         ],
-      param = Plonk.param
+      param = Plonk.param,
+      typeAgainst = Plonk.PField
     }
+
+defCircuit :: Options (Plonk.PrimTy Fr) (Plonk.PrimVal Fr)
+defCircuit = defCircuitGeneric
 
 -- These functions help us stop at various part of the pipeline
 
@@ -120,7 +157,7 @@ timeLapse1 =
 -- You may want to stop here if you want to see what some base forms look like
 -- Text ⟶ ML AST ⟶ LISP AST
 sexp :: ByteString -> [Sexp.T]
-sexp xs = ignoreHeader (Parser.parse xs) >>| ToSexp.transTopLevel
+sexp xs = ignoreHeader (Parser.parse xs) >>| SexpTrans.transTopLevel
 
 -- | Here we extend the idea of desugar but we run it on the prelude we
 -- care about.
@@ -130,7 +167,7 @@ sexpFile file = do
   f <- Frontend.parseSingleFile file
   case f of
     Right (_name, ast) ->
-      fmap ToSexp.transTopLevel ast
+      fmap SexpTrans.transTopLevel ast
         |> pure
     Left err ->
       error (show err)
@@ -142,7 +179,7 @@ sexpLibrary def = do
   files <- Frontend.parseFiles (prelude def)
   case files of
     Right f ->
-      pure (second (fmap ToSexp.transTopLevel) <$> f)
+      pure (second (fmap SexpTrans.transTopLevel) <$> f)
     Left err ->
       error (show err)
 
@@ -326,22 +363,36 @@ contexify1 = do
 --------------------------------------------------------------------------------
 
 coreify ::
-  (Show primTy, Show primVal) =>
+  ( Show primTy,
+    Show primVal
+  ) =>
   ByteString ->
   Options primTy primVal ->
-  IO (Core.RawGlobals IR.T primTy primVal)
+  IO (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T primTy primVal)
 coreify juvix options = do
   Right ctx <- contextifyDesugar juvix options
-  pure . snd . ToIR.hrToIRDefs $ ToHR.contextToHR ctx (param options)
+  case ToHR.contextToHR ctx (param options) of
+    Left err -> do
+      printCompactParens err
+      error "failure at coreify"
+    Right env ->
+      pure . ToIR.hrToIRDefs $ env
 
 coreifyFile ::
-  (Show primTy, Show primVal) =>
+  ( Show primTy,
+    Show primVal
+  ) =>
   FilePath ->
   Options primTy primVal ->
-  IO (Core.RawGlobals IR.T primTy primVal)
+  IO (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T primTy primVal)
 coreifyFile juvix options = do
   Right ctx <- contextifyDesugarFile juvix options
-  pure . snd . ToIR.hrToIRDefs $ ToHR.contextToHR ctx (param options)
+  case ToHR.contextToHR ctx (param options) of
+    Left err -> do
+      printCompactParens err
+      error "failure at coreify"
+    Right env ->
+      pure . ToIR.hrToIRDefs $ env
 
 ----------------------------------------
 -- Coreify Examples
@@ -350,13 +401,119 @@ coreifyFile juvix options = do
 coreify1 :: IO ()
 coreify1 = do
   x <- coreify "sig foo : int let foo = 3" defMichelson
-  printCoreFunction x defMichelson "foo"
+  printCoreFunction (snd x) defMichelson "foo"
 
 coreify2 :: IO ()
 coreify2 = do
   -- Broken example that works currently
   x <- coreify "sig foo : int let foo x = x" defMichelson
-  printCoreFunction x defMichelson "foo"
+  printCoreFunction (snd x) defMichelson "foo"
+
+--------------------------------------------------------------------------------
+-- Erasure Phase
+--------------------------------------------------------------------------------
+
+inline ::
+  ( Show primTy,
+    Show primVal,
+    IR.HasPatSubstTerm (OnlyExts.T IR.T) primTy primVal primVal,
+    IR.HasPatSubstType (OnlyExts.T IR.T) primTy primVal primTy
+  ) =>
+  ByteString ->
+  Options primTy primVal ->
+  IO
+    ( Core.Term IR.T primTy primVal,
+      Usage.Usage,
+      Core.Term IR.T primTy primVal,
+      Core.RawGlobals IR.T primTy primVal
+    )
+inline input options = do
+  (patToSym, globalDefs) <- coreify input options
+  let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
+      lookupGlobal = IR.rawLookupFun' globalDefs
+      (usage, term, mainTy) = toLambda getMain
+
+      getMain = case HM.elems $ HM.filter Compile.isMain globalDefs of
+        [] -> error $ "No main function found in " <> toS (Pretty.pShowNoColor globalDefs)
+        main : _ -> main
+
+      toLambda main = case TransformExt.extForgetE <$> IR.toLambdaR @IR.T main of
+        Just (IR.Ann usage term ty _) -> (usage, term, ty)
+        _ -> error $ "Unable to convert main to lambda" <> toS (Pretty.pShowNoColor main)
+
+  return (inlinedTerm, usage, mainTy, globalDefs)
+
+inlineFile ::
+  ( Show primTy,
+    Show primVal,
+    IR.HasPatSubstTerm (OnlyExts.T IR.T) primTy primVal primVal,
+    IR.HasPatSubstType (OnlyExts.T IR.T) primTy primVal primTy
+  ) =>
+  FilePath ->
+  Options primTy primVal ->
+  IO
+    ( Core.Term IR.T primTy primVal,
+      Usage.Usage,
+      Core.Term IR.T primTy primVal,
+      Core.RawGlobals IR.T primTy primVal
+    )
+inlineFile fp options = do
+  (patToSym, globalDefs) <- coreifyFile fp options
+  let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
+      lookupGlobal = IR.rawLookupFun' globalDefs
+      (usage, term, mainTy) = toLambda getMain
+
+      getMain = case HM.elems $ HM.filter Compile.isMain globalDefs of
+        [] -> error $ "No main function found in " <> toS (Pretty.pShowNoColor globalDefs)
+        main : _ -> main
+
+      toLambda main = case TransformExt.extForgetE <$> IR.toLambdaR @IR.T main of
+        Just (IR.Ann usage term ty _) -> (usage, term, ty)
+        _ -> error $ "Unable to convert main to lambda" <> toS (Pretty.pShowNoColor main)
+
+  return (inlinedTerm, usage, mainTy, globalDefs)
+
+erase ::
+  ( ty ~ Pipeline.Ty b,
+    val ~ Pipeline.Val b,
+    Pipeline.Constraints b,
+    Pipeline.HasBackend b
+  ) =>
+  ByteString ->
+  Options ty val ->
+  IO (ErasedAnn.AnnTermT ty val)
+erase input options = do
+  (patToSym, globalDefs) <- coreify input options
+  feed <-
+    Feedback.runFeedbackT (Pipeline.toErased (param options) (patToSym, globalDefs))
+  case feed of
+    Feedback.Success msg erased -> do
+      printCompactParens msg
+      pure erased
+    Feedback.Fail failure -> do
+      printCompactParens failure
+      error "Failure on erase step"
+
+eraseFile ::
+  ( ty ~ Pipeline.Ty b,
+    val ~ Pipeline.Val b,
+    Pipeline.Constraints b,
+    Pipeline.HasBackend b
+  ) =>
+  FilePath ->
+  Options ty val ->
+  IO (ErasedAnn.AnnTermT ty val)
+eraseFile fp options = do
+  (patToSym, globalDefs) <- coreifyFile fp options
+  feed <-
+    Feedback.runFeedbackT (Pipeline.toErased (param options) (patToSym, globalDefs))
+  case feed of
+    Feedback.Success msg erased -> do
+      printCompactParens msg
+      pure erased
+    Feedback.Fail failure -> do
+      printCompactParens failure
+      error "Failure on erase step"
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -402,7 +559,14 @@ printCoreFunction core option functionName =
   lookupCoreFunction core option functionName |> printCompactParens
 
 printTimeLapse ::
-  (Show primTy2, Show primVal2) => ByteString -> Options primTy2 primVal2 -> IO ()
+  ( ty ~ Pipeline.Ty b,
+    val ~ Pipeline.Val b,
+    Pipeline.Constraints b,
+    Pipeline.HasBackend b
+  ) =>
+  ByteString ->
+  Options ty val ->
+  IO ()
 printTimeLapse byteString option = do
   let sexpd = sexp byteString
   printCompactParens sexpd
@@ -415,11 +579,26 @@ printTimeLapse byteString option = do
   --
   let currentDefinedItems = definedFunctionsInModule option context
   --
-  cored <- coreify byteString option
+  (_, cored) <- coreify byteString option
   traverse_ (printCoreFunction cored option) currentDefinedItems
+  print "finished Cored"
+  --
+  (inlined, _, _, _) <- inline byteString option
+  printCompactParens inlined
+  print "finished Inline"
+  -- --
+  erased <- erase byteString option
+  printCompactParens erased
 
 printTimeLapseFile ::
-  (Show primTy2, Show primVal2) => FilePath -> Options primTy2 primVal2 -> IO ()
+  ( ty ~ Pipeline.Ty b,
+    val ~ Pipeline.Val b,
+    Pipeline.Constraints b,
+    Pipeline.HasBackend b
+  ) =>
+  FilePath ->
+  Options ty val ->
+  IO ()
 printTimeLapseFile file option = do
   sexpd <- sexpFile file
   printCompactParens sexpd
@@ -432,8 +611,16 @@ printTimeLapseFile file option = do
   --
   let currentDefinedItems = definedFunctionsInModule option context
   --
-  cored <- coreifyFile file option
+  (_, cored) <- coreifyFile file option
   traverse_ (printCoreFunction cored option) currentDefinedItems
+  print "finished Cored"
+  --
+  (inlined, _, _, _) <- inlineFile file option
+  printCompactParens inlined
+  print "finished Inline"
+  --
+  erased <- eraseFile file option
+  printCompactParens erased
 
 printDefModule ::
   (MonadIO m, Show ty, Show term, Show sum) =>

@@ -25,14 +25,17 @@ typeCheckAllCons ::
     Show primVal,
     Show extT,
     ShowExt extT primTy primVal,
+    Show (Core.RawGlobal extT primTy primVal),
+    Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
     Env.CanTC' extT primTy primVal m,
-    Param.CanApply (Typed.Prim primTy primVal),
-    Eval.NoExtensions extT primTy (Typed.Prim primTy primVal),
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.NoExtensions extT (Typed.PrimTy primTy) (Typed.Prim primTy primVal),
     Eval.NoExtensions extT primTy primVal,
     Eval.CanEval extT IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy (Typed.Prim primTy primVal),
-    Eval.HasPatSubstTerm
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -62,14 +65,18 @@ typeCheckConstructor ::
     Show primVal,
     Show extT,
     ShowExt extT primTy primVal,
+    Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Show (Core.RawGlobal extT primTy primVal),
+    Eval.EvalPatSubst extT primTy primVal,
     Env.CanTC' extT primTy primVal m,
-    Param.CanApply (Typed.Prim primTy primVal),
-    Eval.NoExtensions extT primTy (Typed.Prim primTy primVal),
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.NoExtensions extT (Typed.PrimTy primTy) (Typed.Prim primTy primVal),
     Eval.NoExtensions extT primTy primVal,
     Eval.CanEval extT IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy primVal,
     Eval.EvalPatSubst IR.T primTy (Typed.Prim primTy primVal),
-    Eval.HasPatSubstTerm
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -150,8 +157,9 @@ checkDataType ::
     Core.ValueAll Eq IR.T primTy primVal,
     Core.NeutralAll Eq IR.T primTy primVal,
     Env.CanTC' extT primTy primVal m,
-    Param.CanApply (Typed.Prim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -180,8 +188,9 @@ checkDataTypeArg ::
     Core.ValueAll Eq IR.T primTy primVal,
     Core.NeutralAll Eq IR.T primTy primVal,
     Env.CanTC' extT primTy primVal m,
-    Param.CanApply (Typed.Prim primTy primVal),
-    Eval.HasPatSubstTerm
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
       (OnlyExts.T Typed.T)
       primTy
       (Param.TypedPrim primTy primVal)
@@ -217,7 +226,7 @@ checkConType ::
   Core.Telescope IR.T extT primTy primVal ->
   Param.Parameterisation primTy primVal ->
   -- | the expression that is left to be checked.
-  Core.Value IR.T primTy (Typed.Prim primTy primVal) ->
+  Typed.ValueT IR.T primTy primVal ->
   Env.TypeCheck IR.T primTy primVal m ()
 checkConType tel param e =
   case e of
@@ -257,7 +266,7 @@ checkParams ::
   Core.RawTelescope extT primTy primVal ->
   Core.Term extT primTy primVal ->
   m ()
-checkParams tel@(hd : tl) para@(Core.Elim elim _) =
+checkParams (hd : tl) para@(Core.Elim elim _) =
   let n = Core.rawName hd
    in case elim of
         Core.Free (Core.Global n') _ | n == n' -> return ()

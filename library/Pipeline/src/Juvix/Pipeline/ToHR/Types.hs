@@ -1,7 +1,9 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Juvix.Pipeline.ToHR.Types where
 
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base as Core
@@ -19,6 +21,10 @@ data CoreDef ext primTy primVal
   = CoreDef !(Core.RawGlobal ext primTy primVal)
   | SpecialDef !NameSymbol.T !Special
   deriving (Generic)
+
+deriving instance (A.ToJSON ty, A.ToJSON val, Core.CoreAll A.ToJSON ext ty val) => A.ToJSON (CoreDef ext ty val)
+
+deriving instance (A.FromJSON ty, A.FromJSON val, Core.CoreAll A.FromJSON ext ty val) => A.FromJSON (CoreDef ext ty val)
 
 deriving instance
   ( Show primTy,
@@ -65,19 +71,45 @@ data CoreSig ext primTy primVal
   | SpecialSig !Special
   deriving (Generic)
 
+deriving instance (A.ToJSON ty, A.ToJSON val, Core.CoreAll A.ToJSON ext ty val) => A.ToJSON (CoreSig ext ty val)
+
+deriving instance (A.FromJSON ty, A.FromJSON val, Core.CoreAll A.FromJSON ext ty val) => A.FromJSON (CoreSig ext ty val)
+
 -- | Bindings that can't be given types, but can be given new names by the user.
 data Special
   = -- | pi type, possibly with usage already supplied
     ArrowS (Maybe Usage.T)
   | -- | sigma type
     PairS (Maybe Usage.T)
+  | -- | category-theoretical product
+    CatProductS
+  | -- | category-theoretical coproduct
+    CatCoproductS
+  | -- | category-theoretical product introduction rule
+    CatProductIntroS
+  | -- | category-theoretical product left projection
+    CatProductElimLeftS
+  | -- | category-theoretical product right projection
+    CatProductElimRightS
+  | -- | category-theoretical coproduct left injection
+    CatCoproductIntroLeftS
+  | -- | category-theoretical coproduct right injection
+    CatCoproductIntroRightS
+  | -- | category-theoretical coproduct elimination rule
+    CatCoproductElimS
   | -- | type annotation
     ColonS
   | -- | type of types
     TypeS
-  | -- | omega usage
-    OmegaS
+  | -- | SAny usage
+    SAnyS
   deriving (Eq, Show, Data, Generic)
+
+instance A.ToJSON Special where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance A.FromJSON Special where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
 deriving instance
   ( Eq primTy,
@@ -172,8 +204,8 @@ data Error ext primTy primVal
     BuiltinWithTypeSig (Ctx.Definition Sexp.T Sexp.T Sexp.T)
   | -- | Wrong number of arguments for a builtin
     WrongNumberBuiltinArgs Special Int Sexp.T
-  | -- | Using omega as an expression
-    UnexpectedOmega
+  | -- | Using SAny as an expression
+    UnexpectedSAny
   deriving (Generic)
 
 deriving instance
@@ -282,6 +314,6 @@ instance
         <> show (length $ Sexp.toList args)
         <> "\n"
         <> show args
-    UnexpectedOmega ->
-      "%Builtin.Omega cannot be used as an arbitrary term, only as\n"
+    UnexpectedSAny ->
+      "%Builtin.SAny cannot be used as an arbitrary term, only as\n"
         <> "the first argument of %Builtin.Arrow or %Builtin.Pair"

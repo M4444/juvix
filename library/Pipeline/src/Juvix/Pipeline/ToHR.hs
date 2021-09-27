@@ -10,8 +10,9 @@ module Juvix.Pipeline.ToHR
 where
 
 import qualified Data.HashMap.Strict as HM
-import qualified Data.List.NonEmpty as NonEmpty
+import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
+import qualified Juvix.Context.Traversal as Context
 import qualified Juvix.Core.Base as Core
 import qualified Juvix.Core.Common.Context.Traverse as Context
 import qualified Juvix.Core.HR as HR
@@ -35,19 +36,19 @@ contextToHR ::
   ) =>
   Context.T Sexp.T Sexp.T Sexp.T ->
   P.Parameterisation primTy primVal ->
-  Core.RawGlobals HR.T primTy primVal
+  Either (Types.Error HR.T primTy primVal) (Core.RawGlobals HR.T primTy primVal)
 contextToHR ctx param =
-  HM.mapMaybe Types.toCoreDef $
-    Env.coreDefs $ Env.evalEnv ctx param do
-      newCtx <- Context.mapSumWithName ctx attachConstructor
+  Env.evalEnvEither ctx param do
+    newCtx <- Context.mapSumWithName ctx attachConstructor
 
-      let ordered = Context.recGroups newCtx
+    let ordered = Context.recGroups newCtx
 
-      for_ ordered \grp -> do
-        traverse_ addSig grp
+    for_ ordered \grp -> do
+      traverse_ addSig grp
 
-      for_ ordered \grp -> do
-        traverse_ addDef grp
+    for_ ordered \grp -> do
+      traverse_ addDef grp
+    >>| HM.mapMaybe Types.toCoreDef . Env.coreDefs
   where
     -- TODO
     -- put @"ffOrder" ordered
@@ -68,7 +69,7 @@ contextToHR ctx param =
       declaration <- Sexp.findKey Sexp.car dataConstructor t
       Just $
         Context.D
-          { defUsage = Just Usage.Omega,
+          { defUsage = Just Usage.SAny,
             defMTy = generateSumConsSexp typeCons declaration,
             defTerm = Sexp.list [Sexp.atom ":primitive", Sexp.atom "Builtin.Constructor"],
             defPrecedence = Context.default'
@@ -88,6 +89,7 @@ contextToHR ctx param =
 addSig ::
   ( Show primTy,
     Show primVal,
+    HasState "closure" Closure.T m,
     HasThrow "fromFrontendError" (Types.Error HR.T primTy primVal) m,
     HasReader "param" (P.Parameterisation primTy primVal) m,
     HasState "coreSigs" (Types.CoreSigs HR.T primTy primVal) m,
@@ -102,6 +104,7 @@ addSig (Context.Entry x feDef) = do
 addDef ::
   ( Show primTy,
     Show primVal,
+    HasState "closure" Closure.T m,
     HasThrow "fromFrontendError" (Types.Error HR.T primTy primVal) m,
     HasReader "param" (P.Parameterisation primTy primVal) m,
     HasState "coreDefs" (Types.CoreDefs HR.T primTy primVal) m,

@@ -1,18 +1,15 @@
 module Parser where
 
-import Juvix.Frontend.Parser (parse)
 import qualified Juvix.Frontend.Parser as Parser
 import Juvix.Frontend.Types (Expression, TopLevel)
 import qualified Juvix.Frontend.Types as AST
 import Juvix.Library
-import qualified Juvix.Library.NameSymbol as NameSym
-import Juvix.Library.Parser (Parser, ParserError)
+import qualified Juvix.Library.NameSymbol as NameSym ()
+import Juvix.Library.Parser (ParserError)
 import qualified Juvix.Library.Parser as J
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 import qualified Text.Megaparsec as P
-import qualified Text.Megaparsec.Byte as P
-import Prelude (String, error)
 
 allParserTests :: T.TestTree
 allParserTests =
@@ -33,6 +30,7 @@ allParserTests =
       matchMoreComplex,
       condTest1,
       record1,
+      recordDec,
       parens1,
       infixTests,
       -- pre-processor tests
@@ -54,7 +52,8 @@ allParserTests =
       effect,
       fullEffect,
       ret,
-      via_
+      via_,
+      do_
     ]
 
 infixTests :: T.TestTree
@@ -141,9 +140,9 @@ many1FunctionsParser =
         <> "  case check of \n"
         <> "  | seven -> 11 \n"
         <> "  | eleven -> 7 \n"
-        <> "  | f  -> open Fails in \n"
-        <> "          print failed; \n"
-        <> "          fail"
+        <> "  | f  -> open Fails in"
+        <> "          print failed;"
+        <> "          fail unit"
     )
     [ ( AST.Inf (AST.Name "a") "+" (AST.Name "b")
           |> AST.Infix
@@ -214,13 +213,19 @@ many1FunctionsParser =
                      --
 
                      (AST.Name "failed" :| [])
-                       |> AST.App (AST.Name "print")
-                       |> AST.Application
+                       |> AST.DoOp' (AST.Name "print")
+                       |> AST.DoOp
                        |> AST.DoBody Nothing
-                       |> (:| [AST.DoBody Nothing (AST.Name "fail")])
+                       |> ( :|
+                              [ (AST.Name "unit" :| [])
+                                  |> AST.DoOp' (AST.Name "fail")
+                                  |> AST.DoOp
+                                  |> AST.DoBody Nothing
+                              ]
+                          )
                        |> AST.Do''
                        |> AST.Do
-                       |> AST.OpenExpress "Fails"
+                       |> AST.OpenExpress ("Fails" :| [])
                        |> AST.OpenExpr
                        |> AST.MatchL (AST.MatchLogic (AST.MatchName "f") Nothing)
                    ]
@@ -348,7 +353,7 @@ effect =
   shouldParseAs
     "effect definition"
     Parser.parse
-    "effect Pure = let pure : x -> string"
+    "effect Pure = let pure : x -> string end"
     $ AST.NoHeader
       [ [ AST.Name ("string" :| [])
             |> AST.Inf (AST.Name ("x" :| [])) ("->" :| [])
@@ -364,7 +369,7 @@ fullEffect =
   shouldParseAs
     "effect full definition"
     Parser.parse
-    "effect Print = let print : string -> unit let pure : x -> string"
+    "effect Print = let print : string -> unit let pure : x -> string end"
     $ AST.NoHeader
       [ AST.Eff
           "Print"
@@ -385,7 +390,7 @@ ret =
   shouldParseAs
     "effect handler of pure effect"
     Parser.parse
-    "handler pureEff = let pure x = toString x"
+    "handler pureEff = let pure x = toString x end"
     $ AST.NoHeader
       [ [ AST.Name ("x" :| []) :| []
             |> AST.App (AST.Name ("toString" :| []))
@@ -409,9 +414,9 @@ via_ =
     Parser.parse
     "let foo = prog via print"
     $ AST.NoHeader
-      [ AST.Name ("prog" :| []) :| []
-          |> AST.App (AST.Name ("print" :| []))
-          |> AST.Application
+      [ AST.Name ("prog" :| [])
+          |> AST.Via (AST.Name ("print" :| []))
+          |> AST.EffApp
           |> AST.Body
           |> AST.Like "foo" []
           |> AST.Func
@@ -423,7 +428,7 @@ handler =
   shouldParseAs
     "effect handler with op"
     Parser.parse
-    "handler printer = let print x = print x let pure x = toString x"
+    "handler printer = let print x k = print x let pure x = toString x end"
     $ AST.NoHeader
       [ [ AST.Name ("x" :| []) :| []
             |> AST.App ("print" :| [] |> AST.Name)
@@ -432,6 +437,8 @@ handler =
             |> AST.Like
               "print"
               [ AST.MatchLogic (AST.MatchName "x") Nothing
+                  |> AST.ConcreteA,
+                AST.MatchLogic (AST.MatchName "k") Nothing
                   |> AST.ConcreteA
               ]
             |> AST.Op,
@@ -450,6 +457,32 @@ handler =
           |> AST.Handler
       ]
 
+do_ :: T.TestTree
+do_ =
+  shouldParseAs
+    "effect usage in programs"
+    Parser.parse
+    "let prog = print hello-world; pure \"hi\""
+    $ AST.NoHeader
+      [ (AST.Name "hello-world" :| [])
+          |> AST.DoOp' (AST.Name "print")
+          |> AST.DoOp
+          |> AST.DoBody Nothing
+          |> ( :|
+                 [ AST.Constant (AST.String (AST.Sho "hi"))
+                     |> AST.DoPure'
+                     |> AST.DoPure
+                     |> AST.DoBody Nothing
+                 ]
+             )
+          |> AST.Do''
+          |> AST.Do
+          |> AST.Body
+          |> AST.Like "prog" []
+          |> AST.Func
+          |> AST.Function
+      ]
+
 --------------------------------------------------------------------------------
 -- Type tests
 --------------------------------------------------------------------------------
@@ -457,6 +490,31 @@ handler =
 --------------------------------------------------
 -- ADT testing
 --------------------------------------------------
+
+recordTypeTest :: T.TestTree
+recordTypeTest =
+  shouldParseAs
+    "sumTypeTest"
+    Parser.parse
+    ( "type Foo a b c = | A { a 2 : Int, #b : Int }"
+    )
+    $ AST.NoHeader
+      [ ( AST.NameType'
+            (AST.Name "Int")
+            (AST.Concrete "a")
+            (Just (AST.Constant (AST.Number (AST.Integer' 2))))
+            :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b") Nothing]
+            |> flip AST.Record'' Nothing
+            |> AST.Record
+            |> Just
+            |> AST.S "C"
+        )
+          :| []
+          |> AST.Sum
+          |> AST.NonArrowed
+          |> AST.Typ Nothing "Foo" ["a", "b", "c"]
+          |> AST.Type
+      ]
 
 sumTypeTest :: T.TestTree
 sumTypeTest =
@@ -487,8 +545,8 @@ sumTypeTest =
                  |> Just
                  |> AST.S "B",
                --
-               AST.NameType' (AST.Name "Int") (AST.Concrete "a")
-                 :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b")]
+               AST.NameType' (AST.Name "Int") (AST.Concrete "a") Nothing
+                 :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b") Nothing]
                  |> flip AST.Record'' Nothing
                  |> AST.Record
                  |> Just
@@ -506,8 +564,8 @@ sumTypeTest =
                  |> AST.Application
                  |> Just
                  |> AST.Record''
-                   ( AST.NameType' (AST.Name "Int") (AST.Concrete "a")
-                       :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b")]
+                   ( AST.NameType' (AST.Name "Int") (AST.Concrete "a") Nothing
+                       :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b") Nothing]
                    )
                  |> AST.Record
                  |> Just
@@ -803,6 +861,25 @@ record1 =
       "record1"
       (P.parse Parser.expression "")
       "{a, b = 3+5}"
+
+--------------------------------------------------
+-- RecordDec
+--------------------------------------------------
+
+recordDec :: T.TestTree
+recordDec =
+  ( AST.NameType'
+      (AST.Name "Int")
+      (AST.Concrete "a")
+      (Just (AST.Constant (AST.Number (AST.Integer' 2))))
+      :| [AST.NameType' (AST.Name "Int") (AST.Implicit "b") Nothing]
+      |> flip AST.Record'' Nothing
+      |> AST.RecordDec
+  )
+    |> shouldParseAs
+      "recordDeclaration"
+      (P.parse Parser.expression "")
+      "{ a 2 : Int, #b : Int }"
 
 --------------------------------------------------
 -- parens

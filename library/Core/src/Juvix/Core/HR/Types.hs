@@ -3,12 +3,18 @@ module Juvix.Core.HR.Types
   )
 where
 
+import Juvix.Core.Application (IsParamVar (..))
 import qualified Juvix.Core.Base.Types as Core
 import Juvix.Core.HR.Extend
-import Juvix.Library (Data)
+import Juvix.Library
+import qualified Juvix.Library.NameSymbol as NameSymbol
 
-data T
-  deriving (Data)
+data T deriving (Data, Show)
+
+instance IsParamVar T where
+  type ParamVar T = NameSymbol.T
+  freeVar _ = Just
+  boundVar _ _ = Nothing
 
 Core.extendTerm "Term" [] [t|T|] extTerm
 
@@ -21,7 +27,7 @@ pattern Sig π x s t = Sig0 π s t x
 
 pattern Let π x l b = Let0 π l b x
 
-{-# COMPLETE Star, PrimTy, Prim, Pi, Lam, Sig, Pair, Let, UnitTy, Unit, Elim #-}
+{-# COMPLETE Star, PrimTy, Prim, Pi, Lam, Sig, CatProduct, CatCoproduct, CatProductIntro, CatProductElimLeft, CatProductElimRight, CatCoproductIntroLeft, CatCoproductIntroRight, CatCoproductElim, Pair, Let, UnitTy, Unit, Elim #-}
 
 Core.extendElim "Elim" [] [t|T|] extElim
 

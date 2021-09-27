@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 -- |
@@ -35,11 +36,18 @@
 --        can automatically fill in this meta data
 module Juvix.Sexp.Structure.Transition where
 
-import Juvix.Library hiding (Type)
+import Juvix.Library hiding (Handler, Type)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import Juvix.Sexp.Structure
+import Juvix.Sexp.Structure.Frontend (fromLetOp, fromLetRet, fromNotPunnedGroup, toLetOp, toLetRet, toNotPunnedGroup)
 import qualified Juvix.Sexp.Structure.Frontend as Frontend
 import Juvix.Sexp.Structure.Helpers
+
+newtype RecordNoPunned = RecordNoPunned
+  { recordNoPunnedValue :: [Frontend.NotPunned]
+  }
+  deriving (Show)
 
 -- | @Defun-match@ is a matching defun structure
 data DefunMatch = DefunMatch
@@ -49,7 +57,13 @@ data DefunMatch = DefunMatch
   deriving (Show)
 
 -- | @ArgBody@ abstracts over the details of arguments and body
-data ArgBody = ArgBody {argsBodyArgs :: Sexp.T, argsBodyBody :: Sexp.T}
+data ArgBody = ArgBody
+  { argsBodyArgs :: Sexp.T,
+    argsBodyBody :: Sexp.T
+  }
+  deriving (Show)
+
+newtype LambdaCase = LambdaCase [ArgBody]
   deriving (Show)
 
 -- | @If@ has an pred, then, and else.
@@ -91,15 +105,18 @@ data LetMatch = LetMatch
   }
   deriving (Show)
 
-newtype RecordNoPunned = RecordNoPunned
-  { recordNoPunnedValue :: [Frontend.NotPunned]
+-- DEPRECATED :: Unsafe to form on
+data LetHandler = LetHandler
+  { letHandlerName :: Sexp.T,
+    letHandlerRet :: Sexp.T,
+    letHandlerOps :: Sexp.T
   }
   deriving (Show)
 
-data LetHandler = LetHandler
-  { letHandlername :: Sexp.T,
-    letHandlerOps :: Sexp.T,
-    letHandlerRet :: Sexp.T
+data Handler = Handler
+  { handlerName :: Sexp.T,
+    handlerRet :: Frontend.LetRet,
+    handlerOps :: [Frontend.LetOp]
   }
   deriving (Show)
 
@@ -135,15 +152,6 @@ toArgBodys = fromStarList toArgBody . Sexp.groupBy2
 matchConstructor :: Sexp.T -> Sexp.T
 matchConstructor x = Sexp.list [x]
 
---------------------
--- NotPunned no Grouping
---------------------
-fromNotPunnedGroup :: [Frontend.NotPunned] -> Sexp.T
-fromNotPunnedGroup = Sexp.unGroupBy2 . toStarList Frontend.fromNotPunned
-
-toNotPunnedGroup :: Sexp.T -> Maybe [Frontend.NotPunned]
-toNotPunnedGroup = fromStarList Frontend.toNotPunned . Sexp.groupBy2
-
 ----------------------------------------
 -- Generated
 ----------------------------------------
@@ -163,6 +171,10 @@ toArgBody form =
 fromArgBody :: ArgBody -> Sexp.T
 fromArgBody (ArgBody sexp1 sexp2) =
   Sexp.list [sexp1, sexp2]
+
+instance Structure ArgBody where
+  to = toArgBody
+  from = fromArgBody
 
 ----------------------------------------
 -- DefunMatch
@@ -191,6 +203,10 @@ fromDefunMatch :: DefunMatch -> Sexp.T
 fromDefunMatch (DefunMatch sexp1 argBody2) =
   Sexp.listStar [Sexp.atom nameDefunMatch, sexp1, fromArgBody `toStarList` argBody2]
 
+instance Structure DefunMatch where
+  to = toDefunMatch
+  from = fromDefunMatch
+
 ----------------------------------------
 -- If
 ----------------------------------------
@@ -217,6 +233,10 @@ fromIf :: If -> Sexp.T
 fromIf (If sexp1 sexp2 sexp3) =
   Sexp.list [Sexp.atom nameIf, sexp1, sexp2, sexp3]
 
+instance Structure If where
+  to = toIf
+  from = fromIf
+
 ----------------------------------------
 -- IfNoElse
 ----------------------------------------
@@ -242,6 +262,10 @@ toIfNoElse form
 fromIfNoElse :: IfNoElse -> Sexp.T
 fromIfNoElse (IfNoElse sexp1 sexp2) =
   Sexp.list [Sexp.atom nameIfNoElse, sexp1, sexp2]
+
+instance Structure IfNoElse where
+  to = toIfNoElse
+  from = fromIfNoElse
 
 ----------------------------------------
 -- DefunSigMatch
@@ -270,6 +294,10 @@ fromDefunSigMatch :: DefunSigMatch -> Sexp.T
 fromDefunSigMatch (DefunSigMatch sexp1 sexp2 argBody3) =
   Sexp.listStar [Sexp.atom nameDefunSigMatch, sexp1, sexp2, fromArgBody `toStarList` argBody3]
 
+instance Structure DefunSigMatch where
+  to = toDefunSigMatch
+  from = fromDefunSigMatch
+
 ----------------------------------------
 -- LetMatch
 ----------------------------------------
@@ -297,31 +325,9 @@ fromLetMatch :: LetMatch -> Sexp.T
 fromLetMatch (LetMatch sexp1 argBodys2 sexp3) =
   Sexp.list [Sexp.atom nameLetMatch, sexp1, fromArgBodys argBodys2, sexp3]
 
-----------------------------------------
--- LetHandler
-----------------------------------------
-
-nameLetHandler :: NameSymbol.T
-nameLetHandler = ":let-handler"
-
-isLetHandler :: Sexp.T -> Bool
-isLetHandler (Sexp.Cons form _) = Sexp.isAtomNamed form nameLetHandler
-isLetHandler _ = False
-
-toLetHandler :: Sexp.T -> Maybe LetHandler
-toLetHandler form
-  | isLetHandler form =
-    case form of
-      _nameLetHandler Sexp.:> sexp1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil ->
-        LetHandler sexp1 sexp2 sexp3 |> Just
-      _ ->
-        Nothing
-  | otherwise =
-    Nothing
-
-fromLetHandler :: LetHandler -> Sexp.T
-fromLetHandler (LetHandler sexp1 sexp2 sexp3) =
-  Sexp.list [Sexp.atom nameLetHandler, sexp1, sexp2, sexp3]
+instance Structure LetMatch where
+  to = toLetMatch
+  from = fromLetMatch
 
 ----------------------------------------
 -- RecordNoPunned
@@ -349,3 +355,100 @@ toRecordNoPunned form
 fromRecordNoPunned :: RecordNoPunned -> Sexp.T
 fromRecordNoPunned (RecordNoPunned notPunnedGroup1) =
   Sexp.listStar [Sexp.atom nameRecordNoPunned, fromNotPunnedGroup notPunnedGroup1]
+
+instance Structure RecordNoPunned where
+  to = toRecordNoPunned
+  from = fromRecordNoPunned
+
+----------------------------------------
+-- LambdaCase
+----------------------------------------
+
+nameLambdaCase :: NameSymbol.T
+nameLambdaCase = ":lambda-case"
+
+isLambdaCase :: Sexp.T -> Bool
+isLambdaCase (Sexp.Cons form _) = Sexp.isAtomNamed form nameLambdaCase
+isLambdaCase _ = False
+
+toLambdaCase :: Sexp.T -> Maybe LambdaCase
+toLambdaCase form
+  | isLambdaCase form =
+    case form of
+      _nameLambdaCase Sexp.:> argBody1
+        | Just argBody1 <- toArgBody `fromStarList` argBody1 ->
+          LambdaCase argBody1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromLambdaCase :: LambdaCase -> Sexp.T
+fromLambdaCase (LambdaCase argBody1) =
+  Sexp.listStar [Sexp.atom nameLambdaCase, fromArgBody `toStarList` argBody1]
+
+instance Structure LambdaCase where
+  to = toLambdaCase
+  from = fromLambdaCase
+
+----------------------------------------
+-- LetHandler
+----------------------------------------
+
+nameLetHandler :: NameSymbol.T
+nameLetHandler = ":lethandler"
+
+isLetHandler :: Sexp.T -> Bool
+isLetHandler (Sexp.Cons form _) = Sexp.isAtomNamed form nameLetHandler
+isLetHandler _ = False
+
+toLetHandler :: Sexp.T -> Maybe LetHandler
+toLetHandler form
+  | isLetHandler form =
+    case form of
+      _nameLetHandler Sexp.:> sexp1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil ->
+        LetHandler sexp1 sexp2 sexp3 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromLetHandler :: LetHandler -> Sexp.T
+fromLetHandler (LetHandler sexp1 sexp2 sexp3) =
+  Sexp.list [Sexp.atom nameLetHandler, sexp1, sexp2, sexp3]
+
+instance Structure LetHandler where
+  to = toLetHandler
+  from = fromLetHandler
+
+----------------------------------------
+-- Handler
+----------------------------------------
+
+nameHandler :: NameSymbol.T
+nameHandler = ":lethandler"
+
+isHandler :: Sexp.T -> Bool
+isHandler (Sexp.Cons form _) = Sexp.isAtomNamed form nameHandler
+isHandler _ = False
+
+toHandler :: Sexp.T -> Maybe Handler
+toHandler form
+  | isHandler form =
+    case form of
+      _nameHandler Sexp.:> sexp1 Sexp.:> letRet2 Sexp.:> letOp3
+        | Just letRet2 <- toLetRet letRet2,
+          Just letOp3 <- toLetOp `fromStarList` letOp3 ->
+          Handler sexp1 letRet2 letOp3 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromHandler :: Handler -> Sexp.T
+fromHandler (Handler sexp1 letRet2 letOp3) =
+  Sexp.listStar [Sexp.atom nameHandler, sexp1, fromLetRet letRet2, fromLetOp `toStarList` letOp3]
+
+instance Structure Handler where
+  to = toHandler
+  from = fromHandler

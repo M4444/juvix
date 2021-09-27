@@ -28,6 +28,7 @@ transformSig ::
     HasThrowFF HR.T primTy primVal m,
     HasParam primTy primVal m,
     HasCoreSigs HR.T primTy primVal m,
+    HasClosure m,
     Show primTy,
     Show primVal
   ) =>
@@ -50,7 +51,13 @@ extractDataConstructorSigs (typeCons Sexp.:> _ Sexp.:> dataCons)
 extractDataConstructorSigs _t = []
 
 transformNormalSig ::
-  (ReduceEff HR.T primTy primVal m, HasPatVars m, HasParam primTy primVal m, Show primTy, Show primVal) =>
+  ( ReduceEff HR.T primTy primVal m,
+    HasPatVars m,
+    HasParam primTy primVal m,
+    HasClosure m,
+    Show primTy,
+    Show primVal
+  ) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
   Ctx.Definition Sexp.T Sexp.T Sexp.T ->
@@ -85,6 +92,7 @@ transformValSig ::
   ( HasThrowFF HR.T primTy primVal m,
     HasParam primTy primVal m,
     HasCoreSigs HR.T primTy primVal m,
+    HasClosure m,
     Show primTy,
     Show primVal
   ) =>
@@ -105,7 +113,8 @@ transformSpecial ::
   ( Show primTy,
     Show primVal,
     HasThrowFF ext primTy primVal m,
-    HasCoreSigs ext primTy primVal m
+    HasCoreSigs ext primTy primVal m,
+    HasClosure m
   ) =>
   NameSymbol.Mod ->
   Ctx.Definition Sexp.T Sexp.T Sexp.T ->
@@ -122,7 +131,8 @@ transformSpecialRhs ::
   ( Show primTy,
     Show primVal,
     HasThrowFF ext primTy primVal m,
-    HasCoreSigs ext primTy primVal m
+    HasCoreSigs ext primTy primVal m,
+    HasClosure m
   ) =>
   NameSymbol.Mod ->
   Sexp.T ->
@@ -133,13 +143,22 @@ transformSpecialRhs _ (Sexp.List [name, prim])
     case atomName of
       "Builtin" :| ["Arrow"] -> pure $ Just $ ArrowS Nothing
       "Builtin" :| ["Pair"] -> pure $ Just $ PairS Nothing
-      "Builtin" :| ["Omega"] -> pure $ Just OmegaS
+      "Builtin" :| ["SAny"] -> pure $ Just SAnyS
       "Builtin" :| ["Colon"] -> pure $ Just ColonS
       "Builtin" :| ["Type"] -> pure $ Just TypeS
+      "Builtin" :| ["CatProduct"] -> pure $ Just $ CatProductS
+      "Builtin" :| ["CatCoproduct"] -> pure $ Just $ CatCoproductS
+      "Builtin" :| ["CatProductIntro"] -> pure $ Just $ CatProductIntroS
+      "Builtin" :| ["CatProductElimLeft"] -> pure $ Just $ CatProductElimLeftS
+      "Builtin" :| ["CatProductElimRight"] -> pure $ Just $ CatProductElimRightS
+      "Builtin" :| ["CatCoproductIntroLeft"] -> pure $ Just $ CatCoproductIntroLeftS
+      "Builtin" :| ["CatCoproductIntroRight"] -> pure $ Just $ CatCoproductIntroRightS
+      "Builtin" :| ["CatCoproductElim"] -> pure $ Just $ CatCoproductElimS
       "Builtin" :| (s : ss) -> throwFF $ UnknownBuiltin $ s :| ss
       _ -> pure Nothing
 transformSpecialRhs q prim
-  | Just a@Sexp.A {} <- Sexp.atomFromT prim = getSpecialSig q (Sexp.Atom a)
+  | Just a@Sexp.A {} <- Sexp.atomFromT prim =
+    getSpecialSig q (Sexp.Atom a)
 transformSpecialRhs q (Sexp.List [f, arg])
   | Just Sexp.A {atomName} <- Sexp.atomFromT f =
     case show atomName of
@@ -149,6 +168,14 @@ transformSpecialRhs q (Sexp.List [f, arg])
         case head of
           Just (ArrowS Nothing) -> Just . ArrowS . Just <$> transformUsage q arg
           Just (PairS Nothing) -> Just . PairS . Just <$> transformUsage q arg
+          Just CatProductS -> pure $ Just $ CatProductS
+          Just CatCoproductS -> pure $ Just $ CatCoproductS
+          Just CatProductIntroS -> pure $ Just $ CatProductIntroS
+          Just CatProductElimLeftS -> pure $ Just $ CatProductElimLeftS
+          Just CatProductElimRightS -> pure $ Just $ CatProductElimRightS
+          Just CatCoproductIntroLeftS -> pure $ Just $ CatCoproductIntroLeftS
+          Just CatCoproductIntroRightS -> pure $ Just $ CatCoproductIntroRightS
+          Just CatCoproductElimS -> pure $ Just $ CatCoproductElimS
           _ -> pure Nothing
 transformSpecialRhs _ _ = pure Nothing
 

@@ -2,41 +2,69 @@ Rec
     { recordContents = T
         { public = fromList
             [
-                ( "*"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "->" "field"
-                                ( ":infix" "->" "field" "field" ) )
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( () ( ":primitive" "Circuit.mul" ) ) )
-                        , defPrecedence = Pred Left 7 } ) )
+                ( "sExpField"
+                , TypeDeclar
+                    { definitionRepr =
+                        ( "type" "sExpField" ()
+                            ( "Atom" "field" )
+                            ( "SPair" "sExpField" "sExpField" ) ) } )
             ,
-                ( "field"
+                ( "Atom"
+                , SumCon
+                    ( Sum { sumTDef = Nothing, sumTName = "sExpField" } ) )
+            ,
+                ( "s1"
                 , Def
                     ( D
                         { defUsage = Nothing
-                        , defMTy = Just "ty"
+                        , defMTy = Just "sExpField"
                         , defTerm =
                             ( ":lambda-case"
-                                ( () ( ":primitive" "Circuit.field" ) ) )
+                                ( ()
+                                    ( "SPair"
+                                        ( ":paren" ( "Atom" 1 ) )
+                                        ( ":paren"
+                                            ( "SPair"
+                                                ( ":paren"
+                                                    ( "SPair"
+                                                        ( ":paren"
+                                                            ( "Atom" 2 ) )
+                                                        ( ":paren"
+                                                            ( "Atom" 3 ) ) ) )
+                                                ( ":paren"
+                                                    ( "Atom" 4 ) ) ) ) ) ) )
                         , defPrecedence = Pred Left 9 } ) )
             ,
-                ( "P", SumCon ( Sum { sumTDef = Nothing, sumTName = "Bar" } ) )
+                ( "functionTypeInConstructor"
+                , TypeDeclar
+                    { definitionRepr =
+                        ( "type"
+                            ( "functionTypeInConstructor" ":type" "ty" ) ()
+                            ( "FTIC_Left" "field" )
+                            ( "FTIC_Right"
+                                ( ":infix" "->" "field" "field" ) ) ) } )
             ,
-                ( "+"
+                ( "P", SumCon ( Sum { sumTDef = Nothing, sumTName = "bar" } ) )
+            ,
+                ( "fticTestFunc"
                 , Def
                     ( D
                         { defUsage = Nothing
                         , defMTy = Just
-                            ( ":infix" "->" "field"
-                                ( ":infix" "->" "field" "field" ) )
+                            ( ":infix" "->" "field" "field" )
+                        , defTerm =
+                            ( ":lambda-case" ( ( "x" ) "x" ) )
+                        , defPrecedence = Pred Left 9 } ) )
+            ,
+                ( "fticTestTerm"
+                , Def
+                    ( D
+                        { defUsage = Nothing
+                        , defMTy = Just "functionTypeInConstructor"
                         , defTerm =
                             ( ":lambda-case"
-                                ( () ( ":primitive" "Circuit.add" ) ) )
-                        , defPrecedence = Pred Left 5 } ) )
+                                ( () ( "FTIC_Right" "fticTestFunc" ) ) )
+                        , defPrecedence = Pred Left 9 } ) )
             ,
                 ( "main"
                 , Def
@@ -44,27 +72,80 @@ Rec
                         { defUsage = Nothing
                         , defMTy = Just "field"
                         , defTerm =
-                            ( ":lambda-case" ( () 3 ) )
+                            ( ":lambda-case"
+                                ( ()
+                                    ( ":let-match" "vst"
+                                        ( () "verySimpleTerm" )
+                                        ( ":let-match" "pm"
+                                            ( ()
+                                                ( "patternMatch"
+                                                    ( ":paren"
+                                                        ( "Q" 0 1 2 ) ) ) )
+                                            ( ":let-match" "ftict"
+                                                ( () "fticTestTerm" )
+                                                ( ":let-match" "sexpTest"
+                                                    ( ()
+                                                        ( "ssize" "s1" ) ) 3 ) ) ) ) ) )
                         , defPrecedence = Pred Left 9 } ) )
             ,
-                ( "^"
+                ( "ssize"
                 , Def
                     ( D
                         { defUsage = Nothing
                         , defMTy = Just
-                            ( ":infix" "->" "field"
-                                ( ":infix" "->" "field" "field" ) )
+                            ( ":infix" "->" "sExpField" "field" )
                         , defTerm =
                             ( ":lambda-case"
-                                ( () ( ":primitive" "Circuit.exp" ) ) )
-                        , defPrecedence = Pred Left 8 } ) )
+                                ( ( ( "Atom" "x" ) ) 1 )
+                                (
+                                    ( ( "SPair" "x" "y" ) )
+                                    ( ":infix" "+"
+                                        ( "ssize" "x" )
+                                        ( "ssize" "y" ) ) ) )
+                        , defPrecedence = Pred Left 9 } ) )
             ,
-                ( "norm"
+                ( "verySimpleType"
+                , TypeDeclar
+                    { definitionRepr =
+                        ( "type" "verySimpleType" () ( "One" "field" ) ) } )
+            ,
+                ( "SPair"
+                , SumCon
+                    ( Sum { sumTDef = Nothing, sumTName = "sExpField" } ) )
+            ,
+                ( "Q", SumCon ( Sum { sumTDef = Nothing, sumTName = "bar" } ) )
+            ,
+                ( "FTIC_Left"
+                , SumCon
+                    ( Sum
+                        { sumTDef = Nothing
+                        , sumTName = "functionTypeInConstructor" } ) )
+            ,
+                ( "One"
+                , SumCon
+                    ( Sum { sumTDef = Nothing, sumTName = "verySimpleType" } ) )
+            ,
+                ( "FTIC_Right"
+                , SumCon
+                    ( Sum
+                        { sumTDef = Nothing
+                        , sumTName = "functionTypeInConstructor" } ) )
+            ,
+                ( "verySimpleTerm"
+                , Def
+                    ( D
+                        { defUsage = Nothing
+                        , defMTy = Just "verySimpleType"
+                        , defTerm =
+                            ( ":lambda-case" ( () ( "One" 0 ) ) )
+                        , defPrecedence = Pred Left 9 } ) )
+            ,
+                ( "patternMatch"
                 , Def
                     ( D
                         { defUsage = Nothing
                         , defMTy = Just
-                            ( ":infix" "->" "Bar" "field" )
+                            ( ":infix" "->" "bar" "field" )
                         , defTerm =
                             ( ":lambda-case"
                                 (
@@ -81,45 +162,11 @@ Rec
                                                     ( ":infix" "^" "z" 2 ) ) ) ) ) ) )
                         , defPrecedence = Pred Left 9 } ) )
             ,
-                ( "Q", SumCon ( Sum { sumTDef = Nothing, sumTName = "Bar" } ) )
-            ,
-                ( "t"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "->" "field" "field" )
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( ( "x" ) ( ":infix" "+" "x" 5 ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
-            ,
-                ( "x"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "field"
-                        , defTerm =
-                            ( ":lambda-case" ( () 3 ) )
-                        , defPrecedence = Pred Left 9 } ) )
-            ,
-                ( "=="
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "->" "field"
-                                ( ":infix" "->" "field" "bool" ) )
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( () ( ":primitive" "Circuit.eq" ) ) )
-                        , defPrecedence = Pred Left 2 } ) )
-            ,
-                ( "Bar"
+                ( "bar"
                 , TypeDeclar
                     { definitionRepr =
-                        (
-                            ( "Bar" ":type" "ty" ) ()
+                        ( "type"
+                            ( "bar" ":type" "ty" ) ()
                             ( "P" "field" "field" )
                             ( "Q" "field" "field" "field" ) ) } ) ]
         , private = fromList [] }

@@ -1,14 +1,715 @@
 Ann
-    { usage = Omega
-    , type' = PrimTy PField
-    , term = Prim
+    { usage = SAny
+    , type' = PrimTy
         ( Return
             { retType = PrimType
-                { getPrimType = PField :| [] }
-            , retTerm = PConst
-                ( P
-                    ( 3 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
-                )
+                { getPrimType = STAR :| [] }
+            , retTerm = PField
             }
         )
+    , term = AppM
+        ( Ann
+            { usage = SAny
+            , type' = Pi SAny
+                ( SymT
+                    ( "Datatypes" :| [ "verySimpleType" ] )
+                )
+                ( PrimTy
+                    ( Return
+                        { retType = PrimType
+                            { getPrimType = STAR :| [] }
+                        , retTerm = PField
+                        }
+                    )
+                )
+            , term = LamM
+                { capture =
+                    [ "Datatypes" :| [ "Atom" ]
+                    , "Datatypes" :| [ "FTIC_Right" ]
+                    , "Datatypes" :| [ "Q" ]
+                    , "Datatypes" :| [ "SPair" ]
+                    , "Datatypes" :| [ "patternMatch" ]
+                    , "Datatypes" :| [ "ssize" ]
+                    ]
+                , arguments =
+                    [ "0" :| [] ]
+                , body = Ann
+                    { usage = SAny
+                    , type' = PrimTy
+                        ( Return
+                            { retType = PrimType
+                                { getPrimType = STAR :| [] }
+                            , retTerm = PField
+                            }
+                        )
+                    , term = AppM
+                        ( Ann
+                            { usage = SAny
+                            , type' = Pi SAny
+                                ( PrimTy
+                                    ( Return
+                                        { retType = PrimType
+                                            { getPrimType = STAR :| [] }
+                                        , retTerm = PField
+                                        }
+                                    )
+                                )
+                                ( PrimTy
+                                    ( Return
+                                        { retType = PrimType
+                                            { getPrimType = STAR :| [] }
+                                        , retTerm = PField
+                                        }
+                                    )
+                                )
+                            , term = LamM
+                                { capture =
+                                    [ "Datatypes" :| [ "Atom" ]
+                                    , "Datatypes" :| [ "FTIC_Right" ]
+                                    , "Datatypes" :| [ "SPair" ]
+                                    , "Datatypes" :| [ "ssize" ]
+                                    ]
+                                , arguments =
+                                    [ "1" :| [] ]
+                                , body = Ann
+                                    { usage = SAny
+                                    , type' = PrimTy
+                                        ( Return
+                                            { retType = PrimType
+                                                { getPrimType = STAR :| [] }
+                                            , retTerm = PField
+                                            }
+                                        )
+                                    , term = AppM
+                                        ( Ann
+                                            { usage = SAny
+                                            , type' = Pi SAny
+                                                ( SymT
+                                                    ( "Datatypes" :| [ "functionTypeInConstructor" ] )
+                                                )
+                                                ( PrimTy
+                                                    ( Return
+                                                        { retType = PrimType
+                                                            { getPrimType = STAR :| [] }
+                                                        , retTerm = PField
+                                                        }
+                                                    )
+                                                )
+                                            , term = LamM
+                                                { capture =
+                                                    [ "Datatypes" :| [ "Atom" ]
+                                                    , "Datatypes" :| [ "SPair" ]
+                                                    , "Datatypes" :| [ "ssize" ]
+                                                    ]
+                                                , arguments =
+                                                    [ "2" :| [] ]
+                                                , body = Ann
+                                                    { usage = SAny
+                                                    , type' = PrimTy
+                                                        ( Return
+                                                            { retType = PrimType
+                                                                { getPrimType = STAR :| [] }
+                                                            , retTerm = PField
+                                                            }
+                                                        )
+                                                    , term = AppM
+                                                        ( Ann
+                                                            { usage = SAny
+                                                            , type' = Pi SAny
+                                                                ( PrimTy
+                                                                    ( Return
+                                                                        { retType = PrimType
+                                                                            { getPrimType = STAR :| [] }
+                                                                        , retTerm = PField
+                                                                        }
+                                                                    )
+                                                                )
+                                                                ( PrimTy
+                                                                    ( Return
+                                                                        { retType = PrimType
+                                                                            { getPrimType = STAR :| [] }
+                                                                        , retTerm = PField
+                                                                        }
+                                                                    )
+                                                                )
+                                                            , term = LamM
+                                                                { capture = []
+                                                                , arguments =
+                                                                    [ "3" :| [] ]
+                                                                , body = Ann
+                                                                    { usage = SAny
+                                                                    , type' = PrimTy
+                                                                        ( Return
+                                                                            { retType = PrimType
+                                                                                { getPrimType = STAR :| [] }
+                                                                            , retTerm = PField
+                                                                            }
+                                                                        )
+                                                                    , term = Prim
+                                                                        ( Return
+                                                                            { retType = PrimType
+                                                                                { getPrimType = PField :| [] }
+                                                                            , retTerm = PConst
+                                                                                ( P
+                                                                                    ( 3 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                                                )
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        )
+                                                        [ Ann
+                                                            { usage = SAny
+                                                            , type' = PrimTy
+                                                                ( Return
+                                                                    { retType = PrimType
+                                                                        { getPrimType = STAR :| [] }
+                                                                    , retTerm = PField
+                                                                    }
+                                                                )
+                                                            , term = AppM
+                                                                ( Ann
+                                                                    { usage = SAny
+                                                                    , type' = Pi SAny
+                                                                        ( SymT
+                                                                            ( "Datatypes" :| [ "sExpField" ] )
+                                                                        )
+                                                                        ( PrimTy
+                                                                            ( Return
+                                                                                { retType = PrimType
+                                                                                    { getPrimType = STAR :| [] }
+                                                                                , retTerm = PField
+                                                                                }
+                                                                            )
+                                                                        )
+                                                                    , term = Var
+                                                                        ( "Datatypes" :| [ "ssize" ] )
+                                                                    }
+                                                                )
+                                                                [ Ann
+                                                                    { usage = SAny
+                                                                    , type' = SymT
+                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                    , term = AppM
+                                                                        ( Ann
+                                                                            { usage = SAny
+                                                                            , type' = Pi SAny
+                                                                                ( SymT
+                                                                                    ( "Datatypes" :| [ "sExpField" ] )
+                                                                                )
+                                                                                ( Pi SAny
+                                                                                    ( SymT
+                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                    )
+                                                                                    ( SymT
+                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                    )
+                                                                                )
+                                                                            , term = Var
+                                                                                ( "Datatypes" :| [ "SPair" ] )
+                                                                            }
+                                                                        )
+                                                                        [ Ann
+                                                                            { usage = SAny
+                                                                            , type' = SymT
+                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                            , term = AppM
+                                                                                ( Ann
+                                                                                    { usage = SAny
+                                                                                    , type' = Pi SAny
+                                                                                        ( PrimTy
+                                                                                            ( Return
+                                                                                                { retType = PrimType
+                                                                                                    { getPrimType = STAR :| [] }
+                                                                                                , retTerm = PField
+                                                                                                }
+                                                                                            )
+                                                                                        )
+                                                                                        ( SymT
+                                                                                            ( "Datatypes" :| [ "sExpField" ] )
+                                                                                        )
+                                                                                    , term = Var
+                                                                                        ( "Datatypes" :| [ "Atom" ] )
+                                                                                    }
+                                                                                )
+                                                                                [ Ann
+                                                                                    { usage = SAny
+                                                                                    , type' = PrimTy
+                                                                                        ( Return
+                                                                                            { retType = PrimType
+                                                                                                { getPrimType = STAR :| [] }
+                                                                                            , retTerm = PField
+                                                                                            }
+                                                                                        )
+                                                                                    , term = Prim
+                                                                                        ( Return
+                                                                                            { retType = PrimType
+                                                                                                { getPrimType = PField :| [] }
+                                                                                            , retTerm = PConst
+                                                                                                ( P
+                                                                                                    ( 1 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                                                                )
+                                                                                            }
+                                                                                        )
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        , Ann
+                                                                            { usage = SAny
+                                                                            , type' = SymT
+                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                            , term = AppM
+                                                                                ( Ann
+                                                                                    { usage = SAny
+                                                                                    , type' = Pi SAny
+                                                                                        ( SymT
+                                                                                            ( "Datatypes" :| [ "sExpField" ] )
+                                                                                        )
+                                                                                        ( Pi SAny
+                                                                                            ( SymT
+                                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                                            )
+                                                                                            ( SymT
+                                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                                            )
+                                                                                        )
+                                                                                    , term = Var
+                                                                                        ( "Datatypes" :| [ "SPair" ] )
+                                                                                    }
+                                                                                )
+                                                                                [ Ann
+                                                                                    { usage = SAny
+                                                                                    , type' = SymT
+                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                    , term = AppM
+                                                                                        ( Ann
+                                                                                            { usage = SAny
+                                                                                            , type' = Pi SAny
+                                                                                                ( SymT
+                                                                                                    ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                )
+                                                                                                ( Pi SAny
+                                                                                                    ( SymT
+                                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                    )
+                                                                                                    ( SymT
+                                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                    )
+                                                                                                )
+                                                                                            , term = Var
+                                                                                                ( "Datatypes" :| [ "SPair" ] )
+                                                                                            }
+                                                                                        )
+                                                                                        [ Ann
+                                                                                            { usage = SAny
+                                                                                            , type' = SymT
+                                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                                            , term = AppM
+                                                                                                ( Ann
+                                                                                                    { usage = SAny
+                                                                                                    , type' = Pi SAny
+                                                                                                        ( PrimTy
+                                                                                                            ( Return
+                                                                                                                { retType = PrimType
+                                                                                                                    { getPrimType = STAR :| [] }
+                                                                                                                , retTerm = PField
+                                                                                                                }
+                                                                                                            )
+                                                                                                        )
+                                                                                                        ( SymT
+                                                                                                            ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                        )
+                                                                                                    , term = Var
+                                                                                                        ( "Datatypes" :| [ "Atom" ] )
+                                                                                                    }
+                                                                                                )
+                                                                                                [ Ann
+                                                                                                    { usage = SAny
+                                                                                                    , type' = PrimTy
+                                                                                                        ( Return
+                                                                                                            { retType = PrimType
+                                                                                                                { getPrimType = STAR :| [] }
+                                                                                                            , retTerm = PField
+                                                                                                            }
+                                                                                                        )
+                                                                                                    , term = Prim
+                                                                                                        ( Return
+                                                                                                            { retType = PrimType
+                                                                                                                { getPrimType = PField :| [] }
+                                                                                                            , retTerm = PConst
+                                                                                                                ( P
+                                                                                                                    ( 2 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                                                                                )
+                                                                                                            }
+                                                                                                        )
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        , Ann
+                                                                                            { usage = SAny
+                                                                                            , type' = SymT
+                                                                                                ( "Datatypes" :| [ "sExpField" ] )
+                                                                                            , term = AppM
+                                                                                                ( Ann
+                                                                                                    { usage = SAny
+                                                                                                    , type' = Pi SAny
+                                                                                                        ( PrimTy
+                                                                                                            ( Return
+                                                                                                                { retType = PrimType
+                                                                                                                    { getPrimType = STAR :| [] }
+                                                                                                                , retTerm = PField
+                                                                                                                }
+                                                                                                            )
+                                                                                                        )
+                                                                                                        ( SymT
+                                                                                                            ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                        )
+                                                                                                    , term = Var
+                                                                                                        ( "Datatypes" :| [ "Atom" ] )
+                                                                                                    }
+                                                                                                )
+                                                                                                [ Ann
+                                                                                                    { usage = SAny
+                                                                                                    , type' = PrimTy
+                                                                                                        ( Return
+                                                                                                            { retType = PrimType
+                                                                                                                { getPrimType = STAR :| [] }
+                                                                                                            , retTerm = PField
+                                                                                                            }
+                                                                                                        )
+                                                                                                    , term = Prim
+                                                                                                        ( Return
+                                                                                                            { retType = PrimType
+                                                                                                                { getPrimType = PField :| [] }
+                                                                                                            , retTerm = PConst
+                                                                                                                ( P
+                                                                                                                    ( 3 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                                                                                )
+                                                                                                            }
+                                                                                                        )
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                , Ann
+                                                                                    { usage = SAny
+                                                                                    , type' = SymT
+                                                                                        ( "Datatypes" :| [ "sExpField" ] )
+                                                                                    , term = AppM
+                                                                                        ( Ann
+                                                                                            { usage = SAny
+                                                                                            , type' = Pi SAny
+                                                                                                ( PrimTy
+                                                                                                    ( Return
+                                                                                                        { retType = PrimType
+                                                                                                            { getPrimType = STAR :| [] }
+                                                                                                        , retTerm = PField
+                                                                                                        }
+                                                                                                    )
+                                                                                                )
+                                                                                                ( SymT
+                                                                                                    ( "Datatypes" :| [ "sExpField" ] )
+                                                                                                )
+                                                                                            , term = Var
+                                                                                                ( "Datatypes" :| [ "Atom" ] )
+                                                                                            }
+                                                                                        )
+                                                                                        [ Ann
+                                                                                            { usage = SAny
+                                                                                            , type' = PrimTy
+                                                                                                ( Return
+                                                                                                    { retType = PrimType
+                                                                                                        { getPrimType = STAR :| [] }
+                                                                                                    , retTerm = PField
+                                                                                                    }
+                                                                                                )
+                                                                                            , term = Prim
+                                                                                                ( Return
+                                                                                                    { retType = PrimType
+                                                                                                        { getPrimType = PField :| [] }
+                                                                                                    , retTerm = PConst
+                                                                                                        ( P
+                                                                                                            ( 4 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                                                                        )
+                                                                                                    }
+                                                                                                )
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        )
+                                        [ Ann
+                                            { usage = SAny
+                                            , type' = SymT
+                                                ( "Datatypes" :| [ "functionTypeInConstructor" ] )
+                                            , term = AppM
+                                                ( Ann
+                                                    { usage = SAny
+                                                    , type' = Pi SAny
+                                                        ( Pi SAny
+                                                            ( PrimTy
+                                                                ( Return
+                                                                    { retType = PrimType
+                                                                        { getPrimType = STAR :| [] }
+                                                                    , retTerm = PField
+                                                                    }
+                                                                )
+                                                            )
+                                                            ( PrimTy
+                                                                ( Return
+                                                                    { retType = PrimType
+                                                                        { getPrimType = STAR :| [] }
+                                                                    , retTerm = PField
+                                                                    }
+                                                                )
+                                                            )
+                                                        )
+                                                        ( SymT
+                                                            ( "Datatypes" :| [ "functionTypeInConstructor" ] )
+                                                        )
+                                                    , term = Var
+                                                        ( "Datatypes" :| [ "FTIC_Right" ] )
+                                                    }
+                                                )
+                                                [ Ann
+                                                    { usage = SAny
+                                                    , type' = Pi SAny
+                                                        ( PrimTy
+                                                            ( Return
+                                                                { retType = PrimType
+                                                                    { getPrimType = STAR :| [] }
+                                                                , retTerm = PField
+                                                                }
+                                                            )
+                                                        )
+                                                        ( PrimTy
+                                                            ( Return
+                                                                { retType = PrimType
+                                                                    { getPrimType = STAR :| [] }
+                                                                , retTerm = PField
+                                                                }
+                                                            )
+                                                        )
+                                                    , term = LamM
+                                                        { capture = []
+                                                        , arguments =
+                                                            [ "20" :| [] ]
+                                                        , body = Ann
+                                                            { usage = SAny
+                                                            , type' = PrimTy
+                                                                ( Return
+                                                                    { retType = PrimType
+                                                                        { getPrimType = STAR :| [] }
+                                                                    , retTerm = PField
+                                                                    }
+                                                                )
+                                                            , term = Var
+                                                                ( "20" :| [] )
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        )
+                        [ Ann
+                            { usage = SAny
+                            , type' = PrimTy
+                                ( Return
+                                    { retType = PrimType
+                                        { getPrimType = STAR :| [] }
+                                    , retTerm = PField
+                                    }
+                                )
+                            , term = AppM
+                                ( Ann
+                                    { usage = SAny
+                                    , type' = Pi SAny
+                                        ( SymT
+                                            ( "Datatypes" :| [ "bar" ] )
+                                        )
+                                        ( PrimTy
+                                            ( Return
+                                                { retType = PrimType
+                                                    { getPrimType = STAR :| [] }
+                                                , retTerm = PField
+                                                }
+                                            )
+                                        )
+                                    , term = Var
+                                        ( "Datatypes" :| [ "patternMatch" ] )
+                                    }
+                                )
+                                [ Ann
+                                    { usage = SAny
+                                    , type' = SymT
+                                        ( "Datatypes" :| [ "bar" ] )
+                                    , term = AppM
+                                        ( Ann
+                                            { usage = SAny
+                                            , type' = Pi SAny
+                                                ( PrimTy
+                                                    ( Return
+                                                        { retType = PrimType
+                                                            { getPrimType = STAR :| [] }
+                                                        , retTerm = PField
+                                                        }
+                                                    )
+                                                )
+                                                ( Pi SAny
+                                                    ( PrimTy
+                                                        ( Return
+                                                            { retType = PrimType
+                                                                { getPrimType = STAR :| [] }
+                                                            , retTerm = PField
+                                                            }
+                                                        )
+                                                    )
+                                                    ( Pi SAny
+                                                        ( PrimTy
+                                                            ( Return
+                                                                { retType = PrimType
+                                                                    { getPrimType = STAR :| [] }
+                                                                , retTerm = PField
+                                                                }
+                                                            )
+                                                        )
+                                                        ( SymT
+                                                            ( "Datatypes" :| [ "bar" ] )
+                                                        )
+                                                    )
+                                                )
+                                            , term = Var
+                                                ( "Datatypes" :| [ "Q" ] )
+                                            }
+                                        )
+                                        [ Ann
+                                            { usage = SAny
+                                            , type' = PrimTy
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = STAR :| [] }
+                                                    , retTerm = PField
+                                                    }
+                                                )
+                                            , term = Prim
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = PField :| [] }
+                                                    , retTerm = PConst
+                                                        ( P
+                                                            ( 0 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        , Ann
+                                            { usage = SAny
+                                            , type' = PrimTy
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = STAR :| [] }
+                                                    , retTerm = PField
+                                                    }
+                                                )
+                                            , term = Prim
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = PField :| [] }
+                                                    , retTerm = PConst
+                                                        ( P
+                                                            ( 1 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        , Ann
+                                            { usage = SAny
+                                            , type' = PrimTy
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = STAR :| [] }
+                                                    , retTerm = PField
+                                                    }
+                                                )
+                                            , term = Prim
+                                                ( Return
+                                                    { retType = PrimType
+                                                        { getPrimType = PField :| [] }
+                                                    , retTerm = PConst
+                                                        ( P
+                                                            ( 2 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        [ Ann
+            { usage = SAny
+            , type' = SymT
+                ( "Datatypes" :| [ "verySimpleType" ] )
+            , term = AppM
+                ( Ann
+                    { usage = SAny
+                    , type' = Pi SAny
+                        ( PrimTy
+                            ( Return
+                                { retType = PrimType
+                                    { getPrimType = STAR :| [] }
+                                , retTerm = PField
+                                }
+                            )
+                        )
+                        ( SymT
+                            ( "Datatypes" :| [ "verySimpleType" ] )
+                        )
+                    , term = Var
+                        ( "Datatypes" :| [ "One" ] )
+                    }
+                )
+                [ Ann
+                    { usage = SAny
+                    , type' = PrimTy
+                        ( Return
+                            { retType = PrimType
+                                { getPrimType = STAR :| [] }
+                            , retTerm = PField
+                            }
+                        )
+                    , term = Prim
+                        ( Return
+                            { retType = PrimType
+                                { getPrimType = PField :| [] }
+                            , retTerm = PConst
+                                ( P
+                                    ( 0 `modulo` 52435875175126190479447740508185965837690552500527637822603658699938581184513 )
+                                )
+                            }
+                        )
+                    }
+                ]
+            }
+        ]
     }

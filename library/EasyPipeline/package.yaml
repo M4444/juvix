@@ -21,13 +21,6 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
   - base >= 4.7 && < 5
-  - directory
-  - lens
-  - Cabal
-  - extensible-data
-  - capability >= 0.2.0.0
-  - syb
-  - temporary
   ###########################
   # Libraries
   ###########################
@@ -40,37 +33,22 @@ dependencies:
   - Pipeline
   - Context
   - plonk
-  # - llvm
-  # - interaction-net
-  # - arithmetic-circuit
-  # - InteractionNetIR
-  ###########################
-  # Dependency for OS
-  ###########################
-  - turtle
-  - time
-  - filepath
+  - llvm
   ###########################
   # Dependency for Structs
   ###########################
-  - text
-  - mtl
-  - containers
   - unordered-containers
-  - hashable
-  - fgl
-  - fgl-visualize
   - bytestring
-
-  ###########################
-  # Dependency for Morley
-  ###########################
-  - morley
 
   ###########################
   # Pretty printer
   ###########################
   - pretty-simple
+
+  ###########################
+  # For Plonk depnencies
+  ###########################
+  - galois-field
 
 default-extensions:
   - NoImplicitPrelude
