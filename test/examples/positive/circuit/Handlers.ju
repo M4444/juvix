@@ -14,4 +14,5 @@ let prog a =
   print a;
   pure a
 
-let foo = prog via printer
+sig main : a
+let main = prog via printer
