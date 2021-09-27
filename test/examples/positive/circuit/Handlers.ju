@@ -1,10 +1,15 @@
 mod Prelude.Handler where
 
+open Prelude
+open Circuit
+open Circuit.Field
+
 handler printer =
   let print = printLn
   let pure x = toString x
 end
 
+sig prog : a -> a -- effect
 let prog a =
   print a;
   pure a
