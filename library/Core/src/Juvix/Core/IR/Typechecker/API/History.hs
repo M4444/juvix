@@ -1,4 +1,4 @@
-module Juvix.Core.Typecheck.API.History where
+module Juvix.Core.IR.Typechecker.API.History where
 
 -- enough for now, but a full-blown history effect many be the way to go
 -- history exists in a separate file to allow faster amends later
