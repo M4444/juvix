@@ -59,11 +59,11 @@ class Monad m => MetaProg primTy primVal a b m | m -> a where
   -- | `trace` logs custom user operations
   trace         :: a -> m ()
 
-  history       :: m (History primTy primVal)
+  history       :: m (Hist.History primTy primVal)
 
   -- TODO: Check with Andy if we need more primitives
 
-instance MetaProg (ProofState primTy primVal a b) where
+instance MetaProg (ProofState ext primTy primVal a b) where
   proofGoal = do
     g <- get @"proofGoals"
     pure g

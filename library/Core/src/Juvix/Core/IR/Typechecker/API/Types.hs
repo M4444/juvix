@@ -96,7 +96,7 @@ newtype ProofStateT ext primTy primVal a b c
   --     HasSink "holes" (),
   --     HasSource "holes" ()
   --   )
-  via StateField "" (ProofStateA primTy primVal a b)
+  -- via StateField "" (ProofStateA primTy primVal a b)
   deriving
     (HasThrow "proofErr" (Error primTy primVal))
     via MonadError (ProofStateA primTy primVal a b)
