@@ -103,6 +103,8 @@ data Special
     TypeS
   | -- | SAny usage
     SAnyS
+  | -- | Effect
+    Effect
   deriving (Eq, Show, Data, Generic)
 
 instance A.ToJSON Special where

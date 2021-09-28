@@ -21,6 +21,7 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
+import Text.Pretty.Simple (pShow)
 
 -- | Class of values that support substitution, allows failure using @Either@.
 class HasWeak a => HasSubstV extV primTy primVal a where
@@ -169,6 +170,8 @@ instance
       <*> substVWith w i e s
       <*> substVWith w i e t
       <*> substVWith w i e a
+  substVWith w i e (Core.VEffect s a) =
+    panic $ toS $ "SubstVWith" <> pShow (s, a)
   substVWith w i e (Core.VUnitTy a) =
     Core.VUnitTy <$> substVWith w i e a
   substVWith w i e (Core.VUnit a) =

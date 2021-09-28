@@ -20,6 +20,7 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
+import Text.Pretty.Simple (pShow)
 
 -- | Class of terms that support pattern substitution.
 class HasWeak a => HasPatSubst extT primTy primVal a where
@@ -143,6 +144,8 @@ instance
       <*> patSubst' b m s
       <*> patSubst' b m t
       <*> patSubst' b m a
+  patSubst' b m (Core.Effect s a) =
+    panic $  "PatSubs'"-- <> pShow (s)
   patSubst' b m (Core.UnitTy a) =
     Core.UnitTy <$> patSubst' b m a
   patSubst' b m (Core.Unit a) =

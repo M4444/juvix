@@ -22,6 +22,7 @@ import Juvix.Pipeline.ToHR.Usage
     transformUsage,
   )
 import qualified Juvix.Sexp as Sexp
+import Debug.Pretty.Simple (pTraceShow)
 
 transformSig ::
   ( HasPatVars m,
@@ -107,7 +108,9 @@ transformValSig q _ _ _ (Just (Sexp.List [usage, usageExpr, arrow]))
     CoreSig <$> (Core.ValSig <$> transformGUsage q (Just usageExpr) <*> transformTermHR q arrow)
 transformValSig q _ _ _ (Just ty) =
   CoreSig <$> (Core.ValSig <$> transformGUsage q Nothing <*> transformTermHR q ty)
-transformValSig _ x def _ _ = throwFF $ SigRequired x def
+transformValSig q x def m tyM = 
+  
+  pTraceShow (q, x, def, m, tyM) throwFF $ SigRequired x def
 
 transformSpecial ::
   ( Show primTy,
@@ -154,6 +157,7 @@ transformSpecialRhs _ (Sexp.List [name, prim])
       "Builtin" :| ["CatCoproductIntroLeft"] -> pure $ Just $ CatCoproductIntroLeftS
       "Builtin" :| ["CatCoproductIntroRight"] -> pure $ Just $ CatCoproductIntroRightS
       "Builtin" :| ["CatCoproductElim"] -> pure $ Just $ CatCoproductElimS
+      "Builtin" :| ["Effect"] -> pure $ Just Effect
       "Builtin" :| (s : ss) -> throwFF $ UnknownBuiltin $ s :| ss
       _ -> pure Nothing
 transformSpecialRhs q prim
@@ -176,6 +180,7 @@ transformSpecialRhs q (Sexp.List [f, arg])
           Just CatCoproductIntroLeftS -> pure $ Just $ CatCoproductIntroLeftS
           Just CatCoproductIntroRightS -> pure $ Just $ CatCoproductIntroRightS
           Just CatCoproductElimS -> pure $ Just $ CatCoproductElimS
+          Just Effect -> pure $ Just Effect
           _ -> pure Nothing
 transformSpecialRhs _ _ = pure Nothing
 

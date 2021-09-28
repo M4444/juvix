@@ -23,6 +23,7 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfCatCoproductIntroLeft :: XCatCoproductIntroLeft ext1 primTy primVal -> f (XCatCoproductIntroLeft ext2 primTy primVal),
     etfCatCoproductIntroRight :: XCatCoproductIntroRight ext1 primTy primVal -> f (XCatCoproductIntroRight ext2 primTy primVal),
     etfCatCoproductElim :: XCatCoproductElim ext1 primTy primVal -> f (XCatCoproductElim ext2 primTy primVal),
+    etfEffect :: XEffect ext1 primTy primVal -> f (XEffect ext2 primTy primVal),
     etfUnitTy :: XUnitTy ext1 primTy primVal -> f (XUnitTy ext2 primTy primVal),
     etfUnit :: XUnit ext1 primTy primVal -> f (XUnit ext2 primTy primVal),
     etfLet :: XLet ext1 primTy primVal -> f (XLet ext2 primTy primVal),
@@ -59,6 +60,7 @@ pattern ExtTransformTE ::
   (XCatCoproductIntroLeft ext1 primTy primVal -> XCatCoproductIntroLeft ext2 primTy primVal) ->
   (XCatCoproductIntroRight ext1 primTy primVal -> XCatCoproductIntroRight ext2 primTy primVal) ->
   (XCatCoproductElim ext1 primTy primVal -> XCatCoproductElim ext2 primTy primVal) ->
+  (XEffect ext1 primTy primVal -> XEffect ext2 primTy primVal) ->
   (XUnitTy ext1 primTy primVal -> XUnitTy ext2 primTy primVal) ->
   (XUnit ext1 primTy primVal -> XUnit ext2 primTy primVal) ->
   (XLet ext1 primTy primVal -> XLet ext2 primTy primVal) ->
@@ -86,6 +88,7 @@ pattern ExtTransformTE
     etCatCoproductIntroLeft,
     etCatCoproductIntroRight,
     etCatCoproductElim,
+    etEffect,
     etUnitTy,
     etUnit,
     etLet,
@@ -115,6 +118,7 @@ pattern ExtTransformTE
       etfCatCoproductIntroLeft = Coerce etCatCoproductIntroLeft,
       etfCatCoproductIntroRight = Coerce etCatCoproductIntroRight,
       etfCatCoproductElim = Coerce etCatCoproductElim,
+      etfEffect = Coerce etEffect,
       etfLet = Coerce etLet,
       etfElim = Coerce etElim,
       etfBound = Coerce etBound,
@@ -156,6 +160,8 @@ extTransformTF fs (CatCoproductIntroRight s e) =
   CatCoproductIntroRight <$> extTransformTF fs s <*> etfCatCoproductIntroRight fs e
 extTransformTF fs (CatCoproductElim a b cp s t e) =
   CatCoproductElim <$> extTransformTF fs a <*> extTransformTF fs b <*> extTransformTF fs cp <*> extTransformTF fs s <*> extTransformTF fs t <*> etfCatCoproductElim fs e
+extTransformTF fs (Effect s e) =
+  Effect <$> extTransformTF fs s <*> etfEffect fs e
 extTransformTF fs (UnitTy e) =
   UnitTy <$> etfUnitTy fs e
 extTransformTF fs (Unit e) =
@@ -210,6 +216,7 @@ type ForgotExt ext primTy primVal =
     XCatCoproductIntroLeft ext primTy primVal ~ (),
     XCatCoproductIntroRight ext primTy primVal ~ (),
     XCatCoproductElim ext primTy primVal ~ (),
+    XEffect ext primTy primVal ~ (),
     XUnitTy ext primTy primVal ~ (),
     XUnit ext primTy primVal ~ (),
     XLam ext primTy primVal ~ (),
@@ -243,6 +250,7 @@ forgetter =
       etCatCoproductIntroLeft = const (),
       etCatCoproductIntroRight = const (),
       etCatCoproductElim = const (),
+      etEffect = const (),
       etUnitTy = const (),
       etUnit = const (),
       etLam = const (),
@@ -295,6 +303,7 @@ compose fs gs =
       etfCatCoproductIntroLeft = etfCatCoproductIntroLeft fs <=< etfCatCoproductIntroLeft gs,
       etfCatCoproductIntroRight = etfCatCoproductIntroRight fs <=< etfCatCoproductIntroRight gs,
       etfCatCoproductElim = etfCatCoproductElim fs <=< etfCatCoproductElim gs,
+      etfEffect = etfEffect fs <=< etfEffect gs,
       etfUnitTy = etfUnitTy fs <=< etfUnitTy gs,
       etfUnit = etfUnit fs <=< etfUnit gs,
       etfLam = etfLam fs <=< etfLam gs,

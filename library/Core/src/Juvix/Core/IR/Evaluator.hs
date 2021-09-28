@@ -37,6 +37,7 @@ import Juvix.Core.IR.Evaluator.Weak
 import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
+import Text.Pretty.Simple (pShow)
 
 -- | Constraint for terms and eliminations without extensions.
 type NoExtensions ext primTy primVal =
@@ -119,6 +120,7 @@ inlineAllGlobals t lookupFun patternMap =
       Core.CatCoproductIntroRight (inlineAllGlobals x lookupFun patternMap) ann
     Core.CatCoproductElim a b cp x1 x2 ann ->
       Core.CatCoproductElim (inlineAllGlobals a lookupFun patternMap) (inlineAllGlobals b lookupFun patternMap) (inlineAllGlobals cp lookupFun patternMap) (inlineAllGlobals x1 lookupFun patternMap) (inlineAllGlobals x2 lookupFun patternMap) ann
+    Core.Effect x ann -> panic $ toS $ "Evaluator of " <> pShow (x, ann)
     Core.Prim {} -> t
     Core.PrimTy {} -> t
     Core.Star {} -> t
@@ -189,6 +191,8 @@ evalTermWith g exts (Core.CatCoproductIntroRight s _) =
   IR.VCatCoproductIntroRight <$> evalTermWith g exts s
 evalTermWith g exts (Core.CatCoproductElim a b cp s t _) =
   IR.VCatCoproductElim <$> evalTermWith g exts a <*> evalTermWith g exts b <*> evalTermWith g exts cp <*> evalTermWith g exts s <*> evalTermWith g exts t
+evalTermWith g exts (Core.Effect x _) =
+  panic $ toS $ "Eval Term with: " <> pShow x 
 evalTermWith _ _ (Core.UnitTy _) =
   pure IR.VUnitTy
 evalTermWith _ _ (Core.Unit _) =

@@ -109,6 +109,9 @@ extensibleWith
       | -- | CONV conversion rule. TODO make sure 0Γ ⊢ S≡T
         -- Elim is the constructor that embeds Elim to Term
         Elim (Elim primTy primVal)
+
+      | -- Algebraic effect 
+        Effect (Term primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- inferable terms
@@ -143,6 +146,7 @@ extensibleWith
       | VUnit
       | VNeutral (Neutral primTy primVal)
       | VPrim primVal
+      | VEffect (Value primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- A neutral term is either a variable or an application of a neutral term
@@ -219,6 +223,7 @@ type QuoteContext ext primTy primVal =
     XVCatCoproductIntroLeft ext primTy primVal ~ XCatCoproductIntroLeft ext primTy primVal,
     XVCatCoproductIntroRight ext primTy primVal ~ XCatCoproductIntroRight ext primTy primVal,
     XVCatCoproductElim ext primTy primVal ~ XCatCoproductElim ext primTy primVal,
+    XVEffect ext primTy primVal ~ XEffect ext primTy primVal,
     XVUnitTy ext primTy primVal ~ XUnitTy ext primTy primVal,
     XVUnit ext primTy primVal ~ XUnit ext primTy primVal,
     XVPrim ext primTy primVal ~ XPrim ext primTy primVal,
@@ -247,6 +252,7 @@ quote (VCatProductElimRight a s ext) = CatProductElimRight (quote a) (quote s) e
 quote (VCatCoproductIntroLeft s ext) = CatCoproductIntroLeft (quote s) ext
 quote (VCatCoproductIntroRight s ext) = CatCoproductIntroRight (quote s) ext
 quote (VCatCoproductElim a b cp s t ext) = CatCoproductElim (quote a) (quote b) (quote cp) (quote s) (quote t) ext
+quote (VEffect x ext) = Effect (quote x) ext
 quote (VUnitTy ext) = UnitTy ext
 quote (VUnit ext) = Unit ext
 quote (VPrim pri ext) = Prim pri ext

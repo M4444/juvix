@@ -15,6 +15,7 @@ import Juvix.Pipeline.ToHR.Env
 import Juvix.Pipeline.ToHR.Types
 import qualified Juvix.Sexp as Sexp
 
+import Debug.Pretty.Simple ( pTraceShowM )
 ------------------------------------------------------------
 -- Misc Helpers
 ------------------------------------------------------------
@@ -80,6 +81,8 @@ getSig q f x = do
     _ -> throwFF $ WrongSigType x msig
 
 -- | Get special signature from atom
+-- Special forms by the compiler
+-- E.g. (->)
 getSpecialSig ::
   ( Show primTy,
     Show primVal,
@@ -100,6 +103,7 @@ getSpecialSig q x
         Just _ -> pure Nothing
         Nothing -> do
           closure <- get @"closure"
+          pTraceShowM (closure)
           case Closure.lookup (NameSymbol.toSymbol x) closure of
             Nothing ->
               throwFF $ WrongSigType x Nothing
