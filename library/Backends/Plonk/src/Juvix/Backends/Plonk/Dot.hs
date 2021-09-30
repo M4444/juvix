@@ -13,7 +13,7 @@ import System.Process.Text (readProcessWithExitCode)
 import Text.PrettyPrint.Leijen.Text (Pretty (..))
 
 arithCircuitToDot ::
-  (Show f) => ArithCircuit f -> Text
+  (Show f, Integral f) => ArithCircuit f -> Text
 arithCircuitToDot (ArithCircuit gates) =
   Text.unlines . wrapInDigraph . concatMap graphGate $ gates
   where
@@ -25,7 +25,7 @@ arithCircuitToDot (ArithCircuit gates) =
     dotArrowLabel :: Text -> Text -> Text -> Text
     dotArrowLabel s t lbl = dotArrow s t <> " [label=\"" <> lbl <> "\"]"
     labelNode lblId lbl = lblId <> " [label=\"" <> lbl <> "\"]"
-    graphGate :: Show f => Gate Wire f -> [Text]
+    graphGate :: (Show f, Integral f) => Gate Wire f -> [Text]
     graphGate (MulGate lhs rhs output) =
       [ labelNode gateLabel "*",
         labelNode lhsLabel (show $ pretty lhs),

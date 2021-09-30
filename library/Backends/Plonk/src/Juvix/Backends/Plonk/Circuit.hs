@@ -28,7 +28,13 @@ data AffineCircuit i f
   | ConstGate f
   | Var i
   deriving stock (Read, Eq, Show, Generic)
-  deriving anyclass (A.FromJSON, A.ToJSON)
+
+instance (A.ToJSON f, A.ToJSON i) => A.ToJSON (AffineCircuit i f) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON f, A.FromJSON i) => A.FromJSON (AffineCircuit i f) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
 
 fetchVars :: AffineCircuit Wire f -> [Wire]
 fetchVars (Var i) = [i]
@@ -114,7 +120,7 @@ newtype ArithCircuit f = ArithCircuit [Gate Wire f]
   deriving stock (Eq, Show, Read, Generic)
   deriving newtype (A.FromJSON, A.ToJSON)
 
-instance Show f => Pretty (ArithCircuit f) where
+instance (Show f, Integral f) => Pretty (ArithCircuit f) where
   pretty (ArithCircuit gs) = vcat . map pretty $ gs
 
 data Gate i f
@@ -153,7 +159,7 @@ data Gate i f
   deriving stock (Eq, Show, Read, Generic)
   deriving anyclass (A.FromJSON, A.ToJSON)
 
-instance (Pretty i, Show i, Show f) => Pretty (Gate i f) where
+instance (Pretty i, Show i, Show f, Integral f) => Pretty (Gate i f) where
   pretty (MulGate l r o) =
     hsep
       [ pretty o,
@@ -171,7 +177,7 @@ instance (Pretty i, Show i, Show f) => Pretty (Gate i f) where
       ]
   pretty g = panic $ show g
 
-instance (Pretty i, Show f) => Pretty (AffineCircuit i f) where
+instance (Pretty i, Show f, Integral f) => Pretty (AffineCircuit i f) where
   pretty = prettyPrec 0
     where
       prettyPrec :: Int -> AffineCircuit i f -> Doc
@@ -180,9 +186,9 @@ instance (Pretty i, Show f) => Pretty (AffineCircuit i f) where
           Var v ->
             pretty v
           ConstGate f ->
-            text $ show f
+            text $ show $ toInteger f
           ScalarMul f e1 ->
-            text (show f) <+> text "*" <+> parensPrec 7 p (prettyPrec p e1)
+            text (show $ toInteger f) <+> text "*" <+> parensPrec 7 p (prettyPrec p e1)
           Add e1 e2 ->
             parensPrec 6 p $
               prettyPrec 6 e1

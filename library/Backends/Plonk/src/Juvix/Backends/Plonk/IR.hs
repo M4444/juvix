@@ -44,7 +44,7 @@ data CompOp f where
   CLte :: CompOp f
   CEq :: CompOp f
 
--- | Intermediate representation of (arithmetic) expressions over a field @f@
+-- | Representation of (arithmetic) expressions over a field @f@
 -- with variable names/indices coming from @i@. @ty@ is the resulting value.
 data IR i f ty where
   IConst :: f -> IR i f f
@@ -150,7 +150,7 @@ evalIR lookupVar expr vars = case expr of
     Nothing -> panic "TODO: incorrect var lookup"
   IUnOp op e1 -> case op of
     UNot -> not $ evalIR lookupVar e1 vars
-    x -> panic $ "Not implemented!" <> show x
+    x -> panic $ "Unary operation not implemented: " <> show x
   IBinOp op e1 e2 ->
     evalIR lookupVar e1 vars `apply` evalIR lookupVar e2 vars
     where
@@ -164,10 +164,10 @@ evalIR lookupVar expr vars = case expr of
         BAnd -> (&&)
         BOr -> (||)
         BXor -> \x y -> (x || y) && not (x && y)
-  -- ICompOp _ _ _ -> notImplemented
-  -- IAcc _ _ -> notImplemented
-  -- IECAdd _ _ -> notImplemented
   IIf b true false ->
     if evalIR lookupVar b vars
       then evalIR lookupVar true vars
       else evalIR lookupVar false vars
+  -- ICompOp _ _ _ -> notImplemented
+  -- IAcc _ _ -> notImplemented
+  -- IECAdd _ _ -> notImplemented

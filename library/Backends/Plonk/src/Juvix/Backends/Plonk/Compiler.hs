@@ -19,8 +19,6 @@ import qualified Juvix.Core.Erased.Ann.Types as Ann
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
--- | Translate case statements to conditionals (nested),
--- inline lambdas, convert datatypes to some field element representation, etc
 compileBinOp :: (Show f, Integral f) => Map NameSymbol.T Wire -> BinOp f a -> [AnnTerm f] -> IRM f (Either Wire (AffineCircuit Wire f))
 compileBinOp m op args = do
   let e1 = args !! 0
@@ -83,7 +81,6 @@ compilePrim p m args = case p of
   P.PXor -> compileBinOp m BXor args
   n -> panic $ show n
 
--- TODO: Make signature handle failure
 compileTerm :: (HasCallStack, Integral f, Show f) => AnnTerm f -> Map NameSymbol.T Wire -> [AnnTerm f] -> IRM f (Either Wire (AffineCircuit Wire f))
 compileTerm _term@(Ann.Ann _ _ t) m a =
   case t of
@@ -97,7 +94,7 @@ compileTerm _term@(Ann.Ann _ _ t) m a =
         pairs <-
           traverse
             ( \a -> do
-                w <- P.freshInput -- TODO: Should this be input?
+                w <- P.freshInput 
                 pure (a, w)
             )
             args
@@ -120,7 +117,6 @@ compileTermWithWire term = do
       o <- freshOutput
       replaceLast o
       pure o
-    -- pure wire
     Right circ -> do
       wire <- freshOutput
       emit $ MulGate (ConstGate 1) circ wire

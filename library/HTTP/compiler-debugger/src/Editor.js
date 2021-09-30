@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from 'react-dom';
 import MonacoEditor from 'react-monaco-editor';
+import { Graphviz } from 'graphviz-react';
 
 const axios = require('axios');
 
@@ -100,6 +101,29 @@ let main = 5
             }
             else <div></div>
     }
+    const showDot = () => {
+      if (this.state.currentView == "allToBackend") {
+        return <div>
+          {this.state.response[1][this.state.currentView] ? 
+          <Graphviz dot={this.state.response[1][this.state.currentView]["circDot"]} />
+          : ""
+          }
+         <textarea
+                readOnly
+                style={{height:"100vh", width:"100%"}}
+                value={this.state.response[1][this.state.currentView] ? 
+                            JSON.stringify(this.state.response[1][this.state.currentView], null, 2) : "" }
+            /> 
+          </div>
+      } else {
+        return <textarea
+        readOnly
+        style={{height:"100vh", width:"100%"}}
+        value={this.state.response[1][this.state.currentView] ? 
+                    JSON.stringify(this.state.response[1][this.state.currentView], null, 2) : "" }
+    />
+      }
+    }
     return (
         <div style={{display: "flex", justifyContent: "space-around"}}>
             <div style={{flex: 1}}>
@@ -125,12 +149,7 @@ let main = 5
                 <button style={{background:this.state.response[1]["allToErased"] ? "#cddc39": "#e87067"}} onClick={(e) => this.setState({currentView: "allToErased"})}> Erased</button>
                 <button style={{background:this.state.response[1]["allToBackend"] ? "#cddc39": "#e87067"}}  onClick={(e) => this.setState({currentView: "allToBackend"})}> Backend</button>
             {errorMsg()}
-            <textarea
-                readOnly
-                style={{height:"100vh", width:"100%"}}
-                value={this.state.response[1][this.state.currentView] ? 
-                            JSON.stringify(this.state.response[1][this.state.currentView], null, 2) : "" }
-            />
+            {showDot()} 
             </div>
         </div>
 
