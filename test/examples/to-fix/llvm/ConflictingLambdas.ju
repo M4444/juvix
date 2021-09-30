@@ -1,0 +1,13 @@
+-- This files results in several nested lambda's. The LLVM functions for these
+-- lambda's should have any conflicting names.
+
+mod ConflictingLambdas where
+
+open Prelude
+open LLVM
+
+sig main : int
+let main =
+  let foo = 3 : int in
+  let bar = 5 : int in
+  foo
