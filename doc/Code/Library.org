@@ -370,6 +370,12 @@ Surface language
   + [[Feedback]]
   + [[HashMap]]
   + [[NameSymbol]]
+******* Globals <<LLVM/Globals>>
+- _Relies on_
+  + [[Ann]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
 ******* Parameterization <<LLVM/Parameterization>>
 Parameterization and application of the LLVM backend primitives.
 - _Relies on_
@@ -569,14 +575,14 @@ keeps the extensions.
 ****** Types <<Core/Base/Types>>
 - _Relies on_
   + [[Base/Types/Base]]
-  + [[Globals]]
+  + [[Types/Globals]]
   + [[Types/Sig]]
 ******* Base <<Base/Types/Base>>
 - _Relies on_
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
-******* Globals
+******* Globals <<Types/Globals>>
 - _Relies on_
   + [[Base/Types/Base]]
   + [[Library]]
