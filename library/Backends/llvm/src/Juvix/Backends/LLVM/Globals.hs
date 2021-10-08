@@ -10,9 +10,10 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 type GlobalMap primTy primVal =
   Map.Map NameSymbol.T (ErasedAnn.AnnTerm primTy primVal)
 
--- | State as used by for the globals.
+-- | State as used for the globals.
 data Globals primTy primVal = Globals
-  { globals :: GlobalMap primTy primVal
+  { globals :: GlobalMap primTy primVal,
+    nameGen :: Natural
   }
   deriving (Generic)
 
@@ -26,6 +27,12 @@ newtype GlobalState primTy primVal a
       HasSource "globals" (GlobalMap primTy primVal)
     )
     via StateField "globals" (State (Globals primTy primVal))
+  deriving
+    ( HasState "nameGen" Natural,
+      HasSink "nameGen" Natural,
+      HasSource "nameGen" Natural
+    )
+    via StateField "nameGen" (State (Globals primTy primVal))
 
 -- | Run the state with a given initial map of globals.
 runGlobalState ::
@@ -34,27 +41,31 @@ runGlobalState ::
   (a, Globals primTy primVal)
 runGlobalState (GlobalState stateM) i = runState stateM i
 
--- | Create a fresh global name. Note that it does NOT store the name.
+-- | Create a fresh global name.
 freshGlobal ::
-  HasState "globals" (GlobalMap primTy primVal) m =>
+  ( HasState "globals" (GlobalMap primTy primVal) m,
+    HasState "nameGen" Natural m
+  ) =>
   m NameSymbol.T
 freshGlobal = freshGlobalName "global"
 
--- | Create a fresh global name from a given basis. Note that it does NOT store
--- the name.
+-- | Create a fresh global name from a given basis.
 freshGlobalName ::
-  HasState "globals" (GlobalMap primTy primVal) m =>
+  ( HasState "globals" (GlobalMap primTy primVal) m,
+    HasState "nameGen" Natural m
+  ) =>
   NameSymbol.T ->
   m NameSymbol.T
 freshGlobalName base = do
+  nameGen <- get @"nameGen"
   globals <- get @"globals"
   let names = Map.keys globals
-  let newNames :: [NameSymbol.T]
       newNames =
-        [ base `appendNameSymbol` (NameSymbol.fromSymbol $ intern $ show n)
-          | n <- [0 :: Integer ..]
+        [ (n', base `appendNameSymbol` (NameSymbol.fromText $ show n))
+          | n' <- [nameGen :: Natural ..]
         ]
-      (name' : _) = filter (\x -> not $ elem x names) newNames
+      ((n, name') : _) = filter (\(_, x) -> not $ elem x names) newNames
+  put @"nameGen" (n + 1)
   return name'
 
 -- | 'Dumb' append of two @NameSymbol.T@, i.e. it does not add a dividing @.@
