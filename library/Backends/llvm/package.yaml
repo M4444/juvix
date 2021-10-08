@@ -35,6 +35,12 @@ default-extensions:
 - TypeFamilies
 - TypeApplications
 - MultiParamTypeClasses
+- DerivingVia
+- DataKinds
+- DeriveGeneric
+- GeneralizedNewtypeDeriving
+- FlexibleContexts
+- OverloadedStrings
 
 library:
   source-dirs: src
