@@ -45,9 +45,13 @@ type Expression m = (Env.ErrS m, Env.HasClosure m)
 -- - BNF input form:
 --   1. (:open-in Foo body)
 --   2. unqualified-foo
+--   3. (:open-in Foo
+--         (+ x x))
+--      where Foo contains the symbol x
 -- - BNF output form:
 --   1. body
 --   2. qualified-foo
+--   3. (+ Foo.x Foo.x)
 
 -- Note that the qualification of foo to Bar.foo if the symbol is from
 -- an open module
@@ -98,9 +102,14 @@ atomResolution _ _ s = pure s
 -- a properly ordered prefix ordering via the shuntyard algorithm.
 -- - BNF input form:
 --   1. (:infix infix-3 3 (:infix infix-4 1 (:infix infix-2 5 7)))
+--   2. (:infix * 3 (:infix ^ 1 (:infix + 5 7)))
 -- - BNF output form:
 --   1. (:infix-3 3 (:infix-2 (:infix-4 1 5) 7))
+--   2. (* 3 (+ (^ 1 5) 7))
 -- - Note :: infix-<num> stands for precedent <num>
+-- - Note :: This pass uses the shunt yard algorithm
+-- - Note :: (infixr 8 ^), (infixl 6 +), (infixl 7 *)
+
 inifixSoloPass ::
   Expression m => Env.SexpContext -> m Env.SexpContext
 inifixSoloPass context =
