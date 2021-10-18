@@ -109,7 +109,6 @@ atomResolution _ _ s = pure s
 -- - Note :: infix-<num> stands for precedent <num>
 -- - Note :: This pass uses the shunt yard algorithm
 -- - Note :: (infixr 8 ^), (infixl 6 +), (infixl 7 *)
-
 inifixSoloPass ::
   Expression m => Env.SexpContext -> m Env.SexpContext
 inifixSoloPass context =
