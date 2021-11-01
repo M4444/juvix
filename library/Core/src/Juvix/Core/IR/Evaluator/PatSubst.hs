@@ -291,7 +291,8 @@ instance
 
 instance
   ( HasWeak primTy,
-    HasWeak primVal
+    HasWeak primVal,
+    Param.CanPrimApply k primTy
   ) =>
   HasPatSubstTerm
     (OnlyExts.T ext)
@@ -343,6 +344,7 @@ argToType = \case
 -- | Transform a `App.Take` into an `IR.Elim` as a value.
 -- TODO: move this function somewhere else?
 takeToElim ::
+  Param.CanPrimApply k primTy =>
   App.Take (Param.PrimType primTy) primVal ->
   Core.Elim (OnlyExts.T ext) (Param.KindedType primTy) (Param.TypedPrim primTy primVal)
 takeToElim (App.Take {type', term}) =
@@ -364,12 +366,13 @@ argToTerm = \case
 -- TODO: move this function somewhere else?
 typeToTerm ::
   ( Monoid (Core.XPi ext (Param.KindedType primTy) primVal),
-    Monoid (Core.XPrimTy ext (Param.KindedType primTy) primVal)
+    Monoid (Core.XPrimTy ext (Param.KindedType primTy) primVal),
+    Param.CanPrimApply k primTy
   ) =>
   Param.PrimType primTy ->
   Core.Term ext (Param.KindedType primTy) primVal
 typeToTerm tys = foldr1 arr $ map prim tys
   where
-    star = Param.PrimType $ Param.STAR :| []
-    prim ty = Core.PrimTy (App.Return {retType = star, retTerm = ty}) mempty
+    star ty = Param.getPrimTypeKind ty
+    prim ty = Core.PrimTy (App.Return {retType = star ty, retTerm = ty}) mempty
     arr s t = Core.Pi Usage.SAny s t mempty
