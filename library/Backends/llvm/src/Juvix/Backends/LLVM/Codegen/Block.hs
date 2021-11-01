@@ -202,6 +202,20 @@ defineFunction = defineFunctionGen False
 defineFunctionVarArgs = defineFunctionGen True
 
 --------------------------------------------------------------------------------
+-- Unique Name gen
+--------------------------------------------------------------------------------
+
+generateUniqueName :: NewBlock m => Symbol -> m Name
+generateUniqueName = fmap internName . generateUniqueSymbol
+
+generateUniqueSymbol :: NewBlock m => Symbol -> m Symbol
+generateUniqueSymbol bname = do
+  nms <- get @"names"
+  let (qname, supply) = uniqueName bname nms
+  put @"names" supply
+  return qname
+
+--------------------------------------------------------------------------------
 -- Block Stack
 --------------------------------------------------------------------------------
 
@@ -215,25 +229,19 @@ getBlock = entry
 addBlockNumber :: NewBlock m => Symbol -> Int -> m Name
 addBlockNumber bname number = do
   bls <- get @"blocks"
-  nms <- get @"names"
+  name <- generateUniqueName bname
   let new = emptyBlock number
-      (qname, supply) = uniqueName bname nms
-      name = internName qname
   put @"blocks" (Map.insert name new bls)
-  put @"names" supply
   return name
 
 addBlock :: NewBlock m => Symbol -> m Name
 addBlock bname = do
   bls <- get @"blocks"
   ix <- get @"blockCount"
-  nms <- get @"names"
+  name <- generateUniqueName bname
   let new = emptyBlock ix
-      (qname, supply) = uniqueName bname nms
-      name = internName qname
   put @"blocks" (Map.insert name new bls)
   put @"blockCount" (succ ix)
-  put @"names" supply
   return name
 
 setBlock :: HasState "currentBlock" Name m => Name -> m ()
