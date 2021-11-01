@@ -65,6 +65,10 @@ data Errors
     VariableNotInScope Text
   | -- | Error that happens when a block lacks a terminator when it should have one
     BlockLackingTerminator Int
+  | -- | Operation that is current unsupported
+    UnsupportedOperation Text
+  | -- | Operation has the wrong number of arguments
+    WrongNumberOfArguments Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)

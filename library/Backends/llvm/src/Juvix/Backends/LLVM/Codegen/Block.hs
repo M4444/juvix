@@ -68,15 +68,21 @@ emptyCodegen =
       Types.count = 0,
       Types.names = Map.empty,
       Types.blockCount = 1,
-      Types.moduleAST = emptyModule "EAC",
+      Types.moduleAST = emptyModule "juvix-module",
       Types.debug = 0
     }
 
 execEnvState :: Codegen a -> SymbolTable -> CodegenState
-execEnvState (Types.CodeGen m) a = execState (runExceptT m) (emptyCodegen {Types.symTab = a})
+execEnvState (Types.CodeGen m) a =
+  execState (runExceptT m) (emptyCodegen {Types.symTab = a})
 
 evalEnvState :: Codegen a -> SymbolTable -> Either Errors a
-evalEnvState (Types.CodeGen m) a = evalState (runExceptT m) (emptyCodegen {Types.symTab = a})
+evalEnvState (Types.CodeGen m) a =
+  evalState (runExceptT m) (emptyCodegen {Types.symTab = a})
+
+runEnvState :: Codegen a -> SymbolTable -> (Either Errors a, CodegenState)
+runEnvState (Types.CodeGen m) a =
+  runState (runExceptT m) (emptyCodegen {Types.symTab = a})
 
 --------------------------------------------------------------------------------
 -- Module Level
@@ -84,6 +90,10 @@ evalEnvState (Types.CodeGen m) a = evalState (runExceptT m) (emptyCodegen {Types
 
 emptyModule :: ShortByteString -> Module
 emptyModule label = AST.defaultModule {moduleName = label}
+
+-- TODO :: Figure out the semantics of a function like this.
+inModule :: HasState "moduleAST" Module m => Module -> m ()
+inModule = undefined
 
 addDefn :: HasState "moduleDefinitions" [Definition] m => Definition -> m ()
 addDefn d = modify @"moduleDefinitions" (<> [d])
@@ -158,22 +168,30 @@ makeFunction name args = do
     (\(typ, nam) -> assign (nameToSymbol nam) (local typ nam))
     args
 
+-- TODO ∷ Current can't call this recursively, as how the clearing of
+-- just have the environment that needs to change change locally,
+-- should be easy to add
+-- symTab works... please instead just pop the arguments off the
+-- stack, and when we locally let name, have a with name primitive.
 defineFunctionGen ::
   Types.Define m => Bool -> Type -> Symbol -> [(Type, Name)] -> m a -> m Operand
 defineFunctionGen bool retty name args body = do
   oldSymTab <- get @"symTab"
   -- flush the blocks so we can have clean block for functions
   put @"blocks" Map.empty
+  oldCount <- get @"count"
   resetCount
   functionOperand <-
     (makeFunction name args >> registerFunction retty args (internName name) >> body >> createBlocks)
       >>= defineGen bool retty name args
   -- TODO ∷ figure out if LLVM functions can leak out of their local scope
+  -- Just remove the definitions from arguments, and try to restore any definitions we shadowed!
   put @"symTab" oldSymTab
   -- flush out blocks after functions
   -- comment for debugging!
   put @"blocks" Map.empty
-  resetCount
+  -- Don't flush fully, as an inner define will reset this.
+  put @"count" oldCount
   assign name functionOperand
   pure functionOperand
 
