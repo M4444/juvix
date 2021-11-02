@@ -178,8 +178,11 @@ defineFunctionGen ::
 defineFunctionGen bool retty name args body = do
   functionOperand <-
     withLocalArgumentBlocks $ do
-      (makeFunction name args >> registerFunction retty args (internName name) >> body >> createBlocks)
-        >>= defineGen bool retty name args
+      makeFunction name args
+      registerFunction retty args (internName name)
+      body
+      blockName <- createBlocks
+      defineGen bool retty name args blockName
   assign name functionOperand
   pure functionOperand
 
@@ -189,13 +192,10 @@ defineFunction,
 defineFunction = defineFunctionGen False
 defineFunctionVarArgs = defineFunctionGen True
 
--- TODO ∷ symTab should not be reset in this way.... we should only
--- clear the names given to it. As if we want a variable or function
--- escape scope we simply can't. This may have other implications
-
 withLocalArgumentBlocks ::
   ( HasState "blocks" (Map.HashMap k v) m,
     HasState "count" s1 m,
+    HasState "currentBlock" Name m,
     HasState "symTab" s2 m,
     Num s1
   ) =>
@@ -207,6 +207,7 @@ withLocalArgumentBlocks op = do
   oldSymTab <- get @"symTab"
   oldBlocks <- get @"blocks"
   oldCount' <- get @"count"
+  oldBlockName <- get @"currentBlock"
   -- Prepare Environment
   ----------------------------------------
   resetCount
@@ -220,6 +221,7 @@ withLocalArgumentBlocks op = do
   put @"symTab" oldSymTab
   put @"blocks" oldBlocks
   put @"count" oldCount'
+  setBlock oldBlockName
   -- return
   ----------------------------------------
   return ret
