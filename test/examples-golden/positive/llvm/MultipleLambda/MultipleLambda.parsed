@@ -1,0 +1,76 @@
+Right
+    ( Header
+        ( "MultipleLambdas" :| [] )
+        [ ModuleOpen
+            ( Open
+                ( "Prelude" :| [] )
+            )
+        , ModuleOpen
+            ( Open
+                ( "LLVM" :| [] )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "main"
+                , signatureUsage = Nothing
+                , signatureArrowType = Name
+                    ( "int" :| [] )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "main"
+                    , functionLikeArgs = []
+                    , functionLikeBody = Body
+                        ( Let
+                            ( Let'
+                                { letBindings = Like
+                                    { functionLikedName = "foo"
+                                    , functionLikeArgs = []
+                                    , functionLikeBody = Body
+                                        ( Infix
+                                            ( Inf
+                                                { infixLeft = Constant
+                                                    ( Number
+                                                        ( Integer' 3 )
+                                                    )
+                                                , infixOp = ":" :| []
+                                                , infixRight = Name
+                                                    ( "int" :| [] )
+                                                }
+                                            )
+                                        )
+                                    }
+                                , letBody = Let
+                                    ( Let'
+                                        { letBindings = Like
+                                            { functionLikedName = "bar"
+                                            , functionLikeArgs = []
+                                            , functionLikeBody = Body
+                                                ( Infix
+                                                    ( Inf
+                                                        { infixLeft = Constant
+                                                            ( Number
+                                                                ( Integer' 5 )
+                                                            )
+                                                        , infixOp = ":" :| []
+                                                        , infixRight = Name
+                                                            ( "int" :| [] )
+                                                        }
+                                                    )
+                                                )
+                                            }
+                                        , letBody = Name
+                                            ( "bar" :| [] )
+                                        }
+                                    )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        ]
+    )
