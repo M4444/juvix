@@ -37,7 +37,7 @@ llvm =
       Param.builtinValues = builtinValues,
       Param.stringVal = const Nothing,
       Param.intVal = integerToRawPrimVal,
-      Param.floatVal = const Nothing
+      Param.floatVal = doubleToRawPrimVal
     }
   where
     -- Typechecking of primitive values.
@@ -46,13 +46,17 @@ llvm =
       Add -> Param.check3Equal ty
       Sub -> Param.check3Equal ty
       Mul -> Param.check3Equal ty
+      Exp -> Param.check3Equal ty
+      Sqrt -> length ty == 2
       LitInt _ -> length ty == 1
+      LitDouble _ -> length ty == 1
 
     -- The primitive LLVM types available to Juvix users.
     builtinTypes :: Param.Builtins PrimTy
     builtinTypes =
       [ ("LLVM.int8", PrimTy LLVM.i8),
         ("LLVM.int16", PrimTy LLVM.i16)
+        ("LLVM.double", PrimTy LLVM.double)
       ]
 
     -- The primitive LLVM values available to Juvix users.
@@ -62,6 +66,8 @@ llvm =
         ("LLVM.sub", Sub),
         ("LLVM.mul", Mul),
         ("LLVM.litint", LitInt 0) -- TODO: what to do with the 0?
+        ("LLVM.sqrt", Sqrt),
+        ("LLVM.exp", Exp)
       ]
 
     -- Translate an integer into a RawPrimVal.
@@ -70,6 +76,9 @@ llvm =
     -- function.
     integerToRawPrimVal :: Integer -> Maybe RawPrimVal
     integerToRawPrimVal = Just . LitInt
+
+    doubleToRawPrimVal :: Double -> Maybe RawPrimVal
+    doubleToRawPrimVal = Just . LitDouble
 
 -- | TODO: for now these are just copied over from the Michelson backend.
 instance IR.HasWeak PrimTy where weakBy' _ _ t = t

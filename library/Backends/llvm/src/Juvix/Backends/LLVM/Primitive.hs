@@ -30,7 +30,10 @@ data RawPrimVal
   = Add
   | Sub
   | Mul
+  | Exp
+  | Sqrt
   | LitInt Integer
+  | LitDouble Double
   deriving (Eq, Show, Read)
 
 -- | The primitive values as exposed to users of Juvix, wrapping inside a
@@ -48,3 +51,7 @@ arityRaw :: RawPrimVal -> Natural
 arityRaw Add = 2
 arityRaw Sub = 2
 arityRaw Mul = 2
+arityRaw Exp = 2
+arityRaw Sqrt = 1
+arityRaw (LitInt _) = 0
+arityRaw (LitDouble _) = 0

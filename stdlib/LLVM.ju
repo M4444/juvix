@@ -9,14 +9,29 @@ sig int16 : ty
 let int16 = %LLVM.int16
 
 -- Alias for int8 to be more compitable with the Michelson backend.
+sig double : ty
+let double = %LLVM.double
+
+-- Alias for int8 to be more compatible with the Michelson backend.
 sig int : ty
 let int = int8
 
 sig add : (x : ty) -> x -> x -> x
 let add _ = %LLVM.add
 
+sig (+) : (x : ty) -> x -> x -> x
+let (+) = %LLVM.add
+declare infixl (+) 5
+
 sig sub : (x : ty) -> x -> x -> x
 let sub _ = %LLVM.sub
 
 sig mul : (x : ty) -> x -> x -> x
 let mul _ = %LLVM.mul
+
+sig sqrt : (x : ty) -> x -> double
+let sqrt _ = %LLVM.sqrt
+
+sig (^) : (x: ty) -> x -> int -> x
+let (^) = %LLVM.exp
+declare infixl (^) 8

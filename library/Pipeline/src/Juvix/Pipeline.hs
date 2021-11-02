@@ -45,7 +45,8 @@ import Juvix.Pipeline.Types
 import qualified Juvix.Sexp as Sexp
 import qualified System.IO.Temp as Temp
 import qualified Text.Megaparsec as P
-import Text.Pretty.Simple (pShowNoColor)
+import Text.Pretty.Simple 
+import Debug.Pretty.Simple
 import qualified Text.PrettyPrint.Leijen.Text as Pretty
 
 ------------------------------------------------------------------------------
@@ -155,6 +156,8 @@ class HasBackend b where
   toErased param (patToSym, globalDefs) = do
     (usage, term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
+    pTraceM $ "Globals: " <> show globalDefs
+    pTraceM $ "Inline term" <> show inlinedTerm
     let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
     res <- liftIO $ fst <$> exec erasedAnn param evaluatedGlobals
     case res of

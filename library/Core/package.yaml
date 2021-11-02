@@ -23,6 +23,7 @@ dependencies:
 - containers
 - unordered-containers
 - mtl
+- pretty-simple
 
 default-extensions:
   - NoImplicitPrelude

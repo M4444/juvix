@@ -37,6 +37,7 @@ import Juvix.Core.IR.Evaluator.Weak
 import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
+import Debug.Pretty.Simple
 
 -- | Constraint for terms and eliminations without extensions.
 type NoExtensions ext primTy primVal =
@@ -88,7 +89,7 @@ inlineAllGlobals ::
   Core.PatternMap Core.GlobalName ->
   Core.Term ext primTy primVal
 inlineAllGlobals t lookupFun patternMap =
-  case t of
+  case pTraceShow t t of
     Core.Unit {} -> t
     Core.UnitTy {} -> t
     Core.Pair p1 p2 ann ->
@@ -140,7 +141,7 @@ inlineAllGlobalsElim t lookupFun patternMap =
   case t of
     Core.Bound {} -> t
     Core.Free (Core.Global name) _ann ->
-      maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ lookupFun name
+      maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ pTrace ("Looking up: " <> show name <> " || " <> (show $ lookupFun name)) $ lookupFun name
     Core.Free (Core.Pattern i) _ -> fromMaybe t $ PM.lookup i patternMap >>= lookupFun
     Core.App elim term ann ->
       Core.App (inlineAllGlobalsElim elim lookupFun patternMap) (inlineAllGlobals term lookupFun patternMap) ann
@@ -273,6 +274,7 @@ toLambda' ::
   Core.Term ext primTy primVal ->
   Maybe (Core.Elim (OnlyExts.T ext') primTy primVal)
 toLambda' π' ty' pats rhs = do
+  pTraceM $ "ToLambda': " <> show ( π', ty', pats, rhs)
   patVars <- traverse singleVar pats
   let len = fromIntegral $ length patVars
   let vars = map bound $ genericTake len (iterate (subtract 1) (len - 1))
@@ -393,7 +395,7 @@ rawLookupFun ::
   Core.RawGlobals ext primTy primVal ->
   LookupFun (OnlyExts.T ext') primTy primVal
 rawLookupFun globals x =
-  HashMap.lookup x globals >>= toLambdaR
+  pTrace ("rawLookupFun: " <> show x <> " || " <> show (HashMap.lookup x globals))HashMap.lookup x globals >>= toLambdaR
 
 -- | Variant of `lookupFun` that creates a extension free elimination.
 lookupFun' ::

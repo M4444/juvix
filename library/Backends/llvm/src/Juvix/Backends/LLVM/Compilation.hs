@@ -19,6 +19,7 @@ import qualified LLVM.AST.Type as LLVM
 import qualified LLVM.IRBuilder as LLVM
 import qualified LLVM.Pretty as LLVM
 import qualified Prelude as P
+import Debug.Pretty.Simple
 
 -- | A mapping between Juvix variable names and their operands in LLVM.
 type Env = Map.Map NameSymbol.T LLVM.Operand
@@ -69,7 +70,9 @@ mkMain t@(ErasedAnn.Ann usage ty t') = do
               callArgs = zip args (repeat []) -- No arg attributes.
           funname <- mkLam env ty body arguments capture
           LLVM.call (globalRef (typeToLLVM ty) funname) callArgs
-      _ -> compileTerm mempty t
+      other -> do
+        pTraceM $ "Other not found: " <> show other 
+        compileTerm mempty t
     LLVM.ret out
 
 -- | Compile a term to its equivalent LLVM code.
