@@ -176,22 +176,10 @@ makeFunction name args = do
 defineFunctionGen ::
   Types.Define m => Bool -> Type -> Symbol -> [(Type, Name)] -> m a -> m Operand
 defineFunctionGen bool retty name args body = do
-  oldSymTab <- get @"symTab"
-  -- flush the blocks so we can have clean block for functions
-  put @"blocks" Map.empty
-  oldCount <- get @"count"
-  resetCount
   functionOperand <-
-    (makeFunction name args >> registerFunction retty args (internName name) >> body >> createBlocks)
-      >>= defineGen bool retty name args
-  -- TODO ∷ figure out if LLVM functions can leak out of their local scope
-  -- Just remove the definitions from arguments, and try to restore any definitions we shadowed!
-  put @"symTab" oldSymTab
-  -- flush out blocks after functions
-  -- comment for debugging!
-  put @"blocks" Map.empty
-  -- Don't flush fully, as an inner define will reset this.
-  put @"count" oldCount
+    withLocalArgumentBlocks $ do
+      (makeFunction name args >> registerFunction retty args (internName name) >> body >> createBlocks)
+        >>= defineGen bool retty name args
   assign name functionOperand
   pure functionOperand
 
@@ -200,6 +188,41 @@ defineFunction,
     Define m => Type -> Symbol -> [(Type, Name)] -> m a -> m Operand
 defineFunction = defineFunctionGen False
 defineFunctionVarArgs = defineFunctionGen True
+
+-- TODO ∷ symTab should not be reset in this way.... we should only
+-- clear the names given to it. As if we want a variable or function
+-- escape scope we simply can't. This may have other implications
+
+withLocalArgumentBlocks ::
+  ( HasState "blocks" (Map.HashMap k v) m,
+    HasState "count" s1 m,
+    HasState "symTab" s2 m,
+    Num s1
+  ) =>
+  m b ->
+  m b
+withLocalArgumentBlocks op = do
+  -- Reserve old Environment
+  ----------------------------------------
+  oldSymTab <- get @"symTab"
+  oldBlocks <- get @"blocks"
+  oldCount' <- get @"count"
+  -- Prepare Environment
+  ----------------------------------------
+  resetCount
+  put @"blocks" Map.empty
+  -- Do op
+  ----------------------------------------
+  ret <- op
+  -- restore order
+  ----------------------------------------
+  --we should do smart symtab accounting
+  put @"symTab" oldSymTab
+  put @"blocks" oldBlocks
+  put @"count" oldCount'
+  -- return
+  ----------------------------------------
+  return ret
 
 --------------------------------------------------------------------------------
 -- Unique Name gen
