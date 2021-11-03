@@ -2,28 +2,23 @@
 
 The erased core captures the operational semantics of the core language, erasing contemplated (zero-usage) terms and dropping type & usage annotations which are not computationally necessary. Core terms can be erased directly or first passed through the elementary affine stratification checker in order to test compatibility with the abstract algorithm.
 
-Analogously to core, the erased core language is parameterised over a set $C$ of primitive constants, a set $F$ of primitive functions, and a set $→_{f}$ of associated reduction rules.
+Analogously to core, the erased core language is parameterised over a set $C$ of primitive constants (including functions) and a set $→_{f}$ of associated reduction rules.
 
 ## Syntax
 
 Let $u, v, w$ be terms.
 
+- TODO: add the other syntax
+
 ## Erased core syntax
 $$
-\begin{align*}
+\newcommand\OR{\mkern17mu | \mkern12mu}
+\begin{aligned}
 u, v, w &::= x & \text{variable} \\
-&\ \ \ \ \ \ |\ c \in C & \text{primitive constant} \\
-&\ \ \ \ \ \ |\ f \in F & \text{primitive function} \\
-&\ \ \ \ \ \ |\ λx.u & \text{abstraction} \\
-&\ \ \ \ \ \ |\ u\ v & \text{application} \\
-&\ \ \ \ \ \ |\ (u, v)\ & \text{multiplicative conjunction} \\
-&\ \ \ \ \ \ |\ u\ \epsilon\ v & \text{additive conjunction} \\
-&\ \ \ \ \ \ |\ u\ \gamma\ v & \text{multiplicative disjunction} \\
-&\ \ \ \ \ \ |\ fst_{\&}\ u\ & \text{first projection for additive conjunction} \\
-&\ \ \ \ \ \ |\ snd_{\&}\ u\ & \text{second projection for additive conjunction} \\
-&\ \ \ \ \ \ |\ ⊙ e & \text{multiplicative disjunction destructor} \\
-&\ \ \ \ \ \ |\ let\ (x, y) = u\ in\ v\ & \text{multiplicative conjunction pattern match}
-\end{align*}
+&\OR c \in C & \text{primitive constant} \\
+&\OR λx.u & \text{abstraction} \\
+&\OR u\ v & \text{application} \\
+\end{aligned}
 $$
 
 ## Erasure from core
@@ -35,7 +30,7 @@ Erasure judgements take the form $Γ ⊢ t \overset{σ}{:} S \ ▶\  u$ with $t 
 Computationally relevant terms are preserved, while terms which are only contemplated are erased.
 
 ```{note} 
-$σ /= 0$ must hold, as the erasure of a computationally irrelevant term is nothing.
+$σ \ne 0$ must hold, as the erasure of a computationally irrelevant term is nothing.
 ```
 
 ### Primitives & lambda terms
@@ -43,7 +38,7 @@ $σ /= 0$ must hold, as the erasure of a computationally irrelevant term is noth
 $$
 \begin{prooftree}
 \AxiomC{$c \overset{σ}{:} S$}
-\AxiomC{$σ /= 0$}
+\AxiomC{$σ \ne 0$}
 \RightLabel{Prim-Const-Erase-+}
 \BinaryInfC{$c \overset{σ}{:} S \ ▶\  c$}
 \end{prooftree}
@@ -51,17 +46,8 @@ $$
 
 $$
 \begin{prooftree}
-\AxiomC{$f \overset{σ}{:} S$}
-\AxiomC{$σ /= 0$}
-\RightLabel{Prim-Fun-Erase-+}
-\BinaryInfC{$f \overset{σ}{:} S \ ▶\  f$}
-\end{prooftree}
-$$
-
-$$
-\begin{prooftree}
 \AxiomC{$⊢ 0Γ,x \overset{σ}{:} S, 0Γ′$}
-\AxiomC{$σ /= 0$}
+\AxiomC{$σ \ne 0$}
 \RightLabel{Var-Erase-+}
 \BinaryInfC{$0Γ,x \overset{σ}{:} S, 0Γ′ ⊢ x \overset{σ}{:} S \ ▶\  x$}
 \end{prooftree}
@@ -79,7 +65,7 @@ $$
 $$
 \begin{prooftree}
 \AxiomC{$t \overset{σ}{:} T \ ▶\  u$}
-\AxiomC{$σπ /= 0$}
+\AxiomC{$σπ \ne 0$}
 \RightLabel{Lam-Erase-+}
 \BinaryInfC{$λx.t : (x \overset{π}{:} S) → T \ ▶\  λx.u$}
 \end{prooftree}
@@ -99,7 +85,7 @@ $$
 \begin{prooftree}
 \AxiomC{$Γ_1 ⊢ M \overset{σ}{:} (x \overset{π}{:} S) → T \ ▶\  u$}
 \AxiomC{$Γ_2 ⊢ N \overset{σπ}{:} S \ ▶\  v$}
-\AxiomC{$σπ /= 0$}
+\AxiomC{$σπ \ne 0$}
 \RightLabel{App-Erase-+}
 \TrinaryInfC{$Γ_1 + Γ_2 ⊢ M N \overset{σ}{:} T[x := N] \ ▶\  u\ v$}
 \end{prooftree}
@@ -109,7 +95,7 @@ $$
 \begin{prooftree}
 \AxiomC{$Γ ⊢ s \overset{π}{:} S$}
 \AxiomC{$s \ ▶\ u$}
-\AxiomC{$π /= 0$}
+\AxiomC{$π \ne 0$}
 \RightLabel{Ann-Erase-+}
 \TrinaryInfC{$Γ ⊢ s \overset{π}{:} S \ ▶\ u$}
 \end{prooftree}
@@ -117,143 +103,6 @@ $$
 
 In the *Lam-Erase-0* rule, the variable $x$ bound in $t$ will not occur in the corresponding $u$, since it is bound with usage $0$, with which it will remain regardless of how the context splits, so the rule *Var-Erase-+* cannot consume it.
 
-### Linear connectives
-
-#### Multiplicative conjunction
-
-##### Constructor
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ (s, t) \overset{σ}{:} (x \overset{π}{:} S) ⊗ T$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$π /= 0$}
-\AxiomC{$s \ ▶\ u$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{let-Erase-++}
-\QuinaryInfC{$Γ ⊢ (s, t) \overset{σ}{:} (x \overset{π}{:} S) ⊗ T \ ▶\ (u, v)$}
-\end{prooftree}
-$$
-If the first element of the pair is used, the constructor is erased to the untyped constructor.
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ (s, t) \overset{σ}{:} (x \overset{π}{:} S) ⊗ T$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$π = 0$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{let-Erase-0+}
-\QuaternaryInfC{$Γ ⊢ (s, t) \overset{σ}{:} (x \overset{π}{:} S) ⊗ T \ ▶\ v$}
-\end{prooftree}
-$$
-If the first element of the pair is not used, the constructor is erased completely.
-
-##### Destructor
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ_1 ⊢ s \overset{σ}{:} (x \overset{π}{:} S) ⊗ T$}
-\AxiomC{$Γ_1 + Γ_2 ⊢ let\ (x, y) = s\ in\ t \overset{σ'}{:} M[z := (x,y)]$}
-\AxiomC{$σ, σ' /= 0$}
-\AxiomC{$s \ ▶\ u$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{⊗-Erase-++}
-\QuinaryInfC{$Γ_1 + Γ_2 ⊢ let\ (x, y) = s\ in\ t \overset{σ'}{:} M[z := (x,y)] \ ▶\ let\ (x, y) = u\ in\ v$}
-\end{prooftree}
-$$
-
-If the pair is used, the destructor is erased to the untyped destructor.
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ_1 ⊢ s \overset{σ}{:} (x \overset{π}{:} S) ⊗ T$}
-\AxiomC{$Γ_1 + Γ_2 ⊢ let\ (x, y) = s\ in\ t \overset{σ'}{:} M[z := (x,y)]$}
-\AxiomC{$σ = 0 ∧ σ' /= 0$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{⊗-Erase-0+}
-\QuaternaryInfC{$Γ_1 + Γ_2 ⊢ let\ (x, y) = s\ in\ t \overset{σ'}{:} M[z := (x,y)] \ ▶\ v$}
-\end{prooftree}
-$$
-
-If the pair is not used, the destructor is erased completely.
-
-#### Multiplicative disjunction
-
-##### Constructor
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ (s\ \gamma\ t) \overset{σ}{:} (S \parr T)$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$s \ ▶\ u$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{$\gamma$-Erase-+}
-\QuaternaryInfC{$Γ ⊢ (u\ \gamma\ v) \overset{σ}{:} (S \parr T) \ ▶\ (u\ \gamma\ v)$}
-\end{prooftree}
-$$
-
-The constructor is erased to the untyped constructor.
-
-##### Destructor
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ ⊙\ M \overset{σ}{:} (S ⊗ T)$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$M \ ▶\ u$}
-\RightLabel{$⊙$-Erase-+}
-\TrinaryInfC{$Γ ⊢ ⊙\ M \overset{σ}{:} (S ⊗ T) \ ▶\ ⊙ u$}
-\end{prooftree}
-$$
-
-The destructor is erased to the untyped destructor.
-
-#### Additive conjunction
-
-##### Constructor
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ (s\ \epsilon\ t) \overset{σ}{:} (x \overset{π}{:} S)\ \&\ T$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$s \ ▶\ u$}
-\AxiomC{$t \ ▶\ v$}
-\RightLabel{$\epsilon$-Erase-+}
-\QuaternaryInfC{$Γ ⊢ (s\ \epsilon\ t) \overset{σ}{:} (x \overset{π}{:} S)\ \&\ T \ ▶\ u \epsilon v$}
-\end{prooftree}
-$$
-
-The constructor is erased to the untyped constructor.
-
-Question: what if $π = 0$?
-
-##### Destructors
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ fst_{\&}\ t \overset{σ}{:} S$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$t \ ▶\ u$}
-\RightLabel{fst-Erase-+}
-\TrinaryInfC{$fst_{\&}\ M\ ▶\ fst_{\&}\ u$}
-\end{prooftree}
-$$
-
-$$
-\begin{prooftree}
-\AxiomC{$Γ ⊢ snd_{\&}\ t \overset{σ}{:} S$}
-\AxiomC{$σ /= 0$}
-\AxiomC{$t \ ▶\ u$}
-\RightLabel{snd-Erase-+}
-\TrinaryInfC{$snd_{\&}\ M\ ▶\ snd_{\&}\ u$}
-\end{prooftree}
-$$
-
-The destructors are erased to the untyped destructors.
-
-## Erasure from elementary affine core
-
-Drop the $!$s and the $\bar{!}$s, discard type information.
 
 ## Reduction semantics
 
