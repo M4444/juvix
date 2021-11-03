@@ -264,8 +264,8 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       b' <- typeTerm' b (star0Ann σ)
       bv <- evalTC b'
       cp' <- typeTerm' cp (Typed.Annotation σ (IR.VCatCoproduct av bv))
-      s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av ty))
-      t' <- typeTerm' t (Typed.Annotation σ (IR.VPi σ bv ty))
+      s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av (Eval.weak ty)))
+      t' <- typeTerm' t (Typed.Annotation σ (IR.VPi σ bv (Eval.weak ty)))
       pure $ Typed.CatCoproductElim a' b' cp' s' t' ann
     Core.UnitTy _ -> do
       requireZero σ
