@@ -10,5 +10,4 @@ typographical-conventions
 prior-work
 desiderata
 ingredients
-background/index
 ```
