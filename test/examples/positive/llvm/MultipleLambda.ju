@@ -1,0 +1,11 @@
+-- This tests whether multiple lambdas can compile at once
+mod MultipleLambdas where
+
+open Prelude
+open LLVM
+
+sig main : int
+let main =
+  let foo = 3 : int in
+  let bar = 5 : int in
+  bar

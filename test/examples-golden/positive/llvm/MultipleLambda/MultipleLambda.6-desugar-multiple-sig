@@ -1,0 +1,11 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( ":defsig-match" "main" "int"
+        ( ()
+            ( ":let-match" "foo"
+                ( () ( ":infix" ":" 3 "int" ) )
+                ( ":let-match" "bar"
+                    ( () ( ":infix" ":" 5 "int" ) ) "bar" ) ) ) ) ]
