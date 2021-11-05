@@ -55,7 +55,7 @@ llvm =
     builtinTypes :: Param.Builtins PrimTy
     builtinTypes =
       [ ("LLVM.int8", PrimTy LLVM.i8),
-        ("LLVM.int16", PrimTy LLVM.i16)
+        ("LLVM.int16", PrimTy LLVM.i16),
         ("LLVM.double", PrimTy LLVM.double)
       ]
 
@@ -65,7 +65,7 @@ llvm =
       [ ("LLVM.add", Add),
         ("LLVM.sub", Sub),
         ("LLVM.mul", Mul),
-        ("LLVM.litint", LitInt 0) -- TODO: what to do with the 0?
+        ("LLVM.litint", LitInt 0), -- TODO: what to do with the 0?
         ("LLVM.sqrt", Sqrt),
         ("LLVM.exp", Exp)
       ]
