@@ -1,3 +1,5 @@
+-- The reason this is not working is due to pattern matching
+
 mod Norm where
 
 open Prelude
