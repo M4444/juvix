@@ -22,10 +22,10 @@ maxdepth: 1
 
 getting-started/index
 preliminaries/index
-overview
 compiler/index
 distributed-ledger-integration
 examples/index
 future-work/index
+haddock/index
 ```
 
