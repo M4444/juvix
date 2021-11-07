@@ -5,7 +5,6 @@
   + [[Plonk]]
   + [[Library]]
   + [[Feedback]]
-  + [[Fetch]]
   + [[Pipeline]]
 * Options
 - _Relies on_
