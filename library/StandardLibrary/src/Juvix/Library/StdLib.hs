@@ -50,5 +50,7 @@ localStdLibs = do
 
 loadStdLibs :: IO ()
 loadStdLibs = do
-  success <- localStdLibs
-  unless success downloadStdLibs
+  -- TODO: How long do we want to cache this?
+  -- TODO: Checksum
+  -- success <- localStdLibs
+  downloadStdLibs
