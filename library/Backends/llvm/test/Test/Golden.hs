@@ -28,6 +28,9 @@ juvixRootPath = "../../../"
 withJuvixRootPath :: FilePath -> FilePath
 withJuvixRootPath p = juvixRootPath <> p
 
+libs :: [String]
+libs = ["stdlib/Prelude.ju", "stdlib/LLVM.ju"]
+
 top :: IO TestTree
 top =
   testGroup "LLVM golden tests"
@@ -76,7 +79,7 @@ typecheck ::
   Feedback.FeedbackT [] String IO (ErasedAnn.AnnTermT LLVM.PrimTy LLVM.RawPrimVal)
 typecheck file = do
   contract <- liftIO $ readFile file
-  context <- Pipeline.parse LLVM.BLLVM contract
+  context <- Pipeline.parseWithLibs (withJuvixRootPath <$> libs) LLVM.BLLVM contract
   Pipeline.typecheck @LLVM.BLLVM context
 
 -- | Discover golden tests for input files with extension @.ju@ and output
@@ -103,7 +106,7 @@ hrTests =
 pipelineToHR file =
   do
     liftIO (readFile file)
-    >>= Pipeline.toML LLVM.BLLVM
+    >>= Pipeline.toML' (withJuvixRootPath <$> libs) LLVM.BLLVM
     >>= Pipeline.toSexp LLVM.BLLVM
     >>= Pipeline.toHR LLVM.llvm
 
@@ -133,7 +136,7 @@ erasedTests =
     toErased file =
       do
         liftIO (readFile file)
-        >>= Pipeline.toML LLVM.BLLVM
+        >>= Pipeline.toML' (withJuvixRootPath <$> libs) LLVM.BLLVM
         >>= Pipeline.toSexp LLVM.BLLVM
         >>= Pipeline.toHR LLVM.llvm
         >>= Pipeline.toIR

@@ -26,6 +26,9 @@ import Text.Pretty.Simple (pPrint)
 juvixRootPath :: FilePath
 juvixRootPath = "../../../"
 
+libs :: IsString a => [a]
+libs = ["stdlib/Prelude.ju", "stdlib/Circuit.ju", "stdlib/Circuit/Field.ju"]
+
 withJuvixRootPath :: FilePath -> FilePath
 withJuvixRootPath p = juvixRootPath <> p
 
@@ -65,7 +68,7 @@ typecheckTests =
 
 typecheck file = do
   contract <- liftIO $ readFile file
-  context <- Pipeline.parse (Plonk.BPlonk @Fr) contract
+  context <- Pipeline.parseWithLibs (withJuvixRootPath <$> libs) (Plonk.BPlonk @Fr) contract
   Pipeline.typecheck @(Plonk.BPlonk Fr) context
 
 hrTests :: IO TestTree
@@ -82,7 +85,7 @@ hrTests =
 pipelineToHR file =
   do
     liftIO (readFile file)
-    >>= Pipeline.toML (Plonk.BPlonk @Fr)
+    >>= Pipeline.toML' (withJuvixRootPath <$> libs) (Plonk.BPlonk @Fr)
     >>= Pipeline.toSexp (Plonk.BPlonk @Fr)
     >>= Pipeline.toHR (Plonk.param @Fr)
     -- Reduce the Prelude related functions for readability
@@ -116,7 +119,7 @@ erasedTests =
     toErased file =
       do
         liftIO (readFile file)
-        >>= Pipeline.toML (Plonk.BPlonk @Fr)
+        >>= Pipeline.toML' (withJuvixRootPath <$> libs) (Plonk.BPlonk @Fr)
         >>= Pipeline.toSexp (Plonk.BPlonk @Fr)
         >>= Pipeline.toHR (Plonk.param @Fr)
         >>= Pipeline.toIR

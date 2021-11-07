@@ -46,9 +46,7 @@ import qualified Juvix.Sexp as Sexp
 import qualified System.IO.Temp as Temp
 import qualified Text.Megaparsec as P
 import Text.Pretty.Simple (pShowNoColor)
-import Debug.Pretty.Simple
 import qualified Text.PrettyPrint.Leijen.Text as Pretty
-import System.Directory (getHomeDirectory)
 
 ------------------------------------------------------------------------------
 
@@ -94,9 +92,6 @@ createTmpPath code = Temp.writeSystemTempFile "juvix-tmp.ju" (Text.unpack code)
 prelude :: FilePath
 prelude = "stdlib/Prelude.ju"
 
--- getJuvixHome :: IO FilePath
-getJuvixHome = (<> "/.juvix/") <$> getHomeDirectory
-
 -- ! This should be given as a default for the command-line.
 
 ------------------------------------------------------------------------------
@@ -128,9 +123,7 @@ class HasBackend b where
 
   -- | Parse juvix source code using prelude and the default set of libraries of the backend
   toML :: b -> Text -> Pipeline [(NameSymbol.T, [Types.TopLevel])]
-  toML b t = do
-    juvixHome <- liftIO getJuvixHome
-    toML' ((juvixHome <>) <$> (prelude : stdlibs b)) b t
+  toML b = toML' (prelude : stdlibs b) b
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
   toSexp _b x = liftIO $ do
@@ -197,9 +190,7 @@ class HasBackend b where
 
   -- TODO: parse === toML?
   parse :: b -> Text -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
-  parse b t = do
-    juvixHome <- liftIO getJuvixHome
-    parseWithLibs ((juvixHome <>) <$> libs) b t
+  parse b = parseWithLibs libs b
     where
       libs = prelude : stdlibs b
 
