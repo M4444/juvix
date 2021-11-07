@@ -71,8 +71,7 @@ master_doc = 'index'
 html_theme = 'insipid'
 html_theme_options = {
     'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-
+    'prev_next_buttons_location': 'bottom'
 }
 
 

@@ -24,7 +24,6 @@ getting-started/index
 preliminaries/index
 compiler/index
 distributed-ledger-integration
-examples/index
 future-work/index
 haddock/index
 ```
