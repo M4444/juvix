@@ -13,6 +13,7 @@ getJuvixHome = (<> "/.juvix/") <$> getHomeDirectory
 
 remoteStrategy :: IO ()
 remoteStrategy = do  
+  -- TODO: If found locally, do not fetch (unless flag is set to force fetch)
   getContents "stdlib"
   where
     createDir p = do
@@ -43,7 +44,6 @@ localHomeStrategy = do
 
 loadStdLibs :: IO ()
 loadStdLibs = do
-  -- TODO: How long do we want to cache this?
-  success <- localHomeStrategy
+  sucess <- localHomeStrategy
   unless success remoteStrategy
 
