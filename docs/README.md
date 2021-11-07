@@ -25,6 +25,7 @@ pip install myst_parser
 pip install sphinx_proof
 pip install sphinxcontrib-tikz
 pip install sphinxcontrib-bibtex
+pip install insipid-sphinx-theme
 ```
 
 ### LaTeX

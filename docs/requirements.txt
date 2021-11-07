@@ -5,3 +5,4 @@ sphinxcontrib-tikz
 sphinxcontrib-bibtex
 sphinx-autobuild
 rtd-tikz
+insipid-sphinx-theme
