@@ -8,7 +8,7 @@ import Juvix.Library (IO)
 import qualified Test.Tasty as T
 import Typechecker (coreCheckerEval)
 import qualified Utility
-import Juvix.Library.Fetch (loadStdLibs)
+import Juvix.Library.StdLib (loadStdLibs)
 
 coreTests :: T.TestTree
 coreTests =

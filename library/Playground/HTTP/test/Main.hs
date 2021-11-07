@@ -1,7 +1,7 @@
 module Main where
 
 import Juvix.Library
-import Juvix.Library.Fetch (loadStdLibs)
+import Juvix.Library.StdLib (loadStdLibs)
 
 main :: IO ()
 main = do

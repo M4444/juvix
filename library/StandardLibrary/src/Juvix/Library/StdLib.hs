@@ -1,5 +1,5 @@
 {-# LANGUAGE ViewPatterns #-}
-module Juvix.Library.Fetch where
+module Juvix.Library.StdLib where
 
 import Protolude
 import System.Directory
@@ -32,7 +32,7 @@ downloadStdLibs = do
   r <- Wreq.asValue =<< (Wreq.get $ juvixAWS ++ "/" ++ checksumsFile)
   let files = r ^.  Wreq.responseBody . _Object
   localJuvix <- getJuvixHome "stdlib/"
-  print $ "Loading standard libs: " ++ show files
+  putStrLn $ "args: " ++ show files
   sequence_ $ Map.mapWithKey (\filename checksum -> do
     retrieveFile localJuvix (toS filename)
     ) files
