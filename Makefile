@@ -16,7 +16,8 @@ install:
 	stack install
 	juvix fetch-stdlibs
 
-fetch-stdlibs: build
+fetch-stdlibs:
+	make build
 	stack exec juvix -- fetch-stdlibs
 
 setup:
@@ -56,15 +57,12 @@ test:
 	stack test --fast --jobs=$(THREADS) --test-arguments "--hide-successes --ansi-tricks false"
 
 test-parser: build
-	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % stack exec juvix -- parse % -b "michelson"
 
 test-typecheck: build
-	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % stack exec juvix -- typecheck % -b "michelson"
 
 test-compile: build
-	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -n 1 -I % basename % .ju | xargs -t -n 1 -I % stack exec juvix -- compile test/examples/positive/michelson/demo/%.ju test/examples/positive/michelson/demo/%.tz -b "michelson"
 	rm test/examples/positive/michelson/demo/*.tz
 
