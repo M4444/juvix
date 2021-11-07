@@ -56,7 +56,8 @@ llvm =
     builtinTypes =
       [ ("LLVM.int8", PrimTy LLVM.i8),
         ("LLVM.int16", PrimTy LLVM.i16),
-        ("LLVM.double", PrimTy LLVM.double)
+        ("LLVM.double", PrimTy LLVM.double),
+        ("LLVM.string", PrimTy (LLVM.ptr i8))
       ]
 
     -- The primitive LLVM values available to Juvix users.

@@ -3,17 +3,11 @@ mod Norm where
 open Prelude
 open LLVM
 
-type SomePoint = P3 int int int -- | P2 int int 
+type SomePoint = P3 int int int | P2 int int 
 
 sig norm : SomePoint -> double
 let norm (P3 x y z) = sqrt (x^2 + y^2 + z^2)
--- let norm (P2 x y) = sqrt (x^2 + y^2)
-
--- sig main : double
--- let main = norm (P2 3 4)
-
--- sig norm : int -> int -> int
--- let norm = %LLVM.add
+let norm (P2 x y) = sqrt (x^2 + y^2)
 
 sig main : double
 let main = norm (P3 2 3 4)

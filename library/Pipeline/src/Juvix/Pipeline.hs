@@ -14,7 +14,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.IntMap.Strict as PM
 import qualified Data.Text as Text
 import qualified Data.Text.IO as T
-import Debug.Pretty.Simple (pTraceShowM)
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Application as CoreApp
 import qualified Juvix.Core.Base as Core
@@ -156,8 +155,6 @@ class HasBackend b where
   toErased param (patToSym, globalDefs) = do
     (usage, term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
-    pTraceM $ "Globals: " <> show globalDefs
-    pTraceM $ "Inline term" <> show inlinedTerm
     let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
     res <- liftIO $ fst <$> exec erasedAnn param evaluatedGlobals
     case res of

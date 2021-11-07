@@ -70,9 +70,7 @@ mkMain t@(ErasedAnn.Ann usage ty t') = do
               callArgs = zip args (repeat []) -- No arg attributes.
           funname <- mkLam env ty body arguments capture
           LLVM.call (globalRef (typeToLLVM ty) funname) callArgs
-      other -> do
-        pTraceM $ "Other not found: " <> show other 
-        compileTerm mempty t
+      other -> compileTerm mempty t
     LLVM.ret out
 
 -- | Compile a term to its equivalent LLVM code.
