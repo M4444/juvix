@@ -82,11 +82,6 @@ cradle:
       component: "witch:test:witch-test"
 
     - path: ./library/Test/DataStructures/src
-      component: "data-structures"
+      component: "datastructures"
     - path: ./library/Test/DataStructures/test
-      component: "data-structures:test:data-structures-test"
-
-    - path: ./library/Test/PackageManager/src
-      component: "package-manager"
-    - path: ./library/Test/PackageManager/test
-      component: "package-manager:test:package-manager-test"
+      component: "datastructures:test:datastructures-test"
