@@ -8,7 +8,6 @@ import qualified Juvix.Backends.Michelson as Michelson
 import qualified Juvix.Backends.Plonk as Plonk
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
-import Juvix.Library.Fetch
 import qualified Juvix.Pipeline as Pipeline
 import Options
 import Options.Applicative
@@ -18,6 +17,7 @@ import Text.Pretty.Simple
 import Text.Pretty.Simple (pPrint)
 import Text.PrettyPrint.ANSI.Leijen (putDoc)
 import Version (infoVersionRepo, progNameVersionTag)
+import Juvix.Library.Fetch
 
 ------------------------------------------------------------------------------
 -- Run commands
