@@ -320,19 +320,11 @@ common ones to include"
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*)))
 
-(defparameter *data-structures*
+(defparameter *DataStructures*
   (make-stack-yaml
    :name     "Test/DataStructures"
    :path-to-other "../../"
    :packages   (list *standard-library* *sexp* *context*)
-   :extra-deps (list (general-dependencies)
-                     *standard-library-extra-deps*)))
-
-(defparameter *package-manager*
-  (make-stack-yaml
-   :name     "Test/PackageManager"
-   :path-to-other "../../"
-   :packages   (list *standard-library*)
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*)))
 
@@ -352,7 +344,7 @@ common ones to include"
                      *standard-library*
                      *sexp*
                      *context*
-                     *data-structures*)
+                     *datastructures*)
    :extra-deps (list (general-dependencies *extensible*)
                      *standard-library-extra-deps*
                      *eac-solver*)))
@@ -439,7 +431,7 @@ common ones to include"
                    *context*
                    *plonk*
                    *sexp*
-                   *data-structures*)
+                   *DataStructures*)
    ;; hack name, for sub dirs
    :name "Playground/Easy"
    :extra-deps (append (big-dep-list) (list *llvm-hs-deps*))
@@ -501,8 +493,7 @@ common ones to include"
                    *witch*
                    *context*
                    *sexp*
-                   *data-structures*
-                   *package-manager*)
+                   *datastructures*)
    :path-to-other "./library/"
    :extra-deps
    (cons *servant-deps* (cons *llvm-hs-deps* (big-dep-list)))
