@@ -2,7 +2,6 @@ module Main where
 
 import qualified Context
 import qualified Test.Tasty as T
-import Juvix.Library.StdLib (loadStdLibs)
 
 allCheckeddTests :: T.TestTree
 allCheckeddTests =
@@ -10,6 +9,4 @@ allCheckeddTests =
     "Context tests"
     [Context.top]
 
-main = do
-  loadStdLibs
-  T.defaultMain allCheckeddTests
+main = T.defaultMain allCheckeddTests

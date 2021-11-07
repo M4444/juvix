@@ -2,7 +2,6 @@ module Main where
 
 import Juvix.Library (IO)
 import qualified Test.Tasty as T
-import Juvix.Library.StdLib (loadStdLibs)
 
 allCheckedTests :: T.TestTree
 allCheckedTests =
@@ -11,6 +10,4 @@ allCheckedTests =
     []
 
 main :: IO ()
-main = do
-  loadStdLibs
-  T.defaultMain allCheckedTests
+main = T.defaultMain allCheckedTests
