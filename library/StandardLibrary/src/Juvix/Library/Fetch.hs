@@ -25,6 +25,7 @@ createStdLibDir p = do
 getJuvixHome :: FilePath -> IO FilePath
 getJuvixHome p = do
   d <- (<> ("/.juvix/" <> p)) <$> getHomeDirectory
+  createDirectoryIfMissing True (d <> p)
   return d
 
 downloadStdLibs :: IO ()
@@ -54,9 +55,4 @@ localStdLibs = do
 loadStdLibs :: IO ()
 loadStdLibs = do
   success <- localStdLibs
-  unless success $ do
-    print "Standard Library not found; do you want \
-          \ Juvix to download and install the Standard library to ~/.juvix? [yes/no]"
-    continue <- getLine
-    when (continue == "yes" || continue == "y")
-      downloadStdLibs
+  unless success downloadStdLibs
