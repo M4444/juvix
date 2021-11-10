@@ -3,6 +3,94 @@
     [
         ( "Prelude" :|
             [ "LLVM"
+            , "list"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "list"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( Free
+                            ( Global
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        ) ()
+                    )
+                    ( Elim
+                        ( Free
+                            ( Global
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        ) ()
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy
+                        ( PrimTy
+                            ( PointerType
+                                { pointerReferent = IntegerType
+                                    { typeBits = 8 }
+                                , pointerAddrSpace = AddrSpace 0
+                                }
+                            )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "set"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "set"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( Free
+                            ( Global
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        ) ()
+                    )
+                    ( Elim
+                        ( Free
+                            ( Global
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        ) ()
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy
+                        ( PrimTy
+                            ( PointerType
+                                { pointerReferent = IntegerType
+                                    { typeBits = 8 }
+                                , pointerAddrSpace = AddrSpace 0
+                                }
+                            )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
             , "int8"
             ]
         , RawGFunction
@@ -316,6 +404,41 @@
                             ( Elim
                                 ( Bound 0 () ) ()
                             ) ()
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "string"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "string"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( Free
+                        ( Global
+                            ( "Prelude" :| [ "ty" ] )
+                        ) ()
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy
+                        ( PrimTy
+                            ( PointerType
+                                { pointerReferent = IntegerType
+                                    { typeBits = 8 }
+                                , pointerAddrSpace = AddrSpace 0
+                                }
+                            )
                         ) ()
                     , rawClauseCatchall = False
                     } :| []

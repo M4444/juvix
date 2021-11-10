@@ -2,12 +2,12 @@
 module Juvix.Backends.LLVM.Codegen.Types.Shared
   ( SymbolTable,
     TypeTable,
-    SumInfo(..),
+    SumInfo (..),
     VariantToType,
     Names,
-    uniqueName
+    uniqueName,
   )
-  where
+where
 
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.HashMap as Map

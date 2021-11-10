@@ -9,11 +9,11 @@ module Juvix.Backends.LLVM.Parameterization
   )
 where
 
+import qualified Juvix.Backends.LLVM.Codegen.Types as Codegen.Type
 import Juvix.Backends.LLVM.Primitive
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.IR.Evaluator as IR
 import qualified Juvix.Core.Parameterisation as Param
-import qualified Juvix.Backends.LLVM.Codegen.Types as Codegen.Type
 import Juvix.Library
 import qualified LLVM.AST.Type as LLVM
 
