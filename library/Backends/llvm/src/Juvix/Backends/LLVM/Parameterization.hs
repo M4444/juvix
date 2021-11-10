@@ -13,6 +13,7 @@ import Juvix.Backends.LLVM.Primitive
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.IR.Evaluator as IR
 import qualified Juvix.Core.Parameterisation as Param
+import qualified Juvix.Backends.LLVM.Codegen.Types as Codegen.Type
 import Juvix.Library
 import qualified LLVM.AST.Type as LLVM
 
@@ -52,7 +53,12 @@ llvm =
     builtinTypes :: Param.Builtins PrimTy
     builtinTypes =
       [ ("LLVM.int8", PrimTy LLVM.i8),
-        ("LLVM.int16", PrimTy LLVM.i16)
+        ("LLVM.int16", PrimTy LLVM.i16),
+        ("LLVM.string", PrimTy (Codegen.Type.pointerOf LLVM.i8)),
+        -- PLEASE FIX --
+        ("LLVM.set", PrimTy (Codegen.Type.pointerOf LLVM.i8)),
+        -- PLEASE FIX --
+        ("LLVM.list", PrimTy (Codegen.Type.pointerOf LLVM.i8))
       ]
 
     -- The primitive LLVM values available to Juvix users.
