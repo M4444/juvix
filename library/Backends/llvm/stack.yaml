@@ -13,7 +13,8 @@ packages:
 
 nix:
   enable: true
-  packages: [zlib, llvm_9]
+  packages: [llvm_9, zlib]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE, --keep, STACK_ROOT]
 
 extra-deps:
 
@@ -30,7 +31,6 @@ extra-deps:
 # LLVM-HS Library dependencies #
 ################################
 - llvm-hs-pure-9.0.0
-- llvm-hs-9.0.1
 - llvm-hs-pretty-0.9.0.0
 
 ######################
@@ -58,7 +58,7 @@ extra-deps:
 - git: https://github.com/int-index/caps.git
   commit: c5d61837eb358989b581ed82b1e79158c4823b1b
 - git: https://github.com/serokell/base-noprelude.git
-  commit: 87df0899801dcdffd08ef7c3efd3c63e67e623c2
+  commit: 1282e0b992b00089d55228a2aa9edc4a3581c319
 
 ######################################################
 # Shared Deps Between Arithmetic Circuits and Morley #
@@ -70,16 +70,18 @@ extra-deps:
 - git: https://github.com/serokell/galois-field.git
   commit: 576ba98ec947370835a1f308895037c7aa7f8b71
 
+###############################
+# Stm Containers Dependencies #
+###############################
+- stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
+- stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
+
 #####################################
 # Standard Library Extra Dependency #
 #####################################
 - github: phile314/tasty-silver
   commit: f1f90ac3113cd445e2a7ade43ebb29f0db38ab9b
 - tasty-1.4.1@sha256:69e90e965543faf0fc2c8e486d6c1d8cf81fd108e2c4541234c41490f392f94f,2638
-
-
-- stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
-- stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
 
 
 allow-newer: true

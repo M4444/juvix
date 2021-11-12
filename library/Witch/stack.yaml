@@ -1,4 +1,4 @@
-resolver: lts-17.3
+resolver: lts-18.16
 
 packages:
 - .
@@ -10,7 +10,13 @@ packages:
 - ../Sexp
 - ../Pipeline
 - ../Backends/Plonk
+- ../Test/DataStructures
 - ../Backends/Michelson
+
+nix:
+  enable: true
+  packages: [zlib]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE, --keep, STACK_ROOT]
 
 extra-deps:
 
@@ -58,6 +64,12 @@ extra-deps:
 - uncaught-exception-0.1.0
 - tasty-hunit-compat-0.2.0.1
 - with-utf8-1.0.2.2@sha256:42eed140390b3e93d9482b084d1d0150e8774667f39c33bd47e84815751fad09,3057
+
+###############################
+# Stm Containers Dependencies #
+###############################
+- stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
+- stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
 
 #########################################################################
 # For special deps that are similar to Michelson but not quite the same #
