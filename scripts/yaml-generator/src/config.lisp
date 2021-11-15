@@ -70,23 +70,20 @@
 
 ;; It seems we were directed to grab these when the system failed to load
 (defparameter *morley*
-  (string->dep-sha
-   "morley-1.14.0@sha256:70a9fc646bae3a85967224c7c42b2e49155461d6124c487bbcc1d825111a189d,9682"))
+  (make-dependency-git :name "https://gitlab.com/morley-framework/morley.git"
+                       :commit "6eb73a0cb8d97039d0706aa3f836cc22fe030f96"
+                       :subdirs (list "code/morley")))
 
 (defparameter *morley-prelude*
-  (string->dep-sha
-   "morley-prelude-0.4.0@sha256:7234db1acac9a5554d01bdbf22d63b598c69b9fefaeace0fb6f765bf7bf738d4,2176"))
+  (make-dependency-git :name "https://gitlab.com/morley-framework/morley.git"
+                       :commit "3584852e68c70cdcf0b346ac9001f8e22f620f35"
+                       :subdirs (list "code/morley-prelude")))
 
 
-(defparameter *base-no-prelude-standard*
-  (string->dep-sha
-   "base-noprelude-4.13.0.0@sha256:3cccbfda38e1422ca5cc436d58858ba51ff9114d2ed87915a6569be11e4e5a90,6842")
-  "this is the standard version of base no prelude")
-
-(defparameter *base-no-prelude-special*
+(defparameter *base-no-prelude*
   (make-dependency-git :name "https://github.com/serokell/base-noprelude.git"
                        :commit "1282e0b992b00089d55228a2aa9edc4a3581c319")
-  "this is a special version of base no prelude we have to use with Michelson backend")
+  "this is the standard version of base no prelude")
 
 ;; --------------------------------------
 ;; Stadnard Library Style Dependencies
@@ -150,6 +147,8 @@
           *morley-prelude*
           (make-dependency-bare :name "base58-bytestring-0.1.0")
           (make-dependency-bare :name "hex-text-0.1.0.0")
+          (string->dep-sha
+           "base16-bytestring-0.1.1.7@sha256:0021256a9628971c08da95cb8f4d0d72192f3bb8a7b30b55c080562d17c43dd3,2231")
           (make-dependency-bare :name "show-type-0.1.1")
           (string->dep-sha
            "named-0.3.0.1@sha256:2975d50c9c5d88095026ffc1303d2d9be52e5f588a8f8bcb7003a04b79f10a06,2312")
@@ -166,7 +165,7 @@
    :deps (list
           (make-dependency-git :name "https://github.com/int-index/caps.git"
                                :commit "c5d61837eb358989b581ed82b1e79158c4823b1b")
-          *base-no-prelude-special*))
+          *base-no-prelude*))
   "like *morley-sub-deps* but is an extra layer of dependency that is not used elsewhere")
 
 (defparameter *morley-deps-testing*
@@ -303,11 +302,9 @@ common ones to include"
         *graph-visualizer*
         *standard-library-extra-deps*
         *morley-sub-deps*
+        *morley-sub-deps-extra*
         ;; Context Dependencies
         *stm-container-group*
-        (make-groups
-         :comment "For special deps that are similar to Michelson but not quite the same"
-         :deps (list *base-no-prelude-standard*))
         *interaction-net-extra-deps*
         ;; no morley plonk given as plonk wants a different one
         (if plonk
@@ -457,7 +454,9 @@ common ones to include"
                         ;; this is needed due to pipeline additions
                         ;; have left it unable to build. I think due to cyclic dependencies
                         *parsing*
-                        *sexp*)
+                        *sexp*
+                        *data-structures*
+                        *translate*)
    :extra-deps    (list (make-general-dependencies *capability* *extensible* *prettiest*)
                         *withdraw*
                         *eac-solver*
@@ -468,7 +467,8 @@ common ones to include"
                         ;; Context Dependencies
                         *stm-container-group*
                         *graph-visualizer*
-                        *standard-library-extra-deps*)))
+                        *standard-library-extra-deps*)
+   :extra "allow-newer: true"))
 
 (defparameter *plonk*
   (make-stack-yaml
