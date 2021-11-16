@@ -12,7 +12,7 @@ data T a = T
   }
   deriving (Show, Eq)
 
-instance Semigroup a => Semigroup (T a) where
+instance Semigroup (T a) where
   T _ (RecursiveList.T l) <> T n (RecursiveList.T r) = T n (RecursiveList.T $ r <> l)
 
 data RecursiveSchema a 
