@@ -1,39 +1,35 @@
-{-# DeriveAnyClass #-}
 module Juvix.BerlinPipeline.CircularList where
 
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
-import qualified Juvix.BerlinPipeline.RecursiveList as RecursiveList
+-- import qualified Juvix.BerlinPipeline.RecList as RecList
 
 
 data T a = T 
   { name :: Maybe NameSymbol.T
-  , value :: RecursiveList.T (RecursiveSchema a)
+  , value :: RecList a 
   }
   deriving (Show, Eq)
 
 instance Semigroup (T a) where
-  T _ (RecursiveList.T l) <> T n (RecursiveList.T r) = T n (RecursiveList.T $ r <> l)
+  T _ l <> T n r = T n (r <> l)
 
-data RecursiveSchema a 
-    = Recursive [a]
-    | NonRecursive a
+data RecList a 
+    = Rec [RecList a]
+    | Anu a
     deriving (Show, Eq)
 
-instance Semigroup (RecursiveSchema a) where
-  Recursive l <> Recursive r = Recursive $ r <> l
-  Recursive l <> NonRecursive r = Recursive $ r : l
-  NonRecursive l <> Recursive r = Recursive .reverse $ l : r
-  NonRecursive l <> NonRecursive r = Recursive $ r : [l]
+instance Semigroup (RecList a) where
+  Rec l <> Rec r = Rec $ r <> l
+  Rec l <> a@(Anu _) = Rec $ a : l
+  a@(Anu _) <> Rec r = Rec .reverse $ a : r
+  l@(Anu _) <> r@(Anu _) = Rec $ r : [l]
 
 init :: NameSymbol.T -> T a
-init sym = T (Just sym) (RecursiveList.T $ Recursive [])
+init sym = T (Just sym) (Rec [])
 
-initRecursive :: NameSymbol.T -> [a] -> T a
-initRecursive sym l = T (Just sym) (RecursiveList.T $ Recursive l)
-
-initNonRecursive :: NameSymbol.T -> a -> T a
-initNonRecursive sym v = T (Just sym) (RecursiveList.T $ NonRecursive v)
+initAnu :: NameSymbol.T -> a -> T a
+initAnu sym v = T (Just sym) (Anu v)
 
 empty :: T a
-empty = T Nothing (RecursiveList.T $ Recursive [])
+empty = T Nothing (Rec [])
