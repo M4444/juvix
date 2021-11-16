@@ -40,11 +40,11 @@ data StopADT = Stop
 -- | Registers the pipeline function to the environment
 registerStep :: CircularList.T Step.Named -> EnvS ()
 registerStep l = do
-  modify @"information" $ \i -> i <> l
+  modify @"registeredPipeline" $ \i -> i <> l
 
 -- | @defPipelineGroup@ creates a named group of pipeline steps or nested grouping of pipeline steps.
 defPipelineGroup :: NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
-defPipelineGroup sym ls = foldl' (flip . (<>)) empty ls
+defPipelineGroup sym ls = foldl' (flip (<>)) (CircularList.init sym) ls
 
 -- | Tells the environment to stop at a particular step when running the environment.
 stopAt :: NameSymbol.T -> EnvS ()
@@ -53,8 +53,8 @@ stopAt sym = put @"stoppingStep" (Just sym)
 stopAtNothing :: EnvS ()
 stopAtNothing = put @"stoppingStep" Nothing
 
-eval :: Monad m => Pipeline.ComputationalInput -> T -> m Pipeline.ComputationalInput
-eval = notImplemented
+eval :: Monad m => T -> m Pipeline.ComputationalInput
+eval (T information registeredPipeline stoppingStep) = notImplemented
 
 run :: EnvS b -> T -> Pipeline.ComputationalInput
 run = notImplemented
