@@ -12,7 +12,7 @@ data T = T
     registeredPipeline :: CircularList.T (Step.Named),
     stoppingStep :: Maybe NameSymbol.T
   }
-  deriving (Show, Eq, Generic)
+  deriving (Generic)
 
 newtype EnvS b = EnvS (State T b)
   deriving (Functor, Applicative, Monad)
@@ -37,19 +37,23 @@ newtype EnvS b = EnvS (State T b)
 
 data StopADT = Stop
 
+-- | Registers the pipeline function to the environment
 registerStep :: CircularList.T Step.Named -> EnvS ()
-registerStep = notImplemented
+registerStep l = do
+  modify @"information" $ \i -> i <> l
 
+-- | @defPipelineGroup@ creates a named group of pipeline steps or nested grouping of pipeline steps.
 defPipelineGroup :: NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
-defPipelineGroup = notImplemented
+defPipelineGroup sym ls = foldl' (flip . (<>)) empty ls
 
+-- | Tells the environment to stop at a particular step when running the environment.
 stopAt :: NameSymbol.T -> EnvS ()
-stopAt = notImplemented
+stopAt sym = put @"stoppingStep" (Just sym)
 
 stopAtNothing :: EnvS ()
-stopAtNothing = notImplemented
+stopAtNothing = put @"stoppingStep" Nothing
 
-eval :: T -> Pipeline.ComputationalInput
+eval :: Monad m => Pipeline.ComputationalInput -> T -> m Pipeline.ComputationalInput
 eval = notImplemented
 
 run :: EnvS b -> T -> Pipeline.ComputationalInput

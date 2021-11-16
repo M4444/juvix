@@ -10,19 +10,20 @@ import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
 
-data Env
+data EnvOrSexp
   = InContext NameSymbol.T
   | SExp Sexp.T
   deriving (Show, Eq, Generic)
 
 data WorkingEnv = WorkingEnv
-  { currentExp :: [Env],
+  { currentExp :: [EnvOrSexp],
     context :: Context.T Sexp.T Sexp.T Sexp.T
   }
   deriving (Show, Eq, Generic)
 
 data ComputationalInput = ComputationalInput
   { languageData :: WorkingEnv
+  , surroundingData :: SurroundingEnv
   }
   deriving (Show, Eq, Generic)
 
