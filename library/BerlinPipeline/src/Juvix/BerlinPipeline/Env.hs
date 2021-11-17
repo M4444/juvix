@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+
 module Juvix.BerlinPipeline.Env where
 
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
@@ -55,10 +56,10 @@ stopAtNothing :: EnvS ()
 stopAtNothing = put @"stoppingStep" Nothing
 
 -- data CIn = CIn
-  -- { languageData :: WorkingEnv
-  -- , surroundingData :: SurroundingEnv
-  -- }
-  -- deriving (Show, Eq, Generic)
+-- { languageData :: WorkingEnv
+-- , surroundingData :: SurroundingEnv
+-- }
+-- deriving (Show, Eq, Generic)
 -- Rec [Anu (NonCircSchema Parsing), Anu (NonCircSchema condToIf)]
 -- Rec [Anu (NonCircSchema (\input -> output), Anu (NonCircSchema condToIf)]
 -- Change our environment
@@ -103,6 +104,8 @@ eval
     nextStep = CircularList.firstNested pipeline
     remainder = CircularList.removeFirstNested pipeline
 
+      nextStep = CircularList.firstNested pipeline
+      remainder = CircularList.removeFirstNested pipeline
 
 run :: EnvS b -> T -> Pipeline.CIn
 run = notImplemented

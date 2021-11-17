@@ -29,10 +29,11 @@ data CIn = CIn
   deriving (Show, Eq, Generic)
 
 nameCIn :: NameSymbol.T -> CIn -> CIn
-nameCIn n cIn = cIn  
-  { surroundingData = 
-      let d = surroundingData cIn in d { currentStepName = Just n }
-  }
+nameCIn n cIn =
+  cIn
+    { surroundingData =
+        let d = surroundingData cIn in d {currentStepName = Just n}
+    }
 
 metaCIn :: Meta.T -> CIn -> CIn
 metaCIn meta cIn = cIn
@@ -49,12 +50,12 @@ data SurroundingEnv = SurroundingEnv
 
 -- | Computational Output
 data COut a
-  = Success 
-    { meta :: Meta.T
-    , result :: a
-    }
-  | Failure 
-    { meta :: Meta.T
-    , partialResult :: Maybe a
-    }
+  = Success
+      { meta :: Meta.T,
+        result :: a
+      }
+  | Failure
+      { meta :: Meta.T,
+        partialResult :: Maybe a
+      }
   deriving (Eq, Generic)

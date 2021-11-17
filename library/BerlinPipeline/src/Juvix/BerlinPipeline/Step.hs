@@ -29,4 +29,3 @@ data Named = Named
 
 register :: NameSymbol.T -> T -> Named
 register name func = Named name func
-
