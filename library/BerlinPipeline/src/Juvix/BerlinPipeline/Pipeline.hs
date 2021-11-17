@@ -23,8 +23,8 @@ data WorkingEnv = WorkingEnv
 
 -- | Computational Input
 data CIn = CIn
-  { languageData :: WorkingEnv
-  , surroundingData :: SurroundingEnv
+  { languageData :: WorkingEnv,
+    surroundingData :: SurroundingEnv
   }
   deriving (Show, Eq, Generic)
 

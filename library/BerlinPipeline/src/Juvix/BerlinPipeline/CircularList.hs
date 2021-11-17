@@ -37,7 +37,6 @@ removeFirstNested (T (Rec (x:xs))) =
     T (Rec []) -> T (Rec xs)
     T otherwise -> T (Rec (otherwise : xs))
 
-
 instance Semigroup (RecList a) where
   Rec l <> Rec r = Rec $ l <> r
   Rec l <> a@(Anu _) = Rec $ l ++ [a]

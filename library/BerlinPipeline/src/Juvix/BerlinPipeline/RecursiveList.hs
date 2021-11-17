@@ -8,4 +8,4 @@ module Juvix.BerlinPipeline.RecursiveList where
 import Juvix.Library
 
 data T a = T a
-    deriving (Show, Eq)
+  deriving (Show, Eq)

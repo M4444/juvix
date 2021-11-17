@@ -1,7 +1,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+
 module Juvix.BerlinPipeline.Step
-  ( T(..),
-    Named(..),
+  ( T (..),
+    Named (..),
     -- StepMeta(..),
     register,
   )
