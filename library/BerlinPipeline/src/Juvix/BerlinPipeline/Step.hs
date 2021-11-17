@@ -1,7 +1,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+
 module Juvix.BerlinPipeline.Step
-  ( T(..),
-    Named(..),
+  ( T (..),
+    Named (..),
     -- StepMeta(..),
     register,
   )
@@ -28,4 +29,3 @@ data Named = Named
 
 register :: NameSymbol.T -> T -> Named
 register name func = Named name func
-

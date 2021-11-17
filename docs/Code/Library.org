@@ -507,6 +507,7 @@ Shared between Types and Sum
 ***** CircularList
 - _Relies on_
   + [[Library]]
+  + [[NameSymbol]]
 ***** Env <<BerlinPipeline/Env>>
 - _Relies on_
   + [[CircularList]]

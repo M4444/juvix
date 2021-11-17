@@ -1,4 +1,3 @@
-
 -- |
 --
 -- A Recursive list represents the concept of a list with a chance to nest.
@@ -8,4 +7,4 @@ module Juvix.BerlinPipeline.RecursiveList where
 import Juvix.Library
 
 data T a = T a
-    deriving (Show, Eq)
+  deriving (Show, Eq)
