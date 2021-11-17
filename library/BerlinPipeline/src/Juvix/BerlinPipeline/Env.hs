@@ -64,45 +64,47 @@ stopAtNothing = put @"stoppingStep" Nothing
 -- Rec [Anu (NonCircSchema (\input -> output), Anu (NonCircSchema condToIf)]
 -- Change our environment
 eval :: MonadIO m => T -> m Pipeline.CIn
-eval 
-  (T 
-    input@(Pipeline.CIn wEnv@(Pipeline.WorkingEnv sexp context) surr) 
-    pipeline@(CircularList.T reclist) 
-    stoppingStep
-  ) = do
-  case nextStep of
-    Nothing -> pure input
-    Just (CircularList.NonCircSchema nStep) -> do
-      let name = Step.name nStep
-      let namedInput = Pipeline.nameCIn name input 
-      if shouldStop stoppingStep name
-        then pure input
-        else liftIO $ do
-          let (Step.T step) = Step.step nStep 
-          res <- step namedInput
-          case res of
-            Pipeline.Success { meta, result} -> eval $ T 
-              { information = Pipeline.CIn 
-                  { languageData = result
-                  , surroundingData = Pipeline.SurroundingEnv Nothing meta
-                  }
-              , registeredPipeline = remainder
-              , stoppingStep
-              }
-            Pipeline.Failure { meta, partialResult } -> pure $ case partialResult of 
-              Nothing -> Pipeline.metaCIn meta namedInput
-              Just wEnv -> 
-                let out = Pipeline.metaCIn meta namedInput 
-                in out { Pipeline.languageData = wEnv }
-          
-  where
-    shouldStop (Just n) named
-      | n == named = True
-      | otherwise = False
-    shouldStop _ _ = False  
+eval
+  ( T
+      input@(Pipeline.CIn wEnv@(Pipeline.WorkingEnv sexp context) surr)
+      pipeline@(CircularList.T reclist)
+      stoppingStep
+    ) = do
+    case nextStep of
+      Nothing -> pure input
+      Just (CircularList.NonCircSchema nStep) -> do
+        let name = Step.name nStep
+        let namedInput = Pipeline.nameCIn name input
+        if shouldStop stoppingStep name
+          then pure input
+          else liftIO $ do
+            let (Step.T step) = Step.step nStep
+            res <- step namedInput
+            case res of
+              Pipeline.Success {meta, result} ->
+                eval $
+                  T
+                    { information =
+                        Pipeline.CIn
+                          { languageData = result,
+                            surroundingData = Pipeline.SurroundingEnv Nothing meta
+                          },
+                      registeredPipeline = remainder,
+                      stoppingStep
+                    }
+              Pipeline.Failure {meta, partialResult} -> pure $ case partialResult of
+                Nothing -> Pipeline.metaCIn meta namedInput
+                Just wEnv ->
+                  let out = Pipeline.metaCIn meta namedInput
+                   in out {Pipeline.languageData = wEnv}
+    where
+      shouldStop (Just n) named
+        | n == named = True
+        | otherwise = False
+      shouldStop _ _ = False
 
-    nextStep = CircularList.firstNested pipeline
-    remainder = CircularList.removeFirstNested pipeline
+      nextStep = CircularList.firstNested pipeline
+      remainder = CircularList.removeFirstNested pipeline
 
 run :: EnvS b -> T -> Pipeline.CIn
 run = notImplemented

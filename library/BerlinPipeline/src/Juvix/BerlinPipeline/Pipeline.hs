@@ -36,11 +36,11 @@ nameCIn n cIn =
     }
 
 metaCIn :: Meta.T -> CIn -> CIn
-metaCIn meta cIn = cIn
-  { surroundingData = 
-      let d = surroundingData cIn in d { metaInfo = meta }
-  }
-
+metaCIn meta cIn =
+  cIn
+    { surroundingData =
+        let d = surroundingData cIn in d {metaInfo = meta}
+    }
 
 data SurroundingEnv = SurroundingEnv
   { currentStepName :: Maybe NameSymbol.T,
