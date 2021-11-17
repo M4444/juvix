@@ -42,7 +42,7 @@ import Juvix.Library
 type NoExtensions ext primTy primVal =
   ( Core.TermX ext primTy primVal ~ Void,
     Core.ElimX ext primTy primVal ~ Void,
-    TransformExt.ForgotExt ext primTy primVal
+    TransformExt.ForgotExtTE ext primTy primVal
   )
 
 type EvalPatSubst ext primTy primVal =

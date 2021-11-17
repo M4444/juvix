@@ -194,7 +194,7 @@ extTransformE ::
   Elim ext2 primTy primVal
 extTransformE fs t = runIdentity $ extTransformEF fs t
 
-type ForgotExt ext primTy primVal =
+type ForgotExtTE ext primTy primVal =
   ( XStar ext primTy primVal ~ (),
     XPrimTy ext primTy primVal ~ (),
     XPrim ext primTy primVal ~ (),
@@ -220,13 +220,13 @@ type ForgotExt ext primTy primVal =
     XAnn ext primTy primVal ~ ()
   )
 
-forgetter ::
+forgetterTE ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
-    ForgotExt ext' primTy primVal
+    ForgotExtTE ext' primTy primVal
   ) =>
   ExtTransformTE ext ext' primTy primVal
-forgetter =
+forgetterTE =
   ExtTransformTE
     { etStar = const (),
       etPrimTy = const (),
@@ -258,27 +258,27 @@ forgetter =
 extForgetT ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
-    ForgotExt ext' primTy primVal
+    ForgotExtTE ext' primTy primVal
   ) =>
   Term ext primTy primVal ->
   Term ext' primTy primVal
-extForgetT = extTransformT forgetter
+extForgetT = extTransformT forgetterTE
 
 extForgetE ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
-    ForgotExt ext' primTy primVal
+    ForgotExtTE ext' primTy primVal
   ) =>
   Elim ext primTy primVal ->
   Elim ext' primTy primVal
-extForgetE = extTransformE forgetter
+extForgetE = extTransformE forgetterTE
 
-compose ::
+composeTE ::
   Monad f =>
   ExtTransformTEF f ext2 ext3 primTy primVal ->
   ExtTransformTEF f ext1 ext2 primTy primVal ->
   ExtTransformTEF f ext1 ext3 primTy primVal
-compose fs gs =
+composeTE fs gs =
   ExtTransformTEF
     { etfStar = etfStar fs <=< etfStar gs,
       etfPrimTy = etfPrimTy fs <=< etfPrimTy gs,
@@ -306,3 +306,202 @@ compose fs gs =
       etfTermX = etfTermX fs <=< etfTermX gs,
       etfElimX = etfElimX fs <=< etfElimX gs
     }
+
+
+data ExtTransformVNF f ext1 ext2 primTy primVal = ExtTransformVNF
+  { etfVStar :: XVStar ext1 primTy primVal -> f (XVStar ext2 primTy primVal),
+    etfVPrimTy :: XVPrimTy ext1 primTy primVal -> f (XVPrimTy ext2 primTy primVal),
+    etfVPi :: XVPi ext1 primTy primVal -> f (XVPi ext2 primTy primVal),
+    etfVLam :: XVLam ext1 primTy primVal -> f (XVLam ext2 primTy primVal),
+    etfVSig :: XVSig ext1 primTy primVal -> f (XVSig ext2 primTy primVal),
+    etfVPair :: XVPair ext1 primTy primVal -> f (XVPair ext2 primTy primVal),
+    etfVCatProduct :: XVCatProduct ext1 primTy primVal -> f (XVCatProduct ext2 primTy primVal),
+    etfVCatCoproduct :: XVCatCoproduct ext1 primTy primVal -> f (XVCatCoproduct ext2 primTy primVal),
+    etfVCatProductIntro :: XVCatProductIntro ext1 primTy primVal -> f (XVCatProductIntro ext2 primTy primVal),
+    etfVCatProductElimLeft :: XVCatProductElimLeft ext1 primTy primVal -> f (XVCatProductElimLeft ext2 primTy primVal),
+    etfVCatProductElimRight :: XVCatProductElimRight ext1 primTy primVal -> f (XVCatProductElimRight ext2 primTy primVal),
+    etfVCatCoproductIntroLeft :: XVCatCoproductIntroLeft ext1 primTy primVal -> f (XVCatCoproductIntroLeft ext2 primTy primVal),
+    etfVCatCoproductIntroRight :: XVCatCoproductIntroRight ext1 primTy primVal -> f (XVCatCoproductIntroRight ext2 primTy primVal),
+    etfVCatCoproductElim :: XVCatCoproductElim ext1 primTy primVal -> f (XVCatCoproductElim ext2 primTy primVal),
+    etfVUnitTy :: XVUnitTy ext1 primTy primVal -> f (XVUnitTy ext2 primTy primVal),
+    etfVUnit :: XVUnit ext1 primTy primVal -> f (XVUnit ext2 primTy primVal),
+    etfVNeutral :: XVNeutral ext1 primTy primVal -> f (XVNeutral ext2 primTy primVal),
+    etfVPrim :: XVPrim ext1 primTy primVal -> f (XVPrim ext2 primTy primVal),
+    etfNBound :: XNBound ext1 primTy primVal -> f (XNBound ext2 primTy primVal),
+    etfNFree :: XNFree ext1 primTy primVal -> f (XNFree ext2 primTy primVal),
+    etfNApp :: XNApp ext1 primTy primVal -> f (XNApp ext2 primTy primVal),
+    etfValueX :: ValueX ext1 primTy primVal -> f (ValueX ext2 primTy primVal),
+    etfNeutralX :: NeutralX ext1 primTy primVal -> f (NeutralX ext2 primTy primVal)
+  }
+
+type ExtTransformVN = ExtTransformVNF Identity
+
+pattern ExtTransformVN ::
+  (XVStar ext1 primTy primVal -> XVStar ext2 primTy primVal) ->
+  (XVPrimTy ext1 primTy primVal -> XVPrimTy ext2 primTy primVal) ->
+  (XVPi ext1 primTy primVal -> XVPi ext2 primTy primVal) ->
+  (XVLam ext1 primTy primVal -> XVLam ext2 primTy primVal) ->
+  (XVSig ext1 primTy primVal -> XVSig ext2 primTy primVal) ->
+  (XVPair ext1 primTy primVal -> XVPair ext2 primTy primVal) ->
+  (XVCatProduct ext1 primTy primVal -> XVCatProduct ext2 primTy primVal) ->
+  (XVCatCoproduct ext1 primTy primVal -> XVCatCoproduct ext2 primTy primVal) ->
+  (XVCatProductIntro ext1 primTy primVal -> XVCatProductIntro ext2 primTy primVal) ->
+  (XVCatProductElimLeft ext1 primTy primVal -> XVCatProductElimLeft ext2 primTy primVal) ->
+  (XVCatProductElimRight ext1 primTy primVal -> XVCatProductElimRight ext2 primTy primVal) ->
+  (XVCatCoproductIntroLeft ext1 primTy primVal -> XVCatCoproductIntroLeft ext2 primTy primVal) ->
+  (XVCatCoproductIntroRight ext1 primTy primVal -> XVCatCoproductIntroRight ext2 primTy primVal) ->
+  (XVCatCoproductElim ext1 primTy primVal -> XVCatCoproductElim ext2 primTy primVal) ->
+  (XVUnitTy ext1 primTy primVal -> XVUnitTy ext2 primTy primVal) ->
+  (XVUnit ext1 primTy primVal -> XVUnit ext2 primTy primVal) ->
+  (XVNeutral ext1 primTy primVal -> XVNeutral ext2 primTy primVal) ->
+  (XVPrim ext1 primTy primVal -> XVPrim ext2 primTy primVal) ->
+  (XNBound ext1 primTy primVal -> XNBound ext2 primTy primVal) ->
+  (XNFree ext1 primTy primVal -> XNFree ext2 primTy primVal) ->
+  (XNApp ext1 primTy primVal -> XNApp ext2 primTy primVal) ->
+  (ValueX ext1 primTy primVal -> ValueX ext2 primTy primVal) ->
+  (NeutralX ext1 primTy primVal -> NeutralX ext2 primTy primVal) ->
+  ExtTransformVN ext1 ext2 primTy primVal
+pattern ExtTransformVN
+  { etVStar,
+    etVPrimTy,
+    etVPi,
+    etVLam,
+    etVSig,
+    etVPair,
+    etVCatProduct,
+    etVCatCoproduct,
+    etVCatProductIntro,
+    etVCatProductElimLeft,
+    etVCatProductElimRight,
+    etVCatCoproductIntroLeft,
+    etVCatCoproductIntroRight,
+    etVCatCoproductElim,
+    etVUnitTy,
+    etVUnit,
+    etVNeutral,
+    etVPrim,
+    etNBound,
+    etNFree,
+    etNApp,
+    etValueX,
+    etNeutralX
+  } =
+  ExtTransformVNF {
+      etfVStar = Coerce etVStar,
+      etfVPrimTy = Coerce etVPrimTy,
+      etfVPi = Coerce etVPi,
+      etfVLam = Coerce etVLam,
+      etfVSig = Coerce etVSig,
+      etfVPair = Coerce etVPair,
+      etfVCatProduct = Coerce etVCatProduct,
+      etfVCatCoproduct = Coerce etVCatCoproduct,
+      etfVCatProductIntro = Coerce etVCatProductIntro,
+      etfVCatProductElimLeft = Coerce etVCatProductElimLeft,
+      etfVCatProductElimRight = Coerce etVCatProductElimRight,
+      etfVCatCoproductIntroLeft = Coerce etVCatCoproductIntroLeft,
+      etfVCatCoproductIntroRight = Coerce etVCatCoproductIntroRight,
+      etfVCatCoproductElim = Coerce etVCatCoproductElim,
+      etfVUnitTy = Coerce etVUnitTy,
+      etfVUnit = Coerce etVUnit,
+      etfVNeutral = Coerce etVNeutral,
+      etfVPrim = Coerce etVPrim,
+      etfNBound = Coerce etNBound,
+      etfNFree = Coerce etNFree,
+      etfNApp = Coerce etNApp,
+      etfValueX = Coerce etValueX,
+      etfNeutralX = Coerce etNeutralX
+    }
+
+extTransformVF ::
+  Applicative f =>
+  ExtTransformVNF f ext1 ext2 primTy primVal ->
+  Value ext1 primTy primVal ->
+  f (Value ext2 primTy primVal)
+extTransformVF fs (VStar ℓ e) = VStar ℓ <$> etfVStar fs e
+extTransformVF fs (VPrimTy p e) = VPrimTy p <$> etfVPrimTy fs e
+extTransformVF fs (VPrim p e) = VPrim p <$> etfVPrim fs e
+extTransformVF fs (VPi π a b e) =
+  VPi π <$> extTransformVF fs a <*> extTransformVF fs b <*> etfVPi fs e
+extTransformVF fs (VLam t e) =
+  VLam <$> extTransformVF fs t <*> etfVLam fs e
+extTransformVF fs (VSig π a b e) =
+  VSig π <$> extTransformVF fs a <*> extTransformVF fs b <*> etfVSig fs e
+extTransformVF fs (VPair s t e) =
+  VPair <$> extTransformVF fs s <*> extTransformVF fs t <*> etfVPair fs e
+extTransformVF fs (VCatProduct a b e) =
+  VCatProduct
+    <$> extTransformVF fs a
+    <*> extTransformVF fs b
+    <*> etfVCatProduct fs e
+extTransformVF fs (VCatCoproduct a b e) =
+  VCatCoproduct
+    <$> extTransformVF fs a
+    <*> extTransformVF fs b
+    <*> etfVCatCoproduct fs e
+extTransformVF fs (VCatProductIntro s t e) =
+  VCatProductIntro
+    <$> extTransformVF fs s
+    <*> extTransformVF fs t
+    <*> etfVCatProductIntro fs e
+extTransformVF fs (VCatProductElimLeft b s e) =
+  VCatProductElimLeft
+    <$> extTransformVF fs b
+    <*> extTransformVF fs s
+    <*> etfVCatProductElimLeft fs e
+extTransformVF fs (VCatProductElimRight a t e) =
+  VCatProductElimRight
+    <$> extTransformVF fs a
+    <*> extTransformVF fs t
+    <*> etfVCatProductElimRight fs e
+extTransformVF fs (VCatCoproductIntroLeft s e) =
+  VCatCoproductIntroLeft
+    <$> extTransformVF fs s
+    <*> etfVCatCoproductIntroLeft fs e
+extTransformVF fs (VCatCoproductIntroRight t e) =
+  VCatCoproductIntroRight
+    <$> extTransformVF fs t
+    <*> etfVCatCoproductIntroRight fs e
+extTransformVF fs (VCatCoproductElim a b s t u e) =
+  VCatCoproductElim
+    <$> extTransformVF fs a
+    <*> extTransformVF fs b
+    <*> extTransformVF fs s
+    <*> extTransformVF fs t
+    <*> extTransformVF fs u
+    <*> etfVCatCoproductElim fs e
+extTransformVF fs (VUnitTy e) = VUnitTy <$> etfVUnitTy fs e
+extTransformVF fs (VUnit e) = VUnit <$> etfVUnit fs e
+extTransformVF fs (VNeutral n e) =
+  VNeutral <$> extTransformNF fs n <*> etfVNeutral fs e
+extTransformVF fs (ValueX e) =
+  ValueX <$> etfValueX fs e
+
+extTransformV ::
+  ExtTransformVN ext1 ext2 primTy primVal ->
+  Value ext1 primTy primVal ->
+  Value ext2 primTy primVal
+extTransformV fs = runIdentity . extTransformVF fs
+
+extTransformNF ::
+  Applicative f =>
+  ExtTransformVNF f ext1 ext2 primTy primVal ->
+  Neutral ext1 primTy primVal ->
+  f (Neutral ext2 primTy primVal)
+extTransformNF fs (NBound i e) =
+  NBound i <$> etfNBound fs e
+extTransformNF fs (NFree x e) =
+  NFree x <$> etfNFree fs e
+extTransformNF fs (NApp f s e) =
+  NApp
+    <$> extTransformNF fs f
+    <*> extTransformVF fs s
+    <*> etfNApp fs e
+extTransformNF fs (NeutralX e) =
+  NeutralX <$> etfNeutralX fs e
+
+extTransformN ::
+  ExtTransformVN ext1 ext2 primTy primVal ->
+  Neutral ext1 primTy primVal ->
+  Neutral ext2 primTy primVal
+extTransformN fs = runIdentity . extTransformNF fs
+
