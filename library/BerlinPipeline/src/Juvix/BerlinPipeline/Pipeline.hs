@@ -28,26 +28,26 @@ data CIn = CIn
   }
   deriving (Show, Eq, Generic)
 
+nameCIn :: NameSymbol.T -> CIn -> CIn
+nameCIn n cIn = cIn  
+  { surroundingData = 
+      let d = surroundingData cIn in d { currentStepName = Just n }
+  }
+
 data SurroundingEnv = SurroundingEnv
   { currentStepName :: Maybe NameSymbol.T,
     metaInfo :: Meta.T
   }
   deriving (Show, Eq, Generic)
 
-data Success a = Success
-  { meta :: Meta.T,
-    result :: a
-  }
-  deriving (Eq, Functor)
-
-data Failure a = Failure
-  { meta :: Meta.T,
-    partialResult :: Maybe a
-  }
-  deriving (Eq, Functor)
-
 -- | Computational Output
 data COut a
-  = COutSuccess (Success a)
-  | COutFailure (Failure a)
-  deriving (Eq, Generic, Functor, Applicative, Monad)
+  = Success 
+    { meta :: Meta.T
+    , result :: a
+    }
+  | Failure 
+    { meta :: Meta.T
+    , partialResult :: Maybe a
+    }
+  deriving (Eq, Generic)
