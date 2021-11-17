@@ -73,11 +73,12 @@ eval
     Nothing -> pure input
     Just (CircularList.NonCircSchema nStep) -> do
       let name = Step.name nStep
+      let namedInput = Pipeline.nameCIn name input 
       if shouldStop stoppingStep name
         then pure input
         else liftIO $ do
           let (Step.T step) = Step.step nStep 
-          res <- step (Pipeline.nameCIn name input)
+          res <- step namedInput
           case res of
             Pipeline.Success { meta, result} -> eval $ T 
               { information = Pipeline.CIn 
@@ -87,7 +88,11 @@ eval
               , registeredPipeline = remainder
               , stoppingStep
               }
-            Pipeline.Failure { meta, partialResult } -> notImplemented 
+            Pipeline.Failure { meta, partialResult } -> pure $ case partialResult of 
+              Nothing -> Pipeline.metaCIn meta namedInput
+              Just wEnv -> 
+                let out = Pipeline.metaCIn meta namedInput 
+                in out { Pipeline.languageData = wEnv }
           
   where
     shouldStop (Just n) named
