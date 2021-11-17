@@ -104,9 +104,6 @@ eval
     nextStep = CircularList.firstNested pipeline
     remainder = CircularList.removeFirstNested pipeline
 
-      nextStep = CircularList.firstNested pipeline
-      remainder = CircularList.removeFirstNested pipeline
-
 run :: EnvS b -> T -> Pipeline.CIn
 run = notImplemented
 
