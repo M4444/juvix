@@ -21,7 +21,8 @@ data WorkingEnv = WorkingEnv
   }
   deriving (Show, Eq, Generic)
 
-data ComputationalInput = ComputationalInput
+-- | Computational Input
+data CIn = CIn
   { languageData :: WorkingEnv
   , surroundingData :: SurroundingEnv
   }
@@ -45,7 +46,8 @@ data Failure a = Failure
   }
   deriving (Eq, Functor)
 
-data ComputationalOutput a
-  = OutSuccess (Success a)
-  | OutFailure (Failure a)
+-- | Computational Output
+data COut a
+  = COutSuccess (Success a)
+  | COutFailure (Failure a)
   deriving (Eq, Generic, Functor, Applicative, Monad)
