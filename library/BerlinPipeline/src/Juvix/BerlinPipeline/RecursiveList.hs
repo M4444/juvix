@@ -1,4 +1,3 @@
-
 -- |
 --
 -- A Recursive list represents the concept of a list with a chance to nest.
