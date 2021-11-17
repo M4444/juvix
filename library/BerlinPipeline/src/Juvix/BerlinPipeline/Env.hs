@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 module Juvix.BerlinPipeline.Env where
 
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
@@ -8,7 +9,7 @@ import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
 data T = T
-  { information :: Pipeline.ComputationalInput,
+  { information :: Pipeline.CIn,
     registeredPipeline :: CircularList.T (Step.Named),
     stoppingStep :: Maybe NameSymbol.T
   }
@@ -17,9 +18,9 @@ data T = T
 newtype EnvS b = EnvS (State T b)
   deriving (Functor, Applicative, Monad)
   deriving
-    ( HasState "information" (Pipeline.ComputationalInput),
-      HasSink "information" (Pipeline.ComputationalInput),
-      HasSource "information" (Pipeline.ComputationalInput)
+    ( HasState "information" (Pipeline.CIn),
+      HasSink "information" (Pipeline.CIn),
+      HasSource "information" (Pipeline.CIn)
     )
     via StateField "information" (State T)
   deriving
@@ -37,26 +38,66 @@ newtype EnvS b = EnvS (State T b)
 
 data StopADT = Stop
 
--- | Registers the pipeline function to the environment
+-- | Register the pipeline function to the environment
 registerStep :: CircularList.T Step.Named -> EnvS ()
 registerStep l = do
   modify @"registeredPipeline" $ \i -> i <> l
 
--- | @defPipelineGroup@ creates a named group of pipeline steps or nested grouping of pipeline steps.
+-- | Create a named group of pipeline steps or nested grouping of pipeline steps.
 defPipelineGroup :: NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
-defPipelineGroup sym ls = foldl' (flip (<>)) (CircularList.init sym) ls
+defPipelineGroup sym ls = foldl' (<>) (CircularList.init sym) ls
 
--- | Tells the environment to stop at a particular step when running the environment.
+-- | Tell the environment to stop at a particular step when running the environment.
 stopAt :: NameSymbol.T -> EnvS ()
 stopAt sym = put @"stoppingStep" (Just sym)
 
 stopAtNothing :: EnvS ()
 stopAtNothing = put @"stoppingStep" Nothing
 
-eval :: Monad m => T -> m Pipeline.ComputationalInput
-eval (T information registeredPipeline stoppingStep) = notImplemented
+-- data CIn = CIn
+  -- { languageData :: WorkingEnv
+  -- , surroundingData :: SurroundingEnv
+  -- }
+  -- deriving (Show, Eq, Generic)
+-- Rec [Anu (NonCircSchema Parsing), Anu (NonCircSchema condToIf)]
+-- Rec [Anu (NonCircSchema (\input -> output), Anu (NonCircSchema condToIf)]
+-- Change our environment
+eval :: MonadIO m => T -> m Pipeline.CIn
+eval 
+  (T 
+    input@(Pipeline.CIn wEnv@(Pipeline.WorkingEnv sexp context) surr) 
+    pipeline@(CircularList.T reclist) 
+    stoppingStep
+  ) = do
+  case nextStep of
+    Nothing -> pure input
+    Just (CircularList.NonCircSchema nStep) ->
+      if shouldStop stoppingStep (Step.name nStep)
+        then pure input
+        else liftIO $ do
+          let (Step.T step) = Step.step nStep 
+          res <- step input -- TODO: Change name in input to step name
+          case res of
+            Pipeline.COutSuccess(Pipeline.Success meta result) -> eval $ T 
+              { information = Pipeline.CIn 
+                  { languageData = result
+                  , surroundingData = Pipeline.SurroundingEnv Nothing meta
+                  }
+              , registeredPipeline = remainder
+              , stoppingStep
+              }
+          
+  where
+    shouldStop (Just n) named
+      | n == named = True
+      | otherwise = False
+    shouldStop _ _ = False  
 
-run :: EnvS b -> T -> Pipeline.ComputationalInput
+    nextStep = CircularList.firstNested pipeline
+    remainder = CircularList.removeFirstNested pipeline
+
+
+run :: EnvS b -> T -> Pipeline.CIn
 run = notImplemented
 
 extract :: EnvS b -> T
