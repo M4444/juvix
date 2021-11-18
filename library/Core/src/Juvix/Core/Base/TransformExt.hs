@@ -1,7 +1,84 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Transformations between different extensions.
-module Juvix.Core.Base.TransformExt where
+module Juvix.Core.Base.TransformExt
+  ( -- * Terms & eliminations
+    ExtTransformTEF (..),
+    -- ** pure term\/elim transformations
+    ExtTransformTE,
+    pattern ExtTransformTE,
+    etStar,
+    etPrimTy,
+    etPrim,
+    etPi,
+    etLam,
+    etSig,
+    etPair,
+    etCatProduct,
+    etCatCoproduct,
+    etCatProductIntro,
+    etCatProductElimLeft,
+    etCatProductElimRight,
+    etCatCoproductIntroLeft,
+    etCatCoproductIntroRight,
+    etCatCoproductElim,
+    etUnitTy,
+    etUnit,
+    etLet,
+    etElim,
+    etBound,
+    etFree,
+    etApp,
+    etAnn,
+    etTermX,
+    etElimX,
+    -- ** applying term\/elim transformations
+    extTransformTF,
+    extTransformT,
+    extTransformEF,
+    extTransformE,
+    -- * combinators
+    ForgotExtTE,
+    forgetterTE,
+    extForgetT,
+    extForgetE,
+    composeTE,
+
+    -- * Values & neutrals
+    ExtTransformVNF (..),
+    -- ** pure transformations
+    ExtTransformVN,
+    pattern ExtTransformVN,
+    etVStar,
+    etVPrimTy,
+    etVPi,
+    etVLam,
+    etVSig,
+    etVPair,
+    etVCatProduct,
+    etVCatCoproduct,
+    etVCatProductIntro,
+    etVCatProductElimLeft,
+    etVCatProductElimRight,
+    etVCatCoproductIntroLeft,
+    etVCatCoproductIntroRight,
+    etVCatCoproductElim,
+    etVUnitTy,
+    etVUnit,
+    etVNeutral,
+    etVPrim,
+    etNBound,
+    etNFree,
+    etNApp,
+    etValueX,
+    etNeutralX,
+    -- ** applying value/neutral transformations
+    extTransformVF,
+    extTransformV,
+    extTransformNF,
+    extTransformN,
+  )
+where
 
 import Data.Coerce
 import Juvix.Core.Base.Types
