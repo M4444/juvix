@@ -4,6 +4,7 @@
 module Juvix.Core.Base.TransformExt
   ( -- * Terms & eliminations
     ExtTransformTEF (..),
+
     -- ** pure term\/elim transformations
     ExtTransformTE,
     pattern ExtTransformTE,
@@ -32,11 +33,13 @@ module Juvix.Core.Base.TransformExt
     etAnn,
     etTermX,
     etElimX,
+
     -- ** applying term\/elim transformations
     extTransformTF,
     extTransformT,
     extTransformEF,
     extTransformE,
+
     -- * combinators
     ForgotExtTE,
     forgetterTE,
@@ -46,6 +49,7 @@ module Juvix.Core.Base.TransformExt
 
     -- * Values & neutrals
     ExtTransformVNF (..),
+
     -- ** pure transformations
     ExtTransformVN,
     pattern ExtTransformVN,
@@ -72,6 +76,7 @@ module Juvix.Core.Base.TransformExt
     etNApp,
     etValueX,
     etNeutralX,
+
     -- ** applying value/neutral transformations
     extTransformVF,
     extTransformV,
@@ -384,7 +389,6 @@ composeTE fs gs =
       etfElimX = etfElimX fs <=< etfElimX gs
     }
 
-
 data ExtTransformVNF f ext1 ext2 primTy primVal = ExtTransformVNF
   { etfVStar :: XVStar ext1 primTy primVal -> f (XVStar ext2 primTy primVal),
     etfVPrimTy :: XVPrimTy ext1 primTy primVal -> f (XVPrimTy ext2 primTy primVal),
@@ -463,8 +467,8 @@ pattern ExtTransformVN
     etValueX,
     etNeutralX
   } =
-  ExtTransformVNF {
-      etfVStar = Coerce etVStar,
+  ExtTransformVNF
+    { etfVStar = Coerce etVStar,
       etfVPrimTy = Coerce etVPrimTy,
       etfVPi = Coerce etVPi,
       etfVLam = Coerce etVLam,
@@ -581,4 +585,3 @@ extTransformN ::
   Neutral ext1 primTy primVal ->
   Neutral ext2 primTy primVal
 extTransformN fs = runIdentity . extTransformNF fs
-

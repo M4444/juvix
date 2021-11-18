@@ -735,7 +735,7 @@ keeps the extensions.
   + [[Erased/Types]]
   + [[Library]]
   + [[NameSymbol]]
-****** Algorithm
+****** Algorithm <<Erased/Algorithm>>
 - _Relies on_
   + [[Core/Base/Types]]
   + [[Algorithm/Types]]
@@ -774,7 +774,7 @@ keeps the extensions.
   + [[Core/Base]]
   + [[OnlyExts]]
   + [[Erased]]
-  + [[Algorithm]]
+  + [[Erased/Algorithm]]
   + [[Algorithm/Types]]
   + [[Prim]]
   + [[Ann/Types]]
@@ -827,7 +827,7 @@ keeps the extensions.
 - _Relies on_
   + [[Core/HR/Pretty]]
   + [[HR/Types]]
-****** Extend
+****** Extend <<HR/Extend>>
 - _Relies on_
   + [[Core/Base/Types]]
   + [[Library]]
@@ -842,7 +842,7 @@ keeps the extensions.
 - _Relies on_
   + [[Application]]
   + [[Core/Base/Types]]
-  + [[Extend]]
+  + [[HR/Extend]]
   + [[Library]]
   + [[NameSymbol]]
 ***** IR <<Core/IR>>
@@ -1032,6 +1032,55 @@ Typechecked declarations are added to the signature.
   + [[Core/Translate]]
   + [[Core/Translate]]
   + [[Library]]
+***** Unify <<Core/Unify>>
+- _Relies on_
+  + [[Unify/Algorithm]]
+  + [[Unify/Types]]
+****** Algorithm <<Unify/Algorithm>>
+- _Relies on_
+  + [[Globals]]
+  + [[Evaluator/Weak]]
+  + [[IR/Types]]
+  + [[MetaVar]]
+  + [[Unify/Types]]
+  + [[Library]]
+  + [[Library/Usage]]
+****** Extend <<Unify/Extend>>
+- _Relies on_
+  + [[Base/Types/Base]]
+  + [[MetaVar]]
+****** MetaVar
+- _Relies on_
+  + [[Evaluator/Weak]]
+  + [[Library]]
+****** Subst
+- _Relies on_
+  + [[Evaluator/Weak]]
+  + [[MetaVar]]
+  + [[MetaVar]]
+  + [[Unify/Term]]
+  + [[Library]]
+****** Term <<Unify/Term>>
+- _Relies on_
+  + [[TransformExt]]
+  + [[Base/Types/Base]]
+  + [[IR/Types]]
+  + [[Unify/Extend]]
+  + [[MetaVar]]
+  + [[MetaVar]]
+  + [[Library]]
+****** Types <<Unify/Types>>
+- _Relies on_
+  + [[Base/Types/Base]]
+  + [[Globals]]
+  + [[Evaluator/Weak]]
+  + [[IR/Types]]
+  + [[MetaVar]]
+  + [[MetaVar]]
+  + [[Subst]]
+  + [[Unify/Term]]
+  + [[Library]]
+  + [[Library/Usage]]
 ** test
 *** Conv
 - _Relies on_
@@ -1045,7 +1094,7 @@ Typechecked declarations are added to the signature.
   + [[Application]]
   + [[Core/Base]]
   + [[Erased]]
-  + [[Algorithm]]
+  + [[Erased/Algorithm]]
   + [[Core/IR]]
   + [[IR/Typechecker]]
   + [[Core/Parameterisation]]
@@ -1076,6 +1125,15 @@ Tests for the type checker and evaluator in Core/IR/Typechecker.hs
   + [[Library]]
   + [[HashMap]]
   + [[Library/Usage]]
+*** Unify <<test/Unify>>
+- _Relies on_
+  + [[Core/Base/Types]]
+  + [[Core/Base/Types]]
+  + [[IR/Types]]
+  + [[Naturals]]
+  + [[Core/Unify]]
+  + [[MetaVar]]
+  + [[Library]]
 *** Utility <<test/Utility>>
 - _Relies on_
   + [[Core/Utility]]
@@ -1262,7 +1320,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
-  + [[Algorithm]]
+  + [[Erased/Algorithm]]
   + [[Core/HR/Pretty]]
   + [[Core/Translate]]
   + [[Core/Types]]
@@ -1316,7 +1374,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Library/Usage]]
   + [[ToHR/Env]]
   + [[Extract]]
-  + [[Term]]
+  + [[ToHR/Term]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
 ****** Env <<ToHR/Env>>
@@ -1332,7 +1390,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[NameSymbol]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
-****** Term
+****** Term <<ToHR/Term>>
 - _Relies on_
   + [[Core/Base]]
   + [[HR]]
@@ -1353,7 +1411,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[NameSymbol]]
   + [[Library/Usage]]
   + [[ToHR/Env]]
-  + [[Term]]
+  + [[ToHR/Term]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
   + [[Structure/Parsing]]
@@ -1387,7 +1445,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Library/Usage]]
   + [[ToHR/Env]]
   + [[Extract]]
-  + [[Term]]
+  + [[ToHR/Term]]
   + [[TypeSig]]
   + [[ToHR/Types]]
   + [[ToHR/Usage]]
