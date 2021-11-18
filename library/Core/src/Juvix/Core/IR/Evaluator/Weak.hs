@@ -6,6 +6,7 @@
 module Juvix.Core.IR.Evaluator.Weak
   ( HasWeak (..),
     weakBy,
+    weak',
     weak,
     GHasWeak,
   )
