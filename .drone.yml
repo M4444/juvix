@@ -31,7 +31,7 @@ steps:
     mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
-- commands: [make stack-yaml, make update-local-stdlibs, make test]
+- commands: [make stack-yaml, make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -92,7 +92,7 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /home/user}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
@@ -126,7 +126,7 @@ steps:
     mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
-- commands: [make stack-yaml, make update-local-stdlibs, make test]
+- commands: [make stack-yaml, make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -169,7 +169,7 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /home/user}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
@@ -254,14 +254,14 @@ steps:
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
     BACKEND_OPERATION_TIMEOUT: 8m
   image: meltwater/drone-cache:latest
-  name: restore-cache-parsing
+  name: restore-cache-frontend
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
-    mount: [library/Parsing/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Frontend/stack.yaml" }}
+    mount: [library/Frontend/.stack-work]
     override: false
     rebuild: false
     region: eu-west-1
@@ -470,7 +470,7 @@ steps:
     status: [success, failure]
 - commands: [./scripts/build-and-publish-docs.sh]
   depends_on: [restore-cache-stack, restore-cache-context, restore-cache-core, restore-cache-data-structure,
-    restore-cache-easy, restore-cache-parsing, restore-cache-http, restore-cache-llvm,
+    restore-cache-easy, restore-cache-frontend, restore-cache-http, restore-cache-llvm,
     restore-cache-michelson, restore-cache-plonk, restore-cache-sexp, restore-cache-standard-library,
     restore-cache-translate, restore-cache-witch]
   environment:
@@ -544,14 +544,14 @@ steps:
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
     BACKEND_OPERATION_TIMEOUT: 8m
   image: meltwater/drone-cache:latest
-  name: rebuild-cache-parsing
+  name: rebuild-cache-frontend
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
-    mount: [library/Parsing/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Frontend/stack.yaml" }}
+    mount: [library/Frontend/.stack-work]
     override: false
     rebuild: true
     region: eu-west-1
@@ -757,12 +757,12 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /home/user}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
@@ -794,9 +794,9 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /home/user}
 ---
 kind: signature
-hmac: 63190a73fc731a1e5d12b0bc7793b82ea3ace6a660c2f70c535a7a67029aa7b2
+hmac: 9cd04a26bbaaafc2f58247b923f5bd516f9389b5255163f16bc8c8f0c821519f
 
 ...
