@@ -1,6 +1,6 @@
-# Frontend
+# Parsing
 
-<iframe src="https://heliaxdev.github.io/juvix-docs/juvix/frontend/"
+<iframe src="https://heliaxdev.github.io/juvix-docs/juvix/parsing/"
     frameborder="0"  
     style="
     position: fixed;

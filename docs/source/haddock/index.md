@@ -15,7 +15,7 @@ maxdepth: 1
 ---
 
 standard-library
-frontend
+parsing
 translate
 context
 core
