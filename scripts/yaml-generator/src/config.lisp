@@ -305,11 +305,11 @@ common ones to include"
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*)))
 
-(defparameter *frontend*
+(defparameter *parsing*
   (make-stack-yaml
    ;; why is this one ahead again!?
    :resolver   17.9
-   :name       "Frontend"
+   :name       "Parsing"
    :packages   (list *standard-library*)
    :extra-deps (list (general-dependencies) *standard-library-extra-deps*)))
 
@@ -320,7 +320,7 @@ common ones to include"
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*)))
 
-(defparameter *DataStructures*
+(defparameter *data-structures*
   (make-stack-yaml
    :name     "Test/DataStructures"
    :path-to-other "../../"
@@ -340,11 +340,11 @@ common ones to include"
   (make-stack-yaml
    :name "Translate"
    :packages   (list *core*
-                     *frontend*
+                     *parsing*
                      *standard-library*
                      *sexp*
                      *context*
-                     *datastructures*)
+                     *data-structures*)
    :extra-deps (list (general-dependencies *extensible*)
                      *standard-library-extra-deps*
                      *eac-solver*)))
@@ -356,7 +356,7 @@ common ones to include"
   (make-stack-yaml
    :packages (list *standard-library*
                    *sexp*
-                   *frontend*
+                   *parsing*
                    *core*
                    *translate*
                    *context*)
@@ -370,7 +370,7 @@ common ones to include"
    :name "Backends/llvm"
    :resolver 17.3
    :path-to-other "../../"
-   :packages (list *standard-library* *core* *context* *pipeline* *frontend* *sexp* *translate*)
+   :packages (list *standard-library* *core* *context* *pipeline* *parsing* *sexp* *translate* *data-structures*)
    :extra-deps (list (make-general-dependencies *capability* *extensible* *prettiest*)
                      *llvm-hs-deps*
 
@@ -392,7 +392,7 @@ common ones to include"
    :packages      (list *standard-library* *core* *pipeline* *context*
                         ;; this is needed due to pipeline additions
                         ;; have left it unable to build. I think due to cyclic dependencies
-                        *frontend*
+                        *parsing*
                         *sexp*)
    :extra-deps    (list (make-general-dependencies *capability* *extensible* *prettiest*)
                         *fmt-withdraw*
@@ -410,7 +410,7 @@ common ones to include"
    :path-to-other "../../"
    :packages (list *standard-library*
                    *translate*
-                   *frontend*
+                   *parsing*
                    *core*
                    *context*
                    *pipeline*
@@ -422,7 +422,7 @@ common ones to include"
   (make-stack-yaml
    :path-to-other "../../"
    :packages (list *standard-library*
-                   *frontend*
+                   *parsing*
                    *core*
                    *translate*
                    *michelson*
@@ -431,7 +431,7 @@ common ones to include"
                    *context*
                    *plonk*
                    *sexp*
-                   *DataStructures*)
+                   *data-structures*)
    ;; hack name, for sub dirs
    :name "Playground/Easy"
    :extra-deps (append (big-dep-list) (list *llvm-hs-deps*))
@@ -448,23 +448,24 @@ common ones to include"
   (make-stack-yaml
    :path-to-other "../../"
    :packages (list *standard-library*
-                   *frontend*
+                   *parsing*
                    *core*
                    *translate*
                    *pipeline*
                    *michelson*
                    *context*
                    *plonk*
+                   *llvm*
                    *sexp*)
    ;; hack name, for sub dirs
    :name "Playground/HTTP"
-   :extra-deps (cons *servant-deps* (big-dep-list))
+   :extra-deps (append (list *servant-deps* *llvm-hs-deps*) (big-dep-list))
    :extra "allow-newer: true"))
 
 (defparameter *witch*
   (make-stack-yaml
    :name "Witch"
-   :packages   (list *frontend*
+   :packages   (list *parsing*
                      *standard-library*
                      *core*
                      *translate*
@@ -480,7 +481,7 @@ common ones to include"
   (make-stack-yaml
    :name "Juvix"
    :packages (list *standard-library*
-                   *frontend*
+                   *parsing*
                    *core*
                    *pipeline*
                    *berlin-pipeline*
@@ -493,7 +494,7 @@ common ones to include"
                    *witch*
                    *context*
                    *sexp*
-                   *datastructures*)
+                   *data-structures*)
    :path-to-other "./library/"
    :extra-deps
    (cons *servant-deps* (cons *llvm-hs-deps* (big-dep-list)))

@@ -5,6 +5,7 @@ import Erasure (erasureTests)
 import qualified HR.Pretty
 import qualified IR.Weak as Weak
 import Juvix.Library (IO)
+import Juvix.Library.Fetch (loadStdLibs)
 import qualified Test.Tasty as T
 import Typechecker (coreCheckerEval)
 import qualified Utility
@@ -29,4 +30,6 @@ allCheckedTests =
     ]
 
 main :: IO ()
-main = T.defaultMain allCheckedTests
+main = do
+  loadStdLibs
+  T.defaultMain allCheckedTests

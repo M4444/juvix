@@ -10,7 +10,7 @@
 
 (defun main ()
   (generate-yaml-file *standard-library* "library/StandardLibrary/stack.yaml")
-  (generate-yaml-file *frontend*         "library/Frontend/stack.yaml")
+  (generate-yaml-file *parsing*         "library/Parsing/stack.yaml")
   (generate-yaml-file *sexp*             "library/Sexp/stack.yaml")
   (generate-yaml-file *context*          "library/Context/stack.yaml")
   (generate-yaml-file *core*             "library/Core/stack.yaml")
@@ -23,5 +23,5 @@
   (generate-yaml-file *witch*            "library/Witch/stack.yaml")
   (generate-yaml-file *easy*             "library/Playground/Easy/stack.yaml")
   (generate-yaml-file *http*             "library/Playground/HTTP/stack.yaml")
-  (generate-yaml-file *datastructures*   "library/Test/DataStructures/stack.yaml")
+  (generate-yaml-file *data-structures*  "library/Test/DataStructures/stack.yaml")
   (generate-yaml-file *juvix*            "stack.yaml"))

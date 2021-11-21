@@ -4,7 +4,7 @@ kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
 steps:
-- commands: [echo "9d132660b8c00543ab828da8fd593c520335a79984133f13f52f3787bce5588b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -31,7 +31,7 @@ steps:
     mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
-- commands: [make stack-yaml, make test]
+- commands: [make stack-yaml, make update-local-stdlibs, make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -99,7 +99,7 @@ kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "9d132660b8c00543ab828da8fd593c520335a79984133f13f52f3787bce5588b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -126,7 +126,7 @@ steps:
     mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
-- commands: [make stack-yaml, make test]
+- commands: [make stack-yaml, make update-local-stdlibs, make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -176,7 +176,7 @@ kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "9d132660b8c00543ab828da8fd593c520335a79984133f13f52f3787bce5588b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -254,14 +254,14 @@ steps:
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
     BACKEND_OPERATION_TIMEOUT: 8m
   image: meltwater/drone-cache:latest
-  name: restore-cache-frontend
+  name: restore-cache-parsing
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Frontend/stack.yaml" }}
-    mount: [library/Frontend/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
+    mount: [library/Parsing/.stack-work]
     override: false
     rebuild: false
     region: eu-west-1
@@ -470,7 +470,7 @@ steps:
     status: [success, failure]
 - commands: [./scripts/build-and-publish-docs.sh]
   depends_on: [restore-cache-stack, restore-cache-context, restore-cache-core, restore-cache-data-structure,
-    restore-cache-easy, restore-cache-frontend, restore-cache-http, restore-cache-llvm,
+    restore-cache-easy, restore-cache-parsing, restore-cache-http, restore-cache-llvm,
     restore-cache-michelson, restore-cache-plonk, restore-cache-sexp, restore-cache-standard-library,
     restore-cache-translate, restore-cache-witch]
   environment:
@@ -544,14 +544,14 @@ steps:
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
     BACKEND_OPERATION_TIMEOUT: 8m
   image: meltwater/drone-cache:latest
-  name: rebuild-cache-frontend
+  name: rebuild-cache-parsing
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Frontend/stack.yaml" }}
-    mount: [library/Frontend/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
+    mount: [library/Parsing/.stack-work]
     override: false
     rebuild: true
     region: eu-west-1
@@ -769,7 +769,7 @@ kind: pipeline
 name: juvix-ci-update-artifacts-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "9d132660b8c00543ab828da8fd593c520335a79984133f13f52f3787bce5588b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: 9c81b4270109cbc73264de167c14fef2fe362a16d66d8f813dab83dcb4047262
+hmac: 63190a73fc731a1e5d12b0bc7793b82ea3ace6a660c2f70c535a7a67029aa7b2
 
 ...

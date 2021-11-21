@@ -14,6 +14,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.IntMap.Strict as PM
 import qualified Data.Text as Text
 import qualified Data.Text.IO as T
+import Debug.Pretty.Simple
 import Debug.Pretty.Simple (pTraceShowM)
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Application as CoreApp
@@ -31,18 +32,19 @@ import Juvix.Core.Parameterisation
 import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Translate as Translate
 import qualified Juvix.Core.Types as Core
-import qualified Juvix.Frontend as Frontend
-import qualified Juvix.Frontend.Types as Types
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Parser (ParserError)
+import qualified Juvix.Parsing as Parsing
+import qualified Juvix.Parsing.Types as Types
 import Juvix.Pipeline.Compile
 import qualified Juvix.Pipeline.ToHR as ToHR
 import qualified Juvix.Pipeline.ToIR as ToIR
 import qualified Juvix.Pipeline.ToSexp as ToSexp
 import Juvix.Pipeline.Types
 import qualified Juvix.Sexp as Sexp
+import System.Directory (getHomeDirectory)
 import qualified System.IO.Temp as Temp
 import qualified Text.Megaparsec as P
 import Text.Pretty.Simple (pShowNoColor)
@@ -79,8 +81,8 @@ type Constraints b =
   )
 
 data Error
-  = FrontendErr ToSexp.Error
-  | ParseErr Frontend.Error
+  = ContextErr ToSexp.Error
+  | ParseErr Parsing.Error
   -- TODO: CoreError
   deriving (Show)
 
@@ -91,6 +93,9 @@ createTmpPath code = Temp.writeSystemTempFile "juvix-tmp.ju" (Text.unpack code)
 
 prelude :: FilePath
 prelude = "stdlib/Prelude.ju"
+
+getJuvixHome :: IO FilePath
+getJuvixHome = (<> "/.juvix/") <$> getHomeDirectory
 
 -- ! This should be given as a default for the command-line.
 
@@ -104,30 +109,34 @@ class HasBackend b where
   stdlibs :: b -> [FilePath]
   stdlibs _ = []
 
+  param :: b -> Param.Parameterisation (Ty b) (Val b)
+
   -- | Parse juvix source code passing a set of libraries explicitly to have them in scope
   toML' :: [FilePath] -> b -> Text -> Pipeline [(NameSymbol.T, [Types.TopLevel])]
   toML' libs b code = liftIO $ do
     fp <- createTmpPath code
-    e <- Frontend.parseFiles (libs ++ [fp])
+    e <- Parsing.parseFiles (libs ++ [fp])
     case e of
-      Left (Frontend.NoHeaderErr file) ->
+      Left (Parsing.NoHeaderErr file) ->
         Feedback.fail
           ( "File "
               <> file
               <> " does not contain a module header"
               <> ", please specify module name in the file"
           )
-      Left (Frontend.ParseError err) ->
+      Left (Parsing.ParseError err) ->
         Feedback.fail $ toS $ pShowNoColor $ P.errorBundlePretty err
       Right x -> pure x
 
   -- | Parse juvix source code using prelude and the default set of libraries of the backend
   toML :: b -> Text -> Pipeline [(NameSymbol.T, [Types.TopLevel])]
-  toML b = toML' (prelude : stdlibs b) b
+  toML b t = do
+    juvixHome <- liftIO getJuvixHome
+    toML' ((juvixHome <>) <$> (prelude : stdlibs b)) b t
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
   toSexp _b x = liftIO $ do
-    e <- ToSexp.frontendToSexp x
+    e <- ToSexp.contextify x
     case e of
       Left err -> Feedback.fail . toS . pShowNoColor $ err
       Right x -> pure x
@@ -190,7 +199,9 @@ class HasBackend b where
 
   -- TODO: parse === toML?
   parse :: b -> Text -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
-  parse b = parseWithLibs libs b
+  parse b t = do
+    juvixHome <- liftIO getJuvixHome
+    parseWithLibs ((juvixHome <>) <$> libs) b t
     where
       libs = prelude : stdlibs b
 
@@ -214,6 +225,9 @@ class HasBackend b where
     FilePath ->
     ErasedAnn.AnnTermT (Ty b) (Val b) ->
     Pipeline ()
+  compile f term = compile' term >>= writeout f
+
+  compile' :: ErasedAnn.AnnTermT (Ty b) (Val b) -> Pipeline Text
 
 -- | Write the output code to a given file.
 writeout :: FilePath -> Text -> Pipeline ()

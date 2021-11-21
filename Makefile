@@ -12,6 +12,17 @@ endif
 
 all: setup build
 
+install:
+	stack install
+	juvix fetch-stdlibs
+
+fetch-stdlibs: 
+	cd library/StandardLibrary && stack build && stack exec -- fetch-libs
+
+update-local-stdlibs:
+	mkdir -p $(HOME)/.juvix/stdlib
+	cp -rp stdlib/* $(HOME)/.juvix/stdlib
+
 setup:
 	stack build --only-dependencies --jobs $(THREADS)
 
@@ -49,12 +60,15 @@ test:
 	stack test --fast --jobs=$(THREADS) --test-arguments "--hide-successes --ansi-tricks false"
 
 test-parser: build
+	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % stack exec juvix -- parse % -b "michelson"
 
 test-typecheck: build
+	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % stack exec juvix -- typecheck % -b "michelson"
 
 test-compile: build
+	stack exec juvix -- fetch-stdlibs
 	find test/examples/positive/michelson/demo -name "*.ju" | xargs -n 1 -I % basename % .ju | xargs -t -n 1 -I % stack exec juvix -- compile test/examples/positive/michelson/demo/%.ju test/examples/positive/michelson/demo/%.tz -b "michelson"
 	rm test/examples/positive/michelson/demo/*.tz
 

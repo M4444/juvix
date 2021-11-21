@@ -2,15 +2,19 @@ module Main (main) where
 
 ------------------------------------------------------------------------------
 
+import qualified Data.ByteString as BS
 import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
 import qualified Juvix.Backends.Plonk as Plonk
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
+import Juvix.Library.Fetch
 import qualified Juvix.Pipeline as Pipeline
 import Options
 import Options.Applicative
+import System.Directory
 import System.Directory (getCurrentDirectory, getHomeDirectory)
+import Text.Pretty.Simple
 import Text.Pretty.Simple (pPrint)
 import Text.PrettyPrint.ANSI.Leijen (putDoc)
 import Version (infoVersionRepo, progNameVersionTag)
@@ -57,6 +61,7 @@ run' _ (Options cmd _) = do
     Version -> do
       infoVersion <- liftIO infoVersionRepo
       liftIO $ putDoc infoVersion
+    StdLib -> liftIO downloadStdLibs
     _ -> Feedback.fail "Not implemented yet."
 
 run :: Context -> Options -> IO ()
@@ -92,6 +97,7 @@ runCmd' fin b f = liftIO (readFile fin) >>= f b >>= liftIO . pPrint
 
 main :: IO ()
 main = do
+  loadStdLibs
   pwd <- getCurrentDirectory
   home <- getHomeDirectory
   let ctx = Context pwd home

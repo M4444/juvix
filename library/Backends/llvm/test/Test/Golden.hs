@@ -28,9 +28,6 @@ juvixRootPath = "../../../"
 withJuvixRootPath :: FilePath -> FilePath
 withJuvixRootPath p = juvixRootPath <> p
 
-libs :: [String]
-libs = ["stdlib/Prelude.ju", "stdlib/LLVM.ju"]
-
 top :: IO TestTree
 top =
   testGroup "LLVM golden tests"
@@ -50,8 +47,8 @@ compileTests =
         compileTestNeg "test/examples/negative/llvm/compile"
       ]
   where
-    compileTestPos = compileTest (expectSuccess . compile)
-    compileTestNeg = compileTest (expectFailure . compile)
+    compileTestPos = compileTest (expectSuccess . toNoQuotes compile)
+    compileTestNeg = compileTest (expectFailure . toNoQuotes compile)
     compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheck file
 
 typecheckTests :: IO TestTree
@@ -79,7 +76,7 @@ typecheck ::
   Feedback.FeedbackT [] String IO (ErasedAnn.AnnTermT LLVM.PrimTy LLVM.RawPrimVal)
 typecheck file = do
   contract <- liftIO $ readFile file
-  context <- Pipeline.parseWithLibs (withJuvixRootPath <$> libs) LLVM.BLLVM contract
+  context <- Pipeline.parse LLVM.BLLVM contract
   Pipeline.typecheck @LLVM.BLLVM context
 
 -- | Discover golden tests for input files with extension @.ju@ and output
@@ -106,7 +103,7 @@ hrTests =
 pipelineToHR file =
   do
     liftIO (readFile file)
-    >>= Pipeline.toML' (withJuvixRootPath <$> libs) LLVM.BLLVM
+    >>= Pipeline.toML LLVM.BLLVM
     >>= Pipeline.toSexp LLVM.BLLVM
     >>= Pipeline.toHR LLVM.llvm
 
@@ -136,7 +133,7 @@ erasedTests =
     toErased file =
       do
         liftIO (readFile file)
-        >>= Pipeline.toML' (withJuvixRootPath <$> libs) LLVM.BLLVM
+        >>= Pipeline.toML LLVM.BLLVM
         >>= Pipeline.toSexp LLVM.BLLVM
         >>= Pipeline.toHR LLVM.llvm
         >>= Pipeline.toIR
@@ -152,3 +149,19 @@ llvmGoldenTests ::
   FilePath ->
   IO TestTree
 llvmGoldenTests ext f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ext getGolden f p
+
+compile :: FilePath -> Feedback.FeedbackT [] String IO Text
+compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheck file
+
+toEither :: Feedback.Feedback app msg b -> Either (app msg) (app msg, b)
+toEither (Feedback.Success app a) = Right (app, a)
+toEither (Feedback.Fail failure) = Left failure
+
+-- Running by hand example
+printCompile :: FilePath -> IO ()
+printCompile filePath = do
+  x <- Feedback.runFeedbackT (compile filePath)
+  case toEither x of
+    Right (_, str) ->
+      putStrLn str
+    Left err -> print err

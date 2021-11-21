@@ -23,7 +23,7 @@ dependencies:
   - pipeline
   - standard-library
   - sexp
-  - frontend
+  - parsing
   - core
   - translate
   - witch
@@ -94,6 +94,7 @@ benchmarks:
     dependencies:
       - juvix
       - criterion
+      - megaparsec
 
 library:
   source-dirs: src
@@ -110,7 +111,8 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - ansi-wl-pprint
+      - bytestring
       - gitrev
       - juvix
-      - optparse-applicative
       - pretty-simple
+      - optparse-applicative

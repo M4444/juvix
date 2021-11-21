@@ -1,6 +1,7 @@
 module Main where
 
 import Juvix.Library
+import Juvix.Library.Fetch (loadStdLibs)
 import qualified Test.Golden as Golden
 import qualified Test.Michelson as Michelson
 import qualified Test.Parameterisation as Parameterisation
@@ -10,6 +11,7 @@ import qualified Test.VStack as VStack
 
 allCheckedTests :: IO T.TestTree
 allCheckedTests = do
+  loadStdLibs
   goldenTests <- Golden.top
   pure $
     T.testGroup

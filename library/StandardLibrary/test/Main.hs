@@ -2,6 +2,7 @@ module Main where
 
 import qualified Golden
 import Juvix.Library
+import Juvix.Library.Fetch (loadStdLibs)
 import qualified Juvix.Library.Test.Golden as TG
 import qualified NameSymb
 import qualified Pretty
@@ -17,6 +18,7 @@ allCheckedTests =
 
 main :: IO ()
 main = do
+  loadStdLibs
   TG.runAll
     [ T.defaultMain allCheckedTests,
       TG.defaultMainFail Golden.absurdTestAll,

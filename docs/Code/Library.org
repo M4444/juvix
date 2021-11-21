@@ -168,6 +168,7 @@ Module that implements the backend parameters for the Michelson backend.
 **** Main <<Michelson/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 **** Test
 ***** Golden <<Michelson/test/Test/Golden>>
 - _Relies on_
@@ -311,6 +312,7 @@ Surface language
 **** Main <<Plonk/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 **** Test
 ***** AnnTerm
 - _Relies on_
@@ -364,11 +366,12 @@ Surface language
   + [[Primitive]]
 ******* Compilation <<LLVM/Compilation>>
 - _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
   + [[Primitive]]
   + [[Ann]]
   + [[Library]]
   + [[Feedback]]
-  + [[HashMap]]
   + [[NameSymbol]]
 ******* Parameterization <<LLVM/Parameterization>>
 Parameterization and application of the LLVM backend primitives.
@@ -393,10 +396,90 @@ Representation of LLVM primitives in Juvix.
   + [[Application]]
   + [[Core/Parameterisation]]
   + [[Library]]
+******* Codegen
+******** Block
+- Has the code necessary to generate LLVM Code, and gives a small
+  DSL in order to effectively do so.
+An example of using the library to define an llvm function from
+haskell may look like
+@
+  defineLink :: (Define m, Debug m) => m Operand.Operand
+  defineLink = Block.defineFunction Type.void "link" args $
+    do
+      aux1 <- auxiliary1
+      aux2 <- auxiliary2
+      node1 <- Block.externf "node_1"
+      node2 <- Block.externf "node_1"
+      Types.debugLevelOne $ do
+        _ <- Block.printCString "Executing Link rule \n" []
+        _ <- Block.printCString "Calling Link on \n" []
+        Debug.printNodePort node1 aux1
+        Debug.printNodePort node2 aux2
+      Ops.setPort ("node_1", "port_1") ("node_2", "port_2")
+      Types.debugLevelOne $ do
+        _ <- Block.printCString "Calling Link on \n" []
+        Debug.printNodePort node1 aux2
+        Debug.printNodePort node2 aux1
+      Ops.setPort ("node_2", "port_2") ("node_1", "port_1")
+      Block.retNull
+    where
+      args =
+        [ (nodePointer, "node_1"),
+          (numPortsPointer, "port_1"),
+          (nodePointer, "node_2"),
+          (numPortsPointer, "port_2")
+        ]
+@
+Here we define a function called "link" that takes 4 arguments, and
+generates code that will link two nodes together. Since we are
+writing an llvm function, we have to `Block.externf` the given
+arguments to be able to refer to them in the LLVM code.
+Using the code to compile IR terms coming from some abstract
+machine looks a bit different, we can see it in this example here
+@
+  compileLam ty captures arguments body
+   | length captures == 0 = do
+      let (llvmArgty, llvmRetty) =
+            functionTypeLLVM ty
+          llvmArgNames =
+            fmap (Block.internName . NameSymbol.toSymbol) arguments
+          llvmArguments =
+            zip llvmArgty llvmArgNames
+      -- time to generate unique names
+      lamName <- Block.generateUniqueSymbol "lambda"
+      Block.defineFunction llvmRetty lamName llvmArguments $
+        do
+          bod <- compileTerm body
+          Block.ret bod
+   | otherwise =
+      throw @"err" (Types.UnsupportedOperation "closures are not supported")
+@
+In this example instead of having to `Block.externf` the given
+arguments, we can rely on resolution to properly handle
+that. However, we can see effective use of the library with the
+`Block.generateUniqueSymbol` function and the
+`Block.defineFunction` function. The first gives us an unique to
+compile again, while the latter setups up the environment to
+compile a new top level declaration.
+- _Relies on_
+  + [[Codegen/Types]]
+  + [[Library]]
+  + [[HashMap]]
+******** Types <<Codegen/Types>>
+- _Relies on_
+  + [[Shared]]
+  + [[Library]]
+  + [[HashMap]]
+********* Shared
+Shared between Types and Sum
+- _Relies on_
+  + [[Library]]
+  + [[HashMap]]
 *** test
 **** Main <<llvm/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 **** Test
 ***** Golden <<llvm/test/Test/Golden>>
 - _Relies on_
@@ -419,13 +502,45 @@ Representation of LLVM primitives in Juvix.
 * BerlinPipeline
 ** Setup <<BerlinPipeline/Setup>>
 ** src
-*** Lib
+*** Juvix
+**** BerlinPipeline
+***** CircularList
 - _Relies on_
   + [[Library]]
+***** Env <<BerlinPipeline/Env>>
+- _Relies on_
+  + [[CircularList]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[RecursiveList]]
+  + [[Step]]
+  + [[Library]]
+  + [[NameSymbol]]
+***** Meta
+- _Relies on_
+  + [[Library]]
+***** Pipeline <<BerlinPipeline/Pipeline>>
+- _Relies on_
+  + [[Meta]]
+  + [[Juvix/Context]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+***** RecursiveList
+A Recursive list represents the concept of a list with a chance to nest.
+This allows us to get a tree like structure, where a pipeline step can contain more steps.
+- _Relies on_
+  + [[Library]]
+***** Step
+- _Relies on_
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Library]]
+  + [[NameSymbol]]
 ** test
 *** Main <<BerlinPipeline/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 * Context
 ** Setup <<Context/Setup>>
 ** src
@@ -497,6 +612,8 @@ Traversals serves as generic Context Traversal modules.
   + [[HashMap]]
   + [[NameSymbol]]
 *** Main <<Context/test/Main>>
+- _Relies on_
+  + [[Fetch]]
 * Core
 ** Setup <<Core/Setup>>
 ** src
@@ -939,6 +1056,7 @@ Typechecked declarations are added to the signature.
 *** Main <<Core/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 *** Typechecker <<test/Typechecker>>
 Tests for the type checker and evaluator in Core/IR/Typechecker.hs
 - _Relies on_
@@ -978,18 +1096,18 @@ Tests that weak works as expected
   + [[Evaluator]]
   + [[IR/Types]]
   + [[Library]]
-* Frontend
-** Setup <<Frontend/Setup>>
+* Parsing
+** Setup <<Parsing/Setup>>
 ** src
 *** Juvix
-**** Frontend <<Juvix/Frontend>>
+**** Parsing <<Juvix/Parsing>>
 - _Relies on_
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Parser]]
-***** Parser <<Frontend/Parser>>
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
+***** Parser <<Parsing/Parser>>
 Module      : Parser
 Description : The Juvix frontend parser
 In order to be able to understand this code, we suggest reading about
@@ -1017,10 +1135,10 @@ how parser combinators work. [Here](https://hasura.io/blog/parser-combinators-wa
 @
 Here we outline three key functions:
 - _Relies on_
-  + [[Frontend/Types]]
   + [[Library]]
   + [[Library/Parser]]
   + [[Library/Parser]]
+  + [[Parsing/Types]]
 ****** The `expressionGen` uses the `tableExp` as the precedence table of infix parsers. So `refine` has a higher precedence than `infixOp`. At the end of `expressionGen` we get back a new parser for any expression parser we may hand it.
 ****** The `infixOp` structure explicitly states what kind of infix it is, in our case we make it nest on the right, so `a -> b -> c` gets turned into `a -> (b -> c)`. The important thing to note is that we only parse for the inifix symbol itself, we let the parser we hand to `expressionGen` handle the other side.
 Every other tool you'll see is an abstraction on top of these base
@@ -1065,16 +1183,16 @@ careful. This is mainly due to how some forms like `do` and infix
 generators behave together. In other cases like in adt declarations,
 we want to disable application `type List a = Cons a (List a)`. It
 would be a shame if the `a` was applied to `List a`!
-***** Types <<Frontend/Types>>
+***** Types <<Parsing/Types>>
 - This file defines the main ADT for the Juvix front end language.
-- This ADT corresponds to the BNF laid out [[https://github.com/heliaxdev/juvix/blob/develop/doc/Frontend/syntax.org][here]].
+- This ADT corresponds to the BNF laid out [[https://juvix.readthedocs.io/en/latest/compiler/frontend/s-expression-syntax.html#bnf-syntax][here]].
 - Later a trees that grow version of this will be implemented, so
   infix functions can better transition across syntax
 - Note :: The names for the types in =ArrowData= are stored in the
           =ArrowGen= and not in =NamedType=
 - _Relies on_
-  + [[Frontend/Types/Base]]
-****** Base <<Frontend/Types/Base>>
+  + [[Parsing/Types/Base]]
+****** Base <<Parsing/Types/Base>>
 - _Relies on_
   + [[Library]]
   + [[Library/Usage]]
@@ -1083,18 +1201,19 @@ would be a shame if the `a` was applied to `List a`!
   + [[Library]]
   + [[Library/Parser]]
 ** test
-*** Main <<Frontend/test/Main>>
+*** Main <<Parsing/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 *** Parser <<test/Parser>>
 - _Relies on_
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
-  + [[Frontend/Types]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Parser]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
+  + [[Parsing/Types]]
 * Pipeline
 ** Setup <<Pipeline/Setup>>
 ** src
@@ -1114,12 +1233,12 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/Parameterisation]]
   + [[Core/Translate]]
   + [[Core/Types]]
-  + [[Juvix/Frontend]]
-  + [[Frontend/Types]]
   + [[Library]]
   + [[Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
+  + [[Juvix/Parsing]]
+  + [[Parsing/Types]]
   + [[Compile]]
   + [[ToHR]]
   + [[Juvix/Pipeline/ToIR]]
@@ -1148,10 +1267,10 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/Translate]]
   + [[Core/Types]]
   + [[Desugar]]
-  + [[Frontend/Types]]
   + [[Library]]
   + [[NameSymbol]]
   + [[PrettyPrint]]
+  + [[Parsing/Types]]
   + [[Juvix/Sexp]]
   + [[Translate/Pipeline]]
 ***** Types <<Pipeline/Types>>
@@ -1173,11 +1292,11 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/IR]]
   + [[IR/Types]]
   + [[Core/Parameterisation]]
-  + [[Juvix/Frontend]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Usage]]
+  + [[Juvix/Parsing]]
   + [[Def]]
   + [[ToHR/Env]]
   + [[ToHR/Sig]]
@@ -1237,7 +1356,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Term]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
-  + [[Structure/Frontend]]
+  + [[Structure/Parsing]]
 ****** Types <<ToHR/Types>>
 - _Relies on_
   + [[Juvix/Context]]
@@ -1292,22 +1411,23 @@ would be a shame if the `a` was applied to `List a`!
 *** Main <<Pipeline/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 *** Test
 **** RecGroups
 - _Relies on_
   + [[Juvix/Context]]
   + [[Traverse]]
-  + [[Juvix/Frontend]]
   + [[Library]]
+  + [[Juvix/Parsing]]
   + [[Juvix/Pipeline]]
   + [[Pipeline/ToSexp]]
   + [[Juvix/Sexp]]
 **** ToSexp <<Test/ToSexp>>
 - _Relies on_
   + [[Desugar]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
   + [[Library]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
   + [[Pipeline/ToSexp]]
   + [[Juvix/Sexp]]
 * Playground
@@ -1350,17 +1470,17 @@ with any stage of the compiler while modifying the source code.
   + [[Core/Parameterisation]]
   + [[Core/Types]]
   + [[Desugar]]
-  + [[Juvix/Frontend]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
-  + [[Frontend/Types]]
-  + [[Frontend/Types/Base]]
   + [[Library]]
   + [[BLS12381]]
   + [[Feedback]]
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Parsing]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
+  + [[Parsing/Types]]
+  + [[Parsing/Types/Base]]
   + [[Juvix/Pipeline]]
   + [[Compile]]
   + [[ToHR]]
@@ -1376,6 +1496,7 @@ with any stage of the compiler while modifying the source code.
 **** Spec <<Easy/test/Spec>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 ** HTTP
 *** Setup <<HTTP/Setup>>
 *** src
@@ -1392,23 +1513,30 @@ with any stage of the compiler while modifying the source code.
   + [[Routes]]
 ******* Routes
 - _Relies on_
+  + [[LLVM]]
+  + [[Backends/Michelson]]
   + [[Plonk]]
   + [[Juvix/Context]]
   + [[Core/Base]]
+  + [[Core/Base]]
+  + [[OnlyExts]]
   + [[Ann]]
   + [[HR]]
   + [[Core/IR]]
-  + [[Frontend/Types]]
+  + [[Typechecker/Types]]
+  + [[Core/Parameterisation]]
   + [[Library]]
   + [[BLS12381]]
   + [[Feedback]]
   + [[NameSymbol]]
+  + [[Parsing/Types]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Sexp]]
 *** test
 **** Main <<HTTP/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 * Sexp
 ** Setup <<Sexp/Setup>>
 ** src
@@ -1473,7 +1601,17 @@ _TODO_
   + [[Juvix/Sexp]]
   + [[Structure]]
   + [[Structure/Helpers]]
-****** Frontend <<Structure/Frontend>>
+****** Helpers <<Structure/Helpers>>
+- _Relies on_
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+****** Lens
+- _Relies on_
+  + [[CoreNamed]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
+****** Parsing <<Structure/Parsing>>
 Hardening S-expressions into a more readable form. Here we use a
 mixture of record structures and aliases. Each cover a form that we
 wish to talk about rather than just match away at
@@ -1507,16 +1645,6 @@ _TODO_
   + [[Juvix/Sexp]]
   + [[Structure]]
   + [[Structure/Helpers]]
-****** Helpers <<Structure/Helpers>>
-- _Relies on_
-  + [[Library]]
-  + [[NameSymbol]]
-  + [[Juvix/Sexp]]
-****** Lens
-- _Relies on_
-  + [[CoreNamed]]
-  + [[Structure/Frontend]]
-  + [[Transition]]
 ****** Transition
 Hardening S-expressions into a more readable form. Here we use a
 mixture of record structures and aliases. Each cover a form that we
@@ -1550,13 +1678,14 @@ _TODO_
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
   + [[Structure]]
-  + [[Structure/Frontend]]
-  + [[Structure/Frontend]]
   + [[Structure/Helpers]]
+  + [[Structure/Parsing]]
+  + [[Structure/Parsing]]
 ** test
 *** Main <<Sexp/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
 *** Sexp <<test/Sexp>>
 - _Relies on_
   + [[Library]]
@@ -1571,6 +1700,11 @@ _TODO_
   + [[Juvix/Sexp]]
 * StandardLibrary
 ** Setup <<StandardLibrary/Setup>>
+** app
+*** Main <<app/Main>>
+- _Relies on_
+  + [[Library]]
+  + [[Fetch]]
 ** src
 *** Juvix
 **** Library
@@ -1591,6 +1725,7 @@ _TODO_
 ***** Feedback
 - _Relies on_
   + [[Library]]
+***** Fetch
 ***** HashMap
 - The HashMap for the codebase.
 - Basically just imports Data.HashMap.Strict
@@ -1687,6 +1822,7 @@ for testing
 *** Main <<StandardLibrary/test/Main>>
 - _Relies on_
   + [[Library]]
+  + [[Fetch]]
   + [[Library/Test/Golden]]
 *** NameSymb
 - _Relies on_
@@ -1815,9 +1951,9 @@ TODO ∷ determine what has changed in the rebasing of this algo
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
   + [[CoreNamed]]
-  + [[Structure/Frontend]]
   + [[Structure/Helpers]]
   + [[Lens]]
+  + [[Structure/Parsing]]
   + [[Transition]]
 ***** InfixPrecedence
 ****** ShuntYard <<InfixPrecedence/ShuntYard>>
@@ -1907,8 +2043,8 @@ done with no extra information needed. Thus we export the following passes
 - _Relies on_
   + [[Library]]
   + [[Juvix/Sexp]]
-  + [[Structure/Frontend]]
   + [[Lens]]
+  + [[Structure/Parsing]]
   + [[Transition]]
 **** Translate <<Juvix/Translate>>
 - _Relies on_
@@ -1919,9 +2055,9 @@ done with no extra information needed. Thus we export the following passes
   + [[TopLevel]]
 ****** TopLevel
 - _Relies on_
-  + [[Frontend/Types/Base]]
   + [[Library]]
   + [[NameSymbol]]
+  + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
 ** test
 *** Main <<Translate/test/Main>>
@@ -1943,16 +2079,16 @@ done with no extra information needed. Thus we export the following passes
   + [[Contextify/Environment]]
   + [[Contextify/Passes]]
   + [[Desugar/Passes]]
-  + [[Juvix/Frontend]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
-  + [[Frontend/Types/Base]]
   + [[Library]]
   + [[Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Parser]]
   + [[Library/Test/Golden]]
+  + [[Juvix/Parsing]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
+  + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
   + [[ShowReferences]]
   + [[TopLevel]]
@@ -1972,9 +2108,9 @@ done with no extra information needed. Thus we export the following passes
   + [[ResolveOpenInfo]]
   + [[ToContext/Types]]
   + [[Desugar]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types/Base]]
   + [[Library]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
   + [[TopLevel]]
 **** Contextualise
@@ -1983,10 +2119,10 @@ done with no extra information needed. Thus we export the following passes
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
   + [[Desugar]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
   + [[Library]]
   + [[Internal]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
   + [[Juvix/Sexp]]
   + [[TopLevel]]
 ***** Infix
@@ -1999,9 +2135,9 @@ done with no extra information needed. Thus we export the following passes
 - _Relies on_
   + [[Desugar]]
   + [[Desugar/Passes]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
   + [[Library]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
   + [[Juvix/Sexp]]
   + [[TopLevel]]
 **** Sexp
@@ -2010,10 +2146,10 @@ done with no extra information needed. Thus we export the following passes
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
   + [[Desugar]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types/Base]]
   + [[Library]]
   + [[NameSymbol]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
   + [[TopLevel]]
 * Witch
@@ -2034,7 +2170,7 @@ done with no extra information needed. Thus we export the following passes
   + [[Juvix/Sexp]]
   + [[Structure]]
   + [[CoreNamed]]
-  + [[Structure/Frontend]]
+  + [[Structure/Parsing]]
   + [[Transition]]
 ****** Transform
 - _Relies on_
@@ -2045,16 +2181,16 @@ done with no extra information needed. Thus we export the following passes
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
   + [[CoreNamed]]
-  + [[Structure/Frontend]]
+  + [[Structure/Parsing]]
   + [[Transition]]
   + [[SexpHelpers]]
 ** test
 *** CPSTranslation <<test/CPSTranslation>>
 - _Relies on_
   + [[Desugar]]
-  + [[Frontend/Parser]]
-  + [[Frontend/Types]]
   + [[Library]]
+  + [[Parsing/Parser]]
+  + [[Parsing/Types]]
   + [[Pipeline/ToSexp]]
   + [[Juvix/Sexp]]
   + [[Witch/CPSTranslation]]

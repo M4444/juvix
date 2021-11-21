@@ -21,9 +21,9 @@ cradle:
     - path: ./library/Backends/Michelson/test
       component: "michelson:test:michelson-test"
 
-    - path: ./library/Backends/LLVM/src
+    - path: ./library/Backends/llvm/src
       component: "llvm"
-    - path: ./library/Backends/LLVM/test
+    - path: ./library/Backends/llvm/test
       component: "llvm:test:llvm-test"
 
     - path: ./library/Backends/Plonk/src
@@ -46,10 +46,10 @@ cradle:
     - path: ./library/Translate/test
       component: "translate:test:translate-test"
 
-    - path: ./library/Frontend/src
-      component: "frontend"
-    - path: ./library/Frontend/test
-      component: "frontend:test:frontend-test"
+    - path: ./library/Parsing/src
+      component: "parsing"
+    - path: ./library/Parsing/test
+      component: "parsing:test:parsing-test"
 
     - path: ./library/StandardLibrary/src
       component: "standard-library"
@@ -82,6 +82,6 @@ cradle:
       component: "witch:test:witch-test"
 
     - path: ./library/Test/DataStructures/src
-      component: "datastructures"
+      component: "data-structures"
     - path: ./library/Test/DataStructures/test
-      component: "datastructures:test:datastructures-test"
+      component: "data-structures:test:data-structures-test"
