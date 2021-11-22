@@ -16,13 +16,23 @@ class Editor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      code: `mod MainMultArgs where
+      code: `mod Norm where
 
 open Prelude
 open LLVM
 
+type SomePoint = P3 int int int | P2 int int 
+
+sig (+) : (x : ty) -> x -> x -> x
+let (+) = %LLVM.add
+declare infixl (+) 5
+
+sig norm : SomePoint -> int
+let norm (P3 x y z) = x + y + z
+let norm (P2 x y) = x + y
+
 sig main : int
-let main = 5
+let main = norm (P3 2 3 4)
 `,
         currentView: "allToML",
         response: initialResponse,

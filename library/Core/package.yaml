@@ -21,6 +21,7 @@ dependencies:
 - standard-library
 - extensible-data
 - containers
+- pretty-simple
 - unordered-containers
 - mtl
 

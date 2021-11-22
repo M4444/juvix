@@ -12,6 +12,7 @@ module Juvix.Core.IR.Evaluator
     NoExtensions,
     CanEval,
     EvalPatSubst,
+    ShowAllV,
     toLambdaR,
     lookupFun,
     lookupFun',
@@ -37,6 +38,7 @@ import Juvix.Core.IR.Evaluator.Weak
 import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
+import Debug.Pretty.Simple
 
 -- | Constraint for terms and eliminations without extensions.
 type NoExtensions ext primTy primVal =
@@ -140,7 +142,7 @@ inlineAllGlobalsElim t lookupFun patternMap =
   case t of
     Core.Bound {} -> t
     Core.Free (Core.Global name) _ann ->
-      maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ lookupFun name
+      pTraceShow ("Free", name, lookupFun name, patternMap) $ maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ lookupFun name
     Core.Free (Core.Pattern i) _ -> fromMaybe t $ PM.lookup i patternMap >>= lookupFun
     Core.App elim term ann ->
       Core.App (inlineAllGlobalsElim elim lookupFun patternMap) (inlineAllGlobals term lookupFun patternMap) ann
@@ -393,7 +395,9 @@ rawLookupFun ::
   Core.RawGlobals ext primTy primVal ->
   LookupFun (OnlyExts.T ext') primTy primVal
 rawLookupFun globals x =
-  HashMap.lookup x globals >>= toLambdaR
+  pTraceShow ("Lookup", x, globals) $ HashMap.lookup x globals >>= \y -> do
+    pTraceShowM ("Lookup Success", y)
+    toLambdaR y
 
 -- | Variant of `lookupFun` that creates a extension free elimination.
 lookupFun' ::

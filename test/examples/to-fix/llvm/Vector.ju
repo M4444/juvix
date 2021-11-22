@@ -1,0 +1,15 @@
+-- Hello World dependent types
+
+mod Vector where
+
+open Prelude
+open LLVM
+
+type nat : ty = | Zero | Suc nat
+
+type Vec : nat -> ty -> ty = 
+    | Nil : Vec Zero a 
+    | Cons : a -> Vec n a -> Vec (Suc n) a
+
+sig main : int
+let main = 10
