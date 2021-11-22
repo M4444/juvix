@@ -10,7 +10,8 @@
   "This is the config for nix, it contains if it is enabled and a list
 of strings that determine what the valid packages are for it"
   (enabled nil :type boolean)
-  (packages nil :type list))
+  (packages nil :type list)
+  (shell-options nil :type list))
 
 (defstruct stack-yaml
   "this is the main data type of the stack yaml file. We include
@@ -227,9 +228,10 @@ lists are indented by an extra 2 each"
       (format nil "~%~a"
               (indent-new-lines-by
                2
-               (format nil "nix:~%~a~%~a"
+               (format nil "nix:~%~a~%~a~a"
                        (format nil "enable: ~a" "true")
-                       (format nil "packages: [~{~a~^,~}]" (nix-packages nix)))))
+                       (format nil "packages: [~{~a~^, ~}]" (nix-packages nix))
+                       (format nil "~%nix-shell-options: [~{~a~^, ~}]" (nix-shell-options nix)))))
       ""))
 
 

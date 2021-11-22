@@ -327,7 +327,8 @@ common ones to include"
 
 (defun nix-enable-with (&rest packages)
   (make-nix :enabled t
-            :packages packages))
+            :packages packages
+            :shell-options (list "--keep" "NIX_SSL_CERT_FILE")))
 
 (defun nix-enable-zlib (&rest packages)
   (apply #'nix-enable-with *nix-zlib* packages))
