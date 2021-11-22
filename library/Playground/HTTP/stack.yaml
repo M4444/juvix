@@ -16,7 +16,8 @@ packages:
 
 nix:
   enable: true
-  packages: [llvm_9,zlib,curl,time,ldb]
+  packages: [llvm_9, zlib, curl, time, ldb]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE]
 
 extra-deps:
 

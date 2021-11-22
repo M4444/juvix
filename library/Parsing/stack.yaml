@@ -7,6 +7,7 @@ packages:
 nix:
   enable: true
   packages: []
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE]
 
 extra-deps:
 

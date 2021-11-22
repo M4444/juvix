@@ -9,6 +9,7 @@ packages:
 nix:
   enable: true
   packages: [zlib]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE]
 
 extra-deps:
 

@@ -13,7 +13,8 @@ packages:
 
 nix:
   enable: true
-  packages: [llvm_9,zlib]
+  packages: [llvm_9, zlib]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE]
 
 extra-deps:
 

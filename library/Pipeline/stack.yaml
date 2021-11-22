@@ -11,7 +11,8 @@ packages:
 
 nix:
   enable: true
-  packages: [zlib,curl]
+  packages: [zlib, curl]
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE]
 
 extra-deps:
 
