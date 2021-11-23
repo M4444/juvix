@@ -4,7 +4,7 @@ kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
 steps:
-- commands: [echo "afe227a33936df5b9aec589c8378fb521be0d71f76acb0873b30e0663671f99b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -99,7 +99,7 @@ kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "afe227a33936df5b9aec589c8378fb521be0d71f76acb0873b30e0663671f99b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -176,7 +176,7 @@ kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "afe227a33936df5b9aec589c8378fb521be0d71f76acb0873b30e0663671f99b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -769,7 +769,7 @@ kind: pipeline
 name: juvix-ci-update-artifacts-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "afe227a33936df5b9aec589c8378fb521be0d71f76acb0873b30e0663671f99b  Makefile"
+- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
       | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
       | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
       | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: 4de7fb7ed3a3bf118ca85845a711c74dda11d0352c4a95cfb1ec336b95fc53dd
+hmac: da50c03ab7820fbca724e96d2e3bff46a5f6ab69bcf8aec1f18b9fa1497b57ef
 
 ...
