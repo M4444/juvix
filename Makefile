@@ -89,7 +89,7 @@ clean-full:
 
 stack-yaml:
 	whoami
-	ls - l $(shell which nix-shell)
+	ls -l $(shell which nix-shell)
 	nix-shell -p strace --cmd "strace ros -Q scripts/yaml-generator/yaml-generator.asd"
 
 # Overwrite existing golden files
