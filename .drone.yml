@@ -92,7 +92,7 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /home/user}
+workspace: {path: /home/user/juvix}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
 kind: pipeline
@@ -169,7 +169,7 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /home/user}
+workspace: {path: /home/user/juvix}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
 kind: pipeline
@@ -762,7 +762,7 @@ trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /home/user}
+workspace: {path: /home/user/juvix}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
 kind: pipeline
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: def0dda509b07de0605f6573306061748e7e971f3f84016081c2b870593f3e7d
+hmac: 4de7fb7ed3a3bf118ca85845a711c74dda11d0352c4a95cfb1ec336b95fc53dd
 
 ...
