@@ -15,6 +15,7 @@ import Extensible (Config (..), NameAffix (..), defaultConfig, extensibleWith)
 import Juvix.Library hiding (Pos, datatypeName)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Usage
+import qualified Juvix.Core.Base.Types.CaseTree as CaseTree
 
 ------------------------------------------------------------------------------
 
@@ -105,6 +106,8 @@ extensibleWith
       | -- | LAM Introduction rule of PI.
         -- The abstracted variables usage is tracked with the Usage(π).
         Lam (Term primTy primVal)
+
+      | CaseTree
       | -- | Dependent pair (Σ) type, with each half having its own usage
         Sig Usage (Term primTy primVal) (Term primTy primVal)
       | -- | Pair value
@@ -142,6 +145,7 @@ extensibleWith
       | -- | CONV conversion rule. TODO make sure 0Γ ⊢ S≡T
         -- Elim is the constructor that embeds Elim to Term
         Elim (Elim primTy primVal)
+      | Case (CaseTree.CaseTree (Term primTy primVal))
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- inferable terms
@@ -309,3 +313,21 @@ pattern VBound ::
   BoundVar ->
   Value ext primTy primVal
 pattern VBound n = VNeutral (NBound n ()) ()
+
+-- | Case tree with bodies.
+
+data CompiledClauses a
+  = Case (Arg Int) (Case (CompiledClauses a))
+    -- ^ @Case n bs@ stands for a match on the @n@-th argument
+    -- (counting from zero) with @bs@ as the case branches.
+    -- If the @n@-th argument is a projection, we have only 'conBranches'
+    -- with arity 0.
+  | Done [Arg NameSymbol.T] a
+    -- ^ @Done xs b@ stands for the body @b@ where the @xs@ contains hiding
+    --   and name suggestions for the free variables. This is needed to build
+    --   lambdas on the right hand side for partial applications which can
+    --   still reduce.
+  | Fail [Arg NameSymbol.T]
+    -- ^ Absurd case. Add the free variables here as well so we can build correct
+    --   number of lambdas for strict backends.
+  deriving (Data, Functor, Traversable, Foldable, Show, Generic)
