@@ -11,6 +11,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: clone
   pull: never
+  user: user
 - {image: 'alpine/git:v2.30.1', name: check-scripts-integrity, pull: never}
 - depends_on: [check-scripts-integrity]
   environment:
@@ -789,6 +790,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: 38a464080b3cea3eb2bf5c1008c62600b76fbb709fc2517e23edbaf8138ae90e
+hmac: 5022fb46384703e2ab9a065d0afbd0099ef568fe85b601cc580ba5171d5f7372
 
 ...
