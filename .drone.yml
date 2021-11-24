@@ -6,7 +6,7 @@ node: {project: juvix}
 steps:
 - commands: [git clone $DRONE_GIT_HTTP_URL ., git fetch --all, git checkout $DRONE_TARGET_BRANCH,
     git merge $DRONE_COMMIT, CONFLICTS=$(git ls-files -u | wc -l), 'if [ "$CONFLICTS"
-      -gt 0 ]; then exit 1; fi;', 'chown -R user: .', exit 0]
+      -gt 0 ]; then exit 1; fi;', exit 0]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: clone
   pull: never
@@ -799,6 +799,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: bcab411a1553b29be01c580a7cc93563ea557d787d9ab989c1baf936f16373b2
+hmac: 72de2bdd0334bac29c769181094a45ce55ae865cf532fe2b025af1fdee9daac2
 
 ...
