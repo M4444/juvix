@@ -1,13 +1,13 @@
 ---
 clone: {disable: true}
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/juvix/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
 steps:
 - commands: [git clone $DRONE_GIT_HTTP_URL ., git fetch --all, git checkout $DRONE_TARGET_BRANCH,
     git merge $DRONE_COMMIT, CONFLICTS=$(git ls-files -u | wc -l), 'if [ "$CONFLICTS"
-      -gt 0 ]; then exit 1; fi;exit 0']
+      -gt 0 ]; then exit 1; fi;', 'chown -R user: .', exit 0]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: clone
   pull: never
@@ -91,14 +91,14 @@ type: docker
 workspace: {path: /home/user/juvix}
 ---
 clone: {disable: true}
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/juvix/.stack}
 kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
 steps:
 - commands: [git clone $DRONE_GIT_HTTP_URL ., git fetch --all, git checkout $DRONE_TARGET_BRANCH,
     git merge $DRONE_COMMIT, CONFLICTS=$(git ls-files -u | wc -l), 'if [ "$CONFLICTS"
-      -gt 0 ]; then exit 1; fi;exit 0']
+      -gt 0 ]; then exit 1; fi;', 'chown -R user: .', exit 0]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: clone
   pull: never
@@ -163,7 +163,7 @@ trigger:
 type: docker
 workspace: {path: /home/user/juvix}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/juvix/.stack}
 kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
@@ -789,6 +789,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: 70aa9f3e83805add8f8df2da5de613dd33c963e8577fbe95e5e1be0a3f6d0a32
+hmac: 38a464080b3cea3eb2bf5c1008c62600b76fbb709fc2517e23edbaf8138ae90e
 
 ...
