@@ -31,7 +31,8 @@ steps:
     mount: [./.stack-work, ./.stack, /nix/store/]
     region: eu-west-1
     restore: true
-- commands: [chown -R ~/juvix, make stack-yaml, make update-local-stdlibs, make test]
+- commands: ['chown -R user: ~/juvix', make stack-yaml, make update-local-stdlibs,
+    make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -126,7 +127,8 @@ steps:
     mount: [./.stack-work, ./.stack, /nix/store/]
     region: eu-west-1
     restore: true
-- commands: [chown -R ~/juvix, make stack-yaml, make update-local-stdlibs, make test]
+- commands: ['chown -R user: ~/juvix', make stack-yaml, make update-local-stdlibs,
+    make test]
   depends_on: [restore-cache]
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   name: test-suite
@@ -797,6 +799,6 @@ type: docker
 workspace: {path: /home/user}
 ---
 kind: signature
-hmac: bdd3c2fbf966d4deb5b61c89d12ecaae648ec6bf023188dabc4459658393b2f4
+hmac: 9198a0b57dde3b801ebfd98a76501e60a7d5cc820c70ffe1ad435e155ad75399
 
 ...
