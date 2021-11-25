@@ -9,7 +9,7 @@ fi
 REMOTE=$(git remote get-url origin | cut -c 9-)
 PUSH_URL="https://${GITHUB_TOKEN}@${REMOTE}"
 
-git status
+git stash
 
 git fetch --all
 CHECKOUT_OUTPUT=$(git checkout $DRONE_SOURCE_BRANCH  2>&1)
@@ -28,6 +28,7 @@ fi
 
 git remote set-url origin $PUSH_URL
 
+git stash pop
 git add -A
 git status
 git commit -m "[ci] changes from CI"
