@@ -28,7 +28,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store/]
+    mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
 - commands: [make stack-yaml, make update-local-stdlibs, make test]
@@ -83,7 +83,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store/]
+    mount: [./.stack-work, ./.stack]
     override: false
     rebuild: true
     region: eu-west-1
@@ -123,7 +123,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store/]
+    mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
 - commands: [make stack-yaml, make update-local-stdlibs, make test]
@@ -159,7 +159,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store/]
+    mount: [./.stack-work, ./.stack]
     override: false
     rebuild: true
     region: eu-west-1
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: d5bda5e99ea9f63f012f53ae9ba6992f1cdedb362843dad929f3ce8b3a3f5c99
+hmac: 7c0265023d106ca9ac78818f6cd2a57766df38c7f6c259f0d5506033613fa8ed
 
 ...
