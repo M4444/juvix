@@ -31,6 +31,7 @@ import Juvix.Core.Base.TransformExt
 import qualified Juvix.Core.Base.TransformExt as TransformExt
 import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.CaseTree as CaseTree
 import Juvix.Core.IR.Evaluator.PatSubst
 import Juvix.Core.IR.Evaluator.SubstV
 import Juvix.Core.IR.Evaluator.Types
@@ -367,6 +368,8 @@ toLambdaR (Core.RawGFunction f)
   | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f,
     Core.RawFunClause _ pats rhs _ :| [] <- rawFunClauses =
     toLambda' π (extForgetT ty) pats rhs
+  | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f =
+    clausesToCaseTrees f
 toLambdaR _ = Nothing
 
 -- | Given an environment of global definitions, and a name to lookup,

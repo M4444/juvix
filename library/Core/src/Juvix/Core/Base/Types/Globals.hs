@@ -9,6 +9,7 @@ import Juvix.Core.Base.Types.Base
 import Juvix.Library hiding (Datatype, Pos)
 import Juvix.Library.HashMap (HashMap)
 import Juvix.Library.Usage (Usage)
+import qualified Juvix.Core.Base.Types.CaseTree as CaseTree
 
 type RawGlobalAll (c :: Type -> Constraint) ext primTy primVal =
   ( c primTy,
@@ -519,3 +520,35 @@ instance A.ToJSON Pos where
 
 instance A.FromJSON Pos where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+
+
+data RawFunctionCase ext primTy primVal = RawFunctionCase
+  { rawFunName :: GlobalName,
+    rawFunUsage :: GlobalUsage,
+    rawFunType :: Term ext primTy primVal,
+    rawFunCaseTree :: CaseTree.
+  }
+  deriving (Generic)
+
+instance (A.ToJSON ty, A.ToJSON val, CoreAll A.ToJSON ext ty val) => A.ToJSON (RawFunction ext ty val) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON ty, A.FromJSON val, CoreAll A.FromJSON ext ty val) => A.FromJSON (RawFunction ext ty val) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+deriving instance
+  RawGlobalAll Show ext primTy primVal =>
+  Show (RawFunction ext primTy primVal)
+
+deriving instance
+  RawGlobalAll Eq ext primTy primVal =>
+  Eq (RawFunction ext primTy primVal)
+
+deriving instance
+  (Data ext, RawGlobalAll Data ext primTy primVal) =>
+  Data (RawFunction ext primTy primVal)
+
+deriving instance
+  RawGlobalAll NFData ext primTy primVal =>
+  NFData (RawFunction ext primTy primVal)
