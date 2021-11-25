@@ -20,7 +20,7 @@ if [ $? -ne 0 ]; then
     then
         echo "Can't checkout $DRONE_SOURCE_BRANCH, because $DRONE_SOURCE_BRANCH is probably not part of $REMOTE. You should manually run org-gen and formatting."
     else
-        git checkout $DRONE_SOURCE_BRANCH
+        git checkout $DRONE_SOURCE_BRANCH 
         echo "Can't checkout $DRONE_SOURCE_BRANCH. Unknown reason. Manually run org-gen and formatting."
     fi
     exit 1
