@@ -528,8 +528,10 @@ common ones to include"
                    *context*
                    *plonk*
                    *llvm*
-                   *data-structures*
-                   *sexp*)
+                   *sexp*
+                   *data-structures*)
+   ;; hack name, for sub dirs
+   :name "Playground/HTTP"
    :extra-deps (append (list *servant-deps* *llvm-hs-deps*) (big-dep-list))
    :extra "allow-newer: true"))
 
