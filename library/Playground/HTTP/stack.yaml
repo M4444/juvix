@@ -13,6 +13,7 @@ packages:
 - ../../Backends/llvm
 - ../../Test/DataStructures
 - ../../Sexp
+- ../../Test/DataStructures
 
 nix:
   enable: true
