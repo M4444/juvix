@@ -159,7 +159,6 @@ extensibleWith
       | -- | CONV conversion rule. TODO make sure 0Γ ⊢ S≡T
         -- Elim is the constructor that embeds Elim to Term
         Elim (Elim primTy primVal)
-      -- | Con (Term primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- inferable terms
@@ -168,7 +167,6 @@ extensibleWith
         Bound BoundVar
       | -- | Free variables of type name (see above)
         Free Name
-      -- | Arg Int
       | -- | elimination rule of PI (APP).
         App (Elim primTy primVal) (Term primTy primVal)
       | -- | Annotation with usage.
