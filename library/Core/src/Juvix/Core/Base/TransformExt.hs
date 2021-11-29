@@ -33,7 +33,13 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfApp :: XApp ext1 primTy primVal -> f (XApp ext2 primTy primVal),
     etfAnn :: XAnn ext1 primTy primVal -> f (XAnn ext2 primTy primVal),
     etfTermX :: TermX ext1 primTy primVal -> f (TermX ext2 primTy primVal),
-    etfElimX :: ElimX ext1 primTy primVal -> f (ElimX ext2 primTy primVal)
+    etfElimX :: ElimX ext1 primTy primVal -> f (ElimX ext2 primTy primVal),
+    etfCaseTreeX :: CaseTreeX ext1 primTy primVal -> f (CaseTreeX ext2 primTy primVal),
+    etfBranchX :: BranchX ext1 primTy primVal -> f (BranchX ext2 primTy primVal),
+    etfCase :: XCase ext1 primTy primVal -> f (XCase ext2 primTy primVal),
+    etfDone :: XDone ext1 primTy primVal -> f (XDone ext2 primTy primVal),
+    etfFail :: XFail ext1 primTy primVal -> f (XFail ext2 primTy primVal),
+    etfBranch :: XBranch ext1 primTy primVal -> f (XBranch ext2 primTy primVal)
   }
 
 type ExtTransformTE = ExtTransformTEF Identity
@@ -71,6 +77,12 @@ pattern ExtTransformTE ::
   (XAnn ext1 primTy primVal -> XAnn ext2 primTy primVal) ->
   (TermX ext1 primTy primVal -> TermX ext2 primTy primVal) ->
   (ElimX ext1 primTy primVal -> ElimX ext2 primTy primVal) ->
+  (CaseTreeX ext1 primTy primVal -> CaseTreeX ext2 primTy primVal) ->
+  (BranchX ext1 primTy primVal -> BranchX ext2 primTy primVal) ->
+  (XCase ext1 primTy primVal -> XCase ext2 primTy primVal) ->
+  (XDone ext1 primTy primVal -> XDone ext2 primTy primVal) ->
+  (XFail ext1 primTy primVal -> XFail ext2 primTy primVal) ->
+  (XBranch ext1 primTy primVal -> XBranch ext2 primTy primVal) ->
   ExtTransformTE ext1 ext2 primTy primVal
 pattern ExtTransformTE
   { etStar,
@@ -98,7 +110,13 @@ pattern ExtTransformTE
     etApp,
     etAnn,
     etTermX,
-    etElimX
+    etElimX,
+    etCaseTreeX,
+    etBranchX,
+    etCase,
+    etDone,
+    etFail,
+    etBranch
   } =
   ExtTransformTEF
     { etfStar = Coerce etStar,
@@ -126,7 +144,13 @@ pattern ExtTransformTE
       etfApp = Coerce etApp,
       etfAnn = Coerce etAnn,
       etfTermX = Coerce etTermX,
-      etfElimX = Coerce etElimX
+      etfElimX = Coerce etElimX,
+      etfCaseTreeX = Coerce etCaseTreeX,
+      etfBranchX = Coerce etBranchX,
+      etfCase = Coerce etCase,
+      etfDone = Coerce etDone,
+      etfFail = Coerce etFail,
+      etfBranch = Coerce etBranch
     }
 
 extTransformTF ::
@@ -175,6 +199,25 @@ extTransformT ::
   Term ext2 primTy primVal
 extTransformT fs t = runIdentity $ extTransformTF fs t
 
+extTransformBranch ::
+  Applicative f =>
+  ExtTransformTEF f ext1 ext2 primTy primVal ->
+  Branch ext1 primTy primVal ->
+  f (Branch ext2 primTy primVal)
+extTransformBranch fs (Branch pat caseTree e) = Branch notImplemented <$> extTransformCaseTree fs caseTree <*> etfBranch fs e
+extTransformBranch fs (BranchX e) = BranchX <$> etfBranchX fs e
+
+extTransformCaseTree ::
+  Applicative f =>
+  ExtTransformTEF f ext1 ext2 primTy primVal ->
+  CaseTree ext1 primTy primVal ->
+  f (CaseTree ext2 primTy primVal)
+extTransformCaseTree fs (Case a branches e) = 
+  Case a <$> sequenceA (extTransformBranch fs <$> branches) <*> etfCase fs e
+extTransformCaseTree fs (Done as x e) = 
+  Done as <$> extTransformTF fs x <*> etfDone fs e
+extTransformCaseTree fs (CaseTreeX e) = CaseTreeX <$> etfCaseTreeX fs e
+
 extTransformEF ::
   Applicative f =>
   ExtTransformTEF f ext1 ext2 primTy primVal ->
@@ -182,7 +225,9 @@ extTransformEF ::
   f (Elim ext2 primTy primVal)
 extTransformEF fs (Bound x e) = Bound x <$> etfBound fs e
 extTransformEF fs (Free x e) = Free x <$> etfFree fs e
-extTransformEF fs (CaseTree x e) = CaseTree x <$> etfCaseTree fs e
+extTransformEF fs (CaseTree x e) = 
+  CaseTree <$> extTransformCaseTree fs x <*> etfCaseTree fs e
+
 extTransformEF fs (App f s e) =
   App <$> extTransformEF fs f
     <*> extTransformTF fs s
@@ -221,13 +266,20 @@ type ForgotExt ext primTy primVal =
     XElim ext primTy primVal ~ (),
     XBound ext primTy primVal ~ (),
     XFree ext primTy primVal ~ (),
+    XCaseTree ext primTy primVal ~ (),
     XApp ext primTy primVal ~ (),
-    XAnn ext primTy primVal ~ ()
+    XAnn ext primTy primVal ~ (),
+    XCase ext primTy primVal ~ (),
+    XDone ext primTy primVal ~ (),
+    XFail ext primTy primVal ~ (),
+    XBranch ext primTy primVal ~ ()
   )
 
 forgetter ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
+    CaseTreeX ext primTy primVal ~ Void,
+    BranchX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   ExtTransformTE ext ext' primTy primVal
@@ -254,15 +306,20 @@ forgetter =
       etElim = const (),
       etBound = const (),
       etFree = const (),
+      etCaseTree = const (),
       etApp = const (),
       etAnn = const (),
       etTermX = absurd,
-      etElimX = absurd
+      etElimX = absurd,
+      etCaseTreeX = absurd,
+      etBranchX = absurd
     }
 
 extForgetT ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
+    CaseTreeX ext primTy primVal ~ Void,
+    BranchX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Term ext primTy primVal ->
@@ -272,6 +329,8 @@ extForgetT = extTransformT forgetter
 extForgetE ::
   ( TermX ext primTy primVal ~ Void,
     ElimX ext primTy primVal ~ Void,
+    CaseTreeX ext primTy primVal ~ Void,
+    BranchX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Elim ext primTy primVal ->
@@ -306,8 +365,15 @@ compose fs gs =
       etfElim = etfElim fs <=< etfElim gs,
       etfBound = etfBound fs <=< etfBound gs,
       etfFree = etfFree fs <=< etfFree gs,
+      etfCaseTree = etfCaseTree fs <=< etfCaseTree gs,
       etfApp = etfApp fs <=< etfApp gs,
       etfAnn = etfAnn fs <=< etfAnn gs,
       etfTermX = etfTermX fs <=< etfTermX gs,
-      etfElimX = etfElimX fs <=< etfElimX gs
+      etfElimX = etfElimX fs <=< etfElimX gs,
+      etfCaseTreeX = etfCaseTreeX fs <=< etfCaseTreeX gs,
+      etfBranchX = etfBranchX fs <=< etfBranchX gs,
+      etfCase = etfCase fs <=< etfCase gs,
+      etfDone =etfDone fs <=< etfDone gs,
+      etfFail = etfFail fs <=< etfFail gs,
+      etfBranch = etfBranch fs <=< etfBranch gs
     }
