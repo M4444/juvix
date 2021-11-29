@@ -312,7 +312,11 @@ forgetter =
       etTermX = absurd,
       etElimX = absurd,
       etCaseTreeX = absurd,
-      etBranchX = absurd
+      etBranchX = absurd,
+      etCase = const (),
+      etDone = const (),
+      etFail = const (),
+      etBranch = const ()
     }
 
 extForgetT ::

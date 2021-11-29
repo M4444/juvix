@@ -28,7 +28,23 @@ do
       Core.defaultExtElim
         { Core.typeElimX = [("ElimX", [[t|Core.ElimX $ext $primTy $primVal|]])]
         }
-  pure $ decsT <> decsE
+  decsC <- Core.extendCaseTree
+    "CaseTree"
+    [ext']
+    [t|T $ext|]
+    \primTy primVal ->
+      Core.defaultExtCaseTree
+        { Core.typeCaseTreeX = [("CaseTreeX", [[t|Core.CaseTreeX $ext $primTy $primVal|]])]
+        }
+  decsB <- Core.extendBranch
+    "Branch"
+    [ext']
+    [t|T $ext|]
+    \primTy primVal ->
+      Core.defaultExtBranch
+        { Core.typeBranchX = [("BranchX", [[t|Core.BranchX $ext $primTy $primVal|]])]
+        }
+  pure $ decsT <> decsE <> decsC --  <> decsB
 
 onlyExtsT :: Core.Term ext primTy primVal -> Core.Term (T ext) primTy primVal
 onlyExtsT = extTransformT transformer
@@ -63,12 +79,20 @@ transformer =
       etApp = const (),
       etAnn = const (),
       etTermX = identity,
-      etElimX = identity
+      etElimX = identity,
+      etCaseTreeX = identity,
+      etBranchX = identity,
+      etCase = const (),
+      etDone = const (),
+      etFail = const (),
+      etBranch = const ()
     }
 
 injectT ::
   ( Core.TermX ext' primTy primVal ~ Void,
     Core.ElimX ext' primTy primVal ~ Void,
+    Core.CaseTreeX ext' primTy primVal ~ Void,
+    Core.BranchX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Core.Term ext' primTy primVal ->
@@ -78,6 +102,8 @@ injectT = extTransformT injector
 injectE ::
   ( Core.TermX ext' primTy primVal ~ Void,
     Core.ElimX ext' primTy primVal ~ Void,
+    Core.CaseTreeX ext' primTy primVal ~ Void,
+    Core.BranchX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Core.Elim ext' primTy primVal ->
@@ -87,6 +113,8 @@ injectE = extTransformE injector
 injector ::
   ( Core.TermX ext' primTy primVal ~ Void,
     Core.ElimX ext' primTy primVal ~ Void,
+    Core.CaseTreeX ext' primTy primVal ~ Void,
+    Core.BranchX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   ExtTransformTE ext' (T ext) primTy primVal
@@ -116,5 +144,11 @@ injector =
       etApp = identity,
       etAnn = identity,
       etTermX = absurd,
-      etElimX = absurd
+      etElimX = absurd,
+      etCaseTreeX = absurd,
+      etBranchX = absurd, 
+      etCase = identity,
+      etDone = identity,
+      etFail = identity,
+      etBranch = identity
     }
