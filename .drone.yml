@@ -1,5 +1,5 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
@@ -92,9 +92,9 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /home/user/juvix}
+workspace: {path: /drone/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
@@ -169,9 +169,9 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /home/user/juvix}
+workspace: {path: /drone/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
@@ -762,9 +762,9 @@ trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /home/user/juvix}
+workspace: {path: /drone/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /home/user/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
 name: juvix-ci-update-artifacts-push-develop
 node: {project: juvix}
@@ -794,9 +794,9 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /home/user}
+workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: 8a612db6bc7a8f8b703c0ea4e171c6f9a283157107e773671dfa0f162e0ff3c7
+hmac: b33567767f19e32b6dceec0299c75398ef33a25b02b0c3086a3222650a1ce231
 
 ...

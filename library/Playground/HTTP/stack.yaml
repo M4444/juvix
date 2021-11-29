@@ -11,7 +11,6 @@ packages:
 - ../../Context
 - ../../Backends/Plonk
 - ../../Backends/llvm
-- ../../Test/DataStructures
 - ../../Sexp
 - ../../Test/DataStructures
 
