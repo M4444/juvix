@@ -16,30 +16,6 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 
---     • Could not deduce (Show
-                          -- (Core.BranchX
-                          --    extT
-                          --    (Juvix.Core.Application.Return'
-                          --       IR.T (Param.PrimType Param.Star) primTy)
-                          --    (Juvix.Core.Application.Return'
-                          --       IR.T (Param.PrimType primTy) primVal)))
-
-    -- • Could not deduce (Show
-    --                       (Core.CaseTreeX
-    --                          extT
-    --                          (Juvix.Core.Application.Return'
-    --                             IR.T (Param.PrimType Param.Star) primTy)
-    --                          (Juvix.Core.Application.Return'
-    --                             IR.T (Param.PrimType primTy) primVal)))
-
-    -- • Could not deduce (Show
-    --                       (Core.XCaseTree
-    --                          extT
-    --                          (Juvix.Core.Application.Return'
-    --                             IR.T (Param.PrimType Param.Star) primTy)
-    --                          (Juvix.Core.Application.Return'
-    --                             IR.T (Param.PrimType primTy) primVal)))
-
 
 -- | check all constructors of a datatype
 typeCheckAllCons ::

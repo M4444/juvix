@@ -171,7 +171,7 @@ class HasBackend b where
       Right r -> do
         pure r
       Left err -> do
-        Feedback.fail $ "Error: " <> toS (pShowNoColor err) <> " on Term: " <> toS (pShowNoColor term)
+        Feedback.fail $ "Error: " -- <> toS (pShowNoColor err) <> " on Term: " <> toS (pShowNoColor term)
     where
       lookupGlobal = IR.rawLookupFun' globalDefs
       -- Type primitive values, i.e.

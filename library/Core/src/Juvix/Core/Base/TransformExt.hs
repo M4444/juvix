@@ -29,6 +29,7 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfElim :: XElim ext1 primTy primVal -> f (XElim ext2 primTy primVal),
     etfBound :: XBound ext1 primTy primVal -> f (XBound ext2 primTy primVal),
     etfFree :: XFree ext1 primTy primVal -> f (XFree ext2 primTy primVal),
+    etfCaseTree :: XCaseTree ext1 primTy primVal -> f (XCaseTree ext2 primTy primVal),
     etfApp :: XApp ext1 primTy primVal -> f (XApp ext2 primTy primVal),
     etfAnn :: XAnn ext1 primTy primVal -> f (XAnn ext2 primTy primVal),
     etfTermX :: TermX ext1 primTy primVal -> f (TermX ext2 primTy primVal),
@@ -65,6 +66,7 @@ pattern ExtTransformTE ::
   (XElim ext1 primTy primVal -> XElim ext2 primTy primVal) ->
   (XBound ext1 primTy primVal -> XBound ext2 primTy primVal) ->
   (XFree ext1 primTy primVal -> XFree ext2 primTy primVal) ->
+  (XCaseTree ext1 primTy primVal -> XCaseTree ext2 primTy primVal) ->
   (XApp ext1 primTy primVal -> XApp ext2 primTy primVal) ->
   (XAnn ext1 primTy primVal -> XAnn ext2 primTy primVal) ->
   (TermX ext1 primTy primVal -> TermX ext2 primTy primVal) ->
@@ -92,6 +94,7 @@ pattern ExtTransformTE
     etElim,
     etBound,
     etFree,
+    etCaseTree,
     etApp,
     etAnn,
     etTermX,
@@ -119,6 +122,7 @@ pattern ExtTransformTE
       etfElim = Coerce etElim,
       etfBound = Coerce etBound,
       etfFree = Coerce etFree,
+      etfCaseTree = Coerce etCaseTree,
       etfApp = Coerce etApp,
       etfAnn = Coerce etAnn,
       etfTermX = Coerce etTermX,
@@ -178,6 +182,7 @@ extTransformEF ::
   f (Elim ext2 primTy primVal)
 extTransformEF fs (Bound x e) = Bound x <$> etfBound fs e
 extTransformEF fs (Free x e) = Free x <$> etfFree fs e
+extTransformEF fs (CaseTree x e) = CaseTree x <$> etfCaseTree fs e
 extTransformEF fs (App f s e) =
   App <$> extTransformEF fs f
     <*> extTransformTF fs s

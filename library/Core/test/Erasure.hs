@@ -11,6 +11,7 @@ import qualified Juvix.Core.IR.Typechecker as Typed
 import qualified Juvix.Core.Parameterisation as P
 import qualified Juvix.Core.Parameterisations.Unit as Unit
 import qualified Juvix.Core.Types as Core
+import qualified Juvix.Core.Base as Core
 import Juvix.Library hiding (identity)
 import qualified Juvix.Library.Usage as Usage
 import qualified Test.Tasty as T
@@ -23,6 +24,8 @@ shouldEraseTo ::
     Show primVal,
     Eq primTy,
     Eq primVal,
+    Core.CoreAll Show Typed.T (Core.KindedType primTy) (Core.TypedPrim primTy primVal),
+    Core.CoreAll Eq Typed.T (Core.KindedType primTy) (Core.TypedPrim primTy primVal),
     Eq (Core.PrimApplyError primTy),
     Show (Core.PrimApplyError primTy)
   ) =>

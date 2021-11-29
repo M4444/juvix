@@ -40,6 +40,7 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 import Debug.Pretty.Simple
+import qualified Data.List.NonEmpty as NonEmpty
 
 -- | Constraint for terms and eliminations without extensions.
 type NoExtensions ext primTy primVal =
@@ -354,22 +355,22 @@ toLambda _ = Nothing
 -- | Translate a `RawGlobal'` function definition into an elimination term.
 -- See 'toLambda' for an example.
 toLambdaR ::
-  forall ext' ext primTy primVal.
+  forall ext' primTy primVal.
   ( EvalPatSubst ext' primTy primVal,
-    NoExtensions ext primTy primVal,
+    NoExtensions IR.T primTy primVal,
     Show primTy,
     Show primVal,
-    Show (Core.RawGlobal ext primTy primVal),
-    Show (Core.Pattern ext primTy primVal)
+    Show (Core.RawGlobal IR.T primTy primVal),
+    Show (Core.Pattern IR.T primTy primVal)
   ) =>
-  Core.RawGlobal ext primTy primVal ->
+  Core.RawGlobal IR.T primTy primVal ->
   Maybe (Core.Elim (OnlyExts.T ext') primTy primVal)
 toLambdaR (Core.RawGFunction f)
   | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f,
     Core.RawFunClause _ pats rhs _ :| [] <- rawFunClauses =
     toLambda' π (extForgetT ty) pats rhs
-  -- | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f =
-  --   clausesToCaseTrees f
+  | Core.RawFunctionCase {rawFunCaseUsage = π, rawFunCaseType = ty, rawFunCaseTree} 
+    <- CaseTree.clausesToCaseTree f = Just $ OnlyExts.injectE $ IR.CaseTree rawFunCaseTree
 toLambdaR _ = Nothing
 
 -- | Given an environment of global definitions, and a name to lookup,
@@ -389,13 +390,13 @@ lookupFun globals x =
 -- | Variant of `lookupFun` that works on `RawGlobals'`.
 rawLookupFun ::
   ( EvalPatSubst ext' primTy primVal,
-    NoExtensions ext primTy primVal,
+    NoExtensions IR.T primTy primVal,
     Show primTy,
     Show primVal,
-    Show (Core.RawGlobal ext primTy primVal),
-    Show (Core.Pattern ext primTy primVal)
+    Show (Core.RawGlobal IR.T primTy primVal),
+    Show (Core.Pattern IR.T primTy primVal)
   ) =>
-  Core.RawGlobals ext primTy primVal ->
+  Core.RawGlobals IR.T primTy primVal ->
   LookupFun (OnlyExts.T ext') primTy primVal
 rawLookupFun globals x =
   HashMap.lookup x globals >>= \y -> do
@@ -420,3 +421,4 @@ rawLookupFun' ::
   Core.RawGlobals IR.T primTy primVal ->
   LookupFun IR.T primTy primVal
 rawLookupFun' globals x = rawLookupFun @IR.T globals x >>| extForgetE
+

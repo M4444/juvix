@@ -6,6 +6,7 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Core.Base as Core
 import qualified Juvix.Core.IR.Types as IR
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 
 -- Inputs of the algorithm
 
@@ -22,7 +23,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 -- We represent the user input P to the algorithm as an ordered list of partially decomposed clauses, called a left-hand side problem. Each partially decomposed claused is of the form:
 -- [E]q -> rhs, where E is an (unordered) set of constraints
 
-clausesToCaseTree
+clausesToCaseTree 
     :: forall primTy primVal. Core.RawFunction IR.T primTy primVal
     -> Core.RawFunctionCase IR.T primTy primVal
 clausesToCaseTree (Core.RawFunction name usage ty clauses) 
