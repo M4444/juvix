@@ -143,7 +143,7 @@ inlineAllGlobalsElim t lookupFun patternMap =
   case t of
     Core.Bound {} -> t
     Core.Free (Core.Global name) _ann ->
-      pTraceShow ("Free", name, lookupFun name, patternMap) $ maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ lookupFun name
+       maybe t (\t' -> inlineAllGlobalsElim t' lookupFun patternMap) $ lookupFun name
     Core.Free (Core.Pattern i) _ -> fromMaybe t $ PM.lookup i patternMap >>= lookupFun
     Core.App elim term ann ->
       Core.App (inlineAllGlobalsElim elim lookupFun patternMap) (inlineAllGlobals term lookupFun patternMap) ann
@@ -368,8 +368,8 @@ toLambdaR (Core.RawGFunction f)
   | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f,
     Core.RawFunClause _ pats rhs _ :| [] <- rawFunClauses =
     toLambda' π (extForgetT ty) pats rhs
-  | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f =
-    clausesToCaseTrees f
+  -- | Core.RawFunction {rawFunUsage = π, rawFunType = ty, rawFunClauses} <- f =
+  --   clausesToCaseTrees f
 toLambdaR _ = Nothing
 
 -- | Given an environment of global definitions, and a name to lookup,
@@ -398,8 +398,7 @@ rawLookupFun ::
   Core.RawGlobals ext primTy primVal ->
   LookupFun (OnlyExts.T ext') primTy primVal
 rawLookupFun globals x =
-  pTraceShow ("Lookup", x, globals) $ HashMap.lookup x globals >>= \y -> do
-    pTraceShowM ("Lookup Success", y)
+  HashMap.lookup x globals >>= \y -> do
     toLambdaR y
 
 -- | Variant of `lookupFun` that creates a extension free elimination.

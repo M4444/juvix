@@ -42,16 +42,14 @@ instance (A.FromJSON ty, A.FromJSON val, Core.CoreAll A.FromJSON ext ty val) => 
 deriving instance
   ( Eq primTy,
     Eq primVal,
-    Core.TermAll Eq ext primTy primVal,
-    Core.ElimAll Eq ext primTy primVal
+    Core.CoreAll Eq ext primTy primVal
   ) =>
   Eq (Sig ext primTy primVal)
 
 deriving instance
   ( Show primTy,
     Show primVal,
-    Core.TermAll Show ext primTy primVal,
-    Core.ElimAll Show ext primTy primVal
+    Core.CoreAll Show ext primTy primVal
   ) =>
   Show (Sig ext primTy primVal)
 
@@ -59,7 +57,6 @@ deriving instance
   ( Data ext,
     Data primTy,
     Data primVal,
-    Core.TermAll Data ext primTy primVal,
-    Core.ElimAll Data ext primTy primVal
+    Core.CoreAll Data ext primTy primVal
   ) =>
   Data (Sig ext primTy primVal)

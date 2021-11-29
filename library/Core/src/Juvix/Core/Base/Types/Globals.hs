@@ -16,7 +16,9 @@ type RawGlobalAll (c :: Type -> Constraint) ext primTy primVal =
     c primVal,
     TermAll c ext primTy primVal,
     ElimAll c ext primTy primVal,
-    PatternAll c ext primTy primVal
+    PatternAll c ext primTy primVal,
+    CaseTreeAll c ext primTy primVal,
+    BranchAll c ext primTy primVal
   )
 
 type GlobalAllV (c :: Type -> Constraint) ext primTy primVal =
@@ -33,7 +35,9 @@ type GlobalAll (c :: Type -> Constraint) extV extT primTy primVal =
     ElimAll c extT primTy primVal,
     ValueAll c extV primTy primVal,
     NeutralAll c extV primTy primVal,
-    PatternAll c extT primTy primVal
+    PatternAll c extT primTy primVal,
+    CaseTreeAll c extT primTy primVal,
+    BranchAll c extT primTy primVal
   )
 
 data RawDatatype ext primTy primVal = RawDatatype
@@ -524,31 +528,31 @@ instance A.FromJSON Pos where
 
 
 data RawFunctionCase ext primTy primVal = RawFunctionCase
-  { rawFunName :: GlobalName,
-    rawFunUsage :: GlobalUsage,
-    rawFunType :: Term ext primTy primVal,
-    rawFunCaseTree :: CaseTree.
+  { rawFunCaseName :: GlobalName,
+    rawFunCaseUsage :: GlobalUsage,
+    rawFunCaseType :: Term ext primTy primVal,
+    rawFunCaseTree :: CaseTree ext primTy primVal
   }
   deriving (Generic)
 
-instance (A.ToJSON ty, A.ToJSON val, CoreAll A.ToJSON ext ty val) => A.ToJSON (RawFunction ext ty val) where
+instance (A.ToJSON ty, A.ToJSON val, CoreAll A.ToJSON ext ty val) => A.ToJSON (RawFunctionCase ext ty val) where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
-instance (A.FromJSON ty, A.FromJSON val, CoreAll A.FromJSON ext ty val) => A.FromJSON (RawFunction ext ty val) where
+instance (A.FromJSON ty, A.FromJSON val, CoreAll A.FromJSON ext ty val) => A.FromJSON (RawFunctionCase ext ty val) where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
 deriving instance
   RawGlobalAll Show ext primTy primVal =>
-  Show (RawFunction ext primTy primVal)
+  Show (RawFunctionCase ext primTy primVal)
 
 deriving instance
   RawGlobalAll Eq ext primTy primVal =>
-  Eq (RawFunction ext primTy primVal)
+  Eq (RawFunctionCase ext primTy primVal)
 
 deriving instance
   (Data ext, RawGlobalAll Data ext primTy primVal) =>
-  Data (RawFunction ext primTy primVal)
+  Data (RawFunctionCase ext primTy primVal)
 
 deriving instance
   RawGlobalAll NFData ext primTy primVal =>
-  NFData (RawFunction ext primTy primVal)
+  NFData (RawFunctionCase ext primTy primVal)

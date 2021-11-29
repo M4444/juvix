@@ -22,6 +22,10 @@ Core.extendNeutral "Neutral" [] [t|T|] $ \_ _ -> Core.defaultExtNeutral
 
 Core.extendPattern "Pattern" [] [t|T|] $ \_ _ -> Core.defaultExtPattern
 
+Core.extendCaseTree "CaseTree" [] [t|T|] $ \_ _ -> Core.defaultExtCaseTree
+
+Core.extendBranch "Branch" [] [t|T|] $ \_ _ -> Core.defaultExtBranch
+
 usageToGlobal :: Usage.T -> Maybe Core.GlobalUsage
 usageToGlobal Usage.SAny = Just Core.GSAny
 usageToGlobal (Usage.SNat 0) = Just Core.GZero

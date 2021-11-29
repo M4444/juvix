@@ -84,6 +84,22 @@ instance A.ToJSON GlobalUsage where
 instance A.FromJSON GlobalUsage where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
+-- data ArgMeta ext ty val = ArgMeta
+--   { sig :: Maybe (Core.Term ext ty val)}
+
+data Arg a = Arg 
+  { unarg :: a
+  -- , meta :: ArgMeta ext ty val
+  } deriving (Data, Eq, Show, Generic, NFData)
+
+
+instance (A.ToJSON a) => A.ToJSON (Arg a) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON a) => A.FromJSON (Arg a) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+
 ------------------------------------------------------------------------------
 
 extensibleWith
@@ -143,7 +159,7 @@ extensibleWith
       | -- | CONV conversion rule. TODO make sure 0Γ ⊢ S≡T
         -- Elim is the constructor that embeds Elim to Term
         Elim (Elim primTy primVal)
-      | Con (Term primTy primVal)
+      -- | Con (Term primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- inferable terms
@@ -152,11 +168,13 @@ extensibleWith
         Bound BoundVar
       | -- | Free variables of type name (see above)
         Free Name
+      -- | Arg Int
       | -- | elimination rule of PI (APP).
         App (Elim primTy primVal) (Term primTy primVal)
       | -- | Annotation with usage.
         Ann Usage (Term primTy primVal) (Term primTy primVal)
-      | Case (CaseTree.CaseTree (Term primTy primVal))
+
+      | CaseTree (CaseTree primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- Values/types
@@ -198,6 +216,27 @@ extensibleWith
       | PDot (Term primTy primVal)
       | PPrim primVal
       deriving (Show, Eq, Generic, Data, NFData)
+
+    data Branch primTy primVal = Branch 
+      { patBranch :: Pattern primTy primVal
+      , caseBranch :: CaseTree primTy primVal
+      }
+      deriving (Eq, Show, Generic, Data, NFData)
+
+    -- | Case tree with bodies.
+    data CaseTree primTy primVal
+      = Case (Arg Int) [Branch primTy primVal]
+        -- ^ @Case n bs@ stands for a match on the @n@-th argument
+        -- (counting from zero) with @bs@ as the case branches.
+        -- If the @n@-th argument is a projection, we have only 'conBranches'
+        -- with arity 0.
+      | Done [Arg NameSymbol.T] (Term primTy primVal)
+        -- ^ @Done xs b@ stands for the body @b@ where the @xs@ contains hiding
+        --   and name suggestions for the free variables. This is needed to build
+        --   lambdas on the right hand side for partial applications which can
+        --   still reduce.
+      | Fail [Arg NameSymbol.T]
+      deriving (Eq, Show, Generic, Data, NFData)
     |]
 
 instance (A.ToJSON primTy, A.ToJSON primVal, CoreAll A.ToJSON ext primTy primVal) => A.ToJSON (Term ext primTy primVal) where
@@ -230,10 +269,25 @@ instance (A.ToJSON primTy, A.ToJSON primVal, CoreAll A.ToJSON ext primTy primVal
 instance (A.FromJSON primTy, A.FromJSON primVal, CoreAll A.FromJSON ext primTy primVal) => A.FromJSON (Pattern ext primTy primVal) where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
+instance (A.ToJSON primTy, A.ToJSON primVal, CoreAll A.ToJSON ext primTy primVal) => A.ToJSON (CaseTree ext primTy primVal) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON primTy, A.FromJSON primVal, CoreAll A.FromJSON ext primTy primVal) => A.FromJSON (CaseTree ext primTy primVal) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.ToJSON primTy, A.ToJSON primVal, CoreAll A.ToJSON ext primTy primVal) => A.ToJSON (Branch ext primTy primVal) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON primTy, A.FromJSON primVal, CoreAll A.FromJSON ext primTy primVal) => A.FromJSON (Branch ext primTy primVal) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+
 type CoreAll (c :: Type -> Constraint) ext primTy primVal =
   ( TermAll c ext primTy primVal,
     ElimAll c ext primTy primVal,
-    PatternAll c ext primTy primVal
+    PatternAll c ext primTy primVal,
+    CaseTreeAll c ext primTy primVal,
+    BranchAll c ext primTy primVal
   )
 
 type CoreShow ext primTy primVal = CoreAll Show ext primTy primVal
