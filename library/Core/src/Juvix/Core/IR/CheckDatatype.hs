@@ -16,6 +16,31 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 
+--     • Could not deduce (Show
+                          -- (Core.BranchX
+                          --    extT
+                          --    (Juvix.Core.Application.Return'
+                          --       IR.T (Param.PrimType Param.Star) primTy)
+                          --    (Juvix.Core.Application.Return'
+                          --       IR.T (Param.PrimType primTy) primVal)))
+
+    -- • Could not deduce (Show
+    --                       (Core.CaseTreeX
+    --                          extT
+    --                          (Juvix.Core.Application.Return'
+    --                             IR.T (Param.PrimType Param.Star) primTy)
+    --                          (Juvix.Core.Application.Return'
+    --                             IR.T (Param.PrimType primTy) primVal)))
+
+    -- • Could not deduce (Show
+    --                       (Core.XCaseTree
+    --                          extT
+    --                          (Juvix.Core.Application.Return'
+    --                             IR.T (Param.PrimType Param.Star) primTy)
+    --                          (Juvix.Core.Application.Return'
+    --                             IR.T (Param.PrimType primTy) primVal)))
+
+
 -- | check all constructors of a datatype
 typeCheckAllCons ::
   ( Error.HasThrowTC' IR.T extT primTy primVal m,
@@ -27,6 +52,9 @@ typeCheckAllCons ::
     ShowExt extT primTy primVal,
     Show (Core.RawGlobal extT primTy primVal),
     Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Core.BranchAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Core.CaseTreeAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Show (Core.XCaseTree extT (Param.KindedType primTy) (Typed.Prim primTy primVal)),
     Env.CanTC' extT primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -66,6 +94,9 @@ typeCheckConstructor ::
     Show extT,
     ShowExt extT primTy primVal,
     Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Core.BranchAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Core.CaseTreeAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),
+    Show (Core.XCaseTree extT (Param.KindedType primTy) (Typed.Prim primTy primVal)),
     Show (Core.RawGlobal extT primTy primVal),
     Eval.EvalPatSubst extT primTy primVal,
     Env.CanTC' extT primTy primVal m,

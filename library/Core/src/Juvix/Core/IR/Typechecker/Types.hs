@@ -89,8 +89,11 @@ Core.extendElim "Elim'" [] [t|T|] $
           { Core.typeBound = typed,
             Core.typeFree = typed,
             Core.typeApp = typed,
-            Core.typeAnn = typed
+            Core.typeAnn = typed,
+            Core.typeCaseTree = typed
           }
+
+
 
 type Term primTy primVal = Term' (PrimTy primTy) (Prim primTy primVal)
 

@@ -32,3 +32,7 @@ pattern Let π x l b = Let0 π l b x
 Core.extendElim "Elim" [] [t|T|] extElim
 
 Core.extendPattern "Pattern" [] [t|T|] extPattern
+
+Core.extendCaseTree "CaseTree" [] [t|T|] $ \_ _ -> Core.defaultExtCaseTree
+
+Core.extendBranch "Branch" [] [t|T|] $ \_ _ -> Core.defaultExtBranch

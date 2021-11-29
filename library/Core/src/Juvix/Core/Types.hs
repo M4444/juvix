@@ -13,6 +13,7 @@ import qualified Juvix.Core.HR.Pretty as HR
 import qualified Juvix.Core.HR.Types as HR
 import qualified Juvix.Core.IR.Typechecker as Typed
 import qualified Juvix.Core.IR.Types as IR
+import qualified Juvix.Core.Base as Core
 import Juvix.Core.Parameterisation
 import Juvix.Library
 import qualified Juvix.Library.PrettyPrint as PP
@@ -33,6 +34,8 @@ deriving instance
   ( Show primTy,
     Show primVal,
     Show compErr,
+    Core.CoreAll Show Typed.T (KindedType primTy) (TypedPrim primTy primVal),
+    Core.CoreAll Show IR.T primTy primVal,
     Show (PrimApplyError primTy),
     Show (PrimApplyError primVal)
   ) =>

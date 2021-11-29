@@ -9,7 +9,6 @@ import Juvix.Core.Base.Types.Base
 import Juvix.Library hiding (Datatype, Pos)
 import Juvix.Library.HashMap (HashMap)
 import Juvix.Library.Usage (Usage)
-import qualified Juvix.Core.Base.Types.CaseTree as CaseTree
 
 type RawGlobalAll (c :: Type -> Constraint) ext primTy primVal =
   ( c primTy,

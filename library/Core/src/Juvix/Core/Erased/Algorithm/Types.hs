@@ -99,6 +99,7 @@ data Error primTy primVal
 deriving instance
   ( Show primTy,
     Show primVal,
+    Core.CoreAll Show Typed.T primTy primVal,
     Show (Param.ApplyErrorExtra primTy)
   ) =>
   Show (Error primTy primVal)
@@ -106,6 +107,7 @@ deriving instance
 deriving instance
   ( Eq primTy,
     Eq primVal,
+    Core.CoreAll Eq Typed.T primTy primVal,
     Eq (Param.ApplyErrorExtra primTy)
   ) =>
   Eq (Error primTy primVal)

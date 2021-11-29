@@ -106,9 +106,7 @@ deriving instance
     Eq (P.PrimApplyError primVal),
     Core.ValueAll Eq extV (P.KindedType primTy) (P.TypedPrim primTy primVal),
     Core.NeutralAll Eq extV (P.KindedType primTy) (P.TypedPrim primTy primVal),
-    Core.TermAll Eq extT primTy primVal,
-    Core.ElimAll Eq extT primTy primVal,
-    Core.PatternAll Eq extT primTy primVal
+    Core.CoreAll Eq extT primTy primVal
   ) =>
   Eq (TypecheckError' extV extT primTy primVal)
 
@@ -119,9 +117,7 @@ deriving instance
     Show (P.PrimApplyError primVal),
     Core.ValueAll Show extV (P.KindedType primTy) (P.TypedPrim primTy primVal),
     Core.NeutralAll Show extV (P.KindedType primTy) (P.TypedPrim primTy primVal),
-    Core.TermAll Show extT primTy primVal,
-    Core.ElimAll Show extT primTy primVal,
-    Core.PatternAll Show extT primTy primVal
+    Core.CoreAll Show extT primTy primVal
   ) =>
   Show (TypecheckError' extV extT primTy primVal)
 
