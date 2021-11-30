@@ -229,12 +229,6 @@ lists are indented by an extra 2 each"
       (format nil "~%~a"
               (indent-new-lines-by
                2
-<<<<<<< HEAD
-               (format nil "nix:~%~a~%~a~a"
-                       (format nil "enable: ~a" "true")
-                       (format nil "packages: [~{~a~^, ~}]" (nix-packages nix))
-                       (format nil "~%nix-shell-options: [~{~a~^, ~}]" (nix-shell-options nix)))))
-=======
                (format nil "nix:~%~a~%~a~a~a"
                        (format nil "enable: ~a" "true")
                        (format nil "packages: [~{~a~^, ~}]" (nix-packages nix))
@@ -244,7 +238,6 @@ lists are indented by an extra 2 each"
                        (if (nix-pure nix)
                            ""
                            (format nil "~%pure: false")))))
->>>>>>> c9b0b3f83a8c449a707c44bcfcaa63604802c7aa
       ""))
 
 
