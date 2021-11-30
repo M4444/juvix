@@ -28,7 +28,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store]
+    mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
 - commands: [make stack-yaml, make update-local-stdlibs, make test]
@@ -83,7 +83,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store]
+    mount: [./.stack-work, ./.stack]
     override: false
     rebuild: true
     region: eu-west-1
@@ -123,7 +123,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store]
+    mount: [./.stack-work, ./.stack]
     region: eu-west-1
     restore: true
 - commands: [make stack-yaml, make update-local-stdlibs, make test]
@@ -159,7 +159,7 @@ steps:
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack, /nix/store]
+    mount: [./.stack-work, ./.stack]
     override: false
     rebuild: true
     region: eu-west-1
@@ -497,7 +497,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -537,7 +537,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -557,7 +557,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -577,7 +577,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -597,7 +597,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -617,7 +617,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -637,7 +637,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -657,7 +657,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -677,7 +677,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -697,7 +697,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -717,7 +717,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -737,7 +737,7 @@ steps:
     region: eu-west-1
     restore: false
   when:
-    status: [success, failure]
+    status: [success]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: b33567767f19e32b6dceec0299c75398ef33a25b02b0c3086a3222650a1ce231
+hmac: 231be4e38f268d1f93cb699fbe795acdd76f3a0841bb5ef10640a1f8015dcc6b
 
 ...
