@@ -39,7 +39,14 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfCase :: XCase ext1 primTy primVal -> f (XCase ext2 primTy primVal),
     etfDone :: XDone ext1 primTy primVal -> f (XDone ext2 primTy primVal),
     etfFail :: XFail ext1 primTy primVal -> f (XFail ext2 primTy primVal),
-    etfBranch :: XBranch ext1 primTy primVal -> f (XBranch ext2 primTy primVal)
+    etfBranch :: XBranch ext1 primTy primVal -> f (XBranch ext2 primTy primVal),
+    etfPatternX :: PatternX ext1 primTy primVal -> f (PatternX ext2 primTy primVal),
+    etfPCon :: XPCon ext1 primTy primVal -> f (XPCon ext2 primTy primVal),
+    etfPPair :: XPPair ext1 primTy primVal -> f (XPPair ext2 primTy primVal),
+    etfPUnit :: XPUnit ext1 primTy primVal -> f (XPUnit ext2 primTy primVal),
+    etfPVar :: XPVar ext1 primTy primVal -> f (XPVar ext2 primTy primVal),
+    etfPDot :: XPDot ext1 primTy primVal -> f (XPDot ext2 primTy primVal),
+    etfPPrim :: XPPrim ext1 primTy primVal -> f (XPPrim ext2 primTy primVal)
   }
 
 type ExtTransformTE = ExtTransformTEF Identity
@@ -83,6 +90,13 @@ pattern ExtTransformTE ::
   (XDone ext1 primTy primVal -> XDone ext2 primTy primVal) ->
   (XFail ext1 primTy primVal -> XFail ext2 primTy primVal) ->
   (XBranch ext1 primTy primVal -> XBranch ext2 primTy primVal) ->
+  (PatternX ext1 primTy primVal -> PatternX ext2 primTy primVal) ->
+  (XPCon ext1 primTy primVal -> XPCon ext2 primTy primVal) ->
+  (XPPair ext1 primTy primVal -> XPPair ext2 primTy primVal) ->
+  (XPUnit ext1 primTy primVal -> XPUnit ext2 primTy primVal) ->
+  (XPVar ext1 primTy primVal -> XPVar ext2 primTy primVal) ->
+  (XPDot ext1 primTy primVal -> XPDot ext2 primTy primVal) ->
+  (XPPrim ext1 primTy primVal -> XPPrim ext2 primTy primVal) ->
   ExtTransformTE ext1 ext2 primTy primVal
 pattern ExtTransformTE
   { etStar,
@@ -116,7 +130,14 @@ pattern ExtTransformTE
     etCase,
     etDone,
     etFail,
-    etBranch
+    etBranch,
+    etPatternX,
+    etPCon,
+    etPPair,
+    etPUnit,
+    etPVar,
+    etPDot,
+    etPPrim 
   } =
   ExtTransformTEF
     { etfStar = Coerce etStar,
@@ -150,7 +171,14 @@ pattern ExtTransformTE
       etfCase = Coerce etCase,
       etfDone = Coerce etDone,
       etfFail = Coerce etFail,
-      etfBranch = Coerce etBranch
+      etfBranch = Coerce etBranch,
+      etfPatternX = Coerce etPatternX,
+      etfPCon = Coerce etPCon,
+      etfPPair = Coerce etPPair,
+      etfPUnit = Coerce etPUnit,
+      etfPVar = Coerce etPVar,
+      etfPDot = Coerce etPDot,
+      etfPPrim = Coerce etPPrim 
     }
 
 extTransformTF ::
@@ -199,12 +227,31 @@ extTransformT ::
   Term ext2 primTy primVal
 extTransformT fs t = runIdentity $ extTransformTF fs t
 
+extTransformPattern ::
+  Applicative f =>
+  ExtTransformTEF f ext1 ext2 primTy primVal ->
+  Pattern ext1 primTy primVal ->
+  f (Pattern ext2 primTy primVal)
+extTransformPattern fs (PCon name pats e) 
+  = PCon name <$> (sequenceA (extTransformPattern fs <$> pats)) <*> etfPCon fs e
+extTransformPattern fs (PPair p1 p2 e) 
+  = PPair <$> extTransformPattern fs p1 <*> extTransformPattern fs p2 <*> etfPPair fs e
+extTransformPattern fs (PUnit e) 
+  = PUnit <$> etfPUnit fs e
+extTransformPattern fs (PVar var e) 
+  = PVar var <$> etfPVar fs e
+extTransformPattern fs (PDot t e) 
+  = PDot <$> extTransformTF fs t <*> etfPDot fs e
+extTransformPattern fs (PPrim prim e) 
+  = PPrim prim <$> etfPPrim fs e
+
 extTransformBranch ::
   Applicative f =>
   ExtTransformTEF f ext1 ext2 primTy primVal ->
   Branch ext1 primTy primVal ->
   f (Branch ext2 primTy primVal)
-extTransformBranch fs (Branch pat caseTree e) = Branch notImplemented <$> extTransformCaseTree fs caseTree <*> etfBranch fs e
+extTransformBranch fs (Branch pat caseTree e) 
+  = Branch <$> extTransformPattern fs pat <*> extTransformCaseTree fs caseTree <*> etfBranch fs e
 extTransformBranch fs (BranchX e) = BranchX <$> etfBranchX fs e
 
 extTransformCaseTree ::
