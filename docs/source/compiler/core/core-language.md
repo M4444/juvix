@@ -283,8 +283,8 @@ d, e, f
     & \text{coproduct match} \\
   & \OR \LetR{\bar x}{e}{z.A}{s}
     & \text{record match} \\
-  & \OR \pi \cdot s : S
-    & \text{type/usage annotation} \\[.5em]
+  & \OR s : S
+    & \text{type annotation} \\[.5em]
 %
 \Delta & ::= \diamond \ORI \Delta, \pi \cdot x : A
   & \text{field usages/types} \\
@@ -720,6 +720,21 @@ $$
   \Ctx{\Gamma}{\Theta} \vdash
     \sigma \cdot \Let{\pi}{x}{e}{s} \Chk B
     \dashv \Theta''
+}
+$$
+
+
+### Annotated terms
+
+A checkable term can be used in the place of an elimination by simply
+giving its type.
+
+$$
+\Rule{ann}{
+  \Gamma \vdash_0 A \Chk \star_i \qquad
+  \Ctx{\Gamma}{\Theta} \vdash \sigma \cdot s \Chk A \dashv \Theta'
+}{
+  \Ctx{\Gamma}{\Theta} \vdash \sigma \cdot (s : A) \Syn A \dashv \Theta'
 }
 $$
 
