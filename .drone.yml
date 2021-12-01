@@ -452,7 +452,7 @@ steps:
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
+    BACKEND_OPERATION_TIMEOUT: 16m
   image: meltwater/drone-cache:latest
   name: restore-cache-llvm
   pull: never
@@ -742,7 +742,7 @@ steps:
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
+    BACKEND_OPERATION_TIMEOUT: 16m
   image: meltwater/drone-cache:latest
   name: rebuild-cache-llvm
   pull: never
@@ -797,6 +797,6 @@ type: docker
 workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: b9109cfe29770fb33108305dfcecf5205c6a77cad60ef18a9e1646c2454112a5
+hmac: 7f787bbe0b5f9f4c180e4131b9b9372a67d7c8bdee8850f242df231a3b2718b1
 
 ...
