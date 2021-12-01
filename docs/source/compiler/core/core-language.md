@@ -750,18 +750,36 @@ $$
 Computation $\Red$ is the reflexive transitive context closure of the
 following rules:
 
-- $(\lambda x. t : \FunTy \pi x A B) \; s \Step_\beta (t: B)[x := (s: A)]$
-- $(\CaseOL{\Inl s}{\_}{x}{u_1}{\_}{\_}) \Step_\beta u_1[x := s]$
-- $(\CaseOL{\Inr s}{\_}{\_}{\_}{y}{u_2}) \Step_\beta u_2[y := t]$
-- $(\LetR{\bar x}{\RV{\overline{x=t}}}{\_}{s}) \Step_\beta
-    s[\overline{x := t}]$
-- $(\Let{\pi}{x}{e}{s}) \Step_\delta s[x := e]$
+- $(\lambda x. t : \FunTy \pi x A B) \; s$ \
+  $\quad\Step_\beta (t: B)[x := (s: A)]$
+
+- $\CaseOL{\Inl s : A \oplus B}{z. C}{x}{u_1}{\_}{\_}$ \
+  $\quad\Step_\beta u_1[x := (s: A)]
+    : C[z := (\Inl s : A \oplus B)]$
+
+- $\CaseOL{\Inr t : A \oplus B}{z. C}{\_}{\_}{y}{u_2}$ \
+  $\quad\Step_\beta u_2[y := (t: B)]
+    : C[z := (\Inr s : A \oplus B)]$
+
+- $\LetR{\bar x}{\RV{\overline{x=t}} : \RT{\overline{\pi \cdot x : A}}}{z. C}{s}$ \
+  $\quad\Step_\beta s[\overline{x := (t : A)}]
+    : C[z := (\RV{\overline{x=t}} : \RT{\overline{\pi \cdot x : A}})]$
+
+- $\Let{\pi}{x}{e}{s}$ \
+  $\quad\Step_\delta s[x := e]$
+
 - $\underline{t : T} \Step_\upsilon t$
 
 Two terms are convertible $s \equiv t$ if there exists a term $u$ with $s
 \Red u \RedR t$.
 
 - TODO talk about conversion in terms of normalisation, and integrate $\eta$
+
+:::{note}
+The β rules have all those annotations on the right hand sides because it is
+only possible to substitute a variable with another elimination. If the
+annotations are not actually needed, they will be pruned by the υ rule.
+:::
 
 #### Subtyping
 
