@@ -97,6 +97,7 @@ eval
                 Just wEnv ->
                   let out = Pipeline.metaCIn meta namedInput
                    in out {Pipeline.languageData = wEnv}
+      Just (CircularList.CircSchema ls) -> notImplemented
     where
       shouldStop (Just n) named
         | n == named = True
@@ -109,5 +110,6 @@ eval
 run :: EnvS b -> T -> Pipeline.CIn
 run = notImplemented
 
+-- | Returns the T from the EnvS monad
 extract :: EnvS b -> T
 extract = notImplemented
