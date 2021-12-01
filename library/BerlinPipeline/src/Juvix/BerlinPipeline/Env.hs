@@ -4,7 +4,6 @@ module Juvix.BerlinPipeline.Env where
 
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
-import qualified Juvix.BerlinPipeline.RecursiveList as RecursiveList
 import qualified Juvix.BerlinPipeline.Step as Step
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -108,7 +107,7 @@ eval
       remainder = CircularList.removeFirstNested pipeline
 
 run :: EnvS b -> T -> Pipeline.CIn
-run = notImplemented
+run (EnvS st) = information . snd . runState st
 
 -- | Returns the T from the EnvS monad
 extract :: EnvS b -> T
