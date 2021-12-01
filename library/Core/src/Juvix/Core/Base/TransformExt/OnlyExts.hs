@@ -42,9 +42,9 @@ do
     [t|T $ext|]
     \primTy primVal ->
       Core.defaultExtBranch
-        { Core.typeBranchX = [("BranchX", [[t|Core.BranchX $ext $primTy $primVal|]])]
+        { Core.typeBranchX = [("BranchX", [("extBranch", [t|Core.BranchX $ext $primTy $primVal|])])]
         }
-  pure $ decsT <> decsE <> decsC --  <> decsB
+  pure $ decsT <> decsE <> decsC <> decsB
 
 onlyExtsT :: Core.Term ext primTy primVal -> Core.Term (T ext) primTy primVal
 onlyExtsT = extTransformT transformer
@@ -76,6 +76,7 @@ transformer =
       etElim = const (),
       etBound = const (),
       etFree = const (),
+      etCaseTree = const (),
       etApp = const (),
       etAnn = const (),
       etTermX = identity,
@@ -141,6 +142,7 @@ injector =
       etElim = identity,
       etBound = identity,
       etFree = identity,
+      etCaseTree = identity,
       etApp = identity,
       etAnn = identity,
       etTermX = absurd,
