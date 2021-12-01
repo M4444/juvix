@@ -58,8 +58,8 @@ deriving instance
 
 Core.extendTerm "Term'" [] [t|T|] $
   \primTy primVal ->
-    let typed = Just [[t|Annotation IR.T $primTy $primVal|]]
-        bindTyped = Just [[t|BindAnnotation IR.T $primTy $primVal|]]
+     let typed = Just [[t|Annotation IR.T $primTy $primVal|]]
+         bindTyped = Just [[t|BindAnnotation IR.T $primTy $primVal|]]
      in Core.defaultExtTerm
           { Core.typeStar = typed,
             Core.typePrimTy = typed,
@@ -93,6 +93,21 @@ Core.extendElim "Elim'" [] [t|T|] $
             Core.typeCaseTree = typed
           }
 
+Core.extendCaseTree "CaseTree'" [] [t|T|] $
+  \primTy primVal ->
+    let typed = Just [[t|Annotation IR.T $primTy $primVal|]]
+     in Core.defaultExtCaseTree
+          { Core.typeCase = typed,
+            Core.typeDone = typed,
+            Core.typeFail = typed
+          }
+
+Core.extendBranch "Branch'" [] [t|T|] $
+  \primTy primVal ->
+    let typed = [t|Annotation IR.T $primTy $primVal|]
+    in Core.defaultExtBranch
+          { Core.typeBranch = Just [("typePatBranch", typed), ("typeCaseBranch", typed)]
+          }
 
 
 type Term primTy primVal = Term' (PrimTy primTy) (Prim primTy primVal)
