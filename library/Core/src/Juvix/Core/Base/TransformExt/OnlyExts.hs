@@ -44,7 +44,16 @@ do
       Core.defaultExtBranch
         { Core.typeBranchX = [("BranchX", [("extBranch", [t|Core.BranchX $ext $primTy $primVal|])])]
         }
-  pure $ decsT <> decsE <> decsC <> decsB
+  
+  decsP <- Core.extendPattern
+    "Pattern"
+    [ext']
+    [t|T $ext|]
+    \primTy primVal ->
+      Core.defaultExtPattern
+        { Core.typePatternX = [("PatternX", [[t|Core.PatternX $ext $primTy $primVal|]])]
+        }
+  pure $ decsT <> decsE <> decsC <> decsB <> decsP
 
 onlyExtsT :: Core.Term ext primTy primVal -> Core.Term (T ext) primTy primVal
 onlyExtsT = extTransformT transformer
@@ -94,6 +103,7 @@ injectT ::
     Core.ElimX ext' primTy primVal ~ Void,
     Core.CaseTreeX ext' primTy primVal ~ Void,
     Core.BranchX ext' primTy primVal ~ Void,
+    Core.PatternX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Core.Term ext' primTy primVal ->
@@ -105,6 +115,7 @@ injectE ::
     Core.ElimX ext' primTy primVal ~ Void,
     Core.CaseTreeX ext' primTy primVal ~ Void,
     Core.BranchX ext' primTy primVal ~ Void,
+    Core.PatternX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Core.Elim ext' primTy primVal ->
@@ -116,6 +127,7 @@ injector ::
     Core.ElimX ext' primTy primVal ~ Void,
     Core.CaseTreeX ext' primTy primVal ~ Void,
     Core.BranchX ext' primTy primVal ~ Void,
+    Core.PatternX ext' primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   ExtTransformTE ext' (T ext) primTy primVal
@@ -152,5 +164,12 @@ injector =
       etCase = identity,
       etDone = identity,
       etFail = identity,
-      etBranch = identity
+      etBranch = identity,
+      etPatternX = absurd, 
+      etPCon = identity,
+      etPPair = identity,
+      etPUnit = identity,
+      etPVar = identity,
+      etPDot = identity,
+      etPPrim = identity
     }

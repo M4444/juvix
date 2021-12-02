@@ -319,7 +319,13 @@ type ForgotExt ext primTy primVal =
     XCase ext primTy primVal ~ (),
     XDone ext primTy primVal ~ (),
     XFail ext primTy primVal ~ (),
-    XBranch ext primTy primVal ~ ()
+    XBranch ext primTy primVal ~ (),
+    XPCon ext primTy primVal ~ (),
+    XPPair ext primTy primVal ~ (),
+    XPUnit ext primTy primVal ~ (),
+    XPVar ext primTy primVal ~ (),
+    XPDot ext primTy primVal ~ (),
+    XPPrim ext primTy primVal ~ ()
   )
 
 forgetter ::
@@ -327,6 +333,7 @@ forgetter ::
     ElimX ext primTy primVal ~ Void,
     CaseTreeX ext primTy primVal ~ Void,
     BranchX ext primTy primVal ~ Void,
+    PatternX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   ExtTransformTE ext ext' primTy primVal
@@ -363,7 +370,14 @@ forgetter =
       etCase = const (),
       etDone = const (),
       etFail = const (),
-      etBranch = const ()
+      etBranch = const (),
+      etPatternX = absurd, 
+      etPCon = const (),
+      etPPair = const (),
+      etPUnit = const (),
+      etPVar = const (),
+      etPDot = const (),
+      etPPrim = const ()
     }
 
 extForgetT ::
@@ -371,6 +385,7 @@ extForgetT ::
     ElimX ext primTy primVal ~ Void,
     CaseTreeX ext primTy primVal ~ Void,
     BranchX ext primTy primVal ~ Void,
+    PatternX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Term ext primTy primVal ->
@@ -382,6 +397,7 @@ extForgetE ::
     ElimX ext primTy primVal ~ Void,
     CaseTreeX ext primTy primVal ~ Void,
     BranchX ext primTy primVal ~ Void,
+    PatternX ext primTy primVal ~ Void,
     ForgotExt ext' primTy primVal
   ) =>
   Elim ext primTy primVal ->
@@ -426,5 +442,13 @@ compose fs gs =
       etfCase = etfCase fs <=< etfCase gs,
       etfDone =etfDone fs <=< etfDone gs,
       etfFail = etfFail fs <=< etfFail gs,
-      etfBranch = etfBranch fs <=< etfBranch gs
+      etfBranch = etfBranch fs <=< etfBranch gs,
+      etfPatternX = etfPatternX fs <=< etfPatternX gs,
+      etfPCon = etfPCon fs <=< etfPCon gs,
+      etfPPair = etfPPair fs <=< etfPPair gs,
+      etfPUnit = etfPUnit fs <=< etfPUnit gs,
+      etfPVar = etfPVar fs <=< etfPVar gs,
+      etfPDot = etfPDot fs <=< etfPDot gs,
+      etfPPrim = etfPPrim fs <=< etfPPrim gs
     }
+

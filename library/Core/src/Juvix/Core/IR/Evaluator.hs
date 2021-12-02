@@ -48,6 +48,7 @@ type NoExtensions ext primTy primVal =
     Core.ElimX ext primTy primVal ~ Void,
     Core.CaseTreeX ext primTy primVal ~ Void,
     Core.BranchX ext primTy primVal ~ Void,
+    Core.PatternX ext primTy primVal ~ Void,
     TransformExt.ForgotExt ext primTy primVal
   )
 
@@ -56,6 +57,7 @@ type EvalPatSubst ext primTy primVal =
     HasPatSubst (OnlyExts.T ext) primTy primVal (Core.ElimX ext primTy primVal),
     HasPatSubst (OnlyExts.T ext) primTy primVal (Core.CaseTreeX ext primTy primVal),
     HasPatSubst (OnlyExts.T ext) primTy primVal (Core.BranchX ext primTy primVal),
+    HasPatSubst (OnlyExts.T ext) primTy primVal (Core.PatternX ext primTy primVal),
     -- FIXME?
     HasPatSubstType (OnlyExts.T ext) primTy primVal primTy,
     HasPatSubstTerm (OnlyExts.T ext) primTy primVal primVal

@@ -109,6 +109,18 @@ Core.extendBranch "Branch'" [] [t|T|] $
           { Core.typeBranch = Just [("typePatBranch", typed), ("typeCaseBranch", typed)]
           }
 
+Core.extendPattern "Pattern'" [] [t|T|] $
+  \primTy primVal ->
+    let typed = Just [[t|Annotation IR.T $primTy $primVal|]]
+     in Core.defaultExtPattern
+          { Core.typePCon = typed,
+            Core.typePPair = typed,
+            Core.typePUnit = typed,
+            Core.typePVar = typed,
+            Core.typePDot = typed,
+            Core.typePPrim = typed
+          }
+
 
 type Term primTy primVal = Term' (PrimTy primTy) (Prim primTy primVal)
 
