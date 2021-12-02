@@ -319,6 +319,8 @@ typeElim' elim σ =
       (ty, π') <- Env.lookupGlobal x
       when (π' == Core.GZero) $ requireZero σ
       pure $ Typed.Free gx $ Typed.Annotation σ ty
+    Core.CaseTree caseTree _ ->
+      pure $ Typed.CaseTree notImplemented notImplemented
     Core.App s t _ -> do
       s' <- typeElim' s σ
       (π, a, b) <- requirePi $ Typed.annType $ Typed.getElimAnn s'
@@ -334,6 +336,36 @@ typeElim' elim σ =
       pure $ Typed.Ann π s' a' ann
     Core.ElimX x ->
       Error.throwTC $ Error.UnsupportedElimExt x
+
+typeCaseTree' ::
+  ( Eq primTy,
+    Eq primVal,
+    Show primTy,
+    Show primVal,
+    Show ext,
+    ShowExt ext primTy primVal,
+    Env.CanInnerTC' ext primTy primVal m,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
+      (OnlyExts.T Typed.T)
+      primTy
+      (Param.TypedPrim primTy primVal)
+      primTy
+  ) =>
+  Core.CaseTree ext primTy primVal ->
+  Usage.T ->
+  m (Typed.CaseTree primTy primVal)
+typeCaseTree' caseTree σ =
+  let emptyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
+  in case caseTree of
+    Core.Case arg branches _ -> notImplemented
+    Core.Done args t _ -> do
+      t' <- typeTerm' t emptyAnn
+      pure $ Typed.Done args t' emptyAnn
+    Core.Fail args _ -> do
+      pure $ Typed.Fail args emptyAnn
+
 
 pushLocal ::
   Env.HasBound primTy primVal m =>

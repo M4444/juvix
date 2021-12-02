@@ -125,6 +125,9 @@ Core.extendPattern "Pattern'" [] [t|T|] $
 type Term primTy primVal = Term' (PrimTy primTy) (Prim primTy primVal)
 
 type Elim primTy primVal = Elim' (PrimTy primTy) (Prim primTy primVal)
+type CaseTree primTy primVal = CaseTree' (PrimTy primTy) (Prim primTy primVal)
+type Branch primTy primVal = Branch' (PrimTy primTy) (Prim primTy primVal)
+type Pattern primTy primVal = Pattern' (PrimTy primTy) (Prim primTy primVal)
 
 type Prim primTy primVal = P.TypedPrim primTy primVal
 
@@ -196,3 +199,4 @@ getElimAnn (Bound _ ann) = ann
 getElimAnn (Free _ ann) = ann
 getElimAnn (App _ _ ann) = ann
 getElimAnn (Ann _ _ _ ann) = ann
+getElimAnn (CaseTree _ ann) = ann
