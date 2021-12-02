@@ -864,7 +864,7 @@ steps:
     host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
     source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux/Cabal-3.2.1.0/build/juvix-server
-    target: '~'
+    target: ~/
     username: ubuntu
 - depends_on: [build-frontend]
   image: plugins/s3-sync:1
@@ -926,6 +926,6 @@ type: docker
 workspace: {path: /drone/workspace/web}
 ---
 kind: signature
-hmac: 11ddfb3351abacd222c7930c382d5a2fbdd4f127a999c0423d6d18410e40f244
+hmac: 69dbd0540fff8a6efa496a6871762a1cdc04791d37ce25a027d8ee30dabb562f
 
 ...
