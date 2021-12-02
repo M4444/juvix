@@ -30,14 +30,14 @@ clausesToCaseTree (Core.RawFunction name usage ty clauses)
   = Core.RawFunctionCase name usage ty (go 0 clauses Nothing)
   where 
     go :: Int -> NonEmpty (Core.RawFunClause IR.T primTy primVal) -> Maybe (Core.Term IR.T primTy primVal) -> Core.CaseTree IR.T primTy primVal
-    go idx clauses bodyM = notImplemented
+    go idx clauses bodyM =
         let nextArgPats = nextArgPatterns clauses
             nextClauses = elimNextArgPatterns clauses
             zipped = zip [0..] nextArgPats
         in case (zipped, bodyM) of
-          ([], Just body) -> Core.Done [] body
-          ([], Nothing) -> Core.Fail []
-          _ -> Core.Case (Core.Arg idx) $ f <$> zipped
+          ([], Just body) -> IR.Done [] body
+          ([], Nothing) -> IR.Fail []
+          _ -> IR.Case (Core.Arg idx) $ f <$> zipped
             where 
               f :: (Int, Core.Pattern IR.T primTy primVal) -> Core.Branch IR.T primTy primVal
               f (idx, pat) = let cl = clauses NonEmpty.!! idx 
@@ -60,6 +60,8 @@ nextArgPatterns (Core.RawFunClause tel (pat : pats) rhs catchAll :| clauses)
       go [] acc = reverse acc
       go (Core.RawFunClause _ (pat : pats) rhs _ : clauses) acc =
             go clauses (pat : acc)
+nextArgPatterns (Core.RawFunClause tel [] rhs catchAll :| clauses) 
+  = []
 
 nextPatternSig :: Core.Term ext primTy primVal -> Core.Term ext primTy primVal
 nextPatternSig (Core.Pi _ pat _ _) = pat
