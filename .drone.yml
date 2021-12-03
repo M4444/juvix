@@ -903,6 +903,8 @@ steps:
     mount: [./library/Playground/HTTP/.stack-work, ./.stack]
     region: eu-west-1
     restore: false
+  when:
+    status: [success, failure]
 - depends_on: [deploy-frontend]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -919,6 +921,8 @@ steps:
     mount: [./library/Playground/compiler-debugger/node_modules]
     region: eu-west-1
     restore: false
+  when:
+    status: [success, failure]
 trigger:
   branch: [develop]
   event: [push, pull_request]
@@ -926,6 +930,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 4f3f5ba1b07ed4b0d8c7b7abe7f7a676824214342b49a09df439055199bca2f2
+hmac: abc2d1018521ebe45c3a2ff81ed0cf739a72c4f49ddfe1944d32ed171ac20f05
 
 ...
