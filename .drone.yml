@@ -1,5 +1,5 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
@@ -92,9 +92,9 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
@@ -169,9 +169,9 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/docs/.stack}
 kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
@@ -762,9 +762,9 @@ trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/docs}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-update-artifacts-push-develop
 node: {project: juvix}
@@ -794,9 +794,9 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/web/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/web/.stack}
 kind: pipeline
 name: juvix-ci-deploy-website
 node: {project: juvix}
@@ -844,8 +844,8 @@ steps:
     mount: [./library/Playground/HTTP/.stack-work, ./.stack]
     region: eu-west-1
     restore: true
-- commands: [cd library/Playground/HTTP/compiler-debugger && npm install && npm run
-      build]
+- commands: [cd library/Playground/HTTP/compiler-debugger && npm install && CI=false
+      npm run build]
   depends_on: [restore-cache-frontend]
   environment: {API_URL: 'https://juvix-api.heliax.dev'}
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
@@ -923,9 +923,9 @@ trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /drone/workspace/web}
+workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 576a46220b4330b56569557eebafe2813d62930e09720a7c259c436d514e9a2a
+hmac: 4f3f5ba1b07ed4b0d8c7b7abe7f7a676824214342b49a09df439055199bca2f2
 
 ...
