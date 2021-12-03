@@ -1,5 +1,5 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
@@ -92,7 +92,7 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /juvix/workspace}
+workspace: {path: /drone/workspace}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
@@ -918,7 +918,7 @@ steps:
     bucket: heliax-drone-cache-v2
     cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
       }}
-    mount: [./library/Playground/compiler-debugger/node_modules]
+    mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
     rebuild: true
     region: eu-west-1
     restore: false
@@ -931,6 +931,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: c691df819dc0d85b3d4e93a5058615071b6153e530e6d108daea7cdcfa1839a8
+hmac: 85a9ec3353b9084474d9f02291354caaefa209f4da34ae124f07db8c0fa764f0
 
 ...
