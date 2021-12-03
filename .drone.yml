@@ -900,6 +900,7 @@ steps:
     bucket: heliax-drone-cache-v2
     cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/stack.yaml" }}
     mount: [./library/Playground/HTTP/.stack-work, ./.stack]
+    override: false
     rebuild: true
     region: eu-west-1
     restore: false
@@ -919,6 +920,7 @@ steps:
     cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
       }}
     mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
+    override: false
     rebuild: true
     region: eu-west-1
     restore: false
@@ -931,6 +933,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 0322009026dc07c579c585fd5fcc4418293a3d397878df8227b05aa4d12205ae
+hmac: fbcdf2df44d3019a18fa0c057a78014dbae4313d0cd05cbeef66c68fccd6d63b
 
 ...
