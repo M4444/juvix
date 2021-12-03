@@ -320,7 +320,7 @@ typeElim' elim σ =
       when (π' == Core.GZero) $ requireZero σ
       pure $ Typed.Free gx $ Typed.Annotation σ ty
     Core.CaseTree caseTree _ ->
-      pure $ Typed.CaseTree notImplemented notImplemented
+      Typed.CaseTree <$> typeCaseTree' caseTree  σ <*> pure (Typed.Annotation mempty (IR.VStar Core.UAny))
     Core.App s t _ -> do
       s' <- typeElim' s σ
       (π, a, b) <- requirePi $ Typed.annType $ Typed.getElimAnn s'
@@ -336,6 +336,67 @@ typeElim' elim σ =
       pure $ Typed.Ann π s' a' ann
     Core.ElimX x ->
       Error.throwTC $ Error.UnsupportedElimExt x
+
+typePattern' ::
+  ( Eq primTy,
+    Eq primVal,
+    Show primTy,
+    Show primVal,
+    Show ext,
+    ShowExt ext primTy primVal,
+    Env.CanInnerTC' ext primTy primVal m,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
+      (OnlyExts.T Typed.T)
+      primTy
+      (Param.TypedPrim primTy primVal)
+      primTy
+  ) =>
+  Core.Pattern ext primTy primVal ->
+  Usage.T ->
+  m (Typed.Pattern primTy primVal)
+typePattern' patttern σ =
+  let anyTy = IR.VStar Core.UAny
+      anyAnn = Typed.Annotation mempty anyTy
+  in case patttern of
+    Core.PCon name patterns _ -> do
+      patterns' <- traverse (`typePattern'` σ) patterns
+      pure $ Typed.PCon name patterns' anyAnn
+    Core.PPair pat1 pat2 _ -> do
+      tPat1 <- typePattern' pat1 σ
+      tPat2 <- typePattern' pat2 σ
+      pure $ Typed.PPair tPat1 tPat2 anyAnn
+    Core.PUnit _ -> pure $ Typed.PUnit anyAnn
+    Core.PVar pvar _ -> pure $ Typed.PVar pvar anyAnn
+    Core.PDot term _ -> Typed.PDot <$> typeTerm' term anyAnn <*> pure anyAnn
+    Core.PPrim p _ -> do
+      p' <- typePrim p anyTy
+      pure $ Typed.PPrim p' anyAnn
+
+
+typeBranch' ::
+  ( Eq primTy,
+    Eq primVal,
+    Show primTy,
+    Show primVal,
+    Show ext,
+    ShowExt ext primTy primVal,
+    Env.CanInnerTC' ext primTy primVal m,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
+      (OnlyExts.T Typed.T)
+      primTy
+      (Param.TypedPrim primTy primVal)
+      primTy
+  ) =>
+  Core.Branch ext primTy primVal ->
+  Usage.T ->
+  m (Typed.Branch primTy primVal)
+typeBranch' (Core.Branch pat caseTree _) σ =
+  let anyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
+  in Typed.Branch <$> typePattern' pat σ <*> typeCaseTree' caseTree σ <*> pure anyAnn <*> pure anyAnn
 
 typeCaseTree' ::
   ( Eq primTy,
@@ -357,14 +418,16 @@ typeCaseTree' ::
   Usage.T ->
   m (Typed.CaseTree primTy primVal)
 typeCaseTree' caseTree σ =
-  let emptyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
+  let anyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
   in case caseTree of
-    Core.Case arg branches _ -> notImplemented
+    Core.Case arg branches _ -> do
+      branches' <- traverse (`typeBranch'` σ) branches
+      pure $ Typed.Case arg branches' anyAnn
     Core.Done args t _ -> do
-      t' <- typeTerm' t emptyAnn
-      pure $ Typed.Done args t' emptyAnn
+      t' <- typeTerm' t anyAnn
+      pure $ Typed.Done args t' anyAnn
     Core.Fail args _ -> do
-      pure $ Typed.Fail args emptyAnn
+      pure $ Typed.Fail args anyAnn
 
 
 pushLocal ::
