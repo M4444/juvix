@@ -824,7 +824,7 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
       }}
     mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
     region: eu-west-1
@@ -916,7 +916,7 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
       }}
     mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
     rebuild: true
@@ -931,6 +931,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 1fcb69cf497fdd9ed80da5d94c837d24d8b7f6024eea4ad140fb8d97b2f409aa
+hmac: 0322009026dc07c579c585fd5fcc4418293a3d397878df8227b05aa4d12205ae
 
 ...
