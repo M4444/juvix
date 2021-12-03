@@ -34,6 +34,4 @@ runServer :: IO ()
 runServer = do
   let port = 3001
   putText $ "Server is running on port " <> show port
-  run port . logStdoutDev . customCors . serve apiProxy $ api
-  where
-    customCors = cors (const $ Just (simpleCorsResourcePolicy {corsRequestHeaders = ["Accept", "Accept-Language", "Content-Language", "Content-Type"]}))
+  run port . logStdoutDev . simpleCors . serve apiProxy $ api
