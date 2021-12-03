@@ -92,7 +92,7 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /juvix/workspace}
+workspace: {path: /drone/workspace}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
@@ -866,7 +866,7 @@ steps:
     source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux/Cabal-3.2.1.0/build/juvix-server
     target: ~/
     username: ubuntu
-- commands: ['aws s3 sync library/Playground/compiler-debugger/build s3://juvix.heliax.dev
+- commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
       --delete --region eu-west-1', aws cloudfront create-invalidation --distribution-id
       E2JJLE9WAN786S --paths "/" --region eu-west-1]
   depends_on: [build-frontend]
@@ -929,6 +929,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: eb58219b2549e763b6891e9d3ae7921fce27c8578116a2e3b7fcdced9bc57042
+hmac: e7df701f2e2cc4fb7f8d47fc365990e6cdb727a3d678ab89a52ddaecb08c5f1c
 
 ...
