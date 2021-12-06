@@ -863,7 +863,7 @@ steps:
   settings:
     host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
-    source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build/juvix-server
+    source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build
     target: ~/
     username: ubuntu
 - commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
@@ -933,6 +933,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 43e30f03e3d6d6a57493049769665f94c25385f2b68f828bfb23dd612835fdb9
+hmac: 16f76a4c2160dd3d3953593a2af74ed5ba8723934f4ea65a3d8c1cdb441dfce5
 
 ...
