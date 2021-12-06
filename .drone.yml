@@ -864,7 +864,7 @@ steps:
     host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
     source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build
-    target: ~/
+    target: ~/juvix
     username: ubuntu
 - commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
       --delete --region eu-west-1', aws cloudfront create-invalidation --distribution-id
@@ -933,6 +933,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 16f76a4c2160dd3d3953593a2af74ed5ba8723934f4ea65a3d8c1cdb441dfce5
+hmac: 32270085fa8a2ecd858dcc0ced8e42a434744f72248fc4a6b6e4acab1f768272
 
 ...
