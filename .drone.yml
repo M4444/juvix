@@ -863,7 +863,7 @@ steps:
   settings:
     host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
-    source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build/juvix-server/juvix-server
+    source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build/juvix-server
     target: ~/
     username: ubuntu
 - commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
@@ -928,11 +928,11 @@ steps:
     status: [success, failure]
 trigger:
   branch: [develop]
-  event: [push, pull_request]
+  event: [push]
 type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: fbcdf2df44d3019a18fa0c057a78014dbae4313d0cd05cbeef66c68fccd6d63b
+hmac: d6005433e625eabdb149d878b28d3e7a10eaf463f3732fe4e77c7e4edfec9fdb
 
 ...
