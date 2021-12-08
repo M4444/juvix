@@ -531,6 +531,12 @@ Provides a mechanism for defining Sum types
   + [[Library]]
   + [[Fetch]]
 **** Test
+***** Codegen
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Sum]]
+  + [[Library]]
 ***** Golden <<llvm/test/Test/Golden>>
 - _Relies on_
   + [[LLVM]]
