@@ -36,6 +36,7 @@ import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Parser (ParserError)
+import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Parsing as Parsing
 import qualified Juvix.Parsing.Types as Types
 import Juvix.Pipeline.Compile
@@ -92,10 +93,10 @@ createTmpPath :: Text -> IO FilePath
 createTmpPath code = Temp.writeSystemTempFile "juvix-tmp.ju" (Text.unpack code)
 
 prelude :: FilePath
-prelude = "stdlib/Prelude.ju"
+prelude = "Prelude.ju"
 
-getJuvixHome :: IO FilePath
-getJuvixHome = (<> "/.juvix/") <$> getHomeDirectory
+getJuvixStdlibs :: IO FilePath
+getJuvixStdlibs = (<> "/.juvix/stdlib/") <$> getHomeDirectory
 
 -- ! This should be given as a default for the command-line.
 
@@ -131,11 +132,11 @@ class HasBackend b where
   -- | Parse juvix source code using prelude and the default set of libraries of the backend
   toML :: b -> Text -> Pipeline [(NameSymbol.T, [Types.TopLevel])]
   toML b t = do
-    juvixHome <- liftIO getJuvixHome
-    toML' ((juvixHome <>) <$> (prelude : stdlibs b)) b t
+    stdlibDir <- liftIO getJuvixStdlibs
+    toML' ((stdlibDir <>) <$> (prelude : stdlibs b)) b t
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
-  toSexp _b x = liftIO $ do
+  toSexp b x = liftIO $ do
     e <- ToSexp.contextify x
     case e of
       Left err -> Feedback.fail . toS . pShowNoColor $ err
@@ -152,6 +153,7 @@ class HasBackend b where
       Left er -> Feedback.fail ("Error on toHR: " <> toS (pShowNoColor er))
 
   toIR ::
+    (Show (Ty b), Show (Val b)) =>
     Core.RawGlobals HR.T (Ty b) (Val b) ->
     Pipeline (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T (Ty b) (Val b))
   toIR hr = pure $ ToIR.hrToIRDefs hr
@@ -162,9 +164,9 @@ class HasBackend b where
     (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T (Ty b) (Val b)) ->
     Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
   toErased param (patToSym, globalDefs) = do
-    (usage, term, mainTy) <- getMain >>= toLambda
+    (term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
-    let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
+    let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm Usage.SAny mainTy
     res <- liftIO $ fst <$> exec erasedAnn param evaluatedGlobals
     case res of
       Right r -> do
@@ -183,7 +185,7 @@ class HasBackend b where
         main : _ -> pure main
       toLambda main =
         case TransformExt.extForgetE <$> IR.toLambdaR @IR.T main of
-          Just (IR.Ann usage term mainTy) -> pure (usage, term, mainTy)
+          Just (IR.Ann term mainTy) -> pure (term, mainTy)
           _ -> Feedback.fail $ "Unable to convert main to lambda" <> toS (pShowNoColor main)
 
   -------------
@@ -200,8 +202,8 @@ class HasBackend b where
   -- TODO: parse === toML?
   parse :: b -> Text -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
   parse b t = do
-    juvixHome <- liftIO getJuvixHome
-    parseWithLibs ((juvixHome <>) <$> libs) b t
+    stdlibDir <- liftIO getJuvixStdlibs
+    parseWithLibs ((stdlibDir <>) <$> libs) b t
     where
       libs = prelude : stdlibs b
 

@@ -236,13 +236,13 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       t' <- typeTerm' t tAnn
       pure $ Typed.CatProductIntro s' t' ann
     Core.CatProductElimLeft a s _ -> do
-      a' <- typeTerm' a (starAnyAnn σ)
+      a' <- typeTerm' a (starAnyAnn mempty)
       av <- evalTC a'
       let sAnn = Typed.Annotation σ (IR.VCatProduct ty av)
       s' <- typeTerm' s sAnn
       pure $ Typed.CatProductElimLeft a' s' ann
     Core.CatProductElimRight a s _ -> do
-      a' <- typeTerm' a (starAnyAnn σ)
+      a' <- typeTerm' a (starAnyAnn mempty)
       av <- evalTC a'
       let sAnn = Typed.Annotation σ (IR.VCatProduct av ty)
       s' <- typeTerm' s sAnn
@@ -258,9 +258,9 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       s' <- typeTerm' s sAnn
       pure $ Typed.CatCoproductIntroRight s' ann
     Core.CatCoproductElim a b cp s t _ -> do
-      a' <- typeTerm' a (starAnyAnn σ)
+      a' <- typeTerm' a (starAnyAnn mempty)
       av <- evalTC a'
-      b' <- typeTerm' b (starAnyAnn σ)
+      b' <- typeTerm' b (starAnyAnn mempty)
       bv <- evalTC b'
       cp' <- typeTerm' cp (Typed.Annotation σ (IR.VCatCoproduct av bv))
       s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av ty))
@@ -326,12 +326,12 @@ typeElim' elim σ =
       t' <- typeTerm' t tAnn
       ty <- substApp b t'
       pure $ Typed.App s' t' $ Typed.Annotation σ ty
-    Core.Ann π s a _ -> do
+    Core.Ann s a _ -> do
       a' <- typeTerm' a $ Typed.Annotation mempty (IR.VStar Core.UAny)
       ty <- evalTC a'
       let ann = Typed.Annotation σ ty
       s' <- typeTerm' s ann
-      pure $ Typed.Ann π s' a' ann
+      pure $ Typed.Ann s' a' ann
     Core.ElimX x ->
       Error.throwTC $ Error.UnsupportedElimExt x
 
