@@ -536,7 +536,12 @@ Provides a mechanism for defining Sum types
   + [[Block]]
   + [[Codegen/Types]]
   + [[Sum]]
+  + [[LLVM/Compilation]]
+  + [[Pass/Types]]
+  + [[Primitive]]
+  + [[Ann]]
   + [[Library]]
+  + [[Library/Usage]]
 ***** Golden <<llvm/test/Test/Golden>>
 - _Relies on_
   + [[LLVM]]
