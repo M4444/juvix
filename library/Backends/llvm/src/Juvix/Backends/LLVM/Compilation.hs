@@ -1,5 +1,6 @@
 module Juvix.Backends.LLVM.Compilation
   ( compileProgram,
+    termLLVMToModule,
   )
 where
 
@@ -14,7 +15,7 @@ import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
-import qualified LLVM.AST as LLVM (Definition, Operand (..))
+import qualified LLVM.AST as LLVM (Definition, Module, Operand (..))
 import qualified LLVM.AST.Constant as LLVM (Constant (..))
 import qualified LLVM.AST.Name as Name
 import qualified LLVM.AST.Type as LLVM
@@ -49,13 +50,24 @@ compileProgram t =
       show err
         |> Feedback.fail
 
-register ::
-  Types.Define m => ErasedAnn.AnnTerm PrimTy RawPrimVal -> m LLVM.Operand
-register t = do
+registerPreProcessed ::
+  Types.Define m => Types.Annotated Types.TermLLVM -> m LLVM.Operand
+registerPreProcessed t = do
   Closure.register
   Block.defineMalloc
   Block.defineFree
-  mkMain (preProcess t)
+  mkMain t
+
+register ::
+  Types.Define m => ErasedAnn.AnnTerm PrimTy RawPrimVal -> m LLVM.Operand
+register = registerPreProcessed . preProcess
+
+termLLVMToModule ::
+  Types.Annotated Types.TermLLVM -> Either Types.Errors LLVM.Module
+termLLVMToModule t =
+  case Block.runEnvState (registerPreProcessed t) mempty of
+    (Right _, state) -> Right $ state |> Types.moduleAST
+    (Left err, _) -> Left err
 
 --------------------------------------------------------------------------------
 -- Function Declaration
