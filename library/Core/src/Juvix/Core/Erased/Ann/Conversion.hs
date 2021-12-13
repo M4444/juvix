@@ -35,6 +35,7 @@ import qualified Juvix.Core.Types as Types
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
+import Debug.Pretty.Simple (pTraceShowM)
 
 type CompConstraints' primTy primVal compErr m =
   ( HasWriter "log" [Types.PipelineLog primTy primVal] m,
@@ -79,7 +80,9 @@ irToErasedAnn ::
       (OnlyExts.T Typed.T)
       ty
       (Types.TypedPrim ty val)
-      ty
+      ty,
+    Show (Types.PrimApplyError val),
+    Show (Types.PrimApplyError ty)
   ) =>
   IR.Term ty val ->
   Usage.T ->
@@ -96,7 +99,9 @@ typecheckEval ::
       (OnlyExts.T Typed.T)
       primTy
       (Types.TypedPrim primTy primVal)
-      primTy
+      primTy,
+    Show (Types.PrimApplyError primVal),
+    Show (Types.PrimApplyError primTy)
   ) =>
   Core.Term IR.T primTy primVal ->
   Usage.T ->
@@ -111,7 +116,9 @@ typecheckEval term usage ty = do
     |> IR.execTC globals
     |> fst of
     Right value -> pure value
-    Left err -> throw @"error" (Types.TypecheckerError err)
+    Left err -> do
+      pTraceShowM ("typecheckEval", err)
+      throw @"error" (Types.TypecheckerError err)
 
 -- For standard evaluation, no elementary affine check, no MonadIO required.
 typecheckErase' ::
@@ -120,7 +127,9 @@ typecheckErase' ::
       (OnlyExts.T Typed.T)
       primTy
       (Types.TypedPrim primTy primVal)
-      primTy
+      primTy,
+    Show (Types.PrimApplyError primVal),
+    Show (Types.PrimApplyError primTy)
   ) =>
   IR.Term primTy primVal ->
   Usage.T ->
@@ -138,7 +147,9 @@ typecheckErase ::
       (OnlyExts.T Typed.T)
       primTy
       (Types.TypedPrim primTy primVal)
-      primTy
+      primTy,
+    Show (Types.PrimApplyError primVal),
+    Show (Types.PrimApplyError primTy)
   ) =>
   IR.Term primTy primVal ->
   Usage.T ->
@@ -156,7 +167,9 @@ typecheckErase term usage ty = do
       case Erasure.erase irToHRMapPrim irToHRMapPrim tyTerm usage of
         Right res -> pure res
         Left err -> throw @"error" (Types.ErasureError err)
-    Left err -> throw @"error" (Types.TypecheckerError err)
+    Left err -> do
+      pTraceShowM ("typecheckErase", err)
+      throw @"error" (Types.TypecheckerError err)
 
 toRaw :: ErasedAnn.AnnTermT ty val -> ErasedAnn.AnnTerm ty val
 toRaw (ErasedAnn.Ann {term, type', ..}) =

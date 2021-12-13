@@ -14,7 +14,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.IntMap.Strict as PM
 import qualified Data.Text as Text
 import qualified Data.Text.IO as T
-import Debug.Pretty.Simple
 import Debug.Pretty.Simple (pTraceShowM)
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Application as CoreApp
@@ -164,19 +163,17 @@ class HasBackend b where
   toErased param (patToSym, globalDefs) = do
     (usage, term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
-    pTraceShowM (term, globalDefs, patToSym, inlinedTerm)
+    pTraceShowM ("InlinedTerm", inlinedTerm)
     let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
     res <- liftIO $ fst <$> exec erasedAnn param evaluatedGlobals
+    pTraceShowM ("res", res)
     case res of
       Right r -> do
         pure r
       Left err -> do
-        Feedback.fail $ "Error: " -- <> toS (pShowNoColor err) <> " on Term: " <> toS (pShowNoColor term)
+        Feedback.fail $ "Error: " <> toS (pShowNoColor err) <> " on Term: " <> toS (pShowNoColor inlinedTerm)
     where
       lookupGlobal = IR.rawLookupFun' globalDefs
-      -- Type primitive values, i.e.
-      --      RawGlobal (Ty b) (Val b)
-      -- into RawGlobal (Ty b) (TypedPrim (Ty b) (Val b))
       typedGlobals = map typePrims globalDefs
       evaluatedGlobals = HM.map (unsafeEvalGlobal typedGlobals) typedGlobals
       getMain = case HM.elems $ HM.filter isMain globalDefs of

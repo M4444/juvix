@@ -133,7 +133,6 @@ type Prim primTy primVal = P.TypedPrim primTy primVal
 
 type PrimTy primTy = P.KindedType primTy
 
--- TODO: Remove T
 type GlobalT extV extT primTy primVal =
   Core.Global extV extT (PrimTy primTy) (Prim primTy primVal)
 

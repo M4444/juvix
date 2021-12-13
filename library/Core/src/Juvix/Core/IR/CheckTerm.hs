@@ -19,6 +19,7 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library hiding (Datatype)
 import qualified Juvix.Library.Usage as Usage
+import Debug.Pretty.Simple (pTraceShowM, pTraceShow)
 
 data Leftovers a = Leftovers
   { loValue :: a,
@@ -596,7 +597,8 @@ useLocal π var = do
 
 usePatVar ::
   ( Env.HasPatBinds primTy primVal m,
-    Error.HasThrowTC' IR.T ext primTy primVal m
+    Error.HasThrowTC' IR.T ext primTy primVal m,
+    Show primTy, Show primVal
   ) =>
   Usage.T ->
   Core.PatternVar ->
@@ -604,7 +606,8 @@ usePatVar ::
 usePatVar π var = do
   -- TODO a single traversal with alterF or something
   mAnn <- gets @"patBinds" $ IntMap.lookup var
-  case mAnn of
+  patBinds <- get @"patBinds"
+  case pTraceShow ("patBinds", patBinds) mAnn of
     Just (Typed.Annotation ρ ty)
       | Just ρ' <- ρ `Usage.minus` π -> do
         modify @"patBinds" $ IntMap.insert var $ Typed.Annotation ρ' ty
