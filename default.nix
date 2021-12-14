@@ -3,6 +3,7 @@
 , doHoogle ? false
 , materialized ? if builtins.pathExists nix/materialized then nix/materialized else null
 , checkMaterialization ? false
+, doCheck ? false
 , ...
 }:
 let
@@ -22,7 +23,12 @@ let
         src = ./.;
       };
       inherit compiler-nix-name;
-      modules = [{ inherit doHaddock doHoogle; }];
+      modules = [ {
+        inherit doHaddock doHoogle doCheck;
+        # Strip the executables and disable shared to avoid pulling gcc into the closure.
+        packages.juvix.components.exes.juvix = { dontStrip = false; enableShared = false; };
+        packages.http.components.exes.juvix-server = { dontStrip = false; enableShared = false; };
+      } ];
       # For git sources in stack.yaml
       sha256map = import ./nix/stack-sha256map.nix;
       # Materializing speeds up the evaluation of nix expressions.
@@ -57,4 +63,4 @@ rec {
   inherit (project) pkgs;
 }
   # Add shorthands for local exes, tests and benchmarks
-  // lib.genAttrs [ "exes" "tests" "benchmarks" ] (component: haskellLib.collectComponents component haskellLib.isLocalPackage project.hsPkgs)
+  // lib.genAttrs [ "exes" "tests" "benchmarks" "library" ] (component: haskellLib.collectComponents component haskellLib.isLocalPackage project.hsPkgs)
