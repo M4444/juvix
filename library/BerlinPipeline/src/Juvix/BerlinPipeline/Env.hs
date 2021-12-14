@@ -15,6 +15,10 @@ data T = T
   }
   deriving (Generic)
 
+emptyT :: IO T
+emptyT = do
+  notImplemented 
+
 newtype EnvS b = EnvS (State T b)
   deriving (Functor, Applicative, Monad)
   deriving
@@ -107,8 +111,10 @@ eval
       remainder = CircularList.removeFirstNested pipeline
 
 run :: EnvS b -> T -> Pipeline.CIn
-run (EnvS st) = information . snd . runState st
+run (EnvS st) = information . execState st
 
 -- | Returns the T from the EnvS monad
-extract :: EnvS b -> T
-extract = notImplemented
+extract :: EnvS b -> IO T
+extract (EnvS st) = do 
+  t <- emptyT
+  execState st t
