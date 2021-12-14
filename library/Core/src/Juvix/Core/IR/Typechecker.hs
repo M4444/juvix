@@ -60,22 +60,23 @@ typeCheckDeclaration ::
   [Core.RawDatatype extT primTy primVal] ->
   -- | A list of function declarations to be checked
   [Core.RawFunction extT primTy primVal] ->
+  Eval.LookupFun IR.T primTy primVal ->
   -- | A list of Globals to be added to the global state
   Env.TypeCheck IR.T primTy primVal m [Core.RawGlobal extT primTy primVal]
-typeCheckDeclaration _tel _rtel _param [] [] =
+typeCheckDeclaration _tel _rtel _param [] [] _ =
   return []
 -- type checking datatype declarations
-typeCheckDeclaration tel rtel param dts fns =
+typeCheckDeclaration tel rtel param dts fns lookupGlobal =
   case dts of
     (hdd@(Core.RawDatatype name lpos args _levels cons) : tld) ->
       do
         globals <- lift $ ask @"globals"
         -- check the first datatype's args
-        _ <- lift $ checkDataType tel name param args
+        _ <- lift $ checkDataType tel name param lookupGlobal args
         -- recurse the rest of the datatypes
-        rest <- typeCheckDeclaration tel rtel param tld fns
+        rest <- typeCheckDeclaration tel rtel param tld fns lookupGlobal
         -- check all the constructors of the first datatype
-        checkedCons <- typeCheckAllCons param tel lpos rtel globals cons
+        checkedCons <- typeCheckAllCons param tel lpos rtel globals lookupGlobal cons 
         -- when successful, return the datatype and the datacons
         -- to the list of globals
         return $ Core.RawGDatatype hdd : rest <> checkedCons

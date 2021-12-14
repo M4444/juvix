@@ -87,10 +87,12 @@ irToErasedAnn ::
   IR.Term ty val ->
   Usage.T ->
   IR.Term ty val ->
+  Eval.LookupFun IR.T ty val ->
   m (ErasedAnn.AnnTermT ty val)
-irToErasedAnn term usage ty = do
-  (term, _) <- typecheckErase' term usage ty
+irToErasedAnn term usage ty lookupGlobal = do
+  (term, _) <- typecheckErase' term usage ty lookupGlobal
   pure $ convertTerm term usage
+
 
 -- For standard evaluation, no elementary affine check, no MonadIO required.
 typecheckEval ::
@@ -106,12 +108,13 @@ typecheckEval ::
   Core.Term IR.T primTy primVal ->
   Usage.T ->
   Typed.ValueT IR.T primTy primVal ->
+  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.ValueT IR.T primTy primVal)
-typecheckEval term usage ty = do
+typecheckEval term usage ty lookupGlobal = do
   -- Fetch the parameterisation, needed for typechecking.
   param <- ask @"parameterisation"
   globals <- ask @"globals"
-  case IR.typeTerm param term (Typed.Annotation usage ty)
+  case IR.typeTerm param term (Typed.Annotation usage ty) lookupGlobal
     >>= IR.evalTC
     |> IR.execTC globals
     |> fst of
@@ -134,10 +137,11 @@ typecheckErase' ::
   IR.Term primTy primVal ->
   Usage.T ->
   IR.Term primTy primVal ->
+  Eval.LookupFun IR.T primTy primVal ->
   m (Erasure.TermT primTy primVal, Typed.ValueT IR.T primTy primVal)
-typecheckErase' term usage ty = do
-  ty <- typecheckEval ty (Usage.SNat 0) (IR.VStar Core.UAny)
-  term <- typecheckErase term usage ty
+typecheckErase' term usage ty lookupGlobal = do
+  ty <- typecheckEval ty (Usage.SNat 0) (IR.VStar Core.UAny) lookupGlobal
+  term <- typecheckErase term usage ty lookupGlobal
   pure (term, ty)
 
 -- For standard evaluation, no elementary affine check, no MonadIO required.
@@ -154,13 +158,14 @@ typecheckErase ::
   IR.Term primTy primVal ->
   Usage.T ->
   Typed.ValueT IR.T primTy primVal ->
+  Eval.LookupFun IR.T primTy primVal ->
   m (Erasure.TermT primTy primVal)
-typecheckErase term usage ty = do
+typecheckErase term usage ty lookupGlobal = do
   -- Fetch the parameterisation, needed for typechecking.
   param <- ask @"parameterisation"
   globals <- ask @"globals"
   -- Typecheck & return accordingly.
-  case IR.typeTerm param term (Typed.Annotation usage ty)
+  case IR.typeTerm param term (Typed.Annotation usage ty) lookupGlobal
     |> IR.execTC globals
     |> fst of
     Right tyTerm -> do
