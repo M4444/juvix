@@ -373,7 +373,7 @@ typePattern' patttern σ lookupGlobal =
       patterns' <- traverse (\pat -> typePattern' pat σ lookupGlobal) patterns
       -- TODO: Lookup name
       -- TODO: Append signature to "patBinds"
-      updatePatBinds name 
+      updatePatBinds name patterns
       pure $ Typed.PCon name patterns' anyAnn
     Core.PPair pat1 pat2 _ -> do
       tPat1 <- typePattern' pat1 σ lookupGlobal
@@ -386,8 +386,10 @@ typePattern' patttern σ lookupGlobal =
       p' <- typePrim p anyTy
       pure $ Typed.PPrim p' anyAnn
     where
-      updatePatBinds name = do
-        notImplemented 
+      updatePatBinds name patterns = do
+        let x = lookupGlobal name
+        pTraceShowM ("Lookup Global", name, x)
+
 
 
 typeBranch' ::
