@@ -164,7 +164,7 @@ class HasBackend b where
     (usage, term, mainTy) <- getMain >>= toLambda
     let inlinedTerm = IR.inlineAllGlobals term lookupGlobal patToSym
     pTraceShowM ("InlinedTerm", inlinedTerm)
-    let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy
+    let erasedAnn = ErasedAnn.irToErasedAnn @(Err b) inlinedTerm usage mainTy lookupGlobal
     res <- liftIO $ fst <$> exec erasedAnn param evaluatedGlobals
     pTraceShowM ("res", res)
     case res of

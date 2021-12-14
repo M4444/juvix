@@ -84,12 +84,14 @@ instance A.ToJSON GlobalUsage where
 instance A.FromJSON GlobalUsage where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
--- data ArgMeta ext ty val = ArgMeta
---   { sig :: Maybe (Core.Term ext ty val)}
+data ArgMeta ext ty val = ArgMeta
+  { sig :: Maybe (Core.Term ext ty val)
+  , global: NameSymbol.T
+  } deriving (Data, Eq, Show, Generic, NFData)
 
 data Arg a = Arg 
   { unarg :: a
-  -- , meta :: ArgMeta ext ty val
+  , meta :: ArgMeta ext ty val
   } deriving (Data, Eq, Show, Generic, NFData)
 
 
@@ -203,6 +205,7 @@ extensibleWith
       = NBound BoundVar
       | NFree Name
       | NApp (Neutral primTy primVal) (Value primTy primVal)
+      -- | NCaseTree (NCaseTree primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
     -- TODO absurd pattern
