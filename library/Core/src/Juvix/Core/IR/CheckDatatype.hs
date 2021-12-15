@@ -54,12 +54,11 @@ typeCheckAllCons ::
   Core.RawTelescope extT primTy primVal ->
   -- | a hashmap of global names and their info
   Typed.GlobalsT IR.T extT primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   -- | The constructors to be checked
   [Core.RawDataCon extT primTy primVal] ->
   Env.TypeCheck IR.T primTy primVal m [Core.RawGlobal extT primTy primVal]
-typeCheckAllCons param tel pos rtel globals lookupGlobal =
-  mapM (typeCheckConstructor param tel pos rtel globals lookupGlobal)
+typeCheckAllCons param tel pos rtel globals =
+  mapM (typeCheckConstructor param tel pos rtel globals)
 
 typeCheckConstructor ::
   forall extT primTy primVal m.
@@ -98,16 +97,15 @@ typeCheckConstructor ::
   Core.RawTelescope extT primTy primVal ->
   -- | a hashmap of global names and their info
   Typed.GlobalsT IR.T extT primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   -- | The constructor to be checked
   Core.RawDataCon extT primTy primVal ->
   Env.TypeCheck IR.T primTy primVal m (Core.RawGlobal extT primTy primVal)
-typeCheckConstructor param tel _lpos rtel globals lookupGlobal con = do
+typeCheckConstructor param tel _lpos rtel globals con = do
   let cname = Core.rawConName con
       conTy = Core.rawConType con
       (name, t) = teleToType rtel conTy
   -- FIXME replace 'lift' with whatever capability does
-  typechecked <- lift $ typeTerm param t (Typed.Annotation mempty (IR.VStar Core.UAny)) lookupGlobal
+  typechecked <- lift $ typeTerm param t (Typed.Annotation mempty (IR.VStar Core.UAny))
   evaled <- lift $ liftEval $ Eval.evalTerm (Eval.lookupFun @IR.T globals) typechecked
   checkConType tel param evaled
   let (_, target) = typeToTele (name, t)
@@ -179,12 +177,11 @@ checkDataType ::
   -- | name of the datatype
   Core.GlobalName ->
   Param.Parameterisation primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   -- | the list of args to be checked.
   [Core.RawDataArg extT primTy primVal] ->
   m ()
-checkDataType tel dtName param lookupGlobal =
-  mapM_ (checkDataTypeArg tel dtName param lookupGlobal . Core.rawArgType)
+checkDataType tel dtName param =
+  mapM_ (checkDataTypeArg tel dtName param . Core.rawArgType)
 
 -- | checkDataTypeArg checks an argument of the datatype
 checkDataTypeArg ::
@@ -212,16 +209,15 @@ checkDataTypeArg ::
   Core.GlobalName ->
   -- | targeted backend/parameterisation
   Param.Parameterisation primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   -- | the arg to be checked.
   Core.Term extT primTy primVal ->
   m ()
-checkDataTypeArg tel dtName param lookupGlobal (Typed.Pi _ t1 t2 _) = do
-  _ <- typeTerm param t1 (Typed.Annotation mempty (IR.VStar Core.UAny)) lookupGlobal
-  checkDataTypeArg tel dtName param lookupGlobal t2
-checkDataTypeArg _ _ _ _ (Core.Star _ _) = return ()
+checkDataTypeArg tel dtName param (Typed.Pi _ t1 t2 _) = do
+  _ <- typeTerm param t1 (Typed.Annotation mempty (IR.VStar Core.UAny))
+  checkDataTypeArg tel dtName param t2
+checkDataTypeArg _ _ _ (Core.Star _ _) = return ()
 -- the arg can only be of star type of function type
-checkDataTypeArg _ _ _ _ arg = Error.throwTC $ Error.DatatypeError arg
+checkDataTypeArg _ _ _ arg = Error.throwTC $ Error.DatatypeError arg
 
 -- | type check a constructor
 checkConType ::

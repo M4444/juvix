@@ -22,6 +22,9 @@ import qualified Juvix.Library.Usage as Usage
 import Debug.Pretty.Simple (pTraceShowM, pTraceShow)
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Core.Base.Types.Globals as Globals 
+import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Data.HashMap.Strict as HashMap
+
 data Leftovers a = Leftovers
   { loValue :: a,
     loLocals :: Env.UContext,
@@ -63,9 +66,8 @@ typeTerm ::
   Param.Parameterisation primTy primVal ->
   Core.Term ext primTy primVal ->
   Typed.AnnotationT IR.T primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.Term primTy primVal)
-typeTerm param t ann lookupGlobal = loValue <$> typeTermWith param IntMap.empty [] t ann lookupGlobal
+typeTerm param t ann = loValue <$> typeTermWith param IntMap.empty [] t ann
 
 typeTermWith ::
   ( Eq primTy,
@@ -88,10 +90,9 @@ typeTermWith ::
   Env.Context primTy primVal ->
   Core.Term ext primTy primVal ->
   Typed.AnnotationT IR.T primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Leftovers (Typed.Term primTy primVal))
-typeTermWith param pats ctx t ann lookupGlobal =
-  Env.execInner (withLeftovers $ typeTerm' t ann lookupGlobal) (Env.InnerState param pats ctx)
+typeTermWith param pats ctx t ann =
+  Env.execInner (withLeftovers $ typeTerm' t ann) (Env.InnerState param pats ctx)
 
 -- | Infers the type and usage for an 'Elim and returns it decorated with this
 -- information.
@@ -114,10 +115,9 @@ typeElim ::
   Param.Parameterisation primTy primVal ->
   Core.Elim ext primTy primVal ->
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.Elim primTy primVal)
-typeElim param e σ lookupGlobal =
-  loValue <$> typeElimWith param IntMap.empty [] e σ lookupGlobal
+typeElim param e σ  =
+  loValue <$> typeElimWith param IntMap.empty [] e σ
 
 typeElimWith ::
   ( Eq primTy,
@@ -140,10 +140,9 @@ typeElimWith ::
   Env.Context primTy primVal ->
   Core.Elim ext primTy primVal ->
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Leftovers (Typed.Elim primTy primVal))
-typeElimWith param pats ctx e σ lookupGlobal =
-  Env.execInner (withLeftovers $ typeElim' e σ lookupGlobal) (Env.InnerState param pats ctx)
+typeElimWith param pats ctx e σ =
+  Env.execInner (withLeftovers $ typeElim' e σ) (Env.InnerState param pats ctx)
 
 withLeftovers ::
   (Env.HasBound primTy primVal m, Env.HasPatBinds primTy primVal m) =>
@@ -174,9 +173,8 @@ typeTerm' ::
   ) =>
   Core.Term ext primTy primVal ->
   Typed.AnnotationT IR.T primTy primVal ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.Term primTy primVal)
-typeTerm' term ann@(Typed.Annotation σ ty) lookupGlobal =
+typeTerm' term ann@(Typed.Annotation σ ty) =
   case term of
     Core.Star i _ -> do
       requireZero σ
@@ -198,80 +196,80 @@ typeTerm' term ann@(Typed.Annotation σ ty) lookupGlobal =
     Core.Pi π a b _ -> do
       requireZero σ
       void $ requireStar ty
-      a' <- typeTerm' a ann lookupGlobal
+      a' <- typeTerm' a ann
       av <- evalTC a'
-      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann lookupGlobal
+      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann
       pure $ Typed.Pi π a' b' ann
     Core.Lam t _ -> do
       (π, a, b) <- requirePi ty
       let varAnn = Typed.Annotation (σ <.> π) a
           tAnn = Typed.Annotation σ b
-      t' <- withLocal varAnn $ typeTerm' t tAnn lookupGlobal
+      t' <- withLocal varAnn $ typeTerm' t tAnn
       let anns = Typed.BindAnnotation {baBindAnn = varAnn, baResAnn = ann}
       pure $ Typed.Lam t' anns
     Core.Sig π a b _ -> do
       requireZero σ
       void $ requireStar ty
-      a' <- typeTerm' a ann lookupGlobal
+      a' <- typeTerm' a ann
       av <- evalTC a'
-      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann lookupGlobal
+      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann
       pure $ Typed.Sig π a' b' ann
     Core.Pair s t _ -> do
       (π, a, b) <- requireSig ty
       let sAnn = Typed.Annotation (σ <.> π) a
-      s' <- typeTerm' s sAnn lookupGlobal
+      s' <- typeTerm' s sAnn
       tAnn <- Typed.Annotation σ <$> substApp b s'
-      t' <- typeTerm' t tAnn lookupGlobal
+      t' <- typeTerm' t tAnn
       pure $ Typed.Pair s' t' ann
     Core.CatProduct a b _ -> do
       requireZero σ
       void $ requireStar ty
-      a' <- typeTerm' a ann lookupGlobal
-      b' <- typeTerm' b ann lookupGlobal
+      a' <- typeTerm' a ann
+      b' <- typeTerm' b ann
       pure $ Typed.CatProduct a' b' ann
     Core.CatCoproduct a b _ -> do
       requireZero σ
       void $ requireStar ty
-      a' <- typeTerm' a ann lookupGlobal
-      b' <- typeTerm' b ann lookupGlobal
+      a' <- typeTerm' a ann
+      b' <- typeTerm' b ann
       pure $ Typed.CatCoproduct a' b' ann
     Core.CatProductIntro s t _ -> do
       (π, a, b) <- requireCatProduct ty
       let sAnn = Typed.Annotation (σ <.> π) a
       let tAnn = Typed.Annotation (σ <.> π) b
-      s' <- typeTerm' s sAnn lookupGlobal
-      t' <- typeTerm' t tAnn lookupGlobal
+      s' <- typeTerm' s sAnn
+      t' <- typeTerm' t tAnn
       pure $ Typed.CatProductIntro s' t' ann
     Core.CatProductElimLeft a s _ -> do
-      a' <- typeTerm' a (starAnyAnn σ) lookupGlobal
+      a' <- typeTerm' a (starAnyAnn σ)
       av <- evalTC a'
       let sAnn = Typed.Annotation σ (IR.VCatProduct ty av)
-      s' <- typeTerm' s sAnn lookupGlobal
+      s' <- typeTerm' s sAnn
       pure $ Typed.CatProductElimLeft a' s' ann
     Core.CatProductElimRight a s _ -> do
-      a' <- typeTerm' a (starAnyAnn σ) lookupGlobal
+      a' <- typeTerm' a (starAnyAnn σ)
       av <- evalTC a'
       let sAnn = Typed.Annotation σ (IR.VCatProduct av ty)
-      s' <- typeTerm' s sAnn lookupGlobal
+      s' <- typeTerm' s sAnn
       pure $ Typed.CatProductElimRight a' s' ann
     Core.CatCoproductIntroLeft s _ -> do
       (π, a, _b) <- requireCatCoproduct ty
       let sAnn = Typed.Annotation (σ <.> π) a
-      s' <- typeTerm' s sAnn lookupGlobal
+      s' <- typeTerm' s sAnn
       pure $ Typed.CatCoproductIntroLeft s' ann
     Core.CatCoproductIntroRight s _ -> do
       (π, _a, b) <- requireCatCoproduct ty
       let sAnn = Typed.Annotation (σ <.> π) b
-      s' <- typeTerm' s sAnn lookupGlobal
+      s' <- typeTerm' s sAnn
       pure $ Typed.CatCoproductIntroRight s' ann
     Core.CatCoproductElim a b cp s t _ -> do
-      a' <- typeTerm' a (starAnyAnn σ) lookupGlobal
+      a' <- typeTerm' a (starAnyAnn σ)
       av <- evalTC a'
-      b' <- typeTerm' b (starAnyAnn σ) lookupGlobal
+      b' <- typeTerm' b (starAnyAnn σ)
       bv <- evalTC b'
-      cp' <- typeTerm' cp (Typed.Annotation σ (IR.VCatCoproduct av bv)) lookupGlobal
-      s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av ty)) lookupGlobal
-      t' <- typeTerm' t (Typed.Annotation σ (IR.VPi σ bv ty)) lookupGlobal
+      cp' <- typeTerm' cp (Typed.Annotation σ (IR.VCatCoproduct av bv))
+      s' <- typeTerm' s (Typed.Annotation σ (IR.VPi σ av ty))
+      t' <- typeTerm' t (Typed.Annotation σ (IR.VPi σ bv ty))
       pure $ Typed.CatCoproductElim a' b' cp' s' t' ann
     Core.UnitTy _ -> do
       requireZero σ
@@ -281,14 +279,14 @@ typeTerm' term ann@(Typed.Annotation σ ty) lookupGlobal =
       requireUnitTy ty
       pure $ Typed.Unit ann
     Core.Let σb b t _ -> do
-      b' <- typeElim' b σb lookupGlobal
+      b' <- typeElim' b σb
       let bAnn = Typed.getElimAnn b'
           tAnn = Typed.Annotation σ (Eval.weak ty)
-      t' <- withLocal bAnn $ typeTerm' t tAnn lookupGlobal
+      t' <- withLocal bAnn $ typeTerm' t tAnn
       let anns = Typed.BindAnnotation {baBindAnn = bAnn, baResAnn = ann}
       pure $ Typed.Let σb b' t' anns
     Core.Elim e _ -> do
-      e' <- typeElim' e σ lookupGlobal
+      e' <- typeElim' e σ
       let ty' = Typed.annType $ Typed.getElimAnn e'
       requireSubtype e ty ty'
       pure $ Typed.Elim e' ann
@@ -313,9 +311,8 @@ typeElim' ::
   ) =>
   Core.Elim ext primTy primVal ->
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.Elim primTy primVal)
-typeElim' elim σ lookupGlobal =
+typeElim' elim σ =
   case elim of
     Core.Bound i _ -> do
       ty <- useLocal σ i
@@ -328,19 +325,19 @@ typeElim' elim σ lookupGlobal =
       when (π' == Core.GZero) $ requireZero σ
       pure $ Typed.Free gx $ Typed.Annotation σ ty
     Core.CaseTree caseTree _ -> do
-      Typed.CaseTree <$> typeCaseTree' caseTree σ lookupGlobal <*> pure (Typed.Annotation mempty (IR.VStar Core.UAny))
+      Typed.CaseTree <$> typeCaseTree' caseTree σ <*> pure (Typed.Annotation mempty (IR.VStar Core.UAny))
     Core.App s t _ -> do
-      s' <- typeElim' s σ lookupGlobal
+      s' <- typeElim' s σ
       (π, a, b) <- requirePi $ Typed.annType $ Typed.getElimAnn s'
       let tAnn = Typed.Annotation (σ <.> π) a
-      t' <- typeTerm' t tAnn lookupGlobal
+      t' <- typeTerm' t tAnn
       ty <- substApp b t'
       pure $ Typed.App s' t' $ Typed.Annotation σ ty
     Core.Ann π s a _ -> do
-      a' <- typeTerm' a (Typed.Annotation mempty (IR.VStar Core.UAny)) lookupGlobal
+      a' <- typeTerm' a (Typed.Annotation mempty (IR.VStar Core.UAny))
       ty <- evalTC a'
       let ann = Typed.Annotation σ ty
-      s' <- typeTerm' s ann lookupGlobal
+      s' <- typeTerm' s ann
       pure $ Typed.Ann π s' a' ann
     Core.ElimX x ->
       Error.throwTC $ Error.UnsupportedElimExt x
@@ -363,34 +360,36 @@ typePattern' ::
   ) =>
   Core.Pattern ext primTy primVal ->
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
+  NameSymbol.T ->
   m (Typed.Pattern primTy primVal)
-typePattern' patttern σ lookupGlobal =
+typePattern' patttern σ sig =
   let anyTy = IR.VStar Core.UAny
       anyAnn = Typed.Annotation mempty anyTy
   in case patttern of
     Core.PCon name patterns _ -> do
-      patterns' <- traverse (\pat -> typePattern' pat σ lookupGlobal) patterns
+      patterns' <- traverse (\pat -> typePattern' pat σ sig ) patterns
       -- TODO: Lookup name
       -- TODO: Append signature to "patBinds"
-      updatePatBinds name patterns
+      updatePatBinds sig name patterns
       pure $ Typed.PCon name patterns' anyAnn
     Core.PPair pat1 pat2 _ -> do
-      tPat1 <- typePattern' pat1 σ lookupGlobal
-      tPat2 <- typePattern' pat2 σ lookupGlobal
+      tPat1 <- typePattern' pat1 σ sig
+      tPat2 <- typePattern' pat2 σ sig
       pure $ Typed.PPair tPat1 tPat2 anyAnn
     Core.PUnit _ -> pure $ Typed.PUnit anyAnn
     Core.PVar pvar _ -> pure $ Typed.PVar pvar anyAnn
-    Core.PDot term _ -> Typed.PDot <$> typeTerm' term anyAnn lookupGlobal <*> pure anyAnn
+    Core.PDot term _ -> Typed.PDot <$> typeTerm' term anyAnn <*> pure anyAnn
     Core.PPrim p _ -> do
       p' <- typePrim p anyTy
       pure $ Typed.PPrim p' anyAnn
     where
-      updatePatBinds name patterns = do
-        let x = lookupGlobal name
-        pTraceShowM ("Lookup Global", name, x)
-
-
+      updatePatBinds sig name patterns = do
+        x <- asks @"globals" $ HashMap.lookup sig
+        -- modify @"patBinds" ...
+        -- case x of
+          -- Globals.GDatatype (Globals.Datatype)
+        -- let x = lookupGlobal sig
+        pTraceShowM ("Lookup Global", name, sig, x)
 
 typeBranch' ::
   ( Eq primTy,
@@ -411,11 +410,11 @@ typeBranch' ::
   Core.Branch ext primTy primVal ->
     -- TODO: Pass the type of the pattern
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
+  NameSymbol.T ->
   m (Typed.Branch primTy primVal)
-typeBranch' (Core.Branch pat caseTree _) σ lookupGlobal =
+typeBranch' (Core.Branch pat caseTree _) σ sig =
   let anyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
-  in Typed.Branch <$> typePattern' pat σ lookupGlobal <*> typeCaseTree' caseTree σ lookupGlobal <*> pure anyAnn <*> pure anyAnn
+  in Typed.Branch <$> typePattern' pat σ sig <*> typeCaseTree' caseTree σ <*> pure anyAnn <*> pure anyAnn
 
 typeCaseTree' ::
   ( Eq primTy,
@@ -435,16 +434,15 @@ typeCaseTree' ::
   ) =>
   Core.CaseTree ext primTy primVal ->
   Usage.T ->
-  Eval.LookupFun IR.T primTy primVal ->
   m (Typed.CaseTree primTy primVal)
-typeCaseTree' caseTree σ lookupGlobal =
+typeCaseTree' caseTree σ =
   let anyAnn = Typed.Annotation mempty (IR.VStar Core.UAny)
   in case caseTree of
-    Core.Case arg branches _ -> do
-      branches' <- traverse (\branch -> typeBranch' branch σ lookupGlobal) branches
+    Core.Case arg@(Core.Arg _ sig) branches _ -> do
+      branches' <- traverse (\branch -> typeBranch' branch σ sig) branches
       pure $ Typed.Case arg branches' anyAnn
     Core.Done args t _ -> do
-      t' <- typeTerm' t anyAnn lookupGlobal
+      t' <- typeTerm' t anyAnn
       pure $ Typed.Done args t' anyAnn
     Core.Fail args _ -> do
       pure $ Typed.Fail args anyAnn
