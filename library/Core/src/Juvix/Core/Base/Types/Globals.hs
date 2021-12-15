@@ -524,8 +524,6 @@ instance A.ToJSON Pos where
 instance A.FromJSON Pos where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
-
-
 data RawFunctionCase ext primTy primVal = RawFunctionCase
   { rawFunCaseName :: GlobalName,
     rawFunCaseUsage :: GlobalUsage,

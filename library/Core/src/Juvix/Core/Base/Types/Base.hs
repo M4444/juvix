@@ -84,16 +84,10 @@ instance A.ToJSON GlobalUsage where
 instance A.FromJSON GlobalUsage where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
-data ArgMeta ext ty val = ArgMeta
-  { sig :: Maybe (Core.Term ext ty val)
-  , global: NameSymbol.T
-  } deriving (Data, Eq, Show, Generic, NFData)
-
 data Arg a = Arg 
   { unarg :: a
-  , meta :: ArgMeta ext ty val
+  , sig :: NameSymbol.T 
   } deriving (Data, Eq, Show, Generic, NFData)
-
 
 instance (A.ToJSON a) => A.ToJSON (Arg a) where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})

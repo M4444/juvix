@@ -7,6 +7,7 @@ import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.IR.Types as IR
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import Debug.Pretty.Simple 
 
 -- Inputs of the algorithm
 
@@ -24,10 +25,11 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 
 clausesToCaseTree ::
   forall primTy primVal.
+  (Show primTy, Show primVal) =>
   Core.RawFunction IR.T primTy primVal ->
   Core.RawFunctionCase IR.T primTy primVal
 clausesToCaseTree (Core.RawFunction name usage ty clauses) =
-  Core.RawFunctionCase name usage ty (go 0 clauses Nothing)
+  pTraceShow ("Type", ty) $ Core.RawFunctionCase name usage ty (go 0 clauses Nothing)
   where
     go :: Int -> NonEmpty (Core.RawFunClause IR.T primTy primVal) -> Maybe (Core.Term IR.T primTy primVal) -> Core.CaseTree IR.T primTy primVal
     go idx clauses bodyM =
@@ -37,7 +39,7 @@ clausesToCaseTree (Core.RawFunction name usage ty clauses) =
        in case (zipped, bodyM) of
             ([], Just body) -> IR.Done [] body
             ([], Nothing) -> IR.Fail []
-            _ -> IR.Case (Core.Arg idx) $ f <$> zipped
+            _ -> IR.Case (Core.Arg idx (extractSigPointer ty idx)) $ f <$> zipped
               where
                 f :: (Int, Core.Pattern IR.T primTy primVal) -> Core.Branch IR.T primTy primVal
                 f (idx, pat) =
@@ -67,3 +69,12 @@ nextArgPatterns (Core.RawFunClause tel [] rhs catchAll :| clauses) =
 nextPatternSig :: Core.Term ext primTy primVal -> Core.Term ext primTy primVal
 nextPatternSig (Core.Pi _ pat _ _) = pat
 nextPatternSig _ = panic "Invalid nextPatternSig"
+
+extractSigPointer :: IR.Term primTy primVal -> Int -> NameSymbol.T
+extractSigPointer (IR.Pi usage t1 t2) 0 = fromGlobal t1
+  where
+    fromGlobal (IR.Elim (IR.Free (Core.Global g))) = g
+    fromGlobal _ = panic "Invalid global"
+extractSigPointer (IR.Pi usage t1 t2) n = extractSigPointer t2 (n - 1)
+extractSigPointer _ _ = panic "Failed to extract sig pointer"
+    
