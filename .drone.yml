@@ -905,11 +905,11 @@ steps:
     status: [success, failure]
 trigger:
   branch: [develop]
-  event: [push]
+  event: [push, pull_request]
 type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: e09e66cc56b7fa7006e49c1e7df8e970f9f05c15aba95afa47ae3c6e9bce8ffb
+hmac: b55e4acf3c0c2a1c5ceccc643249f86c9ac78397d9fe48c142f05d7ef5550fbf
 
 ...
