@@ -1,11 +1,10 @@
 module Sexp (top) where
 
-import qualified Data.Set as Set
+import qualified Data.IORef as IORef
 import Juvix.Library
 import qualified Juvix.Sexp as Sexp
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
-import Prelude (error)
 
 top :: T.TestTree
 top =
@@ -13,11 +12,12 @@ top =
     "sexp pass tests:"
     [ lastWorksAsExpected,
       foldrWorksAsExpted,
-      foldPredWorksAsExpted,
-      foldPredWorksAsExpted2,
-      foldPredWorksAsExpted3,
+      mapPredStarWorksAsExpted,
+      mapPredStarWorksAsExpted2,
+      mapPredStarWorksAsExpted3,
       listWorksAsExpected,
-      listStarWorksAsExpected
+      listStarWorksAsExpected,
+      traversePredWorksAsExpected
     ]
 
 --------------------------------------------------------------------------------
@@ -50,29 +50,29 @@ foldrWorksAsExpted =
   where
     Right ns = Sexp.parse "(1 2 3 4 5)"
 
-foldPredWorksAsExpted :: T.TestTree
-foldPredWorksAsExpted =
+mapPredStarWorksAsExpted :: T.TestTree
+mapPredStarWorksAsExpted =
   T.testGroup
-    "foldPred works as Exptected"
+    "mapPredStar works as Exptected"
     [ T.testCase
-        "foldPred properly recurses"
-        ( Sexp.foldPred nest (== "if") (\_ sexp -> Sexp.Cons (Sexp.atom ":if") sexp)
+        "mapPredStar properly recurses and does not change the non car position"
+        ( Sexp.mapPredStar nest (== "if") (Sexp.Cons (Sexp.atom ":if") . Sexp.cdr)
             T.@=? expectedNest
         )
     ]
   where
     Right nest =
-      Sexp.parse "(if x y (if z l))"
+      Sexp.parse "(if x y (if if l))"
     Right expectedNest =
-      Sexp.parse "(:if x y (:if z l))"
+      Sexp.parse "(:if x y (:if if l))"
 
-foldPredWorksAsExpted2 :: T.TestTree
-foldPredWorksAsExpted2 =
+mapPredStarWorksAsExpted2 :: T.TestTree
+mapPredStarWorksAsExpted2 =
   T.testGroup
-    "foldPred works as Exptected"
+    "mapPredStar works as Exptected"
     [ T.testCase
-        "foldPred properly searches"
-        ( Sexp.foldPred nest (== "if") (\_ sexp -> Sexp.Cons (Sexp.atom ":if") sexp)
+        "mapPredStar properly searches"
+        ( Sexp.mapPredStar nest (== "if") (Sexp.Cons (Sexp.atom ":if") . Sexp.cdr)
             T.@=? expectedNest
         )
     ]
@@ -82,13 +82,16 @@ foldPredWorksAsExpted2 =
     Right expectedNest =
       Sexp.parse "(g x y (f z l))"
 
-foldPredWorksAsExpted3 :: T.TestTree
-foldPredWorksAsExpted3 =
+mapPredStarWorksAsExpted3 :: T.TestTree
+mapPredStarWorksAsExpted3 =
   T.testGroup
-    "foldPred works as Exptected"
+    "mapPredStar works as Exptected"
     [ T.testCase
-        "foldPred can deal with bigger sexp"
-        ( Sexp.foldPred nest (== ":defop") (\_ sexp -> Sexp.Cons (Sexp.atom ":op") sexp)
+        "mapPredStar can deal with bigger sexp"
+        ( Sexp.mapPredStar
+            nest
+            (== ":defop")
+            (\sexp -> Sexp.Cons (Sexp.atom ":op") (Sexp.cdr sexp))
             T.@=? expectedNest
         )
     ]
@@ -143,3 +146,22 @@ listStarWorksAsExpected =
   where
     manualList =
       Sexp.listStar [Sexp.number 1, Sexp.number 2, Sexp.list [Sexp.number 3]]
+
+traversePredWorksAsExpected :: T.TestTree
+traversePredWorksAsExpected =
+  T.testGroup
+    "traversePredOptStar works as expected"
+    [ T.testCase
+        "traversePredOpStar properly matches on car application"
+        $ do
+          y <- IORef.newIORef Sexp.Nil
+          let f :: Sexp.T -> IO Sexp.T
+              f rest = do
+                IORef.modifyIORef' y (rest Sexp.:>)
+                pure (Sexp.Cons (Sexp.atom "bob") (Sexp.cdr rest))
+              Right xs =
+                Sexp.parse "(let let (let))"
+          _ <- Sexp.traversePredOptStar xs (== "let") (Sexp.autoRecurse f) mempty
+          v <- IORef.readIORef y
+          Sexp.parse "((let) (let let (let)))" T.@=? Right v
+    ]

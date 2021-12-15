@@ -4,6 +4,7 @@ import qualified Data.HashSet as Set
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Env
+import qualified Juvix.Sexp as Sexp
 import Juvix.Library
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -56,8 +57,8 @@ emptyClosure :: Capture
 emptyClosure = Cap (Closure.T Map.empty) []
 
 recordClosure ::
-  (HasReader "closure" a m, HasWriter "report" [a] m) => c -> p -> b -> m b
-recordClosure _ _atom t = do
+  (HasReader "closure" a m, HasWriter "report" [a] m) => c -> b -> m b
+recordClosure _ t = do
   c <- ask @"closure"
   tell @"report" [c]
   -- Just drop the given atom
@@ -94,7 +95,7 @@ letTest =
       --
       T.testCase "let binds for its own arguments" $ do
         [a, x, y, three, foo] <-
-          capture "let f a = let foo x y = 3 in foo" (== ":atom")
+          captureOnAtom "let f a = let foo x y = 3 in foo" (== ":atom")
         Closure.keys a T.@=? Set.fromList ["a"]
         Closure.keys x T.@=? argumentBinding
         Closure.keys y T.@=? argumentBinding
@@ -200,7 +201,7 @@ openTest =
                 :| [("A", parseDesugarSexp "let bar = 3")]
             )
         let (_, Cap _ [Closure.T capture]) =
-              runCtx (Env.passContext ctx trigger (Env.singlePass recordClosure)) emptyClosure
+              runCtx (Env.contextPassStar ctx trigger mempty recordClosure) emptyClosure
         Map.toList capture T.@=? [("bar", Closure.Info Nothing [] (Just "A"))]
     ]
   where
@@ -212,7 +213,17 @@ capture str trigger = do
   Right (ctx, _) <-
     contextualizeFoo str
   let (_, Cap _ capture) =
-        runCtx (Env.passContext ctx trigger (Env.singlePass recordClosure)) emptyClosure
+        runCtx (Env.contextPassStar ctx trigger mempty recordClosure) emptyClosure
+  pure capture
+
+captureOnAtom :: ByteString -> (NameSymbol.T -> Bool) -> IO [Closure.T]
+captureOnAtom str trigger = do
+  Right (ctx, _) <-
+    contextualizeFoo str
+  let (_, Cap _ capture) =
+        runCtx
+          (Env.contextPassStar ctx trigger mempty {Sexp.onAtom = True} recordClosure)
+          emptyClosure
   pure capture
 
 -- Right (ctx,_) <- contextualizeFoo "let f = 3"
