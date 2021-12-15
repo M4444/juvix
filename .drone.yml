@@ -829,31 +829,29 @@ steps:
     mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
     region: eu-west-1
     restore: true
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-  image: meltwater/drone-cache:latest
-  name: restore-cache-backend
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/stack.yaml" }}
-    mount: [./library/Playground/HTTP/.stack-work, ./.stack]
-    region: eu-west-1
-    restore: true
 - commands: [cd library/Playground/HTTP/compiler-debugger && npm install && CI=false
       npm run build]
   depends_on: [restore-cache-frontend]
-  environment: {API_URL: 'https://juvix-api.heliax.dev'}
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
   name: build-frontend
   pull: never
-- commands: [cd library/Playground/HTTP && stack build && ls .stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build]
-  depends_on: [restore-cache-backend]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+- commands: [mkdir $AWS_FOLDER && touch $AWS_CREDENTIALS_FILE && touch $AWS_CONFIG_FILE,
+    'echo "[default]" > $AWS_CREDENTIALS_FILE', 'echo aws_access_key_id=${AWS_ACCESS_KEY_ID}
+      >> $AWS_CREDENTIALS_FILE', 'echo aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+      >> $AWS_CREDENTIALS_FILE', 'echo "[default]" > $AWS_CONFIG_FILE', echo "region
+      = eu-west-1" >> $AWS_CONFIG_FILE, mkdir /run/, echo $NIX_CACHE_KEY > /run/nix-cache-key.pem,
+    'nix build .#x86_64-unknown-linux-musl:http:exe:juvix-server --option allow-import-from-derivation
+      true']
+  depends_on: [check-scripts-integrity]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_CONFIG_FILE: /root/.aws/config
+    AWS_CREDENTIALS_FILE: /root/.aws/credentials
+    AWS_FOLDER: /root/.aws
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    NIX_CACHE_BUCKET: heliaxdev-nixcache?region=eu-west-1
+    NIX_CACHE_KEY: {from_secret: nix_cache_key}
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/nix:latest
   name: build-backend
   pull: never
 - depends_on: [build-backend]
@@ -863,8 +861,8 @@ steps:
   settings:
     host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
-    source: ./library/Playground/HTTP/.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/build
-    target: ~/juvix
+    source: /root/result/bin/juvix-server
+    target: /home/ubuntu
     username: ubuntu
 - commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
       --delete --region eu-west-1', aws cloudfront create-invalidation --distribution-id
@@ -877,35 +875,14 @@ steps:
   name: deploy-frontend
   pull: never
 - depends_on: [deploy-backend]
-  environment:
-    SSH_KEY: {from_secret: ssh_key}
   image: appleboy/drone-ssh
   name: reload-backend
   pull: never
   settings:
-    host: 54.155.84.137
+    host: juvix-api.heliax.dev
     key: {from_secret: ssh_key}
-    script: [./start.sh]
+    script: [/home/ubuntu/start.sh]
     username: ubuntu
-- depends_on: [reload-backend]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-backend
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/backend/{{ checksum "library/Playground/HTTP/stack.yaml" }}
-    mount: [./library/Playground/HTTP/.stack-work, ./.stack]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
 - depends_on: [deploy-frontend]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -928,11 +905,11 @@ steps:
     status: [success, failure]
 trigger:
   branch: [develop]
-  event: [push, pull_request]
+  event: [push]
 type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 32270085fa8a2ecd858dcc0ced8e42a434744f72248fc4a6b6e4acab1f768272
+hmac: e09e66cc56b7fa7006e49c1e7df8e970f9f05c15aba95afa47ae3c6e9bce8ffb
 
 ...
