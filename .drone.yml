@@ -92,7 +92,7 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
 environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
@@ -859,6 +859,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 147b2c33c6e3ae8fb6bc7dd1387f268e65a10dd450a56f9891fd467020b24fc0
+hmac: ccf4c731c6a0daac825e3754e66f89ae637aa5b3c59f1688d6c990d03dcf2e2e
 
 ...
