@@ -1,5 +1,5 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
@@ -859,6 +859,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: bbebf469874741824b51d06f0c7d7b4388fb378baf35b4a2dbfe78f33896b34e
+hmac: 147b2c33c6e3ae8fb6bc7dd1387f268e65a10dd450a56f9891fd467020b24fc0
 
 ...
