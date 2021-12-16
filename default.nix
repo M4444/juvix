@@ -1,9 +1,13 @@
+#
+# TODO file subject to be moved almost entirely to project.nix
+#
 { compiler-nix-name ? "ghc8107" # Should match the one in stack.yaml
 , doHaddock ? doHoogle # hoogle requires haddock
 , doHoogle ? false
 , materialized ? if builtins.pathExists nix/materialized then nix/materialized else null
 , checkMaterialization ? false
 , doCheck ? false
+, exactDeps ? true
 , ...
 }:
 let
@@ -24,7 +28,7 @@ let
       };
       inherit compiler-nix-name;
       modules = [ {
-        inherit doHaddock doHoogle doCheck;
+        inherit doHaddock doHoogle doCheck exactDeps;
         # Strip the executables and disable shared to avoid pulling gcc into the closure.
         packages.juvix.components.exes.juvix = { dontStrip = false; enableShared = false; };
         packages.http.components.exes.juvix-server = { dontStrip = false; enableShared = false; };
