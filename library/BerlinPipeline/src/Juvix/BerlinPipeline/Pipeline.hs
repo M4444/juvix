@@ -12,7 +12,7 @@ import qualified Juvix.Sexp as Sexp
 
 data EnvOrSexp
   = InContext NameSymbol.T
-  | SExp Sexp.T
+  | Sexp Sexp.T
   deriving (Show, Eq, Generic)
 
 data WorkingEnv = WorkingEnv

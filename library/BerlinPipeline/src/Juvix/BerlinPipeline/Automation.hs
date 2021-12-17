@@ -1,5 +1,6 @@
 module Juvix.BerlinPipeline.Automation where
 
+import qualified Control.Lens as Lens hiding ((|>))
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
@@ -27,8 +28,8 @@ data Stage
 
 data ProcessJob
   = ProcessJob
-      { current :: Pipeline.EnvOrSexp,
-        newForms :: [(Stage, Pipeline.EnvOrSexp)]
+      { processCurrent :: Pipeline.EnvOrSexp,
+        processNewForms :: [(Stage, Pipeline.EnvOrSexp)]
       }
   deriving (Show, Eq, Generic)
 
@@ -51,9 +52,11 @@ class HasExtract a m | a -> m where
 
 data SimplePassArg
   = SimplePassArg
-      { passContext :: Context.T Sexp.T Sexp.T Sexp.T,
-        passCurrent :: Sexp.T
+      { simplePassArgContext :: Context.T Sexp.T Sexp.T Sexp.T,
+        simplePassArgCurrent :: Sexp.T
       } deriving (Show, Eq, Generic)
+
+Lens.makeLensesWith Lens.camelCaseFields ''SimplePassArg
 
 data PassArg
   = PassArg
@@ -76,7 +79,7 @@ applySimplifiedPass ::
 applySimplifiedPass = notImplemented
 
 runSimplifiedPass ::
-  --   (HasExtract _a m) =>
+  -- (HasExtract a m) =>
   (PassArg -> m Job) ->
   Pipeline.CIn ->
   m (Pipeline.COut Pipeline.WorkingEnv)
@@ -88,56 +91,58 @@ runSimplifiedPass f = do
 -- | @simplify allows a pass to ignore the fact that expression coming in may
 -- be added to the [Context.T] already, and we can act as if it were just a
 -- normal [Sexp.T] being passed in.
-simplify 
-  :: Monad m 
+simplify
+  :: Monad m
   => (SimplePassArg -> m Job)
   -> (PassArg -> m Job)
-simplify f PassArg { passContext, passCurrent} = case passCurrent of
-  Pipeline.InContext n -> case Context.lookup n passContext of
-    Just s -> do
-      result <- f (SimplePassArg passContext s)
-      case result of
-        PJob (ProcessJobNoEnv { neCurrent, neNewForms }) -> do
-          let c = Context.insert n neCurrent passContext
-              forms = second Pipeline.Sexp neNewForms
-          pure $ PJob (UpdateJob c (ProcessJob (Pipeline.InContext n forms)))
-        UJob (UpdateJob context process) -> do
-          let c = Context.insert n neCurrent context
-          pure $ PJob (UpdateJob c process)
-    Nothing -> panic "FIX ME"
-  Pipeline.Sexp s -> f (SimplePassArg passContext s)
+simplify f PassArg { passContext, passCurrent} =
+  undefined
+  -- case passCurrent of
+  -- Pipeline.InContext n -> case Context.lookup n passContext of
+  --   Just s -> do
+  --     result <- f (SimplePassArg passContext s)
+  --     case result of
+  --       PJob (ProcessJobNoEnv { neCurrent, neNewForms }) -> do
+  --         let c = Context.add n neCurrent passContext
+  --             forms = second Pipeline.Sexp neNewForms
+  --         pure $ PJob (UpdateJob c (ProcessJob (Pipeline.InContext n forms)))
+  --       UJob (UpdateJob context process) -> do
+  --         let c = Context.add n neCurrent context
+  --         pure $ PJob (UpdateJob c process)
+  --   Nothing -> panic "FIX ME"
+  -- Pipeline.Sexp s -> f (SimplePassArg passContext s)
 
-deconstructPass :: Step.Named
-deconstructPass =
-  Step.namePass
-    (runSimplifiedPass deconstructType)
-    "Desugar.deconstruct-type"
+-- deconstructPass :: Step.Named
+-- deconstructPass =
+--   Step.namePass
+--     (runSimplifiedPass deconstructType)
+--     "Desugar.deconstruct-type"
 
-deconstructType PassArg {passCurrent} =
-  Trace.with "Desugar.deconstruct-type" [show passCurrent] $
-    Sexp.foldSearchPredWithExtra
-      (simplify f) (== Structure.typeName) current
-    |> \Sexp.Extra{data, extra} ->
-       ProcessJob {current = data, newForms = extra}
-  where
-    f car cdr =
-      Trace.with "Desugar.deconstruct-type-pass" [show car, show cdr] $
-        case Structure.toType (car Sexp.:> cdr) of
-          Just typ ->
-            let extraData =
-              (typ ^. body)
-               >>= (\case Structure.Sum {name, arguments} ->
-                            Structure.Constructor name (typ ^. name) arguments
-                            |> pure
-                          _ -> []
-                   )
-               >>| \x -> (Automation.Current, Structure.fromConstructor x)
+-- deconstructType PassArg {passCurrent} =
+--   Trace.with "Desugar.deconstruct-type" [show passCurrent] $
+--     Sexp.foldSearchPredWithExtra
+--       (simplify f) (== Structure.typeName) current
+--     |> \Sexp.Extra{data, extra} ->
+--        ProcessJob {current = data, newForms = extra}
+--   where
+--     f car cdr =
+--       Trace.with "Desugar.deconstruct-type-pass" [show car, show cdr] $
+--         case Structure.toType (car Sexp.:> cdr) of
+--           Just typ ->
+--             let extraData =
+--               (typ ^. body)
+--                >>= (\case Structure.Sum {name, arguments} ->
+--                             Structure.Constructor name (typ ^. name) arguments
+--                             |> pure
+--                           _ -> []
+--                    )
+--                >>| \x -> (Automation.Current, Structure.fromConstructor x)
 
-            let currentForm =
-               Structure.DeclareType (typ ^. name) (typ ^. arguments)
-               |> Structure.fromDeclareType
+--             let currentForm =
+--                Structure.DeclareType (typ ^. name) (typ ^. arguments)
+--                |> Structure.fromDeclareType
 
-            Structure.Extra {data = currentForm, extra = extraData}
-          Nothing ->
-           -- we get back a Failure on the ComputationResult
-           throw @"failure" (ComputationResult.InvalidForm (car Sexp.:> cdr))
+--             Structure.Extra {data = currentForm, extra = extraData}
+--           Nothing ->
+--            -- we get back a Failure on the ComputationResult
+--            throw @"failure" (ComputationResult.InvalidForm (car Sexp.:> cdr))

@@ -2,6 +2,7 @@ module Juvix.BerlinPipeline.Meta
   ( Feedback,
     Trace,
     T,
+    with
   )
 where
 
@@ -19,3 +20,5 @@ data T = Meta
     trace :: Trace
   }
   deriving (Eq, Show)
+
+with = undefined
