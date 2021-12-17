@@ -41,7 +41,7 @@ final: prev: {
       ({pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
         packages.llvm-hs.flags.shared-llvm = false;
         packages.llvm-hs.components.library.libs = with pkgs; [
-          (libxml2.override (_: { enableStatic = false; }))
+          (libxml2.override (_: { enableShared = false; }))
           ncurses5 # for libtinfo
           zlib
         ];
