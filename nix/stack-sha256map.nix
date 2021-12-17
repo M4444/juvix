@@ -9,4 +9,8 @@
   "https://github.com/serokell/elliptic-curve.git"."b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8" = "0ywi0a4wldvmjhvw9yi4p3w044xsimsnqn80pwcg68jnf0rl20fq";
   "https://github.com/serokell/pairing.git"."cf86cf1f6b03f478a439703b050c520a9d455353" = "1m0ny7b6jx0hbvhkiqgq7sm4k7fpik14qhvhvi3y7g7jy6l3jqhd";
   "https://github.com/serokell/galois-field.git"."576ba98ec947370835a1f308895037c7aa7f8b71" = "0jssb5w74rzz944i304xqk7xggwvdjb2y2xbzp7s6sg344ql8v85";
+  "https://gitlab.com/morley-framework/morley.git"."6eb73a0cb8d97039d0706aa3f836cc22fe030f96" = "02krffa82kwqznl4pfjvhm3zn7np8l93r5qwnv2sjg2hp3s742x5";
+  "https://gitlab.com/morley-framework/morley.git"."3584852e68c70cdcf0b346ac9001f8e22f620f35" = "1sm0mr5jla0r3nrrgjn8i395l21n270c4sv9bv7pgq048jhfqw5y";
+  "https://github.com/int-index/caps.git"."c5d61837eb358989b581ed82b1e79158c4823b1b" = "0vkhsw1jsyzhk1kimn2g34fms60kms0m9g4r4mr46pavhak5qzsx";
+  "https://github.com/serokell/base-noprelude.git"."1282e0b992b00089d55228a2aa9edc4a3581c319" = "018vp8jxzgqjxsk23k288mazhx9af804k16g08qkhgg1lp1j2y8d";
 }

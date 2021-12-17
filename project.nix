@@ -53,5 +53,6 @@ final: prev: {
     flake // { apps = flake.apps // crossApps flake.apps; };
 
   # System library tweaks
-  numa = final.numactl;
+  numa = final.numactl; # So that haskell.nix knows to find the numa library (when -fnuma)
+  llvm-config = final.llvm_9; # So that llvm-hs finds llvm-config
 }
