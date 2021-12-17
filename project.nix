@@ -30,12 +30,21 @@ final: prev: {
         hlint = { };
         ormolu = { };
       };
-      modules = [{
+      modules = [({
         inherit doHaddock doHoogle doCheck;
         # Strip the executables and disable shared to avoid pulling gcc into the closure.
         packages.juvix.components.exes.juvix = { dontStrip = false; enableShared = false; };
         packages.http.components.exes.juvix-server = { dontStrip = false; enableShared = false; };
-      }];
+      })
+      # Fix llvm-hs on musl
+      ({pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
+        packages.llvm-hs.flags.shared-llvm = false;
+        packages.llvm-hs.components.library.libs = with pkgs; [
+          (libxml2.override (_: { enableShared = false; }))
+          ncurses5 # for libtinfo
+          zlib
+        ];
+      })];
     };
 
   # Flake attributes for the project
