@@ -50,6 +50,3 @@ tmp/
 *.toc
 
 .vscode/*
-
-# Nix temporary
-/nix/materialized/

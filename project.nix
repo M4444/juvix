@@ -5,16 +5,17 @@
       # For git sources in stack.yaml
 , sha256map ? import ./nix/stack-sha256map.nix
 , stack-sha256 ? null
-, materialized ? if builtins.pathExists nix/materialized then toString nix/materialized else null
+, materialized ? if builtins.pathExists nix/materialized then nix/materialized else null
 , checkMaterialization ? false
       # cross platforms to enable
 , crossPlatforms ? (p: [p.musl64 ])
+, suffix ? ""
 , ...
 }:
 
 final: prev: {
   # Stack project turned into nix derivations
-  project =
+  "project${suffix}" =
     final.haskell-nix.stackProject' {
       src = final.haskell-nix.cleanSourceHaskell {
         name = "juvix-src";
@@ -28,7 +29,7 @@ final: prev: {
         ghcid = { };
         haskell-language-server = { };
         hlint = { };
-        ormolu = { };
+        #ormolu = { }; TODO broken
       };
       modules = [({
         inherit doHaddock doHoogle doCheck;
@@ -40,7 +41,7 @@ final: prev: {
       ({pkgs, ...}: final.lib.mkIf pkgs.stdenv.hostPlatform.isMusl {
         packages.llvm-hs.flags.shared-llvm = false;
         packages.llvm-hs.components.library.libs = with pkgs; [
-          (libxml2.override (_: { enableShared = false; }))
+          (libxml2.override (_: { enableStatic = false; }))
           ncurses5 # for libtinfo
           zlib
         ];
@@ -48,9 +49,9 @@ final: prev: {
     };
 
   # Flake attributes for the project
-  flake =
+  "flake${suffix}" =
     let
-      project = final.project;
+      project = final."project${suffix}";
       flake = project.flake { inherit crossPlatforms; };
       # Add paths in apps for the cross packages
       crossApps = drvs: final.lib.mapAttrs'

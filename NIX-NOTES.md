@@ -6,9 +6,9 @@ advisable to setup IOHK's binary caches in order to avoid compiling a lot of
 stuff unnecessarily. [Check out this guide on how to do
 that](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started.html).
 
-## Using Flakes
+## Using `nix` and flakes
 
-Flakes is a new system for Nix. It makes many things easier but also
+Flakes are a new system for Nix. It makes many things easier but also
 increases already high learning curve.
 
 Haskell.nix uses IFD (import-from-derivation) quite a bit. With Flakes, IFD is
@@ -28,7 +28,21 @@ Couple of commands to get you started:
 - `nix develop`: launch (the default) development shell (similar to `nix-shell`).
 - `nix update`: update all pins on nix dependencies (updates `flake.lock`).
 
-## Nix hashes for git sources
+## Using `nix-build` and `nix-shell`
+
+`default.nix` and `shell.nix` are setup to use `flake-compat` to call the flake.
+
+- `nix-build` builds `defaultPackage` by default.
+- `nix-shell` loads `devShell` by default.
+- All flake outputs are available as attributes, but you need to use the full
+  paths for them
+  i.e. `nix-build -A packages.x86_64-linux."http:exe:juvix-server"`, whereas
+  flake attributes can fill in the blanks automatically: `nix build
+  .#http:exe:juvix-server`.
+
+## About `haskell.nix`
+
+### Nix hashes for git sources
 
 *TODO: update this section*
 
@@ -44,60 +58,59 @@ prefetcher. This works for git sources:
 nix-shell -p nix-prefetch-git --run 'nix-prefetch-git <url> <revision>'
 ```
 
-## The other method: not using flakes
+### Using the development shell
 
-*NOTE: I don't want to maintain this too much. Flakes make life easier and
-there's always `flake-compat` that works fine even if you don't use flakes (if
-you Nix installation is old for example).*
+The development shell (`devShell`) enables developing the haskell packages with
+`ghci` or `cabal v2-build` (but not `stack`). It uses `shellFor` from the
+`haskell.nix` infrastructure. See
+<https://input-output-hk.github.io/haskell.nix/tutorials/development.html> for
+details.
 
-There's still useful info below if you do use flakes though.
+```bash
+# Enter the shell
+nix develop
+
+# Directly start a hoogle server that runs in the shell
+nix develop -c hoogle server --local
+
+# Enter the shell environment for a single component
+nix develop .#juvix:lib:juvix
+```
+
+You may also use `nix-shell` (only arguments are different).
 
 ### Materialization
 
 You can speed up the evaluation of nix expressions by materializing the
-generated expressions:
+generated expressions. This is currently not enabled. With flakes, this only
+works if the materialized files are tracked by git. To enable materialization
+you can do:
 
 ```bash
-nix-build -A project.stack-nix.passthru.updateMaterialized --no-out-link | bash
+nix run .#generateMaterialized nix/materialized
+git add nix/materialized
 ```
 
-Materializing when using Flakes:
-
-```bash
-nix run .#calculateMaterializedSha
-```
-
-Remember to re-run the above after changing any dependencies. Check
+Remember to rematerialize after changing any dependencies. Check
 [here](https://input-output-hk.github.io/haskell.nix/tutorials/materialization.html)
 for more details about materialization.
 
-### `default.nix` file
+### Hacking
 
-The `default.nix` actually evaluates to an attrset of:
+You can use `nix repl` to efficiently inspect stuff:
 
-- `project`: the main `haskell.nix` project generated via `stackProject'`. All
-  other attributes below are just conveniences derived from this. Refer to the
-  [haskell.nix
-  reference](https://input-output-hk.github.io/haskell.nix/reference/library.html#haskell-package-description)
-  for the full explanation of the contents and structure of this value.
-- `local`: subset of Haskell packages built from local sources (per the
-  `stack.yaml`). It is a subset of `project.hsPkgs`.
-- `exes`: executables of local Haskell packages.
-- `tests`: test suites of local Haskell packages.
-- `static`: basically the same as `project`, but everything cross-compiled for
-  `x86_64-unknown-linux-musl` and statically linked. Shorthand for
-  `project.pkgsCross.musl64`.
-- `static.local`: same as `local` but cross-compiled for
-  `x86_64-unknown-linux-musl` and statically linked. Subset of
-  `static.project.hsPkgs`.
+```
+nix repl
+nix-repl> :lf .
+nix-repl> project = legacyPackages.x86_64-linux.project
+nix-repl> :b project.getComponent "juvix:exe:juvix"
+```
 
-It's the default expression many nix tools look for if you don't specify
-otherwise. Also importin paths in Nix language (`import some/directory/`)
-will in fact import `default.nix` from the directory.
+`project` above is the main `haskell.nix` project generated via
+`stackProject'`. See `project.nix` and the [haskell.nix
+reference](https://input-output-hk.github.io/haskell.nix/reference/library.html#haskell-package-description)
 
-----
-
-Some other useful things you can find in `project` (all of these come from the
+Some useful things you can find in `project` (all of these come from the
 `haskell.nix` infrastructure):
 
 - `project.pkgs.haskell-nix.haskellLib`: attrset of useful functions for
@@ -106,76 +119,3 @@ Some other useful things you can find in `project` (all of these come from the
   but it's far from complete (check the [source
   code](https://github.com/input-output-hk/haskell.nix/blob/master/lib/default.nix)
   for everything).
-
-### Using `nix-build`
-
-You must choose what you want to build by giving an attribute path to
-`nix-build`. A few examples:
-
-Build the `juvix` executable:
-
-```bash
-nix-build -A project.hsPkgs.juvix.components.exes.juvix
-```
-
-You may also use the `getComponent` utility function. The syntax corresponds to
-that of Stack (`<package>:<component>:<name>`):
-
-```bash
-# Same as "-A project.hsPkgs.juvix.components.exes.juvix"
-nix-build -E '(import ./. {}).project.getComponent "juvix:exe:juvix"'
-```
-
-Build statically linked version of `juvix-server`:
-
-```bash
-nix-build -A static.local.http.components.exes.juvix-server
-```
-
-Build all executables (from local Haskell packages):
-
-```bash
-# Also "tests" and "benchmarks" are available
-nix-build -A exes
-```
-
-### Using `nix-shell`
-
-The default `shell.nix` shell enables developing of the haskell packages with
-`ghci` or `cabal v2-build` (but not `stack`). It uses `shellFor` from the
-`haskell.nix` infrastructure. See
-<https://input-output-hk.github.io/haskell.nix/tutorials/development.html> for
-details.
-
-You can also use it to start a local Hoogle server which also serves the
-haddock for all local packages and their dependencies:
-
-```bash
-nix-shell --run "hoogle server --local"
-```
-
-### Using `nix repl`
-
-The Nix repl is very convenient for exploring nix expressions and building
-ad-hoc derivations:
-
-```
-nix repl
-nix-repl> :a import ./default.nix {}
-nix-repl> :b project.getComponent "http:exe:juvix-server"
-nix-repl> :b static.project.getComponent "http:exe:juvix-server"
-```
-
-*TODO: add Flake examples.*
-
-### Niv sources
-
-*NOTE: Niv is not that useful if you're already using Flakes.*
-
-[Niv](https://github.com/nmattia/niv) is used to pin external nix sources (such
-as `haskell.nix`). It's a good idea to update the sources every once in a
-while:
-
-```bash
-nix-shell -p niv --run 'niv update'
-```
