@@ -1,3 +1,6 @@
+#
+# TODO could be replaced with a flake-compat shim. (`nix fevelop` doesn't use this file)
+#
 {...}@args:
 let
   # Build haddock and hoogle indices, so that e.g. hoogle works.
