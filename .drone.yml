@@ -11,6 +11,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
+      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -106,6 +107,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
+      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -183,6 +185,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
+      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -776,6 +779,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
+      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -808,50 +812,72 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
+      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
   name: check-scripts-integrity
   pull: never
-- commands: [mkdir $AWS_FOLDER && touch $AWS_CREDENTIALS_FILE && touch $AWS_CONFIG_FILE,
-    'echo "[default]" > $AWS_CREDENTIALS_FILE', 'echo aws_access_key_id=${AWS_ACCESS_KEY_ID}
-      >> $AWS_CREDENTIALS_FILE', 'echo aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
-      >> $AWS_CREDENTIALS_FILE', 'echo "[default]" > $AWS_CONFIG_FILE', echo "region
-      = eu-west-1" >> $AWS_CONFIG_FILE, mkdir /run/, echo $NIX_CACHE_KEY > /run/nix-cache-key.pem,
-    'nix build .#x86_64-unknown-linux-musl:http:exe:juvix-server --option allow-import-from-derivation
-      true --extra-experimental-features nix-command --extra-experimental-features
-      flakes']
+- depends_on: [check-scripts-integrity]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: meltwater/drone-cache:latest
+  name: restore-cache-frontend
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
+    region: eu-west-1
+    restore: true
+- commands: [cd library/Playground/HTTP/compiler-debugger && npm install && CI=false
+      npm run build]
+  depends_on: [restore-cache-frontend]
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
+  name: build-frontend
+  pull: never
+- commands: [./scripts/deploy-webserver.sh]
   depends_on: [check-scripts-integrity]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_CONFIG_FILE: /root/.aws/config
-    AWS_CREDENTIALS_FILE: /root/.aws/credentials
-    AWS_FOLDER: /root/.aws
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    NIX_CACHE_BUCKET: heliaxdev-nixcache?region=eu-west-1
-    NIX_CACHE_KEY: {from_secret: nix_cache_key}
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/nix:latest
   name: build-backend
   pull: never
-- depends_on: [build-backend]
-  image: appleboy/drone-scp
-  name: deploy-backend
+- commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
+      --delete --region eu-west-1', aws cloudfront create-invalidation --distribution-id
+      E2JJLE9WAN786S --paths "/" --region eu-west-1]
+  depends_on: [build-frontend]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: deploy-frontend
+  pull: never
+- depends_on: [deploy-frontend]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: meltwater/drone-cache:latest
+  name: rebuild-cache-frontend
   pull: never
   settings:
-    host: juvix-api.heliax.dev
-    key: {from_secret: ssh_key}
-    source: /root/result/bin/juvix-server
-    target: /home/ubuntu
-    username: ubuntu
-- depends_on: [deploy-backend]
-  image: appleboy/drone-ssh
-  name: reload-backend
-  pull: never
-  settings:
-    host: juvix-api.heliax.dev
-    key: {from_secret: ssh_key}
-    script: [/home/ubuntu/start.sh]
-    username: ubuntu
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
+    override: false
+    rebuild: true
+    region: eu-west-1
+    restore: false
+  when:
+    status: [success, failure]
 trigger:
   branch: [develop]
   event: [push, pull_request]
@@ -859,6 +885,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: ccf4c731c6a0daac825e3754e66f89ae637aa5b3c59f1688d6c990d03dcf2e2e
+hmac: 3883a1329e493a6704518a32b5879795c17fe584409b3b045a9cb7bab3f93620
 
 ...

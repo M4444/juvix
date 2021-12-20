@@ -25,7 +25,8 @@ files_to_check = [
     'scripts/check-org-gen.sh',
     'scripts/pre-run.sh',
     'scripts/build-and-publish-docs.sh',
-    'scripts/generate-checksums.py'
+    'scripts/deploy-webserver.sh',
+    'scripts/generate-checksums.py',
 ]
 
 scripts_to_run = [
