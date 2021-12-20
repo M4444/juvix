@@ -845,7 +845,7 @@ steps:
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/nix:latest
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
   name: build-backend
   pull: never
 - commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
@@ -885,6 +885,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 3883a1329e493a6704518a32b5879795c17fe584409b3b045a9cb7bab3f93620
+hmac: afeb6e255ef7d849e07576b98df1d8fd0fc90c326366d826de62e33e041f4428
 
 ...
