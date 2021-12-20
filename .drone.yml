@@ -11,7 +11,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
+      | sha256sum -c -, echo "f8372d62a79c0bf8368c06174b2503b3c9781bbf899c41b35c223936772d2dd3  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -107,7 +107,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
+      | sha256sum -c -, echo "f8372d62a79c0bf8368c06174b2503b3c9781bbf899c41b35c223936772d2dd3  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -185,7 +185,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
+      | sha256sum -c -, echo "f8372d62a79c0bf8368c06174b2503b3c9781bbf899c41b35c223936772d2dd3  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -779,7 +779,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
+      | sha256sum -c -, echo "f8372d62a79c0bf8368c06174b2503b3c9781bbf899c41b35c223936772d2dd3  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -812,7 +812,7 @@ steps:
       | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
       | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
       | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "581cf8926ba5ba3f5e1935c39823ba252775dd736b718c1eb82cc158e530c288  scripts/deploy-webserver.sh"
+      | sha256sum -c -, echo "f8372d62a79c0bf8368c06174b2503b3c9781bbf899c41b35c223936772d2dd3  scripts/deploy-webserver.sh"
       | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
       | sha256sum -c -, sh scripts/pre-run.sh]
   image: alpine/git:v2.30.1
@@ -840,7 +840,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
   name: build-frontend
   pull: never
-- commands: [./scripts/deploy-webserver.sh]
+- commands: [sh scripts/deploy-webserver.sh]
   depends_on: [check-scripts-integrity]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -885,6 +885,6 @@ type: docker
 workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: afeb6e255ef7d849e07576b98df1d8fd0fc90c326366d826de62e33e041f4428
+hmac: a9e2e9db3a314c05d506eb0befda6bd8ba19aedbe19b9895961513b2a8dde28b
 
 ...

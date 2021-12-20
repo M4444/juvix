@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 instanceId=$(aws ec2 run-instances \
   --image-id ami-04dd4500af104442f \
