@@ -1,802 +1,1167 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
-kind: pipeline
 name: juvix-ci-build-pr
-node: {project: juvix}
+kind: pipeline
+node:
+  project: juvix
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "4b2678ee3159c1ee1d4879384163af17d388f0ce1f716bbc6f891e2b32483d3e  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "a21061245694da5b3b7e2a6d01c000dd6a4273901ffbf523233e103d005023c3  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
+- name: download-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
   pull: never
-- depends_on: [check-scripts-integrity]
+  commands:
+  - aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip
+  - cd scripts/ci && unzip juvix.zip
   environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+- name: restore-cache
   image: meltwater/drone-cache:latest
-  name: restore-cache
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack]
+    mount:
+    - ./.stack-work
+    - ./.stack
     region: eu-west-1
     restore: true
-- commands: [make stack-yaml, make update-local-stdlibs, make test]
-  depends_on: [restore-cache]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-suite
-  pull: never
-- commands: [make test-parser]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-parser
-  pull: never
-- commands: [make test-typecheck]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-typecheck
-  pull: never
-- commands: [make test-compile]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-compile
-  pull: never
-- commands: [sh ./scripts/format-and-org-gen.sh]
-  depends_on: [test-typecheck, test-compile, test-parser]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: org-generation-and-code-formatting
-  pull: never
-- commands: [python3 scripts/generate-checksums.py]
-  depends_on: [test-typecheck, test-compile, test-parser]
   environment:
-    GITHUB_TOKEN: {from_secret: github_token}
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - download-scripts
+- name: test-suite
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make stack-yaml
+  - make update-local-stdlibs
+  - make test
+  depends_on:
+  - restore-cache
+- name: test-parser
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-parser
+  depends_on:
+  - test-suite
+- name: test-typecheck
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-typecheck
+  depends_on:
+  - test-suite
+- name: test-compile
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-compile
+  depends_on:
+  - test-suite
+- name: org-generation-and-code-formatting
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - sh ./scripts/format-and-org-gen.sh
+  depends_on:
+  - test-typecheck
+  - test-compile
+  - test-parser
+- name: build-checksums
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
-  name: build-checksums
   pull: never
-- commands: [sh ./scripts/push-changes.sh]
-  depends_on: [org-generation-and-code-formatting, build-checksums]
+  commands:
+  - python3 scripts/generate-checksums.py
   environment:
-    GITHUB_TOKEN: {from_secret: github_token}
+    GITHUB_TOKEN:
+      from_secret: github_token
+  depends_on:
+  - test-typecheck
+  - test-compile
+  - test-parser
+- name: push-changes
   image: openanalytics/alpine-git-lfs-client
-  name: push-changes
   pull: never
-- depends_on: [push-changes]
+  commands:
+  - sh ./scripts/push-changes.sh
   environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
+    GITHUB_TOKEN:
+      from_secret: github_token
+  depends_on:
+  - org-generation-and-code-formatting
+  - build-checksums
+- name: rebuild-cache
   image: meltwater/drone-cache:latest
-  name: rebuild-cache
   pull: never
   settings:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
     cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack]
+    mount:
+    - ./.stack-work
+    - ./.stack
     override: false
-    rebuild: true
     region: eu-west-1
+    rebuild: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - push-changes
   when:
-    status: [success, failure]
+    status:
+    - success
+    - failure
 trigger:
-  event: [pull_request]
+  event:
+  - pull_request
 type: docker
-workspace: {path: /drone/workspace}
+workspace:
+  path: /juvix/workspace
+environment:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  STACK_ROOT: /juvix/workspace/.stack
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
-kind: pipeline
 name: juvix-ci-build-push-develop
-node: {project: juvix}
-steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "4b2678ee3159c1ee1d4879384163af17d388f0ce1f716bbc6f891e2b32483d3e  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "a21061245694da5b3b7e2a6d01c000dd6a4273901ffbf523233e103d005023c3  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
-  pull: never
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-  image: meltwater/drone-cache:latest
-  name: restore-cache
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack]
-    region: eu-west-1
-    restore: true
-- commands: [make stack-yaml, make update-local-stdlibs, make test]
-  depends_on: [restore-cache]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-suite
-  pull: never
-- commands: [make test-parser]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-parser
-  pull: never
-- commands: [make test-typecheck]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-typecheck
-  pull: never
-- commands: [make test-compile]
-  depends_on: [test-suite]
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: test-compile
-  pull: never
-- depends_on: [test-compile, test-typecheck, test-parser]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/{{ checksum "stack.yaml" }}
-    mount: [./.stack-work, ./.stack]
-    override: false
-    rebuild: true
-    region: eu-west-1
-  when:
-    status: [success, failure]
-trigger:
-  branch: [develop]
-  event: [push]
-type: docker
-workspace: {path: /drone/workspace}
----
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
 kind: pipeline
-name: juvix-ci-docs-pr-push-develop
-node: {project: juvix}
+node:
+  project: juvix
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "4b2678ee3159c1ee1d4879384163af17d388f0ce1f716bbc6f891e2b32483d3e  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "a21061245694da5b3b7e2a6d01c000dd6a4273901ffbf523233e103d005023c3  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
-  pull: never
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-stack
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "stack.yaml" }}
-    mount: [./.stack]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-plonk
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
-    mount: [library/Backends/Plonk/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-michelson
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Michelson/stack.yaml" }}
-    mount: [library/Backends/Michelson/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-parsing
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
-    mount: [library/Parsing/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-core
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Core/stack.yaml" }}
-    mount: [library/Core/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-standard-library
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/StandardLibrary/stack.yaml" }}
-    mount: [library/StandardLibrary/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-witch
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Witch/stack.yaml" }}
-    mount: [library/Witch/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-context
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Context/stack.yaml" }}
-    mount: [library/Context/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-sexp
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Sexp/stack.yaml" }}
-    mount: [library/Sexp/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-translate
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Translate/stack.yaml" }}
-    mount: [library/Translate/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-http
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Playground/HTTP/stack.yaml" }}
-    mount: [library/Playground/HTTP/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-easy
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Playground/Easy/stack.yaml" }}
-    mount: [library/Playground/Easy/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-data-structure
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Test/DataStructures/stack.yaml" }}
-    mount: [library/Test/DataStructures/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: restore-cache-llvm
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
-    mount: [library/Backends/llvm/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- commands: [./scripts/build-and-publish-docs.sh]
-  depends_on: [restore-cache-stack, restore-cache-context, restore-cache-core, restore-cache-data-structure,
-    restore-cache-easy, restore-cache-parsing, restore-cache-http, restore-cache-llvm,
-    restore-cache-michelson, restore-cache-plonk, restore-cache-sexp, restore-cache-standard-library,
-    restore-cache-translate, restore-cache-witch]
-  environment:
-    GITHUB_TOKEN: {from_secret: github_token}
-  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
-  name: build-docs
-  pull: never
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-stack
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "stack.yaml" }}
-    mount: [./.stack]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-plonk
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
-    mount: [library/Backends/Plonk/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-michelson
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Michelson/stack.yaml" }}
-    mount: [library/Backends/Michelson/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-parsing
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
-    mount: [library/Parsing/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-core
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Core/stack.yaml" }}
-    mount: [library/Core/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-standard-library
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/StandardLibrary/stack.yaml" }}
-    mount: [library/StandardLibrary/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-witch
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Witch/stack.yaml" }}
-    mount: [library/Witch/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-context
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Context/stack.yaml" }}
-    mount: [library/Context/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-sexp
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Sexp/stack.yaml" }}
-    mount: [library/Sexp/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-translate
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Translate/stack.yaml" }}
-    mount: [library/Translate/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-http
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Playground/HTTP/stack.yaml" }}
-    mount: [library/Playground/HTTP/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-easy
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Playground/Easy/stack.yaml" }}
-    mount: [library/Playground/Easy/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-data-structure
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Test/DataStructures/stack.yaml" }}
-    mount: [library/Test/DataStructures/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-llvm
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
-    mount: [library/Backends/llvm/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
-trigger:
-  branch: [develop]
-  event: [push, pull_request]
-type: docker
-workspace: {path: /drone/workspace}
----
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
-kind: pipeline
-name: juvix-ci-update-artifacts-push-develop
-node: {project: juvix}
-steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "5a98fa83fad2edecfd48d18aed2adbd5ceccf6afee1594a3ed3f2e26932dbdbb  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "4b2678ee3159c1ee1d4879384163af17d388f0ce1f716bbc6f891e2b32483d3e  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "a21061245694da5b3b7e2a6d01c000dd6a4273901ffbf523233e103d005023c3  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
-  pull: never
-- commands: ['aws s3 sync stdlib s3://heliax-juvix-artifacts-v1 --acl public-read
-      --exclude "*" --include "*.json" --include "*/*.ju" --include "*.ju"']
-  depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+- name: download-scripts
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
-  name: upload-artifacts
   pull: never
+  commands:
+  - aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip
+  - cd scripts/ci && unzip juvix.zip
+  environment:
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+- name: restore-cache
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/{{ checksum "stack.yaml" }}
+    mount:
+    - ./.stack-work
+    - ./.stack
+    region: eu-west-1
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - download-scripts
+- name: test-suite
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make stack-yaml
+  - make update-local-stdlibs
+  - make test
+  depends_on:
+  - restore-cache
+- name: test-parser
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-parser
+  depends_on:
+  - test-suite
+- name: test-typecheck
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-typecheck
+  depends_on:
+  - test-suite
+- name: test-compile
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - make test-compile
+  depends_on:
+  - test-suite
+- name: rebuild-cache
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/{{ checksum "stack.yaml" }}
+    mount:
+    - ./.stack-work
+    - ./.stack
+    override: false
+    region: eu-west-1
+    rebuild: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - test-compile
+  - test-typecheck
+  - test-parser
+  when:
+    status:
+    - success
+    - failure
 trigger:
-  branch: [develop]
-  event: [push]
+  event:
+  - push
+  branch:
+  - develop
 type: docker
-workspace: {path: /drone/workspace}
+workspace:
+  path: /juvix/workspace
+environment:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  STACK_ROOT: /juvix/workspace/.stack
+---
+name: juvix-ci-docs-pr-push-develop
+kind: pipeline
+node:
+  project: juvix
+steps:
+- name: download-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip
+  - cd scripts/ci && unzip juvix.zip
+  environment:
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+- name: restore-cache-stack
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "stack.yaml" }}
+    mount:
+    - ./.stack
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 10m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-plonk
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
+    mount:
+    - library/Backends/Plonk/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-michelson
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/Michelson/stack.yaml" }}
+    mount:
+    - library/Backends/Michelson/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-parsing
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
+    mount:
+    - library/Parsing/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-core
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Core/stack.yaml" }}
+    mount:
+    - library/Core/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-standard-library
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/StandardLibrary/stack.yaml" }}
+    mount:
+    - library/StandardLibrary/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-witch
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Witch/stack.yaml" }}
+    mount:
+    - library/Witch/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-context
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Context/stack.yaml" }}
+    mount:
+    - library/Context/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-sexp
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Sexp/stack.yaml" }}
+    mount:
+    - library/Sexp/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-translate
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Translate/stack.yaml" }}
+    mount:
+    - library/Translate/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-http
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Playground/HTTP/stack.yaml" }}
+    mount:
+    - library/Playground/HTTP/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-easy
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Playground/Easy/stack.yaml" }}
+    mount:
+    - library/Playground/Easy/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-data-structure
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Test/DataStructures/stack.yaml" }}
+    mount:
+    - library/Test/DataStructures/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: restore-cache-llvm
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
+    mount:
+    - library/Backends/llvm/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: false
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 16m
+  depends_on:
+  - download-scripts
+  when:
+    status:
+    - success
+    - failure
+- name: build-docs
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
+  pull: never
+  commands:
+  - ./scripts/build-and-publish-docs.sh
+  environment:
+    GITHUB_TOKEN:
+      from_secret: github_token
+  depends_on:
+  - restore-cache-stack
+  - restore-cache-context
+  - restore-cache-core
+  - restore-cache-data-structure
+  - restore-cache-easy
+  - restore-cache-parsing
+  - restore-cache-http
+  - restore-cache-llvm
+  - restore-cache-michelson
+  - restore-cache-plonk
+  - restore-cache-sexp
+  - restore-cache-standard-library
+  - restore-cache-translate
+  - restore-cache-witch
+- name: rebuild-cache-stack
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "stack.yaml" }}
+    mount:
+    - ./.stack
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 10m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-plonk
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
+    mount:
+    - library/Backends/Plonk/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+    - failure
+- name: rebuild-cache-michelson
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/Michelson/stack.yaml" }}
+    mount:
+    - library/Backends/Michelson/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-parsing
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Parsing/stack.yaml" }}
+    mount:
+    - library/Parsing/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-core
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Core/stack.yaml" }}
+    mount:
+    - library/Core/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-standard-library
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/StandardLibrary/stack.yaml" }}
+    mount:
+    - library/StandardLibrary/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-witch
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Witch/stack.yaml" }}
+    mount:
+    - library/Witch/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-context
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Context/stack.yaml" }}
+    mount:
+    - library/Context/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-sexp
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Sexp/stack.yaml" }}
+    mount:
+    - library/Sexp/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-translate
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Translate/stack.yaml" }}
+    mount:
+    - library/Translate/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-http
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Playground/HTTP/stack.yaml" }}
+    mount:
+    - library/Playground/HTTP/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-easy
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Playground/Easy/stack.yaml" }}
+    mount:
+    - library/Playground/Easy/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-data-structure
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Test/DataStructures/stack.yaml" }}
+    mount:
+    - library/Test/DataStructures/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 8m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+- name: rebuild-cache-llvm
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
+    mount:
+    - library/Backends/llvm/.stack-work
+    override: false
+    region: eu-west-1
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+    BACKEND_OPERATION_TIMEOUT: 16m
+  depends_on:
+  - build-docs
+  when:
+    status:
+    - success
+trigger:
+  event:
+  - push
+  - pull_request
+  branch:
+  - develop
+type: docker
+workspace:
+  path: /juvix/docs
+environment:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  STACK_ROOT: /juvix/docs/.stack
+---
+name: juvix-ci-update-artifacts-push-develop
+kind: pipeline
+node:
+  project: juvix
+steps:
+- name: download-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip
+  - cd scripts/ci && unzip juvix.zip
+  environment:
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+- name: upload-artifacts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - aws s3 sync stdlib s3://heliax-juvix-artifacts-v1 --acl public-read --exclude
+    "*" --include "*.json" --include "*/*.ju" --include "*.ju"
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - download-scripts
+trigger:
+  event:
+  - push
+  branch:
+  - develop
+type: docker
+workspace:
+  path: /juvix/workspace
+environment:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  STACK_ROOT: /juvix/workspace/.stack
+---
+name: juvix-ci-deploy-website
+kind: pipeline
+node:
+  project: juvix
+steps:
+- name: download-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip
+  - cd scripts/ci && unzip juvix.zip
+  environment:
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+- name: restore-cache-frontend
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount:
+    - ./library/Playground/HTTP/compiler-debugger/node_modules
+    region: eu-west-1
+    restore: true
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - download-scripts
+- name: build-frontend
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
+  pull: never
+  commands:
+  - cd library/Playground/HTTP/compiler-debugger && npm install && CI=false npm run
+    build
+  depends_on:
+  - restore-cache-frontend
+- name: build-backend
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - sh scripts/deploy-webserver.sh
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - download-scripts
+- name: deploy-frontend
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  pull: never
+  commands:
+  - aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
+    --delete --region eu-west-1
+  - aws cloudfront create-invalidation --distribution-id E2JJLE9WAN786S --paths "/"
+    --region eu-west-1
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - build-frontend
+- name: rebuild-cache-frontend
+  image: meltwater/drone-cache:latest
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount:
+    - ./library/Playground/HTTP/compiler-debugger/node_modules
+    region: eu-west-1
+    override: false
+    rebuild: true
+    restore: false
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  depends_on:
+  - deploy-frontend
+  when:
+    status:
+    - success
+    - failure
+trigger:
+  event:
+  - push
+  branch:
+  - develop
+type: docker
+workspace:
+  path: /juvix/web
+environment:
+  GIT_LFS_SKIP_SMUDGE: '1'
+  STACK_ROOT: /juvix/web/.stack
 ---
 kind: signature
-hmac: 63190a73fc731a1e5d12b0bc7793b82ea3ace6a660c2f70c535a7a67029aa7b2
+hmac: 106c75d0c3e39f383e7059c8ac269b8d65c515fde996a2ef33406f4cabb75e60
 
 ...
