@@ -1,6 +1,6 @@
 module Juvix.Backends.LLVM.Pass.Types where
 
-import Juvix.Backends.LLVM.Primitive as Prim
+import qualified Juvix.Backends.LLVM.Primitive as Prim
 import qualified Juvix.Core.Base.Types as BaseTypes
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
