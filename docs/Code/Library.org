@@ -522,6 +522,7 @@ Provides a mechanism for defining Sum types
 ******** Types <<Pass/Types>>
 - _Relies on_
   + [[Primitive]]
+  + [[Core/Base/Types]]
   + [[Ann]]
   + [[Library]]
   + [[NameSymbol]]

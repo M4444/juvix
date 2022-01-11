@@ -1,10 +1,45 @@
 module Juvix.Backends.LLVM.Pass.Types where
 
 import Juvix.Backends.LLVM.Primitive as Prim
+import qualified Juvix.Core.Base.Types as BaseTypes
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
+
+--------------------------------------------------------------------------------
+-- LLVM internal term types
+--------------------------------------------------------------------------------
+
+-- Because core does not yet have algebraic types, we give LLVM
+-- its own term type extended with algebraic types.
+
+type RecordName = NameSymbol.T
+
+type FieldName = NameSymbol.T
+
+data TypeLLVM
+  = SymT NameSymbol.T
+  | Star BaseTypes.Universe
+  | PrimTy Prim.PrimTy
+  | Pi Usage.T TypeLLVM TypeLLVM
+  | Sig Usage.T TypeLLVM TypeLLVM
+  | CatProduct TypeLLVM TypeLLVM
+  | CatCoproduct TypeLLVM TypeLLVM
+  | UnitTy
+  | RecordType RecordName
+  deriving (Show, Read, Eq, Generic)
+
+injectErasedTypeIntoLLVM :: ErasedAnn.Type Prim.PrimTy -> TypeLLVM
+injectErasedTypeIntoLLVM t = case t of
+  ErasedAnn.SymT name -> SymT name
+  ErasedAnn.Star σ -> Star σ
+  ErasedAnn.PrimTy ty -> PrimTy ty
+  ErasedAnn.Pi π a b -> Pi π (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
+  ErasedAnn.Sig π a b -> Sig π (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
+  ErasedAnn.CatProduct a b -> CatProduct (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
+  ErasedAnn.CatCoproduct a b -> CatCoproduct (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
+  ErasedAnn.UnitTy -> UnitTy
 
 --------------------------------------------------------------------------------
 -- Closure Capture Forms
