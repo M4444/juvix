@@ -43,7 +43,7 @@ tests =
 trivialLLVMCodegenTest :: TestTree
 trivialLLVMCodegenTest = testCase "Trivial LLVM codegen test" $ do
   let testVal = 42
-      ty = ErasedAnn.PrimTy $ Primitive.PrimTy $ AST.IntegerType {typeBits = 8}
+      ty = PassTypes.PrimTy $ Primitive.PrimTy $ AST.IntegerType {typeBits = 8}
       term = PassTypes.Prim (Primitive.LitInt testVal)
       compiled =
         fromRight (P.error "trivial test compilation failed") $

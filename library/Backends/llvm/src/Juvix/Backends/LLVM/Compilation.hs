@@ -159,7 +159,7 @@ compileVar sym = do
 compileLam ::
   Types.Define m =>
   -- | The type of the lambda abstraction.
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   -- | List of parameter names.
   [NameSymbol.T] ->
   -- | The body of the lambda abstraction.
@@ -174,7 +174,7 @@ compileLam ty arguments body = do
 
 compileClosure ::
   Types.Define m =>
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   [Types.Capture] ->
   [NameSymbol.T] ->
   Types.Annotated Types.TermLLVM ->
@@ -198,7 +198,7 @@ compileClosure ty captures args body = do
 compileApp ::
   Types.Define m =>
   -- | Application return type
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   -- | The function term of an application.
   Types.Annotated Types.TermLLVM ->
   -- | The arguments to the application.
@@ -252,7 +252,7 @@ compileApp returnTy f@Types.Ann {term} xs =
 compilePrimApp ::
   Types.Define m =>
   -- | Return type of the application
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   -- | The function primitive of the application.
   RawPrimVal ->
   -- | The arguments to the application.
@@ -280,7 +280,7 @@ compilePrimApp ty f xs
       )
 
 compileIndex ::
-  Types.Call m => ErasedAnn.Type PrimTy -> Types.IndexInto -> m LLVM.Operand
+  Types.Call m => Types.TypeLLVM -> Types.IndexInto -> m LLVM.Operand
 compileIndex ty index = do
   let newTy = typeToLLVM ty
   closurePtr <- loadElementIndex index
@@ -295,17 +295,17 @@ mkPrim ::
   -- | Primitive value.
   RawPrimVal ->
   -- | Type of the primitive.
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   m LLVM.Operand
 mkPrim prim ty = case prim of
   LitInt i -> case ty of
-    ErasedAnn.PrimTy (PrimTy LLVM.IntegerType {LLVM.typeBits}) ->
+    Types.PrimTy (PrimTy LLVM.IntegerType {LLVM.typeBits}) ->
       return $
         LLVM.ConstantOperand $
           LLVM.Int {LLVM.integerBits = typeBits, LLVM.integerValue = i}
   LitString s -> do
     -- case ty of
-    -- ErasedAnn.PrimTy (PrimTy (LLVM.PointerType (LLVM.IntegerType 8) _)) -> do
+    -- Types.PrimTy (PrimTy (LLVM.PointerType (LLVM.IntegerType 8) _)) -> do
     name <- Block.generateUniqueName "LitString"
     Block.globalString (toS s) name
 
@@ -384,7 +384,7 @@ compileFunctionEnv ::
   -- | Function name
   Symbol ->
   -- | The type of the lambda abstraction.
-  ErasedAnn.Type PrimTy ->
+  Types.TypeLLVM ->
   -- | List of parameter names.
   [NameSymbol.T] ->
   -- | The body of the lambda abstraction.
@@ -420,15 +420,15 @@ llvmFunctionsToClosure xs =
           Closure.pointer
         _ -> x
 
-functionTypeLLVM :: ErasedAnn.Type PrimTy -> ([LLVM.Type], LLVM.Type)
+functionTypeLLVM :: Types.TypeLLVM -> ([LLVM.Type], LLVM.Type)
 functionTypeLLVM prim =
   functionType prim
     |> bimap (fmap typeToLLVM) typeToLLVM
 
 -- | Translate a Juvix type into an LLVM type.
-typeToLLVM :: ErasedAnn.Type PrimTy -> LLVM.Type
-typeToLLVM (ErasedAnn.PrimTy (PrimTy ty)) = ty
-typeToLLVM ty@(ErasedAnn.Pi _usage _f _xs) =
+typeToLLVM :: Types.TypeLLVM -> LLVM.Type
+typeToLLVM (Types.PrimTy (PrimTy ty)) = ty
+typeToLLVM ty@(Types.Pi _usage _f _xs) =
   Types.pointerOf
     LLVM.FunctionType
       { LLVM.resultType = typeToLLVM resultType,
@@ -441,10 +441,10 @@ typeToLLVM ty@(ErasedAnn.Pi _usage _f _xs) =
 -- | Construct a tuple of the types of the argument and return type of a function
 -- type.
 functionType ::
-  ErasedAnn.Type primTy ->
-  ([ErasedAnn.Type primTy], ErasedAnn.Type primTy)
+  Types.TypeLLVM ->
+  ([Types.TypeLLVM], Types.TypeLLVM)
 functionType ty = (init tys, P.last tys)
   where
     tys = functionType' ty
-    functionType' (ErasedAnn.Pi _usage l r) = l : functionType' r
+    functionType' (Types.Pi _usage l r) = l : functionType' r
     functionType' ty = [ty]

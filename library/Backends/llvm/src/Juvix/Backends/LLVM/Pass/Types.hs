@@ -54,7 +54,7 @@ data Capture = Capture
     slot :: ArraySlot,
     -- | @capType@ represents the capture type of the captured
     -- argument
-    capType :: ErasedAnn.Type Prim.PrimTy
+    capType :: TypeLLVM
   }
   deriving (Show)
 
@@ -114,7 +114,7 @@ data FunctionEnvironment
 
 data Annotated term = Ann
   { usage :: Usage.T,
-    annTy :: ErasedAnn.Type Prim.PrimTy,
+    annTy :: TypeLLVM,
     term :: term
   }
   deriving (Show)

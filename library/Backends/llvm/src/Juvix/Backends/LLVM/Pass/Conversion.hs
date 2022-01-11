@@ -18,7 +18,7 @@ data Environment = Env
   }
   deriving (Show)
 
-type ParamaterMap = HashMap.T NameSymbol.T (ErasedAnn.Type Prim.PrimTy)
+type ParamaterMap = HashMap.T NameSymbol.T Types.TypeLLVM
 
 type EnvOffsetMap = HashMap.T NameSymbol.T Types.IndexInto
 
@@ -68,7 +68,7 @@ convert (ErasedAnn.Ann {usage, type', term}) oldToNew =
           ErasedAnn.UnitM -> Types.UnitM
           ErasedAnn.AppM f xs ->
             Types.AppM (convert f oldToNew) (fmap (flip convert oldToNew) xs)
-   in Types.Ann {usage, annTy = type', term = newTerm}
+   in Types.Ann {usage, annTy = Types.injectErasedTypeIntoLLVM type', term = newTerm}
 
 handleLambda :: (Term, Type') -> Environment -> Types.TermLLVM
 handleLambda (ErasedAnn.LamM {arguments, capture, body}, ty) old@Env {ofMap, tyMap}
@@ -89,7 +89,7 @@ handleLambda (ErasedAnn.LamM {arguments, capture, body}, ty) old@Env {ofMap, tyM
           }
   where
     -- Need to propagate bindings in lambda
-    newEnv = Env {tyMap = typeMapFromPi arguments ty <> tyMap, ofMap}
+    newEnv = Env {tyMap = typeMapFromPi arguments (Types.injectErasedTypeIntoLLVM ty) <> tyMap, ofMap}
 handleLambda _ _ =
   panic "impossible"
 
@@ -154,7 +154,7 @@ slotToEnvironment newEnvLoc slot =
 ----------------------------------------
 
 typeMapFromPi ::
-  (Hashable k, Eq k) => [k] -> Type' -> HashMap.HashMap k Type'
+  (Hashable k, Eq k) => [k] -> Types.TypeLLVM -> HashMap.HashMap k Types.TypeLLVM
 typeMapFromPi args ty =
   zipWith HashMap.singleton args (fst (functionType ty))
     |> HashMap.unions
@@ -164,10 +164,10 @@ typeMapFromPi args ty =
 -- | Construct a tuple of the types of the argument and return type of
 -- a function type.
 functionType ::
-  ErasedAnn.Type primTy ->
-  ([ErasedAnn.Type primTy], ErasedAnn.Type primTy)
+  Types.TypeLLVM ->
+  ([Types.TypeLLVM], Types.TypeLLVM)
 functionType ty = (init tys, P.last tys)
   where
     tys = functionType' ty
-    functionType' (ErasedAnn.Pi usage l r) = l : functionType' r
+    functionType' (Types.Pi usage l r) = l : functionType' r
     functionType' ty = [ty]
