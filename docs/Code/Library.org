@@ -481,6 +481,7 @@ compile a new top level declaration.
 Module for predefined constants
 - _Relies on_
   + [[Library]]
+******** Record
 ******** Types <<Codegen/Types>>
 - _Relies on_
   + [[CString]]
