@@ -1,4 +1,4 @@
- Backends
+* Backends
 ** Michelson
 *** Setup <<Michelson/Setup>>
 *** src
@@ -556,13 +556,13 @@ Provides a mechanism for defining Sum types
 **** BerlinPipeline
 ***** CircularList
 - _Relies on_
+  + [[RecursiveList]]
   + [[Library]]
   + [[NameSymbol]]
 ***** Env <<BerlinPipeline/Env>>
 - _Relies on_
   + [[CircularList]]
   + [[BerlinPipeline/Pipeline]]
-  + [[RecursiveList]]
   + [[Step]]
   + [[Library]]
   + [[NameSymbol]]
