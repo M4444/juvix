@@ -32,14 +32,14 @@ type Type' = ErasedAnn.Type Prim.PrimTy
 -- Conversion Pass
 --------------------------------------------------------------------------------
 
-op :: AnnTerm -> Types.Annotated Types.TermClosure
+op :: AnnTerm -> Types.Annotated Types.TermLLVM
 op term = convert term (Env mempty mempty)
 
 ----------------------------------------
 -- Term Passes
 ----------------------------------------
 
-convert :: AnnTerm -> Environment -> Types.Annotated Types.TermClosure
+convert :: AnnTerm -> Environment -> Types.Annotated Types.TermLLVM
 convert (ErasedAnn.Ann {usage, type', term}) oldToNew =
   let newTerm =
         case term of
@@ -70,7 +70,7 @@ convert (ErasedAnn.Ann {usage, type', term}) oldToNew =
             Types.AppM (convert f oldToNew) (fmap (flip convert oldToNew) xs)
    in Types.Ann {usage, annTy = type', term = newTerm}
 
-handleLambda :: (Term, Type') -> Environment -> Types.TermClosure
+handleLambda :: (Term, Type') -> Environment -> Types.TermLLVM
 handleLambda (ErasedAnn.LamM {arguments, capture, body}, ty) old@Env {ofMap, tyMap}
   | null capture =
     Types.LamM {arguments, body = convert body newEnv}
@@ -93,7 +93,7 @@ handleLambda (ErasedAnn.LamM {arguments, capture, body}, ty) old@Env {ofMap, tyM
 handleLambda _ _ =
   panic "impossible"
 
-handleName :: EnvOffsetMap -> NameSymbol.T -> Types.TermClosure
+handleName :: EnvOffsetMap -> NameSymbol.T -> Types.TermLLVM
 handleName ofMap name =
   case HashMap.lookup name ofMap of
     Just index -> Types.ArrayIndex index

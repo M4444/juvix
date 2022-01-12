@@ -87,7 +87,7 @@ data Annotated term = Ann
 -- TODO ∷ replace more data types with SEXPs for easier
 -- processing... Might end up with having more than 1 of these which
 -- transformation is quite verbose
-data TermClosure
+data TermLLVM
   = Var NameSymbol.T
   | -- index into a given closure
     ArrayIndex IndexInto
@@ -95,7 +95,7 @@ data TermClosure
   | -- Removing captures from LamM
     LamM
       { arguments :: [NameSymbol.T],
-        body :: Annotated TermClosure
+        body :: Annotated TermLLVM
       }
   | -- Addition to Core.
     Closure
@@ -103,30 +103,30 @@ data TermClosure
         -- ArgumentOffsets are currently NameSymbol.T's due to calling
         -- conventions. Subject to change back to [ArraySlot]
         argumentOffsets :: [NameSymbol.T],
-        body :: Annotated TermClosure
+        body :: Annotated TermLLVM
       }
   | PairM
-      (Annotated TermClosure)
-      (Annotated TermClosure)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
   | CatProductIntroM
-      (Annotated TermClosure)
-      (Annotated TermClosure)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
   | CatProductElimLeftM
-      (Annotated TermClosure)
-      (Annotated TermClosure)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
   | CatProductElimRightM
-      (Annotated TermClosure)
-      (Annotated TermClosure)
-  | CatCoproductIntroLeftM (Annotated TermClosure)
-  | CatCoproductIntroRightM (Annotated TermClosure)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
+  | CatCoproductIntroLeftM (Annotated TermLLVM)
+  | CatCoproductIntroRightM (Annotated TermLLVM)
   | CatCoproductElimM
-      (Annotated TermClosure)
-      (Annotated TermClosure)
-      (Annotated TermClosure)
-      (Annotated TermClosure)
-      (Annotated TermClosure)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
+      (Annotated TermLLVM)
   | UnitM
   | AppM
-      (Annotated TermClosure)
-      [Annotated TermClosure]
+      (Annotated TermLLVM)
+      [Annotated TermLLVM]
   deriving (Show)

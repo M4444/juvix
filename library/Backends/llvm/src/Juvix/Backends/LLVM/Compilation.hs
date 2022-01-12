@@ -27,7 +27,7 @@ import qualified Prelude as P
 --------------------------------------------------------------------------------
 
 preProcess ::
-  ErasedAnn.AnnTerm PrimTy RawPrimVal -> Types.Annotated Types.TermClosure
+  ErasedAnn.AnnTerm PrimTy RawPrimVal -> Types.Annotated Types.TermLLVM
 preProcess = Conversion.op
 
 -- | Compile the input program to an LLVM module.
@@ -77,7 +77,7 @@ register t = do
 mkMain ::
   Types.Define m =>
   -- | Term to compile.
-  Types.Annotated Types.TermClosure ->
+  Types.Annotated Types.TermLLVM ->
   m LLVM.Operand
 mkMain t@(Types.Ann _usage ty _t') = do
   let (paramTys, returnTy) = functionTypeLLVM ty
@@ -105,7 +105,7 @@ mkMain t@(Types.Ann _usage ty _t') = do
 
 -- | Compile a term to its equivalent LLVM code.
 compileTerm ::
-  Types.Define m => Types.Annotated Types.TermClosure -> m LLVM.Operand
+  Types.Define m => Types.Annotated Types.TermLLVM -> m LLVM.Operand
 compileTerm (Types.Ann _usage ty t) =
   case t of
     Types.LamM as body -> compileLam ty as body
@@ -121,7 +121,7 @@ compileTerm (Types.Ann _usage ty t) =
 -- | @compileTermForApplication@ like @compileTerm@ however it will
 -- promote lambdas to closures to make the calling convention for HOF proper.
 compileTermForApplication ::
-  Types.Define m => Types.Annotated Types.TermClosure -> m LLVM.Operand
+  Types.Define m => Types.Annotated Types.TermLLVM -> m LLVM.Operand
 compileTermForApplication ann@(Types.Ann _usage ty t) =
   case t of
     Types.LamM as body -> do
@@ -151,7 +151,7 @@ compileLam ::
   -- | List of parameter names.
   [NameSymbol.T] ->
   -- | The body of the lambda abstraction.
-  Types.Annotated Types.TermClosure ->
+  Types.Annotated Types.TermLLVM ->
   m LLVM.Operand
 compileLam ty arguments body = do
   lamName <- Block.generateUniqueSymbol "lambda"
@@ -165,7 +165,7 @@ compileClosure ::
   ErasedAnn.Type PrimTy ->
   [Types.Capture] ->
   [NameSymbol.T] ->
-  Types.Annotated Types.TermClosure ->
+  Types.Annotated Types.TermLLVM ->
   m LLVM.Operand
 compileClosure ty captures args body = do
   name <- Block.generateUniqueSymbol "closure"
@@ -188,9 +188,9 @@ compileApp ::
   -- | Application return type
   ErasedAnn.Type PrimTy ->
   -- | The function term of an application.
-  Types.Annotated Types.TermClosure ->
+  Types.Annotated Types.TermLLVM ->
   -- | The arguments to the application.
-  [Types.Annotated Types.TermClosure] ->
+  [Types.Annotated Types.TermLLVM] ->
   m LLVM.Operand
 compileApp returnTy f@Types.Ann {term} xs =
   case term of
@@ -244,7 +244,7 @@ compilePrimApp ::
   -- | The function primitive of the application.
   RawPrimVal ->
   -- | The arguments to the application.
-  [Types.Annotated Types.TermClosure] ->
+  [Types.Annotated Types.TermLLVM] ->
   m LLVM.Operand
 compilePrimApp ty f xs
   | arityRaw f == lengthN xs =
