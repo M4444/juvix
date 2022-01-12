@@ -1,4 +1,4 @@
-module Juvix.Backends.LLVM.Pass.ClosureConversion (op) where
+module Juvix.Backends.LLVM.Pass.Conversion (op) where
 
 import qualified Juvix.Backends.LLVM.Pass.Types as Types
 import qualified Juvix.Backends.LLVM.Primitive as Prim

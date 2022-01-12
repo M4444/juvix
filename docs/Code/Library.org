@@ -268,7 +268,7 @@ Surface language
   + [[Plonk/Types]]
   + [[Application]]
   + [[Core/Base/Types]]
-  + [[Conversion]]
+  + [[Ann/Conversion]]
   + [[Prim]]
   + [[Ann/Types]]
   + [[Evaluator]]
@@ -370,7 +370,7 @@ Surface language
   + [[Codegen/Closure]]
   + [[Codegen/Types]]
   + [[CString]]
-  + [[ClosureConversion]]
+  + [[Pass/Conversion]]
   + [[Pass/Types]]
   + [[Primitive]]
   + [[Ann]]
@@ -510,7 +510,7 @@ Provides a mechanism for defining Sum types
   + [[Library]]
   + [[HashMap]]
 ******* Pass
-******** ClosureConversion
+******** Conversion <<Pass/Conversion>>
 - _Relies on_
   + [[Pass/Types]]
   + [[Primitive]]
@@ -815,11 +815,11 @@ keeps the extensions.
   + [[Library/Usage]]
 ****** Ann
 - _Relies on_
-  + [[Conversion]]
+  + [[Ann/Conversion]]
   + [[Ann/Pretty]]
   + [[Prim]]
   + [[Ann/Types]]
-******* Conversion
+******* Conversion <<Ann/Conversion>>
 - _Relies on_
   + [[Application]]
   + [[Core/Base]]

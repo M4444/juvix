@@ -7,7 +7,7 @@ import qualified Juvix.Backends.LLVM.Codegen.Block as Block
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
 import qualified Juvix.Backends.LLVM.Codegen.Types as Types
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
-import qualified Juvix.Backends.LLVM.Pass.ClosureConversion as ClosureConversion
+import qualified Juvix.Backends.LLVM.Pass.Conversion as Conversion
 import qualified Juvix.Backends.LLVM.Pass.Types as Types
 import Juvix.Backends.LLVM.Primitive
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
@@ -28,7 +28,7 @@ import qualified Prelude as P
 
 preProcess ::
   ErasedAnn.AnnTerm PrimTy RawPrimVal -> Types.Annotated Types.TermClosure
-preProcess = ClosureConversion.op
+preProcess = Conversion.op
 
 -- | Compile the input program to an LLVM module.
 -- TODO: maybe do something smarter with the module name?
