@@ -164,4 +164,17 @@ data TermLLVM
   | AppM
       (Annotated TermLLVM)
       [Annotated TermLLVM]
+  | ScopedRecordDeclM RecordDecl (Annotated TermLLVM)
+  | FieldM TermFieldSelector
+  | RecordM TermRecordConstructor
   deriving (Show)
+
+type FieldDecl = (FieldName, TypeLLVM)
+
+type RecordSpec = [FieldDecl]
+
+type RecordDecl = (RecordName, RecordSpec)
+
+type TermFieldSelector = (RecordName, FieldName, Annotated TermLLVM)
+
+type TermRecordConstructor = (RecordName, [Annotated TermLLVM])
