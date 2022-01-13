@@ -34,6 +34,8 @@ data CodegenState = CodegenState
     typTab :: TypeTable,
     -- | a mapping from the variants to the sum type
     varTab :: VariantToType,
+    -- | a mapping from names to record types
+    recordTab :: RecordTable,
     -- | Count of basic blocks
     blockCount :: Int,
     -- | Count of unnamed instructions
@@ -116,6 +118,12 @@ newtype Codegen a = CodeGen {runCodegen :: CodegenAlias a}
       HasSource "typTab" TypeTable
     )
     via StateField "typTab" CodegenAlias
+  deriving
+    ( HasState "recordTab" RecordTable,
+      HasSink "recordTab" RecordTable,
+      HasSource "recordTab" RecordTable
+    )
+    via StateField "recordTab" CodegenAlias
   deriving
     ( HasState "blockCount" Int,
       HasSink "blockCount" Int,
@@ -231,9 +239,22 @@ type AllocaSum m =
     HasState "varTab" VariantToType m
   )
 
+type MallocRecord m =
+  ( RetInstruction m,
+    HasState "recordTab" RecordTable m
+  )
+
+type AllocaRecord m =
+  ( RetInstruction m,
+    HasState "recordTab" RecordTable m,
+    HasState "symTab" SymbolTable m
+  )
+
 type Define m =
   ( RetInstruction m,
     Externf m,
+    MallocRecord m,
+    AllocaRecord m,
     HasState "blockCount" Int m,
     HasState "moduleDefinitions" [Definition] m,
     HasState "names" Names m

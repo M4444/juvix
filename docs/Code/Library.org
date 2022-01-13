@@ -486,6 +486,7 @@ Module for predefined constants
 - _Relies on_
   + [[CString]]
   + [[CString]]
+  + [[Types/Record]]
   + [[Shared]]
   + [[Sum]]
   + [[Library]]
