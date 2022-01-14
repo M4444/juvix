@@ -146,6 +146,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     alloca,
     load,
     store,
+    mapStore,
 
     -- ** Casting Operations
     bitCast,
@@ -181,7 +182,7 @@ import qualified LLVM.AST.Name as Name
 import qualified LLVM.AST.Operand as Operand
 import qualified LLVM.AST.ParameterAttribute as ParameterAttribute
 import qualified LLVM.AST.Type as Type
-import Prelude (String)
+import Prelude (String, uncurry)
 
 --------------------------------------------------------------------------------
 -- Codegen Operations
@@ -228,6 +229,7 @@ emptyCodegen =
       Types.symTab = Map.empty,
       Types.typTab = Map.empty,
       Types.varTab = Map.empty,
+      Types.recordTab = Map.empty,
       Types.count = 0,
       Types.names = Map.empty,
       Types.strings = mempty,
@@ -1152,6 +1154,10 @@ load typ ptr = instr typ $ Load False ptr Nothing 0 []
 -- See @load@ for an example call.
 store :: Instruct m => Operand -> Operand -> m ()
 store ptr val = unnminstr $ Store False ptr val Nothing 0 []
+
+-- | Performs a list of @store@ operations.
+mapStore :: Instruct m => [Operand] -> [Operand] -> m ()
+mapStore ptrs vals = mapM_ (Prelude.uncurry store) $ zip ptrs vals
 
 --------------------------------------------------------------------------------
 -- Casting Operations

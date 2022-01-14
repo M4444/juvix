@@ -6,6 +6,7 @@ where
 
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
+import qualified Juvix.Backends.LLVM.Codegen.Record as Record
 import qualified Juvix.Backends.LLVM.Codegen.Types as Types
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
 import qualified Juvix.Backends.LLVM.Pass.Conversion as Conversion
@@ -128,6 +129,9 @@ compileTerm (Types.Ann _usage ty t) =
     Types.Closure cap arg body ->
       compileClosure ty cap arg body
     Types.Prim _t -> mkPrim _t ty
+    Types.ScopedRecordDeclM decl term -> compileRecordDecl decl term
+    Types.FieldM selector -> compileField ty selector
+    Types.RecordM constructor -> compileRecord ty constructor
     _ -> P.error "TODO"
 
 -- | @compileTermForApplication@ like @compileTerm@ however it will
@@ -308,6 +312,46 @@ mkPrim prim ty = case prim of
     -- Types.PrimTy (PrimTy (LLVM.PointerType (LLVM.IntegerType 8) _)) -> do
     name <- Block.generateUniqueName "LitString"
     Block.globalString (toS s) name
+
+compileRecordDecl ::
+  Types.Define m =>
+  Monad m =>
+  Types.RecordDecl ->
+  -- | Primitive value.
+  Types.Annotated Types.TermLLVM ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileRecordDecl (recordName, fieldDecls) term = do
+  Record.register recordName (map fst fieldDecls) (map (typeToLLVM . snd) fieldDecls)
+  compileTerm term
+
+compileRecord ::
+  Types.Define m =>
+  Monad m =>
+  Types.TypeLLVM ->
+  -- | Primitive value.
+  Types.TermRecordConstructor ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms) | recordTypeName == recordName = do
+  compiledFields <- mapM compileTerm fieldTerms
+  Record.makeRecord recordName compiledFields
+compileRecord (Types.RecordType recordTypeName) (recordName, _) =
+  P.error $ "record of type " <> show recordTypeName <> " but name " <> show recordName
+compileRecord ty (recordName, _) =
+  P.error $ "record term " <> show recordName <> " with non-record type " <> show ty
+
+compileField ::
+  Types.Define m =>
+  Monad m =>
+  Types.TypeLLVM ->
+  -- | Primitive value.
+  Types.TermFieldSelector ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileField ty (recordName, fieldName, term) = do
+  compiledTerm <- compileTerm term
+  Record.loadField recordName fieldName compiledTerm (typeToLLVM ty)
 
 --------------------------------------------------------------------------------
 -- Capture Conversion
