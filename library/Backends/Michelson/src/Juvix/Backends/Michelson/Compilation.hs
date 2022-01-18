@@ -16,8 +16,8 @@ import Juvix.Library hiding (Type)
 import qualified Morley.Michelson.Printer as M
 import qualified Morley.Michelson.TypeCheck as M
 import qualified Morley.Michelson.Typed as MT
-import qualified Morley.Michelson.Untyped as M
 import qualified Morley.Michelson.Typed.Existential as M
+import qualified Morley.Michelson.Untyped as M
 
 typedContractToSource :: M.SomeContract -> Text
 typedContractToSource (M.SomeContract (MT.Contract {cCode = instr})) =
