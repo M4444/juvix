@@ -119,6 +119,20 @@ data FunctionEnvironment
     ArgumentEnvironemnt
   deriving (Show)
 
+------------------------------
+---- Record-related types ----
+------------------------------
+
+type FieldDecl = (FieldName, TypeLLVM)
+
+type RecordSpec = [FieldDecl]
+
+type RecordDecl = (RecordName, RecordSpec)
+
+type TermFieldSelector = (RecordName, FieldName, Annotated TermLLVM)
+
+type TermRecordConstructor = (RecordName, [Annotated TermLLVM])
+
 --------------------------------------------------------------------------------
 -- New Core Form we will Process Over
 --------------------------------------------------------------------------------
@@ -189,13 +203,3 @@ data TermLLVM
     -- | fields (whose types must therefore match those of the record type).
     RecordM TermRecordConstructor
   deriving (Show)
-
-type FieldDecl = (FieldName, TypeLLVM)
-
-type RecordSpec = [FieldDecl]
-
-type RecordDecl = (RecordName, RecordSpec)
-
-type TermFieldSelector = (RecordName, FieldName, Annotated TermLLVM)
-
-type TermRecordConstructor = (RecordName, [Annotated TermLLVM])
