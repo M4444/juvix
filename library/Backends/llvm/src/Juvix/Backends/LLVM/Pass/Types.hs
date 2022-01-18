@@ -18,6 +18,14 @@ type RecordName = NameSymbol.T
 
 type FieldName = NameSymbol.T
 
+-- | This is LLVM's internal analogue of Core's term type.
+-- |
+-- | Currently, the only difference is that LLVM's version has a
+-- | RecordType, as LLVM can now compile records, but Core can
+-- | not yet type them.  Tests (and potentially other modules)
+-- | can generate terms of TypeLLVM and pass them directly to
+-- | LLVM to compile them even before Core can generate terms
+-- | that LLVM would compile to RecordType.
 data TypeLLVM
   = SymT NameSymbol.T
   | Star BaseTypes.Universe
@@ -30,6 +38,9 @@ data TypeLLVM
   | RecordType RecordName
   deriving (Show, Read, Eq, Generic)
 
+-- | When LLVM receives a term from Core, it converts the core type
+-- | to its LLVM-extended version using this function (see the
+-- | definition of TypeLLVM).
 injectErasedTypeIntoLLVM :: ErasedAnn.Type Prim.PrimTy -> TypeLLVM
 injectErasedTypeIntoLLVM t = case t of
   ErasedAnn.SymT name -> SymT name
@@ -164,9 +175,19 @@ data TermLLVM
   | AppM
       (Annotated TermLLVM)
       [Annotated TermLLVM]
-  | ScopedRecordDeclM RecordDecl (Annotated TermLLVM)
-  | FieldM TermFieldSelector
-  | RecordM TermRecordConstructor
+  | -- | One of the extensions to Core's term type, this wraps
+    -- | a term in a record type declaration, so that the record
+    -- | type is available within the wrapped term.
+    ScopedRecordDeclM RecordDecl (Annotated TermLLVM)
+  | -- | Another of the extensions to Core's term type, this selects
+    -- | a field with the given name from a term which must have a
+    -- | record type.  (So it's the eliminator for records.)
+    FieldM TermFieldSelector
+  | -- | Another of the extensions to Core's term type, this is the
+    -- | introduction for records, which constructs a term of a record
+    -- | type which must be in scope from terms which will become the
+    -- | fields (whose types must therefore match those of the record type).
+    RecordM TermRecordConstructor
   deriving (Show)
 
 type FieldDecl = (FieldName, TypeLLVM)
