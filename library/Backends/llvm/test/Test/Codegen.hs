@@ -54,10 +54,10 @@ trivialLLVMCodegenClosureTest :: TestTree
 trivialLLVMCodegenClosureTest = testCase "Trivial LLVM codegen test with closure type" $ do
   let testVal = 42
       ty = llvmIntType 8
-      term = PassTypes.Prim (Primitive.LitInt testVal)
+      term = llvmIntVal testVal
       compiled =
         fromRight (P.error "trivial test compilation failed") $
-          Compilation.termLLVMToModule PassTypes.Ann {usage = Usage.SAny, annTy = ty, term = term}
+          Compilation.termLLVMToModule $ llvmAnnotatedTerm ty term
   output <- runIntModule compiled
   let casted :: Int8 = fromIntegral output
   casted @?= fromIntegral testVal
@@ -74,18 +74,18 @@ trivialLLVMCodegenAlgebraicTest = testCase "Trivial LLVM codegen test with algeb
       field8bName = "testFieldInt8b"
       field16Name = "testFieldInt16"
       testRecordTy = (recordTypeName, [(field8aName, int8Ty), (field8bName, int8Ty), (field16Name, int16Ty)])
-      internalTerm8a = PassTypes.Prim $ Primitive.LitInt test8aVal
-      annotatedTerm8a = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = int8Ty, PassTypes.term = internalTerm8a}
-      internalTerm8b = PassTypes.Prim $ Primitive.LitInt test8bVal
-      annotatedTerm8b = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = int8Ty, PassTypes.term = internalTerm8b}
-      internalTerm16 = PassTypes.Prim $ Primitive.LitInt test16Val
-      annotatedTerm16 = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = int16Ty, PassTypes.term = internalTerm16}
+      internalTerm8a = llvmIntVal test8aVal
+      annotatedTerm8a = llvmAnnotatedTerm int8Ty internalTerm8a
+      internalTerm8b = llvmIntVal test8bVal
+      annotatedTerm8b = llvmAnnotatedTerm int8Ty internalTerm8b
+      internalTerm16 = llvmIntVal test16Val
+      annotatedTerm16 = llvmAnnotatedTerm int16Ty internalTerm16
       testRecordTerm = PassTypes.RecordM (recordTypeName, [annotatedTerm8a, annotatedTerm8b, annotatedTerm16])
-      annotatedRecordTerm = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = PassTypes.RecordType recordTypeName, PassTypes.term = testRecordTerm}
+      annotatedRecordTerm = llvmAnnotatedTerm (PassTypes.RecordType recordTypeName) testRecordTerm
       testFieldTerm = PassTypes.FieldM (recordTypeName, field8bName, annotatedRecordTerm)
-      internalAnnotatedTerm = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = int8Ty, PassTypes.term = testFieldTerm}
+      internalAnnotatedTerm = llvmAnnotatedTerm int8Ty testFieldTerm
       term = PassTypes.ScopedRecordDeclM testRecordTy internalAnnotatedTerm
-      annotatedTerm = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = int8Ty, PassTypes.term = term}
+      annotatedTerm = llvmAnnotatedTerm int8Ty term
       compiled =
         fromRight (P.error "trivial test compilation failed") $
           Compilation.termLLVMToModule annotatedTerm
