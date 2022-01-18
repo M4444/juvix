@@ -337,9 +337,15 @@ compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms) | recor
   compiledFields <- mapM compileTerm fieldTerms
   Record.makeRecord recordName compiledFields
 compileRecord (Types.RecordType recordTypeName) (recordName, _) =
-  P.error $ "record of type " <> show recordTypeName <> " but name " <> show recordName
+  throw @"err"
+    ( Types.MisnamedRecord $
+        "record of type " <> show recordTypeName <> " but name " <> show recordName
+    )
 compileRecord ty (recordName, _) =
-  P.error $ "record term " <> show recordName <> " with non-record type " <> show ty
+  throw @"err"
+    ( Types.NonRecordType $
+        "record term " <> show recordName <> " with non-record type " <> show ty
+    )
 
 compileField ::
   Types.Define m =>
