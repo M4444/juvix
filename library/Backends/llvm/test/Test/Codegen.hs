@@ -89,7 +89,6 @@ trivialLLVMCodegenAlgebraicTest = testCase "Trivial LLVM codegen test with algeb
       compiled =
         fromRight (P.error "trivial test compilation failed") $
           Compilation.termLLVMToModule annotatedTerm
-  putStrLn $ "LLVM AST: " <> Pretty.ppllvm compiled
   output <- runIntModule compiled
   let casted :: Int8 = fromIntegral output
   casted @?= fromIntegral test8bVal
