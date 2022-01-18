@@ -116,9 +116,10 @@ loadField recordName fieldName location ty = do
 makeRecord ::
   Types.Define m =>
   PassTypes.RecordName ->
+  [Type.Type] ->
   [AST.Operand] ->
   m AST.Operand
-makeRecord recordName fieldTerms = do
+makeRecord recordName compiledFieldTypes fieldTerms = do
   recordTable <- get @"recordTab"
   record <-
     case Map.lookup (toSymbol recordName) recordTable of
@@ -130,6 +131,15 @@ makeRecord recordName fieldTerms = do
   recordPtr <- Block.mallocType recordType
   let fieldNames = map (fromSymbol . fst) fieldDescs
   let fieldTypes = map snd fieldDescs
+  if compiledFieldTypes /= fieldTypes
+    then
+      throw @"err" $
+        Types.MismatchedFieldTypes $
+          "typechecker allowed mismatched field types: expected "
+            <> show fieldTypes
+            <> "; got "
+            <> show compiledFieldTypes
+    else pure ()
   fieldPtrs <- mapM (flip (getFieldPtr recordName) recordPtr) fieldNames
   newFields <- mapM Block.mallocType fieldTypes
   -- Store the pointers to the memory newly allocated for the fields into

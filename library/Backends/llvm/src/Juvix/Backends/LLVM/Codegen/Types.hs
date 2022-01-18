@@ -96,6 +96,11 @@ data Errors
     -- | term did not come directly from a test, or some other module that
     -- | bypasses the typechecker)
     NonExistentField Text
+  | -- | Found a record term whose fields' types did not match the field
+    -- | types in the record type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedFieldTypes Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)

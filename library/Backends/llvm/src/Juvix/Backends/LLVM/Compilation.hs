@@ -335,7 +335,7 @@ compileRecord ::
   m LLVM.Operand
 compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms) | recordTypeName == recordName = do
   compiledFields <- mapM compileTerm fieldTerms
-  Record.makeRecord recordName compiledFields
+  Record.makeRecord recordName (map (typeToLLVM . Types.annTy) fieldTerms) compiledFields
 compileRecord (Types.RecordType recordTypeName) (recordName, _) =
   throw @"err"
     ( Types.MisnamedRecord $
