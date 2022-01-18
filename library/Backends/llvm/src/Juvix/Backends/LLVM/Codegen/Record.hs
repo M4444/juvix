@@ -113,6 +113,9 @@ loadField recordName fieldName location ty = do
 
 -- | Given the name of a record type and a list of compiled field terms,
 -- | allocate a record and store the given terms in it.
+-- |
+-- | WARNING:  The memory allocations herein leak memory, pending our
+-- | implementing garbage collection.
 makeRecord ::
   Types.Define m =>
   PassTypes.RecordName ->
