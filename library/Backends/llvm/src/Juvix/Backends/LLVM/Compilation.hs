@@ -333,9 +333,10 @@ compileRecord ::
   Types.TermRecordConstructor ->
   -- | Type of the primitive.
   m LLVM.Operand
-compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms) | recordTypeName == recordName = do
-  compiledFields <- mapM compileTerm fieldTerms
-  Record.makeRecord recordName (map (typeToLLVM . Types.annTy) fieldTerms) compiledFields
+compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms)
+  | recordTypeName == recordName = do
+    compiledFields <- mapM compileTerm fieldTerms
+    Record.makeRecord recordName (map (typeToLLVM . Types.annTy) fieldTerms) compiledFields
 compileRecord (Types.RecordType recordTypeName) (recordName, _) =
   throw @"err"
     ( Types.MisnamedRecord $
