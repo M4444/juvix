@@ -27,10 +27,9 @@ register ::
 register recordName fieldNames llvmFieldTypes = do
   let llvmTypeName = recordTypeName recordName
   Block.addType llvmTypeName (llvmRecordType llvmFieldTypes)
-  recordTable <- get @"recordTab"
   let typeRef = Type.NamedTypeReference llvmTypeName
   let fieldDescs = zip (map toSymbol fieldNames) llvmFieldTypes
-  put @"recordTab" $ Map.insert (toSymbol recordName) (typeRef, fieldDescs) recordTable
+  modify @"recordTab" $ Map.insert (toSymbol recordName) (typeRef, fieldDescs)
 
 recordTypeName :: NameSymbol.T -> AST.Name
 recordTypeName recordName = Block.internName $ "record-" <> toSymbol recordName
