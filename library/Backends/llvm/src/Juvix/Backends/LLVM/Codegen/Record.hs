@@ -48,10 +48,11 @@ llvmRecordType llvmFieldTypes =
 recordFields :: Types.Define m => PassTypes.RecordName -> m [(Symbol, Type.Type)]
 recordFields recordName = do
   recordTable <- get @"recordTab"
-  pure $
-    snd $
-      fromMaybe (P.error "typechecker allowed record of non-existent type") $
-        Map.lookup (toSymbol recordName) recordTable
+  case Map.lookup (toSymbol recordName) recordTable of
+    Just (_, fields) -> pure fields
+    Nothing ->
+      throw @"err" $
+        Types.NonExistentRecordType "typechecker allowed record of non-existent type"
 
 -- | Get the index of the field with the given name within the list of
 -- | fields of the record with the given name.
@@ -62,9 +63,11 @@ fieldIndex ::
   m Int
 fieldIndex recordName fieldName = do
   fieldDescs <- recordFields recordName
-  pure $
-    fromMaybe (P.error "typechecker allowed selection of non-existent field") $
-      List.elemIndex (toSymbol fieldName) $ map fst fieldDescs
+  case List.elemIndex (toSymbol fieldName) $ map fst fieldDescs of
+    Just index -> pure index
+    Nothing ->
+      throw @"err" $
+        Types.NonExistentField "typechecker allowed selection of non-existent field"
 
 -- | Given the name of a record type and a pointer to the location of
 -- | a record term with that type, get a pointer to the location of
@@ -117,7 +120,13 @@ makeRecord ::
   m AST.Operand
 makeRecord recordName fieldTerms = do
   recordTable <- get @"recordTab"
-  let (recordType, fieldDescs) = fromMaybe (P.error "typechecker allowed record of non-existent type") (Map.lookup (toSymbol recordName) recordTable)
+  record <-
+    case Map.lookup (toSymbol recordName) recordTable of
+      Just recordDesc -> pure recordDesc
+      Nothing ->
+        throw @"err" $
+          Types.NonExistentRecordType "typechecker allowed record of non-existent type"
+  let (recordType, fieldDescs) = record
   recordPtr <- Block.mallocType recordType
   let fieldNames = map (fromSymbol . fst) fieldDescs
   let fieldTypes = map snd fieldDescs

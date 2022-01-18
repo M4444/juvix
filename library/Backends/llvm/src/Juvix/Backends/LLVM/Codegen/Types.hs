@@ -82,10 +82,20 @@ data Errors
     -- | typechecker)
     MisnamedRecord Text
   | -- | Found a record term with a non-record type (this indicates a
-    -- | bug in the typechecker, if the type an term did not come
+    -- | bug in the typechecker, if the type of the term did not come
     -- | directly from a test, or some other module that bypasses the
     -- | typechecker)
     NonRecordType Text
+  | -- | Found a record term with an undeclared record type (this indicates a
+    -- | bug in the typechecker, if the type of the term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    NonExistentRecordType Text
+  | -- | Found a field term with a name not present in its type's list of
+    -- | fields (this indicates a bug in the typechecker, if the type of the
+    -- | term did not come directly from a test, or some other module that
+    -- | bypasses the typechecker)
+    NonExistentField Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)
