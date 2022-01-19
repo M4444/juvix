@@ -1,5 +1,6 @@
 module Juvix.Backends.LLVM.Codegen.Record
   ( register,
+    restoreTable,
     loadField,
     makeRecord,
   )
@@ -17,22 +18,34 @@ import qualified LLVM.AST.Type as Type
 import qualified Prelude as P
 
 -- | @register@ registers a record type with the given name and
--- | field names and types
+-- | field names and types.  It returns the old record table so
+-- | that the caller can restore it (with restoreTable) after leaving
+-- | the scope of a record declaration.
 register ::
   Types.Define m =>
   PassTypes.RecordName ->
   [PassTypes.FieldName] ->
   [Type.Type] ->
-  m ()
+  m Types.RecordTable
 register recordName fieldNames llvmFieldTypes = do
-  let llvmTypeName = recordTypeName recordName
+  oldTable <- get @"recordTab"
+  llvmTypeName <- recordTypeName recordName
   Block.addType llvmTypeName (llvmRecordType llvmFieldTypes)
   let typeRef = Type.NamedTypeReference llvmTypeName
   let fieldDescs = zip (map toSymbol fieldNames) llvmFieldTypes
-  modify @"recordTab" $ Map.insert (toSymbol recordName) (typeRef, fieldDescs)
+  put @"recordTab" $ Map.insert (toSymbol recordName) (typeRef, fieldDescs) oldTable
+  pure oldTable
 
-recordTypeName :: NameSymbol.T -> AST.Name
-recordTypeName recordName = Block.internName $ "record-" <> toSymbol recordName
+restoreTable ::
+  Types.Define m =>
+  Types.RecordTable ->
+  m ()
+restoreTable = put @"recordTab"
+
+recordTypeName :: Types.Define m => NameSymbol.T -> m AST.Name
+recordTypeName recordName = do
+  symbol <- Block.generateUniqueSymbol $ "record-" <> toSymbol recordName
+  pure $ Block.internName symbol
 
 llvmRecordType :: [Type.Type] -> Type.Type
 llvmRecordType llvmFieldTypes =

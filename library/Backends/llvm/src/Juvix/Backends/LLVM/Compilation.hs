@@ -322,8 +322,11 @@ compileRecordDecl ::
   -- | Type of the primitive.
   m LLVM.Operand
 compileRecordDecl (recordName, fieldDecls) term = do
-  Record.register recordName (map fst fieldDecls) (map (typeToLLVM . snd) fieldDecls)
-  compileTerm term
+  oldTable <-
+    Record.register recordName (map fst fieldDecls) (map (typeToLLVM . snd) fieldDecls)
+  compiledTerm <- compileTerm term
+  Record.restoreTable oldTable
+  pure compiledTerm
 
 compileRecord ::
   Types.Define m =>
