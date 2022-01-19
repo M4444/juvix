@@ -44,12 +44,13 @@ llvmIntVal = PassTypes.Prim . Primitive.LitInt
 llvmAnnotatedTerm :: PassTypes.TypeLLVM -> PassTypes.TermLLVM -> PassTypes.Annotated PassTypes.TermLLVM
 llvmAnnotatedTerm ty term = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = ty, PassTypes.term = term}
 
-annotatedBinOp  ::
+annotatedBinOp ::
   ASTTypes.Type ->
   Primitive.RawPrimVal ->
   PassTypes.Annotated PassTypes.TermLLVM
-annotatedBinOp ty op = llvmAnnotatedTerm (PassTypes.PrimTy $ Primitive.PrimTy ty) $
-  PassTypes.Prim op
+annotatedBinOp ty op =
+  llvmAnnotatedTerm (PassTypes.PrimTy $ Primitive.PrimTy ty) $
+    PassTypes.Prim op
 
 annotatedBinOpApp ::
   PassTypes.TypeLLVM ->
