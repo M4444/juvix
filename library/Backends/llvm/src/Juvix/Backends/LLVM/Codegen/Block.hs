@@ -46,9 +46,8 @@
 -- @
 --   compileLam ty captures arguments body
 --    | length captures == 0 = do
---       let (llvmArgty, llvmRetty) =
---             functionTypeLLVM ty
---           llvmArgNames =
+--       (llvmArgty, llvmRetty) <- functionTypeLLVM ty
+--       let llvmArgNames =
 --             fmap (Block.internName . NameSymbol.toSymbol) arguments
 --           llvmArguments =
 --             zip llvmArgty llvmArgNames
@@ -1159,7 +1158,7 @@ callVoid fn args =
 -- --
 -- let -- We should probably get the type from the function itself
 --     -- rather than pass in what it should be here
---     functionType = typeToLLVM returnTy
+--     functionType <- typeToLLVM returnTy
 --     -- ignore attributes for now!
 --     argsAtrributes = zip arguments (repeat [])
 --

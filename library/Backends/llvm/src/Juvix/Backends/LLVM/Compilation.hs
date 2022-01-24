@@ -95,8 +95,8 @@ mkMain ::
   Types.Annotated Types.TermLLVM ->
   m LLVM.Operand
 mkMain t@(Types.Ann _usage ty _t') = do
-  let (paramTys, returnTy) = functionTypeLLVM ty
-      paramNames =
+  (paramTys, returnTy) <- functionTypeLLVM ty
+  let paramNames =
         zipWith
           (\l r -> Block.internName (l <> r))
           (replicate (length paramTys) "arg")
@@ -134,6 +134,9 @@ compileTerm (Types.Ann _usage ty t) =
     Types.ScopedRecordDeclM decl term -> compileRecordDecl decl term
     Types.FieldM selector -> compileField ty selector
     Types.RecordM constructor -> compileRecord ty constructor
+    Types.ScopedSumDeclM decl term -> compileSumDecl decl term
+    Types.VariantM injector -> compileVariant ty injector
+    Types.MatchM cases -> compileMatch ty cases
     _ -> P.error "TODO"
 
 -- | @compileTermForApplication@ like @compileTerm@ however it will
@@ -219,19 +222,19 @@ compileApp returnTy f@Types.Ann {term} xs =
       arguments <- traverse compileTermForApplication xs
       -- do a case on the function itself to see if it's a closure!
       function <- compileTerm f
-      --
-      let -- We should probably get the type from the function itself
-          -- rather than pass in what it should be here
-          newReturnType = typeToLLVM returnTy
-          -- ignore attributes for now!
+      -- We should probably get the type from the function itself
+      -- rather than pass in what it should be here
+      newReturnType <- typeToLLVM returnTy
+      let -- ignore attributes for now!
           argsAtrributes = zip arguments (repeat [])
       --
       case Typed.typeOf function of
         -- Closure calling case
         LLVM.PointerType (LLVM.NamedTypeReference {}) _ -> do
+          llvmTypes <- mapM (typeToLLVM . Types.annTy) xs
           let argumentTypes =
                 Closure.environmentPtr :
-                llvmFunctionsToClosure (fmap (typeToLLVM . Types.annTy) xs)
+                llvmFunctionsToClosure llvmTypes
               functionType =
                 LLVM.FunctionType newReturnType argumentTypes False
           --------------------------------
@@ -270,25 +273,28 @@ compilePrimApp ty f xs
       Add -> do
         x <- compileTerm (xs P.!! 0)
         y <- compileTerm (xs P.!! 1)
-        Block.add (typeToLLVM ty) x y
+        llvmTy <- typeToLLVM ty
+        Block.add llvmTy x y
       Sub -> do
+        llvmTy <- typeToLLVM ty
         x <- compileTerm (xs P.!! 0)
         y <- compileTerm (xs P.!! 1)
-        Block.sub (typeToLLVM ty) x y
+        Block.sub llvmTy x y
       Mul -> do
+        llvmTy <- typeToLLVM ty
         x <- compileTerm (xs P.!! 0)
         y <- compileTerm (xs P.!! 1)
-        Block.mul (typeToLLVM ty) x y
+        Block.mul llvmTy x y
   | otherwise =
     throw @"err"
       ( Types.WrongNumberOfArguments
-          ("Was expecting " <> show (arityRaw f) <> "but got " <> show (lengthN xs))
+          ("Was expecting " <> show (arityRaw f) <> " but got " <> show (lengthN xs))
       )
 
 compileIndex ::
   Types.Call m => Types.TypeLLVM -> Types.IndexInto -> m LLVM.Operand
 compileIndex ty index = do
-  let newTy = typeToLLVM ty
+  newTy <- typeToLLVM ty
   closurePtr <- loadElementIndex index
   cast <- Block.bitCast closurePtr (Types.pointerOf newTy)
   Block.load newTy cast
@@ -317,22 +323,20 @@ mkPrim prim ty = case prim of
 
 compileRecordDecl ::
   Types.Define m =>
-  Monad m =>
   Types.RecordDecl ->
   -- | Primitive value.
   Types.Annotated Types.TermLLVM ->
   -- | Type of the primitive.
   m LLVM.Operand
 compileRecordDecl (recordName, fieldDecls) term = do
-  oldTable <-
-    Record.register recordName (map fst fieldDecls) (map (typeToLLVM . snd) fieldDecls)
+  llvmTypes <- mapM (typeToLLVM . snd) fieldDecls
+  oldTable <- Record.register recordName (map fst fieldDecls) llvmTypes
   compiledTerm <- compileTerm term
   Record.restoreTable oldTable
   pure compiledTerm
 
 compileRecord ::
   Types.Define m =>
-  Monad m =>
   Types.TypeLLVM ->
   -- | Primitive value.
   Types.TermRecordConstructor ->
@@ -341,7 +345,8 @@ compileRecord ::
 compileRecord (Types.RecordType recordTypeName) (recordName, fieldTerms)
   | recordTypeName == recordName = do
     compiledFields <- mapM compileTerm fieldTerms
-    Record.makeRecord recordName (map (typeToLLVM . Types.annTy) fieldTerms) compiledFields
+    llvmTypes <- mapM (typeToLLVM . Types.annTy) fieldTerms
+    Record.makeRecord recordName llvmTypes compiledFields
 compileRecord (Types.RecordType recordTypeName) (recordName, _) =
   throw @"err"
     ( Types.MisnamedRecord $
@@ -355,7 +360,6 @@ compileRecord ty (recordName, _) =
 
 compileField ::
   Types.Define m =>
-  Monad m =>
   Types.TypeLLVM ->
   -- | Primitive value.
   Types.TermFieldSelector ->
@@ -363,7 +367,49 @@ compileField ::
   m LLVM.Operand
 compileField ty (recordName, fieldName, term) = do
   compiledTerm <- compileTerm term
-  Record.loadField recordName fieldName compiledTerm (typeToLLVM ty)
+  llvmType <- typeToLLVM ty
+  Record.loadField recordName fieldName compiledTerm llvmType
+
+compileSumDecl ::
+  Types.Define m =>
+  Types.SumDecl ->
+  -- | Primitive value.
+  Types.Annotated Types.TermLLVM ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileSumDecl (sumName, variantDecls) term = do
+  llvmTypes <- mapM (typeToLLVM . snd) variantDecls
+  oldTable <- Sum.register sumName (map fst variantDecls) llvmTypes
+  compiledTerm <- compileTerm term
+  Sum.restoreTable oldTable
+  pure compiledTerm
+
+compileVariant ::
+  Types.Define m =>
+  Types.TypeLLVM ->
+  -- | Primitive value.
+  Types.TermVariantConstructor ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileVariant ty (sumName, variantName, term) = do
+  let variantType = Types.annTy term
+  llvmSumType <- typeToLLVM ty
+  llvmVariantType <- typeToLLVM variantType
+  compileTerm term >>= Sum.makeSum sumName variantName llvmSumType llvmVariantType
+
+compileMatch ::
+  Types.Define m =>
+  Types.TypeLLVM ->
+  -- | Primitive value.
+  Types.TermMatch ->
+  -- | Type of the primitive.
+  m LLVM.Operand
+compileMatch ty (sumName, term, cases) = do
+  outputType <- typeToLLVM ty
+  llvmCaseTypes <- mapM (typeToLLVM . Types.annTy) cases
+  compiledTerm <- compileTerm term
+  compiledCases <- mapM compileTerm cases
+  Sum.makeCase sumName outputType llvmCaseTypes compiledTerm compiledCases
 
 --------------------------------------------------------------------------------
 -- Capture Conversion
@@ -447,9 +493,8 @@ compileFunctionEnv ::
   m a ->
   m LLVM.Operand
 compileFunctionEnv name ty arguments body = do
-  let (llvmArgtyBeforeClosure, llvmRetty) =
-        functionTypeLLVM ty
-      llvmArgNames =
+  (llvmArgtyBeforeClosure, llvmRetty) <- functionTypeLLVM ty
+  let llvmArgNames =
         fmap (Block.internName . NameSymbol.toSymbol) arguments
       -- turn the function pointers to closure for any HOF
       llvmArgty =
@@ -476,23 +521,29 @@ llvmFunctionsToClosure xs =
           Closure.pointer
         _ -> x
 
-functionTypeLLVM :: Types.TypeLLVM -> ([LLVM.Type], LLVM.Type)
-functionTypeLLVM prim =
-  functionType prim
-    |> bimap (fmap typeToLLVM) typeToLLVM
+functionTypeLLVM :: Types.Define m => Types.TypeLLVM -> m ([LLVM.Type], LLVM.Type)
+functionTypeLLVM prim = do
+  let (primArgTypes, primRetType) = functionType prim
+  llvmArgTypes <- mapM typeToLLVM primArgTypes
+  llvmRetType <- typeToLLVM primRetType
+  pure (llvmArgTypes, llvmRetType)
 
 -- | Translate a Juvix type into an LLVM type.
-typeToLLVM :: Types.TypeLLVM -> LLVM.Type
-typeToLLVM (Types.PrimTy (PrimTy ty)) = ty
-typeToLLVM ty@(Types.Pi _usage _f _xs) =
-  Types.pointerOf
-    LLVM.FunctionType
-      { LLVM.resultType = typeToLLVM resultType,
-        LLVM.argumentTypes = map typeToLLVM argumentTypes,
-        LLVM.isVarArg = False
-      }
-  where
-    (argumentTypes, resultType) = functionType ty
+typeToLLVM :: Types.LookupType m => Types.TypeLLVM -> m LLVM.Type
+typeToLLVM (Types.PrimTy (PrimTy ty)) = pure ty
+typeToLLVM ty@(Types.Pi _usage _f _xs) = do
+  let (argumentTypes, resultType) = functionType ty
+  llvmArgumentTypes <- mapM typeToLLVM argumentTypes
+  llvmResultType <- typeToLLVM resultType
+  pure $
+    Types.pointerOf
+      LLVM.FunctionType
+        { LLVM.resultType = llvmResultType,
+          LLVM.argumentTypes = llvmArgumentTypes,
+          LLVM.isVarArg = False
+        }
+typeToLLVM ty@(Types.RecordType name) = Record.lookupType name
+typeToLLVM ty@(Types.SumType name) = Sum.lookupType name
 
 -- | Construct a tuple of the types of the argument and return type of a function
 -- type.
