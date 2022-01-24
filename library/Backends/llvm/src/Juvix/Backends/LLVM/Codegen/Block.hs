@@ -140,6 +140,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     phi,
     switch,
     generateIf,
+    generateSwitch,
 
     -- ** Calling Operations
     emptyArgs,
@@ -1048,6 +1049,48 @@ generateIf ty cond tr fl = do
   ------------------
   setBlock ifExit
   phi ty [(t, ifThen), (f, ifElse)]
+
+-- | @generateSwitch@ is a layer over @switch@, similarly to how
+-- @generateIf@ is a layer over @cbr@.
+--
+-- @
+-- Block.generateSwitch ty term cases
+-- @
+generateSwitch ::
+  ( RetInstruction m,
+    HasState "blockCount" Int m,
+    HasState "names" Names m,
+    HasState "symTab" SymbolTable m
+  ) =>
+  Type ->
+  Operand ->
+  [Symbol] ->
+  [C.Constant] ->
+  [m Operand] ->
+  m Operand
+generateSwitch ty tag names values cases = do
+  internNames <- mapM addBlock $ map ("switch." <>) names
+  defaultBlock <- addBlock "switch-default"
+  exitBlock <- addBlock "switch-exit"
+  _ <- switch tag defaultBlock $ zip values internNames
+  phiPairs <-
+    mapM
+      ( \(n, c) -> do
+          setBlock n
+          op <- c
+          _ <- br exitBlock
+          n' <- getBlock
+          pure (op, n')
+      )
+      (zip internNames cases)
+  setBlock defaultBlock
+  abort
+  _unreachable <- br exitBlock
+  let errVal = AST.ConstantOperand $ C.Int {C.integerBits = 8, C.integerValue = 0}
+  castedErr <- bitCast errVal ty
+  defaultBlock <- getBlock
+  setBlock exitBlock
+  phi ty $ (castedErr, defaultBlock) : phiPairs
 
 --------------------------------------------------------------------------------
 -- Effects
