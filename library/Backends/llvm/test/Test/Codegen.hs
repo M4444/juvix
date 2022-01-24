@@ -35,14 +35,78 @@ runIntModule mod =
             Just f -> runIntFun f
             Nothing -> P.error "no main function found"
 
+llvmPrimIntType :: Word32 -> AST.Type
+llvmPrimIntType size = AST.IntegerType {typeBits = size}
+
 llvmIntType :: Word32 -> PassTypes.TypeLLVM
 llvmIntType size = PassTypes.PrimTy $ Primitive.PrimTy $ AST.IntegerType {typeBits = size}
+
+llvmStringType :: PassTypes.TypeLLVM
+llvmStringType = PassTypes.PrimTy $ Primitive.PrimTy $ CodegenTypes.pointerOf $ AST.IntegerType {typeBits = 8}
 
 llvmIntVal :: Integer -> PassTypes.TermLLVM
 llvmIntVal = PassTypes.Prim . Primitive.LitInt
 
+llvmStringVal :: Text -> PassTypes.TermLLVM
+llvmStringVal = PassTypes.Prim . Primitive.LitString
+
 llvmAnnotatedTerm :: PassTypes.TypeLLVM -> PassTypes.TermLLVM -> PassTypes.Annotated PassTypes.TermLLVM
 llvmAnnotatedTerm ty term = PassTypes.Ann {PassTypes.usage = Usage.SAny, PassTypes.annTy = ty, PassTypes.term = term}
+
+llvmFunctionType :: PassTypes.TypeLLVM -> PassTypes.TypeLLVM -> PassTypes.TypeLLVM
+llvmFunctionType = PassTypes.Pi Usage.SAny
+
+llvmConstantFunction ::
+  PassTypes.TypeLLVM ->
+  PassTypes.TypeLLVM ->
+  Primitive.RawPrimVal ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmConstantFunction domain codomain val =
+  llvmAnnotatedTerm (llvmFunctionType domain codomain) $
+    PassTypes.LamM ["0"] $ llvmAnnotatedTerm codomain (PassTypes.Prim val)
+
+llvmCurry ::
+  -- | Input: a type 'a'
+  PassTypes.TypeLLVM ->
+  -- | Input: a type 'b'
+  PassTypes.TypeLLVM ->
+  -- | Input: a type 'c'
+  PassTypes.TypeLLVM ->
+  -- | Input : A function of type ('a', 'b') -> 'c'
+  PassTypes.Annotated PassTypes.TermLLVM ->
+  -- | A term of type 'a'
+  PassTypes.Annotated PassTypes.TermLLVM ->
+  -- | Output: A function of type 'b' -> 'c'
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmCurry a b c x f =
+  llvmAnnotatedTerm
+    (llvmFunctionType b c)
+    ( PassTypes.LamM
+        ["0"]
+        ( llvmAnnotatedTerm
+            c
+            ( PassTypes.AppM
+                f
+                [llvmAnnotatedTerm b (PassTypes.Var "0"), x]
+            )
+        )
+    )
+
+llvmIntCurry ::
+  Word32 ->
+  Integer ->
+  Primitive.RawPrimVal ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmIntCurry b i f = llvmCurry intTy intTy intTy iAnn fAnn
+  where
+    iType = llvmPrimIntType b
+    intTy = llvmIntType b
+    iAnn = llvmAnnotatedTerm intTy $ llvmIntVal i
+    fAnn = llvmAnnotatedTerm (PassTypes.PrimTy $ Primitive.PrimTy fType) $ PassTypes.Prim f
+    fType = AST.FunctionType iType [iType, iType] False
+
+llvmAddFunction :: Word32 -> Integer -> PassTypes.Annotated PassTypes.TermLLVM
+llvmAddFunction b i = llvmIntCurry b i Primitive.Add
 
 annotatedBinOp ::
   ASTTypes.Type ->
@@ -66,8 +130,9 @@ top = testGroup "LLVM Codegen tests" tests
 tests :: [TestTree]
 tests =
   [ trivialLLVMCodegenClosureTest,
-    trivialLLVMCodegenAlgebraicTest,
-    llvmRecordNameShadowingTest
+    trivialLLVMCodegenRecordTest,
+    llvmRecordNameShadowingTest,
+    trivialLLVMCodegenSumTest
   ]
 
 trivialLLVMCodegenClosureTest :: TestTree
@@ -82,8 +147,8 @@ trivialLLVMCodegenClosureTest = testCase "Trivial LLVM codegen test with closure
   let casted :: Int8 = fromIntegral output
   casted @?= fromIntegral testVal
 
-trivialLLVMCodegenAlgebraicTest :: TestTree
-trivialLLVMCodegenAlgebraicTest = testCase "Trivial LLVM codegen test with algebraic types" $ do
+trivialLLVMCodegenRecordTest :: TestTree
+trivialLLVMCodegenRecordTest = testCase "Trivial LLVM codegen test with record types" $ do
   let test8aVal = 43
       test8bVal = 44
       test16Val = 45
@@ -107,7 +172,7 @@ trivialLLVMCodegenAlgebraicTest = testCase "Trivial LLVM codegen test with algeb
       term = PassTypes.ScopedRecordDeclM testRecordTy internalAnnotatedTerm
       annotatedTerm = llvmAnnotatedTerm int8Ty term
       compiled =
-        fromRight (P.error "LLVM algebraic types test compilation failed") $
+        fromRight (P.error "LLVM record types test compilation failed") $
           Compilation.termLLVMToModule annotatedTerm
   output <- runIntModule compiled
   let casted :: Int8 = fromIntegral output
@@ -157,8 +222,44 @@ llvmRecordNameShadowingTest = testCase "LLVM codegen test with record name shado
       shadowedTerm = PassTypes.ScopedRecordDeclM shadowedTy addTerm
       annotatedShadowedTerm = llvmAnnotatedTerm intTy shadowedTerm
       compiled =
-        fromRight (P.error "trivial test compilation failed") $
+        fromRight (P.error "name shadowing test compilation failed") $
           Compilation.termLLVMToModule annotatedShadowedTerm
   output <- runIntModule compiled
   let casted :: Int32 = fromIntegral output
   casted @?= fromIntegral (shadowedValLeft + (shadowingVal * shadowedValRight))
+
+trivialLLVMCodegenSumTest :: TestTree
+trivialLLVMCodegenSumTest = testCase "Trivial LLVM codegen test with sum types" $ do
+  let sumTypeName = "testSumType"
+      intVariantName = "testVariantInt"
+      stringVariantName = "testVariantString"
+      bits = 8
+      intTy = llvmIntType bits
+      stringTy = llvmStringType
+      testSumTy = (sumTypeName, [(intVariantName, intTy), (stringVariantName, stringTy)])
+      sumType = PassTypes.SumType sumTypeName
+      intValToAdd = 1
+      intValToAddTo = 2
+      intCase = llvmAddFunction bits intValToAdd
+      valIfString = 5
+      stringCase = llvmConstantFunction llvmStringType intTy $ Primitive.LitInt valIfString
+      intSumVal = llvmAnnotatedTerm intTy $ llvmIntVal intValToAddTo
+      stringSumVal = llvmAnnotatedTerm stringTy $ llvmStringVal "testString"
+      intSumTerm = PassTypes.VariantM (sumTypeName, intVariantName, intSumVal)
+      annotatedIntSumTerm = llvmAnnotatedTerm sumType intSumTerm
+      stringSumTerm = PassTypes.VariantM (sumTypeName, stringVariantName, stringSumVal)
+      annotatedStringSumTerm = llvmAnnotatedTerm sumType stringSumTerm
+      intCaseTerm = PassTypes.MatchM (sumTypeName, annotatedIntSumTerm, [intCase, stringCase])
+      annotatedIntCaseTerm = llvmAnnotatedTerm intTy intCaseTerm
+      stringCaseTerm = PassTypes.MatchM (sumTypeName, annotatedStringSumTerm, [intCase, stringCase])
+      annotatedStringCaseTerm = llvmAnnotatedTerm intTy stringCaseTerm
+      mulOp = annotatedBinOp ASTTypes.i8 Primitive.Mul
+      mulTerm = annotatedBinOpApp intTy mulOp annotatedIntCaseTerm annotatedStringCaseTerm
+      term = PassTypes.ScopedSumDeclM testSumTy mulTerm
+      annotatedTerm = llvmAnnotatedTerm intTy term
+      compiled = case Compilation.termLLVMToModule annotatedTerm of
+        Left err -> P.error $ "LLVM sum types test compilation failed: " <> show err
+        Right t -> t
+  output <- runIntModule compiled
+  let casted :: Int8 = fromIntegral output
+  casted @?= fromIntegral ((intValToAdd + intValToAddTo) * valIfString)
