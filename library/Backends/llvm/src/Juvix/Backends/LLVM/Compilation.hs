@@ -7,6 +7,7 @@ where
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
 import qualified Juvix.Backends.LLVM.Codegen.Record as Record
+import qualified Juvix.Backends.LLVM.Codegen.Sum as Sum
 import qualified Juvix.Backends.LLVM.Codegen.Types as Types
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
 import qualified Juvix.Backends.LLVM.Pass.Conversion as Conversion

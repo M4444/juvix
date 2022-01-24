@@ -369,6 +369,7 @@ Surface language
   + [[Block]]
   + [[Codegen/Closure]]
   + [[Record]]
+  + [[Codegen/Sum]]
   + [[Codegen/Types]]
   + [[CString]]
   + [[Pass/Conversion]]
@@ -490,12 +491,22 @@ Module for predefined constants
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+******** Sum <<Codegen/Sum>>
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Closure]]
+  + [[Codegen/Types]]
+  + [[Shared]]
+  + [[Pass/Types]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
 ******** Types <<Codegen/Types>>
 - _Relies on_
   + [[CString]]
   + [[CString]]
   + [[Shared]]
-  + [[Sum]]
+  + [[Types/Sum]]
   + [[Library]]
   + [[HashMap]]
 ********* CString
@@ -509,7 +520,7 @@ Shared between Types and Sum
   + [[CString]]
   + [[Library]]
   + [[HashMap]]
-********* Sum
+********* Sum <<Types/Sum>>
 Provides a mechanism for defining Sum types
 - Has the code to encode a sum type via what is defined by the user or
   what is defined to create the interaction net system.
@@ -545,7 +556,7 @@ Provides a mechanism for defining Sum types
 - _Relies on_
   + [[Block]]
   + [[Codegen/Types]]
-  + [[Sum]]
+  + [[Types/Sum]]
   + [[LLVM/Compilation]]
   + [[Pass/Types]]
   + [[Primitive]]
