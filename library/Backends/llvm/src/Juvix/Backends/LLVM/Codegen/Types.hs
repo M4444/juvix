@@ -36,6 +36,8 @@ data CodegenState = CodegenState
     varTab :: VariantToType,
     -- | a mapping from names to record types
     recordTab :: RecordTable,
+    -- | a mapping from names to sum types
+    sumTab :: SumTable,
     -- | Count of basic blocks
     blockCount :: Int,
     -- | Count of unnamed instructions
@@ -175,6 +177,12 @@ newtype Codegen a = CodeGen {runCodegen :: CodegenAlias a}
     )
     via StateField "recordTab" CodegenAlias
   deriving
+    ( HasState "sumTab" SumTable,
+      HasSink "sumTab" SumTable,
+      HasSource "sumTab" SumTable
+    )
+    via StateField "sumTab" CodegenAlias
+  deriving
     ( HasState "blockCount" Int,
       HasSink "blockCount" Int,
       HasSource "blockCount" Int
@@ -270,23 +278,10 @@ type RetInstruction m =
     Instruct m
   )
 
-type MallocSum m =
-  ( RetInstruction m,
-    HasState "typTab" TypeTable m,
-    HasState "varTab" VariantToType m,
-    HasState "symTab" SymbolTable m
-  )
-
 type NewBlock m =
   ( HasState "blockCount" Int m,
     HasState "blocks" (Map.T Name BlockState) m,
     HasState "names" Names m
-  )
-
-type AllocaSum m =
-  ( RetInstruction m,
-    HasState "typTab" TypeTable m,
-    HasState "varTab" VariantToType m
   )
 
 type MallocRecord m =
@@ -300,11 +295,31 @@ type AllocaRecord m =
     HasState "symTab" SymbolTable m
   )
 
+type MallocSum m =
+  ( RetInstruction m,
+    HasState "sumTab" SumTable m
+  )
+
+type AllocaSum m =
+  ( RetInstruction m,
+    HasState "sumTab" SumTable m,
+    HasState "symTab" SymbolTable m
+  )
+
+type LookupType m =
+  ( HasThrow "err" Errors m,
+    HasState "recordTab" RecordTable m,
+    HasState "sumTab" SumTable m,
+    HasState "symTab" SymbolTable m
+  )
+
 type Define m =
   ( RetInstruction m,
     Externf m,
     MallocRecord m,
     AllocaRecord m,
+    MallocSum m,
+    AllocaSum m,
     HasState "blockCount" Int m,
     HasState "moduleDefinitions" [Definition] m,
     HasState "names" Names m
@@ -322,7 +337,7 @@ type Externf m =
 
 type Call m =
   ( RetInstruction m,
-    HasState "symTab" SymbolTable m
+    LookupType m
   )
 
 type Debug m = HasReader "debug" Int m

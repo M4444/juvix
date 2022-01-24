@@ -235,6 +235,7 @@ emptyCodegen =
       Types.typTab = Map.empty,
       Types.varTab = Map.empty,
       Types.recordTab = Map.empty,
+      Types.sumTab = Map.empty,
       Types.count = 0,
       Types.names = Map.empty,
       Types.strings = mempty,
