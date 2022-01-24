@@ -18,14 +18,18 @@ type RecordName = NameSymbol.T
 
 type FieldName = NameSymbol.T
 
+type SumName = NameSymbol.T
+
+type VariantName = NameSymbol.T
+
 -- | This is LLVM's internal analogue of Core's term type.
 -- |
 -- | Currently, the only difference is that LLVM's version has a
--- | RecordType, as LLVM can now compile records, but Core can
+-- | RecordType and a SumType, as LLVM can now algebraic types, but Core can
 -- | not yet type them.  Tests (and potentially other modules)
 -- | can generate terms of TypeLLVM and pass them directly to
 -- | LLVM to compile them even before Core can generate terms
--- | that LLVM would compile to RecordType.
+-- | that LLVM would compile to RecordType or SumType.
 data TypeLLVM
   = SymT NameSymbol.T
   | Star BaseTypes.Universe
@@ -36,6 +40,7 @@ data TypeLLVM
   | CatCoproduct TypeLLVM TypeLLVM
   | UnitTy
   | RecordType RecordName
+  | SumType SumName
   deriving (Show, Read, Eq, Generic)
 
 -- | When LLVM receives a term from Core, it converts the core type
@@ -133,6 +138,20 @@ type TermFieldSelector = (RecordName, FieldName, Annotated TermLLVM)
 
 type TermRecordConstructor = (RecordName, [Annotated TermLLVM])
 
+---------------------------
+---- Sum-related types ----
+---------------------------
+
+type VariantDecl = (VariantName, TypeLLVM)
+
+type SumSpec = [VariantDecl]
+
+type SumDecl = (SumName, SumSpec)
+
+type TermVariantConstructor = (SumName, VariantName, Annotated TermLLVM)
+
+type TermMatch = (SumName, Annotated TermLLVM, [Annotated TermLLVM])
+
 --------------------------------------------------------------------------------
 -- New Core Form we will Process Over
 --------------------------------------------------------------------------------
@@ -202,4 +221,18 @@ data TermLLVM
     -- | type which must be in scope from terms which will become the
     -- | fields (whose types must therefore match those of the record type).
     RecordM TermRecordConstructor
+  | -- | Another of the extensions to Core's term type, this wraps
+    -- | a term in a sum type declaration, so that the sum
+    -- | type is available within the wrapped term.
+    ScopedSumDeclM SumDecl (Annotated TermLLVM)
+  | -- | Another of the extensions to Core's term type, this constructs
+    -- | a sum with the given name from a term which must have the type
+    -- | of one of the sum's variants.  (So it's the introduction rule for
+    -- | sums.)
+    VariantM TermVariantConstructor
+  | -- | Another of the extensions to Core's term type, this is the
+    -- | elimination rule for sums, which destructs a term of a sum
+    -- | type which must be in scope from terms which will become the
+    -- | cases (whose types must therefore match those of the sum type).
+    MatchM TermMatch
   deriving (Show)
