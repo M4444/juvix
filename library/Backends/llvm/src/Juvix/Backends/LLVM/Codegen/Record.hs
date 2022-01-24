@@ -3,6 +3,7 @@ module Juvix.Backends.LLVM.Codegen.Record
     restoreTable,
     loadField,
     makeRecord,
+    lookupType,
   )
 where
 
@@ -56,6 +57,17 @@ llvmRecordType llvmFieldTypes =
         -- having to perform any recursive size calculations for now.
         map Types.pointerOf llvmFieldTypes
     }
+
+lookupType :: Types.LookupType m => PassTypes.RecordName -> m Type.Type
+lookupType recordName = do
+  recordTable <- get @"recordTab"
+  record <-
+    case Map.lookup (toSymbol recordName) recordTable of
+      Just recordDesc -> pure recordDesc
+      Nothing ->
+        throw @"err" $
+          Types.NonExistentRecordType "typechecker allowed record of non-existent type"
+  pure $ fst record
 
 -- | Get the names and types of the fields of the record type with the given name.
 recordFields :: Types.Define m => PassTypes.RecordName -> m [(Symbol, Type.Type)]
