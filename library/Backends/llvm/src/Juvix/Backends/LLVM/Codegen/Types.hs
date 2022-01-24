@@ -101,6 +101,31 @@ data Errors
     -- | typechecker, if the type of the term did not come directly from a
     -- | test, or some other module that bypasses the typechecker)
     MismatchedFieldTypes Text
+  | -- | Found a sum term with an undeclared sum type (this indicates a
+    -- | bug in the typechecker, if the type of the term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    NonExistentSumType Text
+  | -- | Found a sum term whose variants' types did not match the variant
+    -- | types in the sum type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedVariantTypes Text
+  | -- | Found a variant term with a name not present in its type's list of
+    -- | variants (this indicates a bug in the typechecker, if the type of the
+    -- | term did not come directly from a test, or some other module that
+    -- | bypasses the typechecker)
+    NonExistentVariant Text
+  | -- | Found a match term whose cases' types did not match the variant
+    -- | types in the sum type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedCaseTypes Text
+  | -- | Found a sum term whose type did not match the one found by
+    -- | looking up the type's name (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedSumTypes Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)
