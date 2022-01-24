@@ -13,6 +13,9 @@ declare external fastcc  i8* @malloc(i32)
 declare external fastcc  void @free(i8*)    
 
 
+declare external fastcc  void @abort()    
+
+
 @LitString =    global [12 x i8] c"hello-world\00"
 
 
