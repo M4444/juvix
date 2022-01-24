@@ -110,6 +110,10 @@ module Juvix.Backends.LLVM.Codegen.Block
     mallocType,
     free,
 
+    -- * Assertions / abnormal termination
+    defineAbort,
+    abort,
+
     -- * Operations
 
     -- ** Integer Operations
@@ -745,7 +749,7 @@ printCString str args = do
 -- Memory management
 --------------------------------------------------------------------------------
 
--- malloc & free need to be defined once and then can be called
+-- malloc, free, and abort need to be defined once and then can be called
 -- normally with `externf`
 
 -- | @defineMalloc@ defines the malloc function
@@ -760,6 +764,13 @@ defineFree :: External m => m ()
 defineFree = do
   let name = "free"
   op <- external voidTy name [(Types.pointerOf Type.i8, "type")]
+  assign (intern name) op
+
+-- | @defineAbort@ defines the abort function
+defineAbort :: External m => m ()
+defineAbort = do
+  let name = "abort"
+  op <- external voidTy name []
   assign (intern name) op
 
 -- | @malloc@ takes the size and the resulting type of the @malloc@. the
@@ -797,6 +808,16 @@ free thing = do
   free <- externf "free"
   casted <- bitCast thing (Types.pointerOf Type.i8)
   unnminstr (callConvention CC.Fast free (emptyArgs [casted]))
+
+-- | @abort@ terminates the program abnormally.
+abort :: (RetInstruction m, Externf m) => m ()
+abort = do
+  abort <- externf "abort"
+  unnminstr $
+    callConvention
+      CC.Fast
+      abort
+      (emptyArgs [])
 
 -- * Operations are functions that are callable on the LLVM backend
 

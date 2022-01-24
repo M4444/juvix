@@ -57,6 +57,7 @@ registerPreProcessed t = do
   Closure.register
   Block.defineMalloc
   Block.defineFree
+  Block.defineAbort
   mkMain t
 
 register ::
