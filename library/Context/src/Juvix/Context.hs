@@ -307,6 +307,12 @@ removeTopName xs = xs
 extractValue :: From -> Info
 extractValue from = from ^. term
 
+modifyFrom :: (a -> b) -> From a -> From b
+modifyFrom f from =
+  case from of
+    Outside a -> Outside (f a)
+    Current c -> Current (NameSpace.modifyFrom f c)
+
 -------------------------------------------------------------------------------
 -- Functions on Info
 -------------------------------------------------------------------------------

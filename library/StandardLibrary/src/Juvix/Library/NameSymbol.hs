@@ -76,6 +76,9 @@ handleInfix (x : xs) = rec' (x : xs) ""
 instance IsString T where
   fromString = fromSymbol . intern
 
+toText :: T -> Text
+toText = uninternText . toSymbol
+
 prefixOf :: T -> T -> Bool
 prefixOf smaller larger =
   case takePrefixOfInternal smaller larger of

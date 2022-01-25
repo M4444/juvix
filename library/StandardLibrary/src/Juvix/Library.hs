@@ -40,6 +40,7 @@ module Juvix.Library
     intern,
     unintern,
     textify,
+    uninternText,
     unixTime,
     Flip (..),
     untilNothingNTimesM,
@@ -165,6 +166,9 @@ intern = Sym . T.pack
 
 unintern :: Symbol -> String
 unintern (Sym s) = T.unpack s
+
+uninternText :: Symbol -> Text
+uninternText (Sym s) = s
 
 textify :: Symbol -> Text
 textify (Sym s) = s
