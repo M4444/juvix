@@ -109,35 +109,27 @@ updateTerm ::
   Context.T Sexp.T Sexp.T Sexp.T ->
   T ->
   f T
-updateTerm name rePackageTerm context job =
-  case job of
-    ProcessJob (ProcessNoEnv {current, newForms}) ->
-      UpdateJob
-        { newContext = addContext current context,
-          process =
-            Process
-              { current = Pipeline.InContext name,
-                newForms = promoteSimpleForms newForms
-              }
-        }
-        |> pure
-    UpdateJob {newContext, process = (Process {current, newForms})} ->
-      case current of
-        Pipeline.InContext name ->
-          throw @"error"
-            ( "attempting to add definition \
-              \ to a term already in env"
-                <> NameSymbol.toText name
-            )
-        Pipeline.Sexp sexp ->
-          UpdateJob
-            { newContext = addContext sexp newContext,
-              process = Process {current = Pipeline.InContext name, newForms}
-            }
-            |> pure
-  where
-    addContext sexp context =
-      Context.addGlobal name (rePackageTerm sexp) context
+updateTerm name rePackageTerm context job = do
+  (sexp, context, newForms) <-
+    case job of
+      ProcessJob (ProcessNoEnv {current, newForms}) ->
+        (current, context, promoteSimpleForms newForms) |> pure
+      UpdateJob {newContext, process = (Process {current, newForms})} ->
+        case current of
+          Pipeline.Sexp sexp ->
+            (sexp, newContext, newForms) |> pure
+          Pipeline.InContext name ->
+            throw @"error" $
+              "Attempting to redefine term already in env" <> NameSymbol.toText name
+  UpdateJob
+    { newContext = Context.addGlobal name (rePackageTerm sexp) context,
+      process =
+        Process
+          { current = Pipeline.InContext name,
+            newForms
+          }
+    }
+    |> pure
 
 -- | @extractProcessJob@ Will extract the promoted ProcessJob that
 -- talks about the environment, even if the job is a @ProcessJob@ by
