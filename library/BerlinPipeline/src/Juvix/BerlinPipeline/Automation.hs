@@ -93,6 +93,24 @@ simplify f (PassArgument {current, context}) =
             Context.Def d@(Context.D {defTerm}) -> do
               sexpTerm <- f (simplified defTerm)
               update (\sexp -> d {Context.defTerm = sexp} |> Context.Def) sexpTerm
+            Context.TypeDeclar typ -> do
+              sexpTerm <- f (simplified typ)
+              update Context.TypeDeclar sexpTerm
+            Context.SumCon s@Context.Sum {sumTDef} ->
+              -- Does sumTName need to be updated?
+              case sumTDef of
+                Just d@(Context.D {defTerm}) -> do
+                  sexpTerm <- f (simplified defTerm)
+                  update
+                    ( \sexp ->
+                        d {Context.defTerm = sexp}
+                          |> (\newDef -> s {Context.sumTDef = Just newDef})
+                          |> Context.SumCon
+                    )
+                    sexpTerm
+                Nothing ->
+                  -- What does it mean for the Sum constructor not to have a sumTDef?
+                  noOpJob current context |> pure
         Nothing ->
           throw @"error"
             "Could not find definition when \
@@ -100,7 +118,11 @@ simplify f (PassArgument {current, context}) =
   where
     simplified sexp = (SimplifiedArgument {current = sexp, context})
 
--- extractTerm (ProcessJob (ProcessJobNoEnv )
+    noOpJob current context =
+      UpdateJob
+        { newContext = context,
+          process = Process {current = current, newForms = []}
+        }
 
 updateTerm ::
   HasThrow "error" Text f =>
