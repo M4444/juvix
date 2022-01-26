@@ -419,7 +419,8 @@ compileMatch ty (sumName, term, cases) = do
   llvmCaseTypes <- mapM (typeToLLVM . Types.annTy) cases
   compiledTerm <- compileTerm term
   compiledCases <- mapM compileTerm cases
-  Sum.makeCase sumName outputType llvmCaseTypes compiledTerm compiledCases
+  environments <- mapM getCompiledEnvironment compiledCases
+  Sum.makeCase sumName outputType llvmCaseTypes compiledTerm compiledCases environments
 
 --------------------------------------------------------------------------------
 -- Capture Conversion

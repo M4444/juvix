@@ -131,8 +131,9 @@ makeCase ::
   [Type.Type] ->
   AST.Operand ->
   [AST.Operand] ->
+  [AST.Operand] ->
   m AST.Operand
-makeCase sumName outputType caseTypes term cases = do
+makeCase sumName outputType caseTypes term cases environments = do
   (sumType, variantDescs) <- getSumDesc sumName
   let values = map tagConstant [0 .. length variantDescs - 1]
   let variantNames = map fst variantDescs
@@ -157,12 +158,12 @@ makeCase sumName outputType caseTypes term cases = do
   variantPtr <- Block.load variantPtrType variantPtrLoc
   let appliedCases =
         map
-          ( \(ty, c) -> do
+          ( \(ty, (caseFunc, environment)) -> do
               castedPtr <- Block.bitCast variantPtr (Types.pointerOf ty)
               variant <- Block.load ty castedPtr
-              Block.call outputType c [(Block.null Closure.environmentPtr, []), (variant, [])]
+              Block.call outputType caseFunc [(environment, []), (variant, [])]
           )
-          (zip variantTypes cases)
+          (zip variantTypes $ zip cases environments)
   Block.generateSwitch outputType index variantNames values appliedCases
 
 -- | Given the name of a sum type and a compiled variant term,
