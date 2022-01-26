@@ -202,6 +202,16 @@ compileClosure ty captures args body = do
   --
   return closure
 
+-- | Return the environment pointer for a compiled term -- if it's
+-- | not a closure, then the pointer will be null.
+getCompiledEnvironment :: Types.Define m => LLVM.Operand -> m LLVM.Operand
+getCompiledEnvironment function =
+  case Typed.typeOf function of
+    LLVM.PointerType LLVM.NamedTypeReference {} _ ->
+      Closure.loadEnvironmentPtr function
+    _ ->
+      pure $ Block.null Closure.environmentPtr
+
 -- | The function assumes the arguments passed are the arguments of an
 -- application.
 compileApp ::
@@ -225,6 +235,7 @@ compileApp returnTy f@Types.Ann {term} xs =
       -- We should probably get the type from the function itself
       -- rather than pass in what it should be here
       newReturnType <- typeToLLVM returnTy
+      environmentPointer <- getCompiledEnvironment function
       let -- ignore attributes for now!
           argsAtrributes = zip arguments (repeat [])
       --
@@ -245,7 +256,6 @@ compileApp returnTy f@Types.Ann {term} xs =
           --------------------------------
           -- Environment Pointer
           ------------------------------
-          environmentPointer <- Closure.loadEnvironmentPtr function
           --
           let argsWithEnv = (environmentPointer, []) : argsAtrributes
           --
@@ -254,7 +264,7 @@ compileApp returnTy f@Types.Ann {term} xs =
         -- null environment
         _ -> do
           let argsWithEnv =
-                (Block.null Closure.environmentPtr, []) : argsAtrributes
+                (environmentPointer, []) : argsAtrributes
           c <- Block.call newReturnType function argsWithEnv
           return c
 
