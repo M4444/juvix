@@ -88,7 +88,7 @@ simplify f (PassArgument {current, context}) =
         Just def -> do
           -- Abstract this out, improve the interface to the
           -- Context... why is it this complicated?
-          let ourDef = Context.extractValue def
+          let (ourDef, _) = Context.resolveName context (def, name)
           case ourDef of
             Context.Def d@(Context.D {defTerm}) -> do
               sexpTerm <- f (simplified defTerm)
