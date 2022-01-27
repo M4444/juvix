@@ -89,7 +89,13 @@ simplify f PassArgument {current, context} =
           let (ourDef, resolvedName) = Context.resolveName context (def, name)
           case ourDef of
             Context.Def d -> updateDef d resolvedName Context.Def
-            Context.TypeDeclar typ -> update name (\[s] -> Context.TypeDeclar s) jobViaSimplified [typ]
+            Context.TypeDeclar typ ->
+              updateTerms
+                name
+                (\[s] -> Context.TypeDeclar s)
+                context
+                jobViaSimplified
+                [typ]
             Context.SumCon s@Context.Sum {sumTDef} -> do
               case sumTDef of
                 Nothing -> noOpJob |> pure
@@ -109,20 +115,20 @@ simplify f PassArgument {current, context} =
   where
     simplified context sexp = (SimplifiedArgument {current = sexp, context})
 
-    update name updateBody sexpTerms = updateTerms name updateBody context sexpTerms
-
     jobViaSimplified context sexp = simplified context sexp |> f
 
     updateDef d@Context.D {defTerm, defMTy = Nothing} name constructor =
-      update
+      updateTerms
         name
         (\[defTerm] -> constructor d {Context.defTerm = defTerm})
+        context
         jobViaSimplified
         [defTerm]
     updateDef d@Context.D {defTerm, defMTy = Just mTy} name constructor =
-      update
+      updateTerms
         name
         (\[defTerm, defMTy] -> constructor d {Context.defTerm = defTerm, Context.defMTy = Just defMTy})
+        context
         jobViaSimplified
         [defTerm, mTy]
 
