@@ -2,6 +2,7 @@
 
 module Juvix.BerlinPipeline.Env where
 
+import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
@@ -58,7 +59,7 @@ registerStep l = do
 -- pipeline steps.
 defPipelineGroup ::
   NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
-defPipelineGroup sym ls = foldl' (<>) (CircularList.init sym) ls
+defPipelineGroup sym = CircularList.groupOf sym
 
 -- | Tell the environment to stop at a particular step when running
 -- the environment.
@@ -83,7 +84,8 @@ eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep}
   case nextStep of
     Nothing -> pure input
     Just (CircularList.NonCircSchema Step.Named {name, step})
-      | atStoppingStep name stoppingStep -> pure input
+      | atStoppingStep name stoppingStep || atStoppingGroup stepGroups stoppingStep ->
+        pure input
       | otherwise -> do
         res <- Step.call step (Pipeline.setNameCIn name input)
         --
@@ -95,6 +97,7 @@ eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep}
     Just (CircularList.CircSchema _ls) ->
       notImplemented
   where
+    stepGroups = CircularList.namesToFirstTerm pipeline
     nextStep = CircularList.firstNested pipeline
     remainder = CircularList.removeFirstNested pipeline
 
@@ -107,6 +110,12 @@ eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep}
 -- is specified this will always return False.
 atStoppingStep :: Eq a => a -> Maybe a -> Bool
 atStoppingStep currentStep = maybe False (== currentStep)
+
+-- | @atStoppingStep@ determines if the current step of the piepline
+-- is apart of the group that we should stop evaluating at. If no
+-- stopping step is specified this will always return False.
+atStoppingGroup :: (Eq a, Hashable a) => Set.HashSet a -> Maybe a -> Bool
+atStoppingGroup set = maybe False (`Set.member` set)
 
 -- | @shouldContinue@ determines if we should continue on the next
 -- step of the pipeline, or if there is an error and we should going

@@ -1,5 +1,6 @@
 module Juvix.BerlinPipeline.CircularList where
 
+import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.RecursiveList as RecList
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -16,18 +17,22 @@ data CircSchema a
   deriving (Show, Eq)
 
 firstNested :: T a -> Maybe (CircSchema a)
-firstNested (T (RecList.Anu a)) = Just a
-firstNested (T (RecList.Rec [])) = Nothing
-firstNested (T (RecList.Rec (x : _xs))) = firstNested (T x)
+firstNested (T term) = RecList.firstNested term
 
 removeFirstNested :: T a -> T a
 removeFirstNested (T l) = T $ RecList.removeFirstNested l
 
-init :: NameSymbol.T -> T a
-init sym = T (RecList.Rec [])
+getRecursiveList :: T a -> RecList.T (CircSchema a)
+getRecursiveList (T term) = term
 
-initAnu :: a -> T a
-initAnu v = T (RecList.Anu (NonCircSchema v))
+groupOf :: NameSymbol.T -> [T a] -> T a
+groupOf name = T . RecList.groupOf name . fmap getRecursiveList
+
+namesToFirstTerm :: T a -> Set.HashSet NameSymbol.T
+namesToFirstTerm = RecList.namesToFirstTerm . getRecursiveList
+
+init :: a -> T a
+init v = T (RecList.Anu (NonCircSchema v))
 
 empty :: T a
-empty = T (RecList.Rec [])
+empty = T RecList.empty

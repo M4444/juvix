@@ -585,6 +585,13 @@ Provides a mechanism for defining Sum types
 ** src
 *** Juvix
 **** BerlinPipeline
+***** Automation
+- _Relies on_
+  + [[BerlinPipeline/Pipeline]]
+  + [[Juvix/Context]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 ***** CircularList
 - _Relies on_
   + [[RecursiveList]]
@@ -608,10 +615,12 @@ Provides a mechanism for defining Sum types
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
 ***** RecursiveList
-A Recursive list represents the concept of a list with a chance to nest.
-This allows us to get a tree like structure, where a pipeline step can contain more steps.
+A Recursive list represents the concept of a list with a chance to
+nest. This allows us to get a tree like structure, where a pipeline
+step can contain more steps.
 - _Relies on_
   + [[Library]]
+  + [[NameSymbol]]
 ***** Step
 - _Relies on_
   + [[Meta]]
