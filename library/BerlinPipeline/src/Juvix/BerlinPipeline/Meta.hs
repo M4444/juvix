@@ -2,16 +2,16 @@ module Juvix.BerlinPipeline.Meta
   ( Feedback,
     Trace,
     T,
+    Juvix.BerlinPipeline.Meta.empty,
   )
 where
 
-import Control.Monad (ap)
 import Juvix.Library
 
-data Feedback
+data Feedback = Feedback
   deriving (Eq, Show)
 
-data Trace
+data Trace = Trace
   deriving (Eq, Show)
 
 data T = Meta
@@ -19,3 +19,6 @@ data T = Meta
     trace :: Trace
   }
   deriving (Eq, Show)
+
+empty :: T
+empty = Meta Feedback Trace

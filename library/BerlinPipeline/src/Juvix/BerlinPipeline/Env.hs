@@ -6,7 +6,8 @@ import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
-import Juvix.Library
+import qualified Juvix.Context as Context
+import Juvix.Library hiding (empty)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
 --------------------------------------------------------------------------------
@@ -74,8 +75,22 @@ stopAtNothing = put @"stoppingStep" Nothing
 -- Important evaluation functions
 --------------------------------------------------------------------------------
 
-run :: EnvS b -> T -> Pipeline.CIn
-run (EnvS st) = information . execState st
+empty :: Pipeline.CIn -> T
+empty information =
+  T {pipeline = CircularList.empty, stoppingStep = Nothing, information}
+
+fullyEmpty :: IO T
+fullyEmpty =
+  Context.empty "Juvix"
+    >>| Pipeline.WorkingEnv []
+    >>| Pipeline.emptyInput
+    >>| empty
+
+run :: EnvS b -> Pipeline.CIn -> IO Pipeline.CIn
+run (EnvS st) = eval . execState st . empty
+
+extract :: EnvS a -> T -> T
+extract (EnvS st) = execState st
 
 -- | @eval@ is responsible for taking the environment, running it to
 -- the desired point and giving back what data is left.
@@ -94,7 +109,8 @@ eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep}
         case shouldContinue res of
           True -> eval T {information, pipeline = remainder, stoppingStep}
           False -> pure information
-    Just (CircularList.CircSchema _ls) ->
+    -- We need to think how we want to deal with circular Schemas in general
+    Just CircularList.CircSchema {} ->
       notImplemented
   where
     stepGroups = CircularList.namesToFirstTerm pipeline

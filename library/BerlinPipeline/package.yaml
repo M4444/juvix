@@ -32,6 +32,10 @@ dependencies:
   # Debugging
   ###########################
   - pretty-simple
+  ###########################
+  # Data Structures
+  ###########################
+  - unordered-containers
 
 default-extensions:
   - NoImplicitPrelude

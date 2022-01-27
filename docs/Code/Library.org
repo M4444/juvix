@@ -602,6 +602,7 @@ Provides a mechanism for defining Sum types
   + [[CircularList]]
   + [[BerlinPipeline/Pipeline]]
   + [[Step]]
+  + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
 ***** Meta
