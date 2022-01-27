@@ -28,15 +28,15 @@ data CIn = CIn
   }
   deriving (Show, Eq, Generic)
 
-nameCIn :: NameSymbol.T -> CIn -> CIn
-nameCIn n cIn =
+setNameCIn :: NameSymbol.T -> CIn -> CIn
+setNameCIn n cIn =
   cIn
     { surroundingData =
         let d = surroundingData cIn in d {currentStepName = Just n}
     }
 
-metaCIn :: Meta.T -> CIn -> CIn
-metaCIn meta cIn =
+setMetaCIn :: Meta.T -> CIn -> CIn
+setMetaCIn meta cIn =
   cIn
     { surroundingData =
         let d = surroundingData cIn in d {metaInfo = meta}
@@ -59,3 +59,11 @@ data COut a
         partialResult :: Maybe a
       }
   deriving (Eq, Generic)
+
+----------------------------------------
+-- Functions on COut
+----------------------------------------
+
+getMeta :: COut a -> Meta.T
+getMeta Success {meta} = meta
+getMeta Failure {meta} = meta

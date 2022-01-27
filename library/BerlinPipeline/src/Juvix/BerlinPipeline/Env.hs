@@ -8,9 +8,16 @@ import qualified Juvix.BerlinPipeline.Step as Step
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
+--------------------------------------------------------------------------------
+-- Type Specification
+--------------------------------------------------------------------------------
+
 data T = T
   { information :: Pipeline.CIn,
-    registeredPipeline :: CircularList.T (Step.Named),
+    -- TODO :: rename to working environment, as this gets consumed
+    -- over time
+    pipeline :: CircularList.T (Step.Named),
+    -- TODO :: add a FullPipeline, that does not get consumed.
     stoppingStep :: Maybe NameSymbol.T
   }
   deriving (Generic)
@@ -24,11 +31,11 @@ newtype EnvS b = EnvS (State T b)
     )
     via StateField "information" (State T)
   deriving
-    ( HasState "registeredPipeline" (CircularList.T (Step.Named)),
-      HasSink "registeredPipeline" (CircularList.T (Step.Named)),
-      HasSource "registeredPipeline" (CircularList.T (Step.Named))
+    ( HasState "pipeline" (CircularList.T (Step.Named)),
+      HasSink "pipeline" (CircularList.T (Step.Named)),
+      HasSource "pipeline" (CircularList.T (Step.Named))
     )
-    via StateField "registeredPipeline" (State T)
+    via StateField "pipeline" (State T)
   deriving
     ( HasState "stoppingStep" (Maybe NameSymbol.T),
       HasSink "stoppingStep" (Maybe NameSymbol.T),
@@ -38,75 +45,86 @@ newtype EnvS b = EnvS (State T b)
 
 data StopADT = Stop
 
+--------------------------------------------------------------------------------
+-- Environment Functions
+--------------------------------------------------------------------------------
+
 -- | Register the pipeline function to the environment
 registerStep :: CircularList.T Step.Named -> EnvS ()
 registerStep l = do
-  modify @"registeredPipeline" $ \i -> i <> l
+  modify @"pipeline" (<> l)
 
--- | Create a named group of pipeline steps or nested grouping of pipeline steps.
-defPipelineGroup :: NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
+-- | Create a named group of pipeline steps or nested grouping of
+-- pipeline steps.
+defPipelineGroup ::
+  NameSymbol.T -> [CircularList.T Step.Named] -> CircularList.T Step.Named
 defPipelineGroup sym ls = foldl' (<>) (CircularList.init sym) ls
 
--- | Tell the environment to stop at a particular step when running the environment.
+-- | Tell the environment to stop at a particular step when running
+-- the environment.
 stopAt :: NameSymbol.T -> EnvS ()
-stopAt sym = put @"stoppingStep" (Just sym)
+stopAt = put @"stoppingStep" . Just
 
+-- | @stopAtNothing@ tells the environment to run the compiler fully.
 stopAtNothing :: EnvS ()
 stopAtNothing = put @"stoppingStep" Nothing
 
--- Change our environment
-eval :: MonadIO m => T -> m Pipeline.CIn
-eval
-  ( T
-      input@(Pipeline.CIn wEnv@(Pipeline.WorkingEnv sexp context) surr)
-      pipeline
-      stoppingStep
-    ) = do
-    case nextStep of
-      Nothing -> pure input
-      Just (CircularList.NonCircSchema nStep) -> do
-        let name = Step.name nStep
-        let namedInput = Pipeline.nameCIn name input
-        if shouldStop stoppingStep name
-          then pure input
-          else liftIO $ do
-            let (Step.T step) = Step.step nStep
-            res <- step namedInput
-            updateOnStep remainder stoppingStep namedInput res
-      Just (CircularList.CircSchema ls) -> notImplemented
-    where
-      shouldStop (Just n) named
-        | n == named = True
-        | otherwise = False
-      shouldStop _ _ = False
-      nextStep = CircularList.firstNested pipeline
-      remainder = CircularList.removeFirstNested pipeline
-
-updateOnStep ::
-  MonadIO m =>
-  CircularList.T (Step.Named) ->
-  Maybe NameSymbol.T ->
-  Pipeline.CIn ->
-  Pipeline.COut Pipeline.WorkingEnv ->
-  m Pipeline.CIn
-updateOnStep pipeline stoppingStep namedInput res =
-  case res of
-    Pipeline.Success {meta, result} ->
-      eval $
-        T
-          { information =
-              Pipeline.CIn
-                { languageData = result,
-                  surroundingData = Pipeline.SurroundingEnv Nothing meta
-                },
-            registeredPipeline = pipeline,
-            stoppingStep
-          }
-    Pipeline.Failure {meta, partialResult} -> pure $ case partialResult of
-      Nothing -> Pipeline.metaCIn meta namedInput
-      Just wEnv ->
-        let out = Pipeline.metaCIn meta namedInput
-         in out {Pipeline.languageData = wEnv}
+--------------------------------------------------------------------------------
+-- Important evaluation functions
+--------------------------------------------------------------------------------
 
 run :: EnvS b -> T -> Pipeline.CIn
 run (EnvS st) = information . execState st
+
+-- | @eval@ is responsible for taking the environment, running it to
+-- the desired point and giving back what data is left.
+eval :: T -> IO Pipeline.CIn
+eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep} = do
+  case nextStep of
+    Nothing -> pure input
+    Just (CircularList.NonCircSchema Step.Named {name, step})
+      | atStoppingStep name stoppingStep -> pure input
+      | otherwise -> do
+        res <- Step.call step (Pipeline.setNameCIn name input)
+        --
+        let information = reconstructInput languageData res
+        --
+        case shouldContinue res of
+          True -> eval T {information, pipeline = remainder, stoppingStep}
+          False -> pure information
+    Just (CircularList.CircSchema _ls) ->
+      notImplemented
+  where
+    nextStep = CircularList.firstNested pipeline
+    remainder = CircularList.removeFirstNested pipeline
+
+------------------------------------------------------------
+-- Helping functions for eval
+------------------------------------------------------------
+
+-- | @atStoppingStep@ determines if the current step of the piepline
+-- is the step that we should stop evaluating at. If no stopping step
+-- is specified this will always return False.
+atStoppingStep :: Eq a => a -> Maybe a -> Bool
+atStoppingStep currentStep = maybe False (== currentStep)
+
+-- | @shouldContinue@ determines if we should continue on the next
+-- step of the pipeline, or if there is an error and we should going
+-- forward
+shouldContinue :: Pipeline.COut Pipeline.WorkingEnv -> Bool
+shouldContinue Pipeline.Success {} = True
+shouldContinue Pipeline.Failure {} = False -- if we get back data it might be True
+
+-- | @reconstructInput@ reconstructs a computational input from an
+-- output and an existing work environment. In the case the step
+-- succeeds the computational input goes unused.
+reconstructInput ::
+  Pipeline.WorkingEnv -> Pipeline.COut Pipeline.WorkingEnv -> Pipeline.CIn
+reconstructInput workEnv res =
+  Pipeline.CIn {surroundingData = newEnv (Pipeline.getMeta res), languageData}
+  where
+    newEnv = Pipeline.SurroundingEnv Nothing
+    languageData =
+      case res of
+        Pipeline.Success {result = work} -> work
+        Pipeline.Failure {partialResult} -> fromMaybe workEnv partialResult

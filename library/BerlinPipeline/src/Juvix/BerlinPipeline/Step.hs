@@ -5,6 +5,7 @@ module Juvix.BerlinPipeline.Step
     Named (..),
     -- StepMeta(..),
     register,
+    call,
   )
 where
 
@@ -14,6 +15,9 @@ import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
 data T = T (Pipeline.CIn -> IO (Pipeline.COut Pipeline.WorkingEnv))
+
+call :: T -> Pipeline.CIn -> IO (Pipeline.COut Pipeline.WorkingEnv)
+call (T step) = step
 
 data Named = Named
   { name :: NameSymbol.T,
