@@ -77,74 +77,100 @@ data SimplifiedPassArgument = SimplifiedArgument
 
 simplify ::
   HasThrow "error" Text m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
-simplify f (PassArgument {current, context}) =
+simplify f PassArgument {current, context} =
   case current of
     Pipeline.Sexp sexp ->
-      f (simplified sexp)
+      f (simplified context sexp)
     Pipeline.InContext name -> do
-      let update updateBody sexpTerm =
-            updateTerm name updateBody context sexpTerm
       case context Context.!? name of
         Just def -> do
           -- Abstract this out, improve the interface to the
           -- Context... why is it this complicated?
-          let (ourDef, _) = Context.resolveName context (def, name)
+          let (ourDef, resolvedName) = Context.resolveName context (def, name)
           case ourDef of
-            Context.Def d@(Context.D {defTerm}) -> do
-              sexpTerm <- f (simplified defTerm)
-              update (\sexp -> d {Context.defTerm = sexp} |> Context.Def) sexpTerm
-            Context.TypeDeclar typ -> do
-              sexpTerm <- f (simplified typ)
-              update Context.TypeDeclar sexpTerm
-            Context.SumCon s@Context.Sum {sumTDef} ->
-              -- Does sumTName need to be updated?
+            Context.Def d -> updateDef d resolvedName Context.Def
+            Context.TypeDeclar typ -> update name (\[s] -> Context.TypeDeclar s) jobViaSimplified [typ]
+            Context.SumCon s@Context.Sum {sumTDef} -> do
               case sumTDef of
-                Just d@(Context.D {defTerm}) -> do
-                  sexpTerm <- f (simplified defTerm)
-                  update
-                    ( \sexp ->
-                        d {Context.defTerm = sexp}
-                          |> (\newDef -> s {Context.sumTDef = Just newDef})
+                Nothing -> noOpJob |> pure
+                Just d ->
+                  updateDef
+                    d
+                    resolvedName
+                    ( \newDef ->
+                        s {Context.sumTDef = Just newDef}
                           |> Context.SumCon
                     )
-                    sexpTerm
-                Nothing ->
-                  -- What does it mean for the Sum constructor not to have a sumTDef?
-                  noOpJob current context |> pure
+            _ -> noOpJob |> pure
         Nothing ->
           throw @"error"
             "Could not find definition when \
             \ it was promised to be in the environment"
   where
-    simplified sexp = (SimplifiedArgument {current = sexp, context})
+    simplified context sexp = (SimplifiedArgument {current = sexp, context})
 
-    noOpJob current context =
-      UpdateJob
-        { newContext = context,
-          process = Process {current = current, newForms = []}
-        }
+    update name updateBody sexpTerms = updateTerms name updateBody context sexpTerms
 
-updateTerm ::
+    jobViaSimplified context sexp = simplified context sexp |> f
+
+    updateDef d@Context.D {defTerm, defMTy = Nothing} name constructor =
+      update
+        name
+        (\[defTerm] -> constructor d {Context.defTerm = defTerm})
+        jobViaSimplified
+        [defTerm]
+    updateDef d@Context.D {defTerm, defMTy = Just mTy} name constructor =
+      update
+        name
+        (\[defTerm, defMTy] -> constructor d {Context.defTerm = defTerm, Context.defMTy = Just defMTy})
+        jobViaSimplified
+        [defTerm, mTy]
+
+    noOpJob = UpdateJob context Process {current = current, newForms = []}
+
+-- | @extractFromJob@ extracts the Sexp that a Job processed, the context after
+-- the Job was run and any new forms that the Job introduced.
+extractFromJob ::
   HasThrow "error" Text f =>
-  NameSymbol.T ->
-  (Sexp.T -> Context.Definition Sexp.T Sexp.T Sexp.T) ->
   Context.T Sexp.T Sexp.T Sexp.T ->
-  T ->
-  f T
-updateTerm name rePackageTerm context job = do
-  (sexp, context, newForms) <-
-    case job of
-      ProcessJob (ProcessNoEnv {current, newForms}) ->
-        (current, context, promoteSimpleForms newForms) |> pure
-      UpdateJob {newContext, process = (Process {current, newForms})} ->
-        case current of
-          Pipeline.Sexp sexp ->
-            (sexp, newContext, newForms) |> pure
-          Pipeline.InContext name ->
-            throw @"error" $
-              "Attempting to redefine term already in env" <> NameSymbol.toText name
+  Job ->
+  f
+    ( Sexp.T,
+      Context.T Sexp.T Sexp.T Sexp.T,
+      [(Stage, Pipeline.EnvOrSexp)]
+    )
+extractFromJob context job =
+  case job of
+    ProcessJob ProcessNoEnv {current, newForms} ->
+      (current, context, promoteSimpleForms newForms) |> pure
+    UpdateJob {newContext, process = Process {current, newForms}} ->
+      case current of
+        Pipeline.Sexp sexp ->
+          (sexp, newContext, newForms) |> pure
+        Pipeline.InContext name ->
+          throw @"error" $
+            "Attempting to redefine term already in env" <> NameSymbol.toText name
+
+-- | @updateTerms@ Processes a list of sexps in order and repackages the resulting
+-- sexps into a Context.Definition.
+updateTerms ::
+  HasThrow "error" Text f =>
+  -- | The name of the symbol being updated
+  NameSymbol.T ->
+  -- | A function to repackage the processed sexps back into a Definition
+  ([Sexp.T] -> Context.Definition Sexp.T Sexp.T Sexp.T) ->
+  -- | The starting context
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  -- | A function to process an sexp
+  (Context.T Sexp.T Sexp.T Sexp.T -> Sexp.T -> f Job) ->
+  -- | The list of Sexps to process
+  [Sexp.T] ->
+  f Job
+updateTerms name rePackageTerm context toJob sexpsToProcess = do
+  (context, sexps, newForms) <- foldM f (context, [], []) sexpsToProcess
+
   UpdateJob
-    { newContext = Context.addGlobal name (rePackageTerm sexp) context,
+    { newContext = Context.addGlobal name (rePackageTerm sexps) context,
       process =
         Process
           { current = Pipeline.InContext name,
@@ -152,6 +178,11 @@ updateTerm name rePackageTerm context job = do
           }
     }
     |> pure
+  where
+    f (context, sexps, oldNewForms) sexpToUpdate = do
+      job <- toJob context sexpToUpdate
+      (sexp, context, newForms) <- extractFromJob context job
+      pure (context, sexps <> [sexp], oldNewForms <> newForms)
 
 -- | @extractProcessJob@ Will extract the promoted ProcessJob that
 -- talks about the environment, even if the job is a @ProcessJob@ by
