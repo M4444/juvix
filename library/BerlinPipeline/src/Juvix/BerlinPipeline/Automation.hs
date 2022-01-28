@@ -4,6 +4,7 @@
 
 module Juvix.BerlinPipeline.Automation where
 
+import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import Juvix.Library
@@ -75,8 +76,10 @@ data SimplifiedPassArgument = SimplifiedArgument
   }
   deriving (Show)
 
+type HasMeta m = HasState "meta" Meta.T m
+
 applySimplifiedPass ::
-  HasThrow "error" Text m =>
+  (HasMeta m, HasThrow "error" Text m) =>
   (PassArgument -> m Job) ->
   Pipeline.CIn ->
   m Pipeline.WorkingEnv
