@@ -16,6 +16,7 @@ module Juvix.Library.Trace
     withScope,
     info,
     stackTrace,
+    finishedAtPoint,
     fullTrace,
     break,
 
@@ -26,6 +27,11 @@ module Juvix.Library.Trace
     enable,
     disable,
     disableRecursive,
+    traceAll,
+    traceAllEff,
+
+    -- ** Initialization
+    empty,
 
     -- ** Trace Level Setup
     setLevel,
@@ -37,7 +43,7 @@ module Juvix.Library.Trace
 where
 
 import Control.Lens (over, set, (^.))
-import Juvix.Library hiding (break)
+import Juvix.Library hiding (break, empty)
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace.Format as Format
@@ -67,6 +73,19 @@ stackTrace :: (Eff m, MonadIO m) => m ()
 stackTrace = do
   trace <- get @"trace"
   putStrLn (traceStmt trace)
+
+-- | @finishedAtPoint@ dumps the finished trace calls at point. like
+-- @stackTrace@ the printed out terms are done immediately, rather
+-- than being introspected on after computation has finished/aborted.
+finishedAtPoint :: (Eff m, MonadIO m) => m ()
+finishedAtPoint = do
+  trace <- get @"trace"
+  fullTrace trace
+
+
+-- | @empty@ is the empty stack trace with no functions enabled
+empty :: T
+empty = T Empty [] mempty Nothing
 
 -- | @info@ is called on the computational trace, if we exit early,
 -- then we dump the stack trace, if computation finishes we then trace
@@ -100,6 +119,17 @@ disableEff xs = modify @"trace" (`disable` xs)
 -- removes any recursive call of the trace
 disableRecursiveEff :: (Eff m, Traversable f) => f NameSymbol.T -> m ()
 disableRecursiveEff xs = modify @"trace" (`disableRecursive` xs)
+
+-- | @traceAllEff@ enables tracing for every single function that has
+-- been called. Warning this is quite a lot of functions
+traceAllEff :: Eff m => m ()
+traceAllEff = modify @"trace" traceAll
+
+-- | @traceAll@ enables tracing for every single function that has
+-- been called. Warning this is quite a lot of functions
+traceAll :: T ->  T
+traceAll =
+  set debugLevel (Just 10000)
 
 -- | @enable@ allows you to enable traces before or after
 -- commencing a trace.

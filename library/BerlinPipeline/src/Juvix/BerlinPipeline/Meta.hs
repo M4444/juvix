@@ -4,7 +4,7 @@ module Juvix.BerlinPipeline.Meta
     T,
     Juvix.BerlinPipeline.Meta.empty,
     HasMeta,
-    Juvix.BerlinPipeline.Meta.put
+    Juvix.BerlinPipeline.Meta.put,
   )
 where
 
