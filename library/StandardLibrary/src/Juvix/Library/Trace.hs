@@ -82,7 +82,6 @@ finishedAtPoint = do
   trace <- get @"trace"
   fullTrace trace
 
-
 -- | @empty@ is the empty stack trace with no functions enabled
 empty :: T
 empty = T Empty [] mempty Nothing
@@ -127,7 +126,7 @@ traceAllEff = modify @"trace" traceAll
 
 -- | @traceAll@ enables tracing for every single function that has
 -- been called. Warning this is quite a lot of functions
-traceAll :: T ->  T
+traceAll :: T -> T
 traceAll =
   set debugLevel (Just 10000)
 

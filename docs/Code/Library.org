@@ -58,7 +58,7 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Michelson/Parameterisation]]
   + [[Ann]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Juvix/Pipeline]]
 ******* Compilation <<Michelson/Compilation>>
 - Entrypoints into compilation from core terms to Michelson terms & contracts.
@@ -330,7 +330,7 @@ Surface language
   + [[Ann]]
   + [[Library]]
   + [[BLS12381]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Juvix/Pipeline]]
 ***** Golden <<Plonk/test/Test/Golden>>
 - _Relies on_
@@ -340,7 +340,7 @@ Surface language
   + [[Core/IR]]
   + [[Library]]
   + [[BLS12381]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Library/Test/Golden]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Pipeline]]
@@ -377,7 +377,7 @@ Surface language
   + [[Primitive]]
   + [[Ann]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
 ******* Parameterization <<LLVM/Parameterization>>
 Parameterization and application of the LLVM backend primitives.
@@ -569,7 +569,7 @@ Provides a mechanism for defining Sum types
   + [[Ann]]
   + [[HR/Types]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Library/Test/Golden]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Pipeline]]
@@ -587,6 +587,7 @@ Provides a mechanism for defining Sum types
 **** BerlinPipeline
 ***** Automation
 - _Relies on_
+  + [[Meta]]
   + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Library]]
@@ -605,9 +606,14 @@ Provides a mechanism for defining Sum types
   + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
+***** Feedback <<BerlinPipeline/Feedback>>
+- _Relies on_
+  + [[Library]]
+  + [[Juvix/Sexp]]
 ***** Meta
 - _Relies on_
   + [[Library]]
+  + [[Library/Trace]]
 ***** Pipeline <<BerlinPipeline/Pipeline>>
 - _Relies on_
   + [[Meta]]
@@ -1360,7 +1366,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/Translate]]
   + [[Core/Types]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Usage]]
@@ -1379,7 +1385,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/IR]]
   + [[Core/Parameterisation]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Def]]
   + [[ToHR/Types]]
 ***** ToIR <<Juvix/Pipeline/ToIR>>
@@ -1602,7 +1608,7 @@ with any stage of the compiler while modifying the source code.
   + [[Desugar]]
   + [[Library]]
   + [[BLS12381]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Library/Usage]]
@@ -1657,7 +1663,7 @@ with any stage of the compiler while modifying the source code.
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[BLS12381]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Parsing/Types]]
   + [[Juvix/Pipeline]]
@@ -1925,7 +1931,7 @@ _TODO_
 ***** BLS12381
 - _Relies on_
   + [[Library]]
-***** Feedback
+***** Feedback <<Library/Feedback>>
 - _Relies on_
   + [[Library]]
 ***** Fetch
@@ -1981,8 +1987,8 @@ runtime-relevant way.
   much clearer to see what the expressions mean.
 - _Relies on_
   + [[Library]]
-  + [[Feedback]]
-******* NoQuotesText
+  + [[Library/Feedback]]
+******* NoQuotes
 This structure allows us to have golden tests that are based around
 show instances instead of normal read instances.
 ***** Trace <<Library/Trace>>
@@ -2296,7 +2302,7 @@ done with no extra information needed. Thus we export the following passes
   + [[Contextify/Passes]]
   + [[Desugar/Passes]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Parser]]

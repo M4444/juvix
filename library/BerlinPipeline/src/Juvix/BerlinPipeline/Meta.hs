@@ -9,6 +9,7 @@ module Juvix.BerlinPipeline.Meta
 where
 
 import Juvix.Library
+import qualified Juvix.Library.Trace as Trace
 
 data Feedback = Feedback
   deriving (Eq, Show)
@@ -18,12 +19,12 @@ data Trace = Trace
 
 data T = Meta
   { feedback :: Feedback,
-    trace :: Trace
+    trace :: Trace.T
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 empty :: T
-empty = Meta Feedback Trace
+empty = Meta Feedback (Trace.empty)
 
 type HasMeta m = (HasState "meta" T m, HasThrow "error" Text m)
 
