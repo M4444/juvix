@@ -137,6 +137,7 @@ simplify f PassArgument {current, context} =
                         s {Context.sumTDef = Just newDef}
                           |> Context.SumCon
                     )
+            -- TODO: Handle remaining cases that have Sexps
             _ -> noOpJob |> pure
         Nothing ->
           throw @"error"
