@@ -97,6 +97,14 @@ applySimplifiedPass f Pipeline.CIn {languageData, surroundingData} =
         }
         |> pure
 
+runSimplifiedPass ::
+  (Pipeline.HasExtract m, Meta.HasMeta m) =>
+  (PassArgument -> m Job) ->
+  Pipeline.CIn ->
+  IO (Pipeline.COut Pipeline.WorkingEnv)
+runSimplifiedPass f =
+  Pipeline.extract . applySimplifiedPass f
+
 simplify ::
   Meta.HasMeta m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
 simplify f PassArgument {current, context} =
