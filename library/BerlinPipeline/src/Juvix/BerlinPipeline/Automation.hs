@@ -76,26 +76,29 @@ data SimplifiedPassArgument = SimplifiedArgument
   }
   deriving (Show)
 
-type HasMeta m = HasState "meta" Meta.T m
-
 applySimplifiedPass ::
-  (HasMeta m, HasThrow "error" Text m) =>
+  Meta.HasMeta m =>
   (PassArgument -> m Job) ->
   Pipeline.CIn ->
   m Pipeline.WorkingEnv
 applySimplifiedPass f Pipeline.CIn {languageData, surroundingData} =
   let Pipeline.WorkingEnv {currentExp, context} = languageData
-      Pipeline.SurroundingEnv {currentStepName, metaInfo} = surroundingData
+      Pipeline.SurroundingEnv {metaInfo} = surroundingData
       initialOutput = Pipeline.WorkingEnv {currentExp = [], context = context}
-   in foldM g initialOutput currentExp
+   in Meta.put metaInfo >> foldM g initialOutput currentExp
   where
-    g Pipeline.WorkingEnv {context} nextSexp = do
+    g Pipeline.WorkingEnv {context, currentExp} nextSexp = do
       job <- f PassArgument {current = nextSexp, context = context}
       (sexp, newContext, newForms) <- extractFromJob context job
-      Pipeline.WorkingEnv {context = newContext, currentExp = [Pipeline.Sexp sexp] <> map snd newForms} |> pure
+      Pipeline.WorkingEnv
+        { context = newContext,
+          -- TODO: Only Stage = Current is supported, add handling for other cases.
+          currentExp = currentExp <> [Pipeline.Sexp sexp] <> map snd newForms
+        }
+        |> pure
 
 simplify ::
-  HasThrow "error" Text m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
+  Meta.HasMeta m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
 simplify f PassArgument {current, context} =
   case current of
     Pipeline.Sexp sexp ->

@@ -3,6 +3,8 @@ module Juvix.BerlinPipeline.Meta
     Trace,
     T,
     Juvix.BerlinPipeline.Meta.empty,
+    HasMeta,
+    Juvix.BerlinPipeline.Meta.put
   )
 where
 
@@ -22,3 +24,8 @@ data T = Meta
 
 empty :: T
 empty = Meta Feedback Trace
+
+type HasMeta m = (HasState "meta" T m, HasThrow "error" Text m)
+
+put :: HasMeta m => T -> m ()
+put = Juvix.Library.put @"meta"
