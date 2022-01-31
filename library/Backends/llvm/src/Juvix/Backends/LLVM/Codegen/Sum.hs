@@ -8,7 +8,6 @@ module Juvix.Backends.LLVM.Codegen.Sum
 where
 
 import qualified Data.List as List
-import qualified Safe.Exact as Exact
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
 import qualified Juvix.Backends.LLVM.Codegen.Types as Types
@@ -20,6 +19,7 @@ import Juvix.Library.NameSymbol as NameSymbol
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Constant as Constant
 import qualified LLVM.AST.Type as Type
+import qualified Safe.Exact as Exact
 import qualified Prelude as P
 
 -- | @register@ registers a sum type with the given name and
