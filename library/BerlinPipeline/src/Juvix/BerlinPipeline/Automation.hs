@@ -1,9 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Juvix.BerlinPipeline.Automation where
 
+import Control.Lens as Lens hiding ((|>))
+import qualified Control.Lens.TH as TH
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
@@ -39,25 +42,28 @@ data Stage
   deriving (Show, Eq)
 
 data ProcessJob = Process
-  { current :: Pipeline.EnvOrSexp,
-    newForms :: [(Stage, Pipeline.EnvOrSexp)]
+  { _current :: Pipeline.EnvOrSexp,
+    _newForms :: [(Stage, Pipeline.EnvOrSexp)]
   }
   deriving (Show)
 
 data ProcessJobNoEnv = ProcessNoEnv
-  { current :: Sexp.T,
-    newForms :: [(Stage, Sexp.T)]
+  { _current :: Sexp.T,
+    _newForms :: [(Stage, Sexp.T)]
   }
   deriving (Show)
+
+TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''ProcessJob
+TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''ProcessJobNoEnv
 
 promoteSimpleForms :: [(Stage, Sexp.T)] -> [(Stage, Pipeline.EnvOrSexp)]
 promoteSimpleForms = fmap (second Pipeline.Sexp)
 
 promoteNoEnvToEnv :: ProcessJobNoEnv -> ProcessJob
-promoteNoEnvToEnv (ProcessNoEnv {current, newForms}) =
+promoteNoEnvToEnv process =
   Process
-    { newForms = promoteSimpleForms newForms,
-      current = Pipeline.Sexp current
+    { _newForms = promoteSimpleForms (process ^. newForms),
+      _current = Pipeline.Sexp (process ^. current)
     }
 
 ----------------------------------------
@@ -65,16 +71,19 @@ promoteNoEnvToEnv (ProcessNoEnv {current, newForms}) =
 ----------------------------------------
 
 data PassArgument = PassArgument
-  { current :: Pipeline.EnvOrSexp,
-    context :: Context.T Sexp.T Sexp.T Sexp.T
+  { _current :: Pipeline.EnvOrSexp,
+    _context :: Context.T Sexp.T Sexp.T Sexp.T
   }
   deriving (Show)
 
 data SimplifiedPassArgument = SimplifiedArgument
-  { current :: Sexp.T,
-    context :: Context.T Sexp.T Sexp.T Sexp.T
+  { _current :: Sexp.T,
+    _context :: Context.T Sexp.T Sexp.T Sexp.T
   }
   deriving (Show)
+
+TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''PassArgument
+TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''SimplifiedPassArgument
 
 applySimplifiedPass ::
   Meta.HasMeta m =>
@@ -88,7 +97,7 @@ applySimplifiedPass f Pipeline.CIn {languageData, surroundingData} =
    in Meta.put metaInfo >> foldM g initialOutput currentExp
   where
     g Pipeline.WorkingEnv {context, currentExp} nextSexp = do
-      job <- f PassArgument {current = nextSexp, context = context}
+      job <- f PassArgument {_current = nextSexp, _context = context}
       (sexp, newContext, newForms) <- extractFromJob context job
       Pipeline.WorkingEnv
         { context = newContext,
@@ -107,7 +116,7 @@ runSimplifiedPass f =
 
 simplify ::
   Meta.HasMeta m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
-simplify f PassArgument {current, context} =
+simplify f PassArgument {_current = current, _context = context} =
   case current of
     Pipeline.Sexp sexp ->
       f (simplified context sexp)
@@ -164,11 +173,12 @@ simplify f PassArgument {current, context} =
                     [definitionMTy]
             _ -> noOpJob |> pure
         Nothing ->
-          throw @"error"
-            "Could not find definition when \
-            \ it was promised to be in the environment"
+          throw @"error" $
+            Sexp.string
+              "Could not find definition when \
+              \ it was promised to be in the environment"
   where
-    simplified context sexp = (SimplifiedArgument {current = sexp, context})
+    simplified context sexp = (SimplifiedArgument {_current = sexp, _context = context})
 
     jobViaSimplified context sexp = simplified context sexp |> f
 
@@ -187,12 +197,12 @@ simplify f PassArgument {current, context} =
         jobViaSimplified
         [defTerm, mTy]
 
-    noOpJob = UpdateJob context Process {current = current, newForms = []}
+    noOpJob = UpdateJob context Process {_current = current, _newForms = []}
 
 -- | @extractFromJob@ extracts the Sexp that a Job processed, the context after
 -- the Job was run and any new forms that the Job introduced.
 extractFromJob ::
-  HasThrow "error" Text f =>
+  HasThrow "error" Sexp.T f =>
   Context.T Sexp.T Sexp.T Sexp.T ->
   Job ->
   f
@@ -202,20 +212,22 @@ extractFromJob ::
     )
 extractFromJob context job =
   case job of
-    ProcessJob ProcessNoEnv {current, newForms} ->
-      (current, context, promoteSimpleForms newForms) |> pure
-    UpdateJob {newContext, process = Process {current, newForms}} ->
-      case current of
+    ProcessJob process ->
+      (process ^. current, context, promoteSimpleForms (process ^. newForms))
+        |> pure
+    UpdateJob {newContext, process} ->
+      case process ^. current of
         Pipeline.Sexp sexp ->
-          (sexp, newContext, newForms) |> pure
+          (sexp, newContext, process ^. newForms) |> pure
         Pipeline.InContext name ->
-          throw @"error" $
-            "Attempting to redefine term already in env" <> NameSymbol.toText name
+          ("Attempting to redefine term already in env" <> NameSymbol.toText name)
+            |> Sexp.string
+            |> throw @"error"
 
 -- | @updateTerms@ Processes a list of sexps in order and repackages the resulting
 -- sexps into a Context.Definition.
 updateTerms ::
-  HasThrow "error" Text f =>
+  HasThrow "error" Sexp.T f =>
   -- | The name of the symbol being updated
   NameSymbol.T ->
   -- | A function to repackage the processed sexps back into a Definition
@@ -234,8 +246,8 @@ updateTerms name rePackageTerm context toJob sexpsToProcess = do
     { newContext = Context.addGlobal name (rePackageTerm sexps) context,
       process =
         Process
-          { current = Pipeline.InContext name,
-            newForms
+          { _current = Pipeline.InContext name,
+            _newForms = newForms
           }
     }
     |> pure

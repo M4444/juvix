@@ -5,6 +5,7 @@ module Juvix.BerlinPipeline.Feedback
     Level (..),
     Eff,
 
+    empty,
     -- ** Indexing Into the Feedback Messages
     messageAt,
     contentsAt,
@@ -13,7 +14,7 @@ module Juvix.BerlinPipeline.Feedback
   )
 where
 
-import Juvix.Library
+import Juvix.Library hiding (empty)
 import qualified Juvix.Sexp as Sexp
 
 --------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ data T =
   -- TODO ∷ if Messages have an idx... we should really use a
   -- hashtable rather than a list...
   T {messages :: [Message], currentId :: Integer}
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Message = Message
   { level :: Level,
@@ -32,18 +33,25 @@ data Message = Message
     contents :: Sexp.T,
     identifier :: Integer
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Eff m = HasState "feedback" T m
 
 -- this should really be an open type for different kinds of
 -- conditions that one may signal.
 data Level = Warning | Error | Note
-  deriving (Show)
+  deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 -- Effectful functions
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Initialized
+--------------------------------------------------------------------------------
+
+empty :: T
+empty = T [] 0
 
 --------------------------------------------------------------------------------
 -- Indexing Functions

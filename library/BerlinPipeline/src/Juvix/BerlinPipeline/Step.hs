@@ -4,7 +4,7 @@ module Juvix.BerlinPipeline.Step
   ( T (..),
     Named (..),
     -- StepMeta(..),
-    register,
+    namePass,
     call,
   )
 where
@@ -24,5 +24,5 @@ data Named = Named
     step :: T
   }
 
-register :: NameSymbol.T -> T -> Named
-register name func = Named name func
+namePass :: NameSymbol.T -> T -> Named
+namePass name func = Named name func
