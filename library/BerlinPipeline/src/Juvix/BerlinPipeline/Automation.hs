@@ -143,13 +143,25 @@ simplify f PassArgument {current, context} =
                 Just recordMTy ->
                   updateTerms
                     name
-                    (\[newMTy] ->
-                     r {Context.recordMTy = Just newMTy}
-                        |> Context.Record
+                    ( \[newMTy] ->
+                        r {Context.recordMTy = Just newMTy}
+                          |> Context.Record
                     )
                     context
                     jobViaSimplified
                     [recordMTy]
+            u@Context.Unknown {definitionMTy} -> do
+              case definitionMTy of
+                Nothing -> noOpJob |> pure
+                Just definitionMTy ->
+                  updateTerms
+                    name
+                    ( \[newMTy] ->
+                        u {Context.definitionMTy = Just newMTy}
+                    )
+                    context
+                    jobViaSimplified
+                    [definitionMTy]
             _ -> noOpJob |> pure
         Nothing ->
           throw @"error"
