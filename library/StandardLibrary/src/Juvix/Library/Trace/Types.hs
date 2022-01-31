@@ -23,7 +23,7 @@ data T = T
     -- | @tDebugLevel@ represents the debug level we care about
     tDebugLevel :: Maybe Natural
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Log = [Stack]
 
@@ -54,7 +54,7 @@ data MetaInfo = MetaInfo
   { metaInfoEnable :: Enable,
     metaInfoLevel :: Natural
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Enable
   = -- | @Enabled@ represents a trace enabled function
@@ -64,7 +64,7 @@ data Enable
   | -- | @DisableRecursive@ represents that we shouldn't trace any
     -- Enabled functions inside the scope of the Trace
     DisableRecursive
-  deriving (Show)
+  deriving (Show, Eq)
 
 newtype Error = Error T
 

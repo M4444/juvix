@@ -21,7 +21,7 @@ data T = Meta
   { feedback :: Feedback,
     trace :: Trace.T
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 empty :: T
 empty = Meta Feedback (Trace.empty)
