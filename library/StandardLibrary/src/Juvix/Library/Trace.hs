@@ -181,6 +181,7 @@ traceFullStack t =
 
 traceStmt :: HasCurrent s StackChain => s -> [Char]
 traceStmt trace =
+  "Stack Trace:" :
   Format.currentStackChain (trace ^. current) (const 1)
     |> intersperse "\n"
     |> fold

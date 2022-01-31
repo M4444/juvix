@@ -96,7 +96,7 @@ dumpFeedback T {messages} = do
 
 formatFeedback :: [Message] -> String
 formatFeedback =
-  initSafe . foldr (\l r -> l <> "\n" <> r) "" . fmap showMessage . reverse
+  fold . intersperse "\n" . fmap showMessage . reverse
   where
     showMessage Message {level, contents, identifier} =
       show identifier <> " " <> showLevel level <> show contents

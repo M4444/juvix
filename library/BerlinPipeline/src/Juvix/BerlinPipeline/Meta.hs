@@ -4,6 +4,7 @@ module Juvix.BerlinPipeline.Meta
     HasMeta,
     Juvix.BerlinPipeline.Meta.put,
     Juvix.BerlinPipeline.Meta.get,
+    info,
   )
 where
 
@@ -32,3 +33,8 @@ put T {feedback, trace} = do
 get :: (Trace.Eff m, Feedback.Eff m) => m T
 get =
   T <$> Juvix.Library.get @"feedback" <*> Juvix.Library.get @"trace"
+
+info :: T -> IO ()
+info T {feedback, trace} = do
+  Feedback.dumpFeedback feedback
+  Trace.info trace

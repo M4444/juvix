@@ -58,8 +58,10 @@ runEnv (MinIO a) (Meta.T {trace, feedback}) =
   runStateT (runExceptT a) Env {trace, feedback}
 
 -- TODO ∷ update to use feedback before throwing. (Sadly not finished)
-throw :: (HasThrow "error" Sexp.T m) => Error -> m a2
-throw = Juvix.Library.throw @"error" . Sexp.serialize
+throw :: (Feedback.Eff m, HasThrow "error" Sexp.T m) => Error -> m a2
+throw err = do
+  Feedback.error (Sexp.serialize err)
+  Juvix.Library.throw @"error" (Sexp.serialize err)
 
 -- Do not use externally
 runEnvEmpty :: MinimalMIO a -> IO (Either Sexp.T a, Env)
@@ -84,19 +86,32 @@ instance Pipeline.HasExtract MinimalMIO where
 
 Right sexp =
   Sexp.parse
-    "(defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
+    "(defun foo (x) (:cond (pred-1 (:cond pred-1 result-1 (pred-n result-n))) (pred-n result-n)))"
 
 Right secondSexp = Sexp.parse "(defun foo (x) (+ x 1))"
 
+startingEnv :: IO Pipeline.WorkingEnv
 startingEnv =
   (Context.empty "JU-USER" ∷ IO (Context.T Sexp.T Sexp.T Sexp.T))
   >>| Pipeline.WorkingEnv [Pipeline.Sexp sexp, Pipeline.Sexp secondSexp]
 
 
-example = do
+exampleMeta :: IO Meta.T
+exampleMeta = do
   Pipeline.CIn languageData surroudning <- startingEnv >>= Pipeline.Env.run eval . Pipeline.emptyInput
   -- print languageData
-  Pipeline.metaInfo surroudning |> Meta.trace |> Trace.info
+  Pipeline.metaInfo surroudning |> pure
+
+example :: IO ()
+example = do
+  exampleMeta >>= Meta.info
+
+exampleIndexing :: IO (Maybe Error)
+exampleIndexing = do
+  myValue <- exampleMeta
+  Feedback.contentsAt 0 (Meta.feedback myValue)
+    |> Sexp.deserialize @Error
+    |> pure
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
@@ -105,7 +120,8 @@ eval = do
 
 condPass :: Step.Named
 condPass =
-  Automation.runSimplifiedPass (\arg -> Trace.withScope "Desugar.cond-runner" [] (Automation.simplify condTrans arg))
+  (Trace.withScope "Desugar.cond-runner" [] . Automation.simplify condTrans)
+  |> Automation.runSimplifiedPass
   |> Step.T
   |> Step.namePass "Desugar.cond-to-if"
 
@@ -125,7 +141,7 @@ condTrans simplify = do
  -- - BNF output form:
  --   + (if pred-1 result-1 (if pred-2 result-2 (… (if pred-n result-n))))
 -- condTransform :: Sexp.T -> Sexp.T
-condTransform :: (MonadIO m, HasState "trace" Trace.T m, HasThrow "error" Sexp.T m) => Sexp.T -> m Sexp.T
+condTransform :: (MonadIO m, Meta.HasMeta m) => Sexp.T -> m Sexp.T
 condTransform xs =
   Trace.withScope "Desguar.condTransform" [show xs] $ do
     Sexp.traversePredStar xs (== Structure.nameCond) condToIf
@@ -139,7 +155,7 @@ condTransform xs =
          in foldr generation acc (initSafe (cond ^. entailments))
               |> Sexp.addMetaToCar atom
               |> recur
-    condToIf _ _ = Juvix.Desugar.Env.throw $ MalformedData "malformed cond"
+    condToIf _ _ = Juvix.Desugar.Env.throw $ MalformedData "cond is in an invalid format"
     --
     generation predAns acc =
       Structure.If (predAns ^. predicate) (predAns ^. answer) acc
