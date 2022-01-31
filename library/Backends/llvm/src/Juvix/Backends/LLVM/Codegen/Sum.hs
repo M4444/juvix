@@ -8,6 +8,7 @@ module Juvix.Backends.LLVM.Codegen.Sum
 where
 
 import qualified Data.List as List
+import qualified Safe.Exact as Exact
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
 import qualified Juvix.Backends.LLVM.Codegen.Types as Types
@@ -164,7 +165,7 @@ makeCase sumName outputType caseTypes term cases environments = do
               Block.call outputType caseFunc [(environment, []), (variant, [])]
           )
           (zip variantTypes $ zip cases environments)
-  Block.generateSwitch outputType index variantNames values appliedCases
+  Block.generateSwitch outputType index (Exact.zip3Exact variantNames values appliedCases) Nothing
 
 -- | Given the name of a sum type and a compiled variant term,
 -- | allocate a sum type and store the given term in it.
