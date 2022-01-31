@@ -137,7 +137,19 @@ simplify f PassArgument {current, context} =
                         s {Context.sumTDef = Just newDef}
                           |> Context.SumCon
                     )
-            -- TODO: Handle remaining cases that have Sexps
+            Context.Record r@Context.Rec {recordMTy} -> do
+              case recordMTy of
+                Nothing -> noOpJob |> pure
+                Just recordMTy ->
+                  updateTerms
+                    name
+                    (\[newMTy] ->
+                     r {Context.recordMTy = Just newMTy}
+                        |> Context.Record
+                    )
+                    context
+                    jobViaSimplified
+                    [recordMTy]
             _ -> noOpJob |> pure
         Nothing ->
           throw @"error"
