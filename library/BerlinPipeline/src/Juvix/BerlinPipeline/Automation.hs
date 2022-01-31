@@ -121,56 +121,27 @@ simplify f PassArgument {_current = current, _context = context} =
     Pipeline.Sexp sexp ->
       f (simplified context sexp)
     Pipeline.InContext name -> do
+      -- Wrappers over updating the consturctor (lenses by hand)
+      let formDeclaration [s] = Context.TypeDeclar s
+          formUnknown u [mTy] = u {Context.definitionMTy = Just mTy}
+          formRecord r [maTy] = r {Context.recordMTy = Just maTy} |> Context.Record
+          formSumCon s newDef = s {Context.sumTDef = Just newDef} |> Context.SumCon
       case context Context.!? name of
         Just def -> do
           -- Abstract this out, improve the interface to the
           -- Context... why is it this complicated?
           let (ourDef, resolvedName) = Context.resolveName context (def, name)
           case ourDef of
-            Context.Def d -> updateDef d resolvedName Context.Def
+            Context.Def d ->
+              updateDef d resolvedName Context.Def
+            Context.SumCon s@Context.Sum {sumTDef = Just d} ->
+              updateDef d resolvedName (formSumCon s)
             Context.TypeDeclar typ ->
-              updateTerms
-                name
-                (\[s] -> Context.TypeDeclar s)
-                context
-                jobViaSimplified
-                [typ]
-            Context.SumCon s@Context.Sum {sumTDef} -> do
-              case sumTDef of
-                Nothing -> noOpJob |> pure
-                Just d ->
-                  updateDef
-                    d
-                    resolvedName
-                    ( \newDef ->
-                        s {Context.sumTDef = Just newDef}
-                          |> Context.SumCon
-                    )
-            Context.Record r@Context.Rec {recordMTy} -> do
-              case recordMTy of
-                Nothing -> noOpJob |> pure
-                Just recordMTy ->
-                  updateTerms
-                    name
-                    ( \[newMTy] ->
-                        r {Context.recordMTy = Just newMTy}
-                          |> Context.Record
-                    )
-                    context
-                    jobViaSimplified
-                    [recordMTy]
-            u@Context.Unknown {definitionMTy} -> do
-              case definitionMTy of
-                Nothing -> noOpJob |> pure
-                Just definitionMTy ->
-                  updateTerms
-                    name
-                    ( \[newMTy] ->
-                        u {Context.definitionMTy = Just newMTy}
-                    )
-                    context
-                    jobViaSimplified
-                    [definitionMTy]
+              updateTerms name formDeclaration context jobViaSimplified [typ]
+            Context.Record r@Context.Rec {recordMTy = Just recordMTy} ->
+              updateTerms name (formRecord r) context jobViaSimplified [recordMTy]
+            u@Context.Unknown {definitionMTy = Just definitionMTy} -> do
+              updateTerms name (formUnknown u) context jobViaSimplified [definitionMTy]
             _ -> noOpJob |> pure
         Nothing ->
           throw @"error" $
@@ -178,24 +149,18 @@ simplify f PassArgument {_current = current, _context = context} =
               "Could not find definition when \
               \ it was promised to be in the environment"
   where
-    simplified context sexp = (SimplifiedArgument {_current = sexp, _context = context})
+    simplified context sexp = SimplifiedArgument {_current = sexp, _context = context}
 
     jobViaSimplified context sexp = simplified context sexp |> f
 
-    updateDef d@Context.D {defTerm, defMTy = Nothing} name constructor =
-      updateTerms
-        name
-        (\[defTerm] -> constructor d {Context.defTerm = defTerm})
-        context
-        jobViaSimplified
-        [defTerm]
-    updateDef d@Context.D {defTerm, defMTy = Just mTy} name constructor =
-      updateTerms
-        name
-        (\[defTerm, defMTy] -> constructor d {Context.defTerm = defTerm, Context.defMTy = Just defMTy})
-        context
-        jobViaSimplified
-        [defTerm, mTy]
+    updateDef d@Context.D {defTerm, defMTy} name constructor =
+      let formDefn [defTerm] =
+            constructor d {Context.defTerm = defTerm}
+          formDefn [defTerm, defMTy] =
+            constructor d {Context.defTerm = defTerm, Context.defMTy = Just defMTy}
+          arguments =
+            maybe [defTerm] (\mty -> [defTerm, mty]) defMTy
+       in updateTerms name formDefn context jobViaSimplified arguments
 
     noOpJob = UpdateJob context Process {_current = current, _newForms = []}
 
