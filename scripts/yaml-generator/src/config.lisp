@@ -364,6 +364,14 @@ common ones to include"
                      *standard-library-extra-deps*
                      *stm-container-group*)))
 
+(defparameter *berlin-pipeline*
+  (make-stack-yaml
+   :name "BerlinPipeline"
+   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
+   :packages   (list *standard-library* *context* *sexp*)
+   :extra-deps (big-dep-list)
+   :extra      "allow-newer: true"))
+
 (defparameter *data-structures*
   (make-stack-yaml
    :name     "Test/DataStructures"
@@ -393,7 +401,8 @@ common ones to include"
                      *standard-library*
                      *sexp*
                      *context*
-                     *data-structures*)
+                     *data-structures*
+                     *berlin-pipeline*)
    :extra-deps (list (general-dependencies *extensible*)
                      *standard-library-extra-deps*
                      *eac-solver*
@@ -484,14 +493,6 @@ common ones to include"
    :name "Playground/Easy"
    :extra-deps (append (big-dep-list) (list *llvm-hs-deps*))
    :extra "allow-newer: true"))
-
-(defparameter *berlin-pipeline*
-  (make-stack-yaml
-   :name "BerlinPipeline"
-   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
-   :packages   (list *standard-library* *context* *sexp*)
-   :extra-deps (big-dep-list)
-   :extra      "allow-newer: true"))
 
 (defparameter *http*
   (make-stack-yaml
