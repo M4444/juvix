@@ -612,8 +612,10 @@ Provides a mechanism for defining Sum types
   + [[Juvix/Sexp]]
 ***** Meta
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
   + [[Library]]
   + [[Library/Trace]]
+  + [[Juvix/Sexp]]
 ***** Pipeline <<BerlinPipeline/Pipeline>>
 - _Relies on_
   + [[Meta]]
@@ -635,6 +637,11 @@ step can contain more steps.
   + [[Library]]
   + [[NameSymbol]]
 ** test
+*** Feedback <<test/Feedback>>
+- _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Library]]
+  + [[Juvix/Sexp]]
 *** Main <<BerlinPipeline/test/Main>>
 - _Relies on_
   + [[Library]]
@@ -2262,6 +2269,22 @@ from the syntax alone with no extra information needed!)
   + [[Desugar/Passes]]
   + [[Library]]
   + [[Juvix/Sexp]]
+***** Env <<Desugar/Env>>
+- _Relies on_
+  + [[Automation]]
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[BerlinPipeline/Env]]
+  + [[Library]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
+  + [[Step]]
+  + [[CircularList]]
+  + [[Lens]]
+  + [[Juvix/Context]]
 ***** Passes <<Desugar/Passes>>
 Passes contains a list of passes on the frontend syntax that can be
 done with no extra information needed. Thus we export the following passes

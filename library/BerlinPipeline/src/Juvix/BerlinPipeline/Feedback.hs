@@ -5,17 +5,32 @@ module Juvix.BerlinPipeline.Feedback
     Level (..),
     Eff,
 
+    -- ** Giving Feedback
+    warn,
+    error,
+    note,
+
+    -- ** Printing Feedback
+    dumpFeedback,
+    formatFeedback,
+
+    -- ** Initialize Feedback
     empty,
+
     -- ** Indexing Into the Feedback Messages
     messageAt,
     contentsAt,
     findMessageAt,
     findContentsAt,
+
+    -- ** No Effectful versions of Effectful functions
+    addMessageNoEff,
   )
 where
 
-import Juvix.Library hiding (empty)
+import Juvix.Library hiding (empty, note)
 import qualified Juvix.Sexp as Sexp
+import Prelude (String)
 
 --------------------------------------------------------------------------------
 -- Type Declarations
@@ -43,15 +58,51 @@ data Level = Warning | Error | Note
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
--- Effectful functions
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
 -- Initialized
 --------------------------------------------------------------------------------
 
 empty :: T
 empty = T [] 0
+
+--------------------------------------------------------------------------------
+-- Effect Messages
+--------------------------------------------------------------------------------
+
+addMessage :: Eff m => Level -> Sexp.T -> m ()
+addMessage level contents = do
+  modify @"feedback" (addMessageNoEff level contents)
+
+warn :: Eff m => Sexp.T -> m ()
+warn = addMessage Warning
+
+error :: Eff m => Sexp.T -> m ()
+error = addMessage Error
+
+note :: Eff m => Sexp.T -> m ()
+note = addMessage Note
+
+addMessageNoEff :: Level -> Sexp.T -> T -> T
+addMessageNoEff level contents T {messages, currentId} = do
+  let message = Message {level, contents, identifier = currentId}
+  T {messages = message : messages, currentId = succ currentId}
+
+--------------------------------------------------------------------------------
+-- Printing Functions
+--------------------------------------------------------------------------------
+
+dumpFeedback :: T -> IO ()
+dumpFeedback T {messages} = do
+  formatFeedback messages |> putStrLn
+
+formatFeedback :: [Message] -> String
+formatFeedback =
+  initSafe . foldr (\l r -> l <> "\n" <> r) "" . fmap showMessage . reverse
+  where
+    showMessage Message {level, contents, identifier} =
+      show identifier <> " " <> showLevel level <> show contents
+    showLevel Note = "Note: "
+    showLevel Error = "ERROR: "
+    showLevel Warning = "WARN: "
 
 --------------------------------------------------------------------------------
 -- Indexing Functions

@@ -82,7 +82,9 @@ instance Pipeline.HasExtract MinimalMIO where
 -- Functions
 --------------------------------------------------------------------------------
 
-Right sexp = Sexp.parse "(defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
+Right sexp =
+  Sexp.parse
+    "(defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
 
 Right secondSexp = Sexp.parse "(defun foo (x) (+ x 1))"
 
