@@ -36,6 +36,7 @@ dependencies:
   # Data Structures
   ###########################
   - unordered-containers
+  - lens
 
 default-extensions:
   - NoImplicitPrelude

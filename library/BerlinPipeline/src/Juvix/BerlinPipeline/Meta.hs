@@ -1,6 +1,6 @@
 module Juvix.BerlinPipeline.Meta
   ( Feedback,
-    T(..),
+    T (..),
     Juvix.BerlinPipeline.Meta.empty,
     HasMeta,
     Juvix.BerlinPipeline.Meta.put,
@@ -8,9 +8,9 @@ module Juvix.BerlinPipeline.Meta
   )
 where
 
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import Juvix.Library
 import qualified Juvix.Library.Trace as Trace
-import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Sexp as Sexp
 
 data Feedback = Feedback
