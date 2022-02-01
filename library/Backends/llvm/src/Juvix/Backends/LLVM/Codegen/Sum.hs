@@ -41,7 +41,7 @@ register sumName variants = do
   put @"sumTab" $ Map.insert (toSymbol sumName) (typeRef, variantDescs) oldTable
   pure oldTable
   where
-  (variantNames, llvmVariantTypes) = unzip variants
+    (variantNames, llvmVariantTypes) = unzip variants
 
 restoreTable ::
   Types.Define m =>
@@ -53,7 +53,7 @@ sumTypeName :: Types.Define m => NameSymbol.T -> m AST.Name
 sumTypeName sumName =
   Block.internName <$> Block.generateUniqueSymbol taggedName
   where
-  taggedName = "sum-" <> toSymbol sumName
+    taggedName = "sum-" <> toSymbol sumName
 
 indexBits :: Word32
 indexBits = 32
@@ -142,19 +142,19 @@ makeCase ::
 makeCase sumName outputType term cases = do
   (sumType, variantDescs) <- getSumDesc sumName
   let values = map tagConstant [0 .. length variantDescs - 1]
-      (variantNames, variantTypes ) = unzip variantDescs
+      (variantNames, variantTypes) = unzip variantDescs
       expectedCaseTypes = map (`oneArgFunctionType` outputType) variantTypes
   unless (caseTypes == expectedCaseTypes) $
-      throw @"err" $
-        Types.MismatchedCaseTypes $
-          "typechecker allowed mismatched case types: expected "
-            <> show expectedCaseTypes
-            <> "; got "
-            <> show caseTypes
-            <> "; outputType "
-            <> show outputType
-            <> "; variantTypes "
-            <> show variantTypes
+    throw @"err" $
+      Types.MismatchedCaseTypes $
+        "typechecker allowed mismatched case types: expected "
+          <> show expectedCaseTypes
+          <> "; got "
+          <> show caseTypes
+          <> "; outputType "
+          <> show outputType
+          <> "; variantTypes "
+          <> show variantTypes
   indexPtr <- getIndexPtr term
   index <- Block.load indexType indexPtr
   variantPtrLoc <- getVariantPtr term
@@ -169,7 +169,7 @@ makeCase sumName outputType term cases = do
           (zip variantTypes $ zip caseBodies caseEnvs)
   Block.generateSwitch outputType index (Exact.zip3Exact variantNames values appliedCases) Nothing
   where
-  (caseTypes, caseBodies, caseEnvs) = List.unzip3 cases
+    (caseTypes, caseBodies, caseEnvs) = List.unzip3 cases
 
 -- | Given the name of a sum type and a compiled variant term,
 -- | allocate a sum type and store the given term in it.
@@ -189,12 +189,12 @@ makeSum ::
 makeSum sumName variantName compiledSumType compiledVariantType variantTerm = do
   (sumType, variantDescs) <- getSumDesc sumName
   unless (compiledSumType == sumType) $
-      throw @"err" $
-        Types.MismatchedSumTypes $
-          "typechecker allowed mismatched sum types: expected "
-            <> show sumType
-            <> "; got "
-            <> show compiledSumType
+    throw @"err" $
+      Types.MismatchedSumTypes $
+        "typechecker allowed mismatched sum types: expected "
+          <> show sumType
+          <> "; got "
+          <> show compiledSumType
   variantIndex <- case List.findIndex (\desc -> fst desc == toSymbol variantName) variantDescs of
     Just index -> pure index
     Nothing ->
@@ -202,12 +202,12 @@ makeSum sumName variantName compiledSumType compiledVariantType variantTerm = do
         Types.NonExistentVariant "typechecker allowed selection of non-existent variant"
   let variantType = snd $ variantDescs P.!! variantIndex
   unless (compiledVariantType == variantType) $
-      throw @"err" $
-        Types.MismatchedVariantTypes $
-          "typechecker allowed mismatched variant types: expected "
-            <> show variantType
-            <> "; got "
-            <> show compiledVariantType
+    throw @"err" $
+      Types.MismatchedVariantTypes $
+        "typechecker allowed mismatched variant types: expected "
+          <> show variantType
+          <> "; got "
+          <> show compiledVariantType
   -- Allocate the storage for the sum type structure, which contains a
   -- tag (which is an index into the variant list) and a pointer (to
   -- the memory allocated for the particular variant selected by the caller).
