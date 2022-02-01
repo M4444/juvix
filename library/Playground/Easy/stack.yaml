@@ -6,6 +6,7 @@ packages:
 - ../../Parsing
 - ../../Core
 - ../../Translate
+- ../../BerlinPipeline
 - ../../Backends/Michelson
 - ../../Backends/LLVM
 - ../../Pipeline
