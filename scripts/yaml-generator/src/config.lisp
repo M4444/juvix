@@ -420,6 +420,7 @@ common ones to include"
                    *core*
                    *translate*
                    *context*
+                   *berlin-pipeline*
                    *data-structures*)
    ;; hack name, for sub dirs
    :name "Pipeline"
@@ -483,6 +484,7 @@ common ones to include"
                    *parsing*
                    *core*
                    *translate*
+                   *berlin-pipeline*
                    *michelson*
                    *llvm*
                    *pipeline*

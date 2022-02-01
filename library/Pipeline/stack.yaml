@@ -7,6 +7,7 @@ packages:
 - ../Parsing
 - ../Core
 - ../Translate
+- ../BerlinPipeline
 - ../Context
 - ../Test/DataStructures
 
