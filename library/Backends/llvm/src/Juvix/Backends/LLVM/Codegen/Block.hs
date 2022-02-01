@@ -118,6 +118,10 @@ module Juvix.Backends.LLVM.Codegen.Block
     add,
     sub,
     mul,
+    sle,
+    slt,
+    eq,
+    neq,
     icmp,
 
     -- ** Null
@@ -804,18 +808,8 @@ free thing = do
 -- Integer Operations
 --------------------------------------------------------------------------------
 
--- |
---
---   [@sdiv@] calls the sdiv function for integer numbers
---   [@udiv@] calls the udiv function for integer numbers
---   [@add@] calls the add function for integer numbers
---   [@mul@] calls the mul function for integer numbers
-sdiv,
-  udiv,
-  add,
-  sub,
-  mul ::
-    RetInstruction m => Type -> Operand -> Operand -> m Operand
+-- | [@sdiv@] calls the sdiv function for integer numbers
+sdiv :: RetInstruction m => Type -> Operand -> Operand -> m Operand
 sdiv t a b =
   instr
     t
@@ -825,6 +819,9 @@ sdiv t a b =
         operand1 = b,
         metadata = []
       }
+
+-- | [@udiv@] calls the udiv function for integer numbers
+udiv :: RetInstruction m => Type -> Operand -> Operand -> m Operand
 udiv t a b =
   instr
     t
@@ -834,6 +831,9 @@ udiv t a b =
         operand1 = b,
         metadata = []
       }
+
+-- | [@add@] calls the add function for integer numbers
+add :: RetInstruction m => Type -> Operand -> Operand -> m Operand
 add t a b =
   instr
     t
@@ -846,6 +846,8 @@ add t a b =
         operand1 = b,
         metadata = []
       }
+
+sub :: RetInstruction m => Type -> Operand -> Operand -> m Operand
 sub t a b =
   instr
     t
@@ -858,6 +860,9 @@ sub t a b =
         operand1 = b,
         metadata = []
       }
+
+-- | [@mul@] calls the mul function for integer numbers
+mul :: RetInstruction m => Type -> Operand -> Operand -> m Operand
 mul t a b =
   instr
     t
@@ -871,14 +876,31 @@ mul t a b =
         metadata = []
       }
 
+-- | signed less than or equal
+sle :: RetInstruction m => Type -> Operand -> Operand -> m Operand
+sle = icmp IntPred.SLE
+
+-- | signed less than
+slt :: RetInstruction m => Type -> Operand -> Operand -> m Operand
+slt = icmp IntPred.SLT
+
+-- | equality
+eq :: RetInstruction m => Type -> Operand -> Operand -> m Operand
+eq = icmp IntPred.EQ
+
+-- | unequality
+neq :: RetInstruction m => Type -> Operand -> Operand -> m Operand
+neq = icmp IntPred.NE
+
+
 -- | @icmp@ given some Integer predicate and two values, compute if
 -- the predicate holds true over them.
 -- @
 --   cmp <- Block.icmp IntPred.EQ nodeInt otherNodeInt
 -- @
 icmp ::
-  RetInstruction m => IntPred.IntegerPredicate -> Operand -> Operand -> m Operand
-icmp iPred op1 op2 = instr Type.i1 $ ICmp iPred op1 op2 []
+  RetInstruction m => IntPred.IntegerPredicate -> Type -> Operand -> Operand -> m Operand
+icmp iPred ty op1 op2 = instr ty $ ICmp iPred op1 op2 []
 
 --------------------------------------------------------------------------------
 -- Floating Point Operations
@@ -1007,7 +1029,7 @@ generateIf ty cond tr fl = do
   ifExit <- addBlock "if.exit"
   -- %entry
   ------------------
-  test <- icmp IntPred.EQ cond (ConstantOperand (C.Int 1 1))
+  test <- icmp IntPred.EQ Type.i1 cond (ConstantOperand (C.Int 1 1))
   _ <- cbr test ifThen ifElse
   -- if.then
   ------------------

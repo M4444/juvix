@@ -56,11 +56,14 @@ llvm =
     -- Typechecking of primitive values.
     hasType :: RawPrimVal -> Param.PrimType PrimTy -> Bool
     hasType t (Param.PrimType ty) = case t of
-      Add -> Param.check3Equal ty
-      Sub -> Param.check3Equal ty
-      Mul -> Param.check3Equal ty
-      LitInt _ -> length ty == 1
-      LitString _ -> length ty == 1
+      PrimAdd -> Param.check3Equal ty
+      PrimSub -> Param.check3Equal ty
+      PrimMul -> Param.check3Equal ty
+      PrimEq -> Param.check3Equal ty
+      PrimLe -> Param.check3Equal ty
+      PrimLeq -> Param.check3Equal ty
+      PrimLitInt _ -> length ty == 1
+      PrimLitString _ -> length ty == 1
 
     -- The primitive LLVM types available to Juvix users.
     builtinTypes :: Param.Builtins PrimTy
@@ -73,10 +76,13 @@ llvm =
     -- The primitive LLVM values available to Juvix users.
     builtinValues :: Param.Builtins RawPrimVal
     builtinValues =
-      [ ("LLVM.add", Add),
-        ("LLVM.sub", Sub),
-        ("LLVM.mul", Mul),
-        ("LLVM.litint", LitInt 0) -- TODO: what to do with the 0?
+      [ ("LLVM.add", PrimAdd),
+        ("LLVM.sub", PrimSub),
+        ("LLVM.mul", PrimMul),
+        ("LLVM.leq", PrimLeq),
+        ("LLVM.le", PrimLe),
+        ("LLVM.eq", PrimEq),
+        ("LLVM.litint", PrimLitInt 0) -- TODO: what to do with the 0?
       ]
 
     -- Translate an integer into a RawPrimVal.
@@ -84,10 +90,10 @@ llvm =
     -- no way to do achieve this due to a lack of information available to the
     -- function.
     integerToRawPrimVal :: Integer -> Maybe RawPrimVal
-    integerToRawPrimVal = Just . LitInt
+    integerToRawPrimVal = Just . PrimLitInt
 
     stringToRawPrimVal :: Text -> Maybe RawPrimVal
-    stringToRawPrimVal = Just . LitString
+    stringToRawPrimVal = Just . PrimLitString
 
 -- | TODO: for now these are just copied over from the Michelson backend.
 instance IR.HasWeak PrimTy where weakBy' _ _ t = t

@@ -238,7 +238,7 @@ compileApp returnTy f@Types.Ann {term} xs =
           return c
 
 compilePrimApp ::
-  Types.Define m =>
+  forall m. Types.Define m =>
   -- | Return type of the application
   ErasedAnn.Type PrimTy ->
   -- | The function primitive of the application.
@@ -246,26 +246,42 @@ compilePrimApp ::
   -- | The arguments to the application.
   [Types.Annotated Types.TermClosure] ->
   m LLVM.Operand
-compilePrimApp ty f xs
-  | arityRaw f == lengthN xs =
-    case f of
-      Add -> do
-        x <- compileTerm (xs P.!! 0)
-        y <- compileTerm (xs P.!! 1)
-        Block.add (typeToLLVM ty) x y
-      Sub -> do
-        x <- compileTerm (xs P.!! 0)
-        y <- compileTerm (xs P.!! 1)
-        Block.sub (typeToLLVM ty) x y
-      Mul -> do
-        x <- compileTerm (xs P.!! 0)
-        y <- compileTerm (xs P.!! 1)
-        Block.mul (typeToLLVM ty) x y
-  | otherwise =
-    throw @"err"
+compilePrimApp ty f xs = case f of
+   PrimAdd -> do
+     (x, y) <- twoArgs
+     Block.add (typeToLLVM ty) x y
+   PrimSub -> do
+     (x, y) <- twoArgs
+     Block.sub (typeToLLVM ty) x y
+   PrimMul -> do
+     (x, y) <- twoArgs
+     Block.mul (typeToLLVM ty) x y
+   PrimNeq -> do
+     (x, y) <- twoArgs
+     Block.neq (typeToLLVM ty) x y
+   PrimEq -> do
+     (x, y) <- twoArgs
+     Block.eq (typeToLLVM ty) x y
+   PrimLe -> do
+     (x, y) <- twoArgs
+     Block.slt (typeToLLVM ty) x y
+   PrimLeq -> do
+     (x, y) <- twoArgs
+     Block.sle (typeToLLVM ty) x y
+   PrimLitInt{} -> undefined
+   PrimLitString{} -> undefined
+  where
+  twoArgs :: m (LLVM.Operand, LLVM.Operand)
+  twoArgs = case xs of
+    [x, y] -> do
+      x' <- compileTerm x
+      y' <- compileTerm y
+      return (x', y')
+    _ ->  throw @"err"
       ( Types.WrongNumberOfArguments
           ("Was expecting " <> show (arityRaw f) <> "but got " <> show (lengthN xs))
       )
+
 
 compileIndex ::
   Types.Call m => ErasedAnn.Type PrimTy -> Types.IndexInto -> m LLVM.Operand
@@ -286,12 +302,12 @@ mkPrim ::
   ErasedAnn.Type PrimTy ->
   m LLVM.Operand
 mkPrim prim ty = case prim of
-  LitInt i -> case ty of
+  PrimLitInt i -> case ty of
     ErasedAnn.PrimTy (PrimTy LLVM.IntegerType {LLVM.typeBits}) ->
       return $
         LLVM.ConstantOperand $
           LLVM.Int {LLVM.integerBits = typeBits, LLVM.integerValue = i}
-  LitString s -> do
+  PrimLitString s -> do
     -- case ty of
     -- ErasedAnn.PrimTy (PrimTy (LLVM.PointerType (LLVM.IntegerType 8) _)) -> do
     name <- Block.generateUniqueName "LitString"

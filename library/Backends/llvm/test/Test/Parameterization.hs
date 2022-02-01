@@ -62,10 +62,10 @@ typecheckLLVMBinOp instrName instr =
     hasLLVMType instr (primFunc2 LLVM.i16 LLVM.i16 LLVM.i8) @?= False
 
 typecheckLLVMAddTest :: TestTree
-typecheckLLVMAddTest = typecheckLLVMBinOp "add" Add
+typecheckLLVMAddTest = typecheckLLVMBinOp "add" PrimAdd
 
 typecheckLLVMSubTest :: TestTree
-typecheckLLVMSubTest = typecheckLLVMBinOp "sub" Sub
+typecheckLLVMSubTest = typecheckLLVMBinOp "sub" PrimSub
 
 typecheckLLVMMulTest :: TestTree
-typecheckLLVMMulTest = typecheckLLVMBinOp "mul" Mul
+typecheckLLVMMulTest = typecheckLLVMBinOp "mul" PrimMul

@@ -27,11 +27,15 @@ arityTy _ = 0
 
 -- | Raw representation of some primitives of LLVM.
 data RawPrimVal
-  = Add
-  | Sub
-  | Mul
-  | LitInt Integer
-  | LitString Text
+  = PrimAdd
+  | PrimSub
+  | PrimMul
+  | PrimLeq
+  | PrimLe
+  | PrimEq
+  | PrimNeq
+  | PrimLitInt Integer
+  | PrimLitString Text
   deriving (Eq, Show, Read)
 
 -- | The primitive values as exposed to users of Juvix, wrapping inside a
@@ -47,8 +51,12 @@ data CompilationError
 -- | Arity of `RawPrimVal`.
 arityRaw :: RawPrimVal -> Natural
 arityRaw p = case p of
-  Add -> 2
-  Mul -> 2
-  Sub -> 2
-  LitInt {} -> 0
-  LitString {} -> 0
+  PrimAdd -> 2
+  PrimMul -> 2
+  PrimSub -> 2
+  PrimLeq -> 2
+  PrimEq -> 2
+  PrimNeq -> 2
+  PrimLe -> 2
+  PrimLitInt {} -> 0
+  PrimLitString {} -> 0
