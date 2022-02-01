@@ -90,20 +90,19 @@ applySimplifiedPass ::
   (PassArgument -> m Job) ->
   Pipeline.CIn ->
   m Pipeline.WorkingEnv
-applySimplifiedPass f Pipeline.CIn {languageData, surroundingData} =
-  let Pipeline.WorkingEnv {currentExp, context} = languageData
-      Pipeline.SurroundingEnv {metaInfo} = surroundingData
-      initialOutput = Pipeline.WorkingEnv {currentExp = [], context = context}
-   in Meta.put metaInfo >> foldM g initialOutput currentExp
+applySimplifiedPass f input =
+  let workingEnv = input ^. Pipeline.languageData
+      metaInform = input ^. Pipeline.surroundingData . Pipeline.metaInfo
+      initialOut = set Pipeline.currentExp [] workingEnv
+   in Meta.put metaInform
+        >> foldM g initialOut (workingEnv ^. Pipeline.currentExp)
   where
-    g Pipeline.WorkingEnv {context, currentExp} nextSexp = do
-      job <- f PassArgument {_current = nextSexp, _context = context}
-      (sexp, newContext, newForms) <- extractFromJob context job
-      Pipeline.WorkingEnv
-        { context = newContext,
-          -- TODO: Only Stage = Current is supported, add handling for other cases.
-          currentExp = currentExp <> [Pipeline.Sexp sexp] <> map snd newForms
-        }
+    g workingEnv@Pipeline.WorkingEnv {_context} nextSexp = do
+      job <- f PassArgument {_current = nextSexp, _context = _context}
+      (sexp, newContext, newForms) <- extractFromJob _context job
+      workingEnv
+        |> set Pipeline.context newContext
+        |> over Pipeline.currentExp (<> [Pipeline.Sexp sexp] <> map snd newForms)
         |> pure
 
 runSimplifiedPass ::

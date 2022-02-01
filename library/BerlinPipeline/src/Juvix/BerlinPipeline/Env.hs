@@ -2,6 +2,7 @@
 
 module Juvix.BerlinPipeline.Env where
 
+import Control.Lens as Lens hiding ((|>))
 import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
@@ -95,7 +96,7 @@ extract (EnvS st) = execState st
 -- | @eval@ is responsible for taking the environment, running it to
 -- the desired point and giving back what data is left.
 eval :: T -> IO Pipeline.CIn
-eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep} = do
+eval T {information = input, pipeline, stoppingStep} = do
   case nextStep of
     Nothing -> pure input
     Just (CircularList.NonCircSchema Step.Named {name, step})
@@ -104,7 +105,7 @@ eval T {information = input@Pipeline.CIn {languageData}, pipeline, stoppingStep}
       | otherwise -> do
         res <- Step.call step (Pipeline.setNameCIn name input)
         --
-        let information = reconstructInput languageData res
+        let information = reconstructInput (input ^. Pipeline.languageData) res
         --
         case shouldContinue res of
           True -> eval T {information, pipeline = remainder, stoppingStep}
@@ -146,10 +147,10 @@ shouldContinue Pipeline.Failure {} = False -- if we get back data it might be Tr
 reconstructInput ::
   Pipeline.WorkingEnv -> Pipeline.COut Pipeline.WorkingEnv -> Pipeline.CIn
 reconstructInput workEnv res =
-  Pipeline.CIn {surroundingData = newEnv (Pipeline.getMeta res), languageData}
+  Pipeline.CIn {_surroundingData = newEnv (Pipeline.getMeta res), _languageData}
   where
     newEnv = Pipeline.SurroundingEnv Nothing
-    languageData =
+    _languageData =
       case res of
-        Pipeline.Success {result = work} -> work
-        Pipeline.Failure {partialResult} -> fromMaybe workEnv partialResult
+        Pipeline.Success {_result = work} -> work
+        Pipeline.Failure {_partialResult} -> fromMaybe workEnv _partialResult

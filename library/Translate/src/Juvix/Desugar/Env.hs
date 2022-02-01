@@ -54,8 +54,8 @@ instance Sexp.DefaultOptions Error
 instance Sexp.Serialize Error
 
 runEnv :: MinimalMIO a -> Meta.T -> IO (Either Sexp.T a, Env)
-runEnv (MinIO a) (Meta.T {trace, feedback}) =
-  runStateT (runExceptT a) Env {trace, feedback}
+runEnv (MinIO a) (Meta.T {_trace, _feedback}) =
+  runStateT (runExceptT a) Env {trace = _trace, feedback = _feedback}
 
 -- TODO ∷ update to use feedback before throwing. (Sadly not finished)
 throw :: (Feedback.Eff m, HasThrow "error" Sexp.T m) => Error -> m a2
@@ -72,13 +72,13 @@ instance Pipeline.HasExtract MinimalMIO where
   -- it's fine to run empty as the meta information gets injected in
   extract a = do
     (either, env) <- runEnvEmpty a
-    let meta = Meta.T {trace = trace env, feedback = feedback env}
+    let meta = Meta.T {_trace = trace env, _feedback = feedback env}
     case either of
       -- goes unused, see feedback for the data
       Left _sexp ->
-        Pipeline.Failure {meta, partialResult = Nothing} |> pure
+        Pipeline.Failure {_meta = meta, _partialResult = Nothing} |> pure
       Right data' ->
-        Pipeline.Success {meta, result = data'} |> pure
+        Pipeline.Success {_meta = meta, _result = data'} |> pure
 
 --------------------------------------------------------------------------------
 -- Functions
@@ -100,7 +100,7 @@ exampleMeta :: IO Meta.T
 exampleMeta = do
   Pipeline.CIn languageData surroudning <- startingEnv >>= Pipeline.Env.run eval . Pipeline.emptyInput
   -- print languageData
-  Pipeline.metaInfo surroudning |> pure
+  surroudning ^. Pipeline.metaInfo |> pure
 
 example :: IO ()
 example = do
@@ -109,12 +109,13 @@ example = do
 exampleIndexing :: IO (Maybe Error)
 exampleIndexing = do
   myValue <- exampleMeta
-  Feedback.contentsAt 0 (Meta.feedback myValue)
+  Feedback.contentsAt 0 (myValue ^. Meta.feedback)
     |> Sexp.deserialize @Error
     |> pure
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
+  -- Trace.traceAllEff
   Pipeline.Env.registerStep (CircularList.init condPass)
 
 
@@ -127,8 +128,7 @@ condPass =
 
 condTrans :: Automation.SimplifiedPassArgument -> MinimalMIO Automation.Job
 condTrans simplify = do
-  Trace.withScope "Desguar.condTrans" [show (simplify ^. Automation.current)] $ do
-    Trace.traceAllEff
+  Trace.withScope "Desugar.condTrans" [show (simplify ^. Automation.current)] $ do
     condTransform (simplify ^. Automation.current)
       >>| (\transformed -> Automation.ProcessNoEnv transformed [])
       >>| Automation.ProcessJob

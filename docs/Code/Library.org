@@ -622,6 +622,7 @@ Provides a mechanism for defining Sum types
   + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
+  + [[Library/Trace]]
   + [[Juvix/Sexp]]
 ***** RecursiveList
 A Recursive list represents the concept of a list with a chance to
