@@ -15,6 +15,7 @@ import qualified Juvix.Backends.LLVM.Pass.Types as Types
 import Juvix.Backends.LLVM.Primitive
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
+import qualified Safe.Exact as Safe
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified LLVM.AST as LLVM (Definition, Module, Operand (..))
@@ -389,7 +390,7 @@ compileSumDecl ::
   m LLVM.Operand
 compileSumDecl (sumName, variantDecls) term = do
   llvmTypes <- mapM (typeToLLVM . snd) variantDecls
-  oldTable <- Sum.register sumName (map fst variantDecls) llvmTypes
+  oldTable <- Sum.register sumName (Safe.zipExact (map fst variantDecls) llvmTypes)
   compiledTerm <- compileTerm term
   Sum.restoreTable oldTable
   pure compiledTerm
@@ -420,7 +421,7 @@ compileMatch ty (sumName, term, cases) = do
   compiledTerm <- compileTerm term
   compiledCases <- mapM compileTerm cases
   environments <- mapM getCompiledEnvironment compiledCases
-  Sum.makeCase sumName outputType llvmCaseTypes compiledTerm compiledCases environments
+  Sum.makeCase sumName outputType compiledTerm (Safe.zip3Exact llvmCaseTypes compiledCases environments)
 
 --------------------------------------------------------------------------------
 -- Capture Conversion
