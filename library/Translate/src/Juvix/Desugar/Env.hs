@@ -1,21 +1,22 @@
 module Juvix.Desugar.Env where
 
+import Control.Lens hiding ((|>))
 import qualified Juvix.BerlinPipeline.Automation as Automation
+import qualified Juvix.BerlinPipeline.CircularList as CircularList
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
-import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Step as Step
+import qualified Juvix.Context as Context
 import Juvix.Library hiding (trace)
-import Prelude (error)
 import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
+import Juvix.Sexp.Structure.Lens
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
-import qualified Juvix.BerlinPipeline.Step as Step
-import qualified Juvix.BerlinPipeline.CircularList as CircularList
-import Control.Lens hiding ((|>))
-import Juvix.Sexp.Structure.Lens
-import qualified Juvix.Context as Context
+import Prelude (error)
+
 --------------------------------------------------------------------------------
 -- Environment
 --------------------------------------------------------------------------------
@@ -48,9 +49,10 @@ newtype MinimalMIO a = MinIO {_runIO :: MinimalAliasIO a}
     via MonadError MinimalAliasIO
 
 data Error = MalformedData Text
-           deriving (Generic, Show, Eq)
+  deriving (Generic, Show, Eq)
 
 instance Sexp.DefaultOptions Error
+
 instance Sexp.Serialize Error
 
 runEnv :: MinimalMIO a -> Meta.T -> IO (Either Sexp.T a, Env)
@@ -86,20 +88,24 @@ instance Pipeline.HasExtract MinimalMIO where
 
 Right sexp =
   Sexp.parse
-    "(defun foo (x) (:cond (pred-1 (:cond pred-1 result-1 (pred-n result-n))) (pred-n result-n)))"
+    "(defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
 
 Right secondSexp = Sexp.parse "(defun foo (x) (+ x 1))"
 
 startingEnv :: IO Pipeline.WorkingEnv
 startingEnv =
-  (Context.empty "JU-USER" ∷ IO (Context.T Sexp.T Sexp.T Sexp.T))
-  >>| Pipeline.WorkingEnv [Pipeline.Sexp sexp, Pipeline.Sexp secondSexp]
-
+  (Context.empty "JU-USER" :: IO (Context.T Sexp.T Sexp.T Sexp.T))
+    >>| Pipeline.WorkingEnv [Pipeline.Sexp sexp, Pipeline.Sexp secondSexp]
 
 exampleMeta :: IO Meta.T
 exampleMeta = do
-  Pipeline.CIn languageData surroudning <- startingEnv >>= Pipeline.Env.run eval . Pipeline.emptyInput
-  -- print languageData
+  Pipeline.CIn languageData surroudning <-
+    startingEnv
+      >>= Pipeline.Env.run eval
+        . Pipeline.modifyTraceCIn
+          (`Trace.enable` ["Desugar.cond-runner", "Desugar.condTransform"])
+        -- . Pipeline.modifyTraceCIn Trace.traceAll
+        . Pipeline.emptyInput
   surroudning ^. Pipeline.metaInfo |> pure
 
 example :: IO ()
@@ -115,16 +121,14 @@ exampleIndexing = do
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
-  -- Trace.traceAllEff
   Pipeline.Env.registerStep (CircularList.init condPass)
-
 
 condPass :: Step.Named
 condPass =
   (Trace.withScope "Desugar.cond-runner" [] . Automation.simplify condTrans)
-  |> Automation.runSimplifiedPass
-  |> Step.T
-  |> Step.namePass "Desugar.cond-to-if"
+    |> Automation.runSimplifiedPass
+    |> Step.T
+    |> Step.namePass "Desugar.cond-to-if"
 
 condTrans :: Automation.SimplifiedPassArgument -> MinimalMIO Automation.Job
 condTrans simplify = do
@@ -133,17 +137,16 @@ condTrans simplify = do
       >>| (\transformed -> Automation.ProcessNoEnv transformed [])
       >>| Automation.ProcessJob
 
-
- -- | @condTransform@ - CondTransform turns the cond form of the fronted
- -- language into a series of ifs
- -- - BNF input form:
- --   + (:cond (pred-1 result-1) … (pred-n result-n))
- -- - BNF output form:
- --   + (if pred-1 result-1 (if pred-2 result-2 (… (if pred-n result-n))))
+-- | @condTransform@ - CondTransform turns the cond form of the fronted
+-- language into a series of ifs
+-- - BNF input form:
+--   + (:cond (pred-1 result-1) … (pred-n result-n))
+-- - BNF output form:
+--   + (if pred-1 result-1 (if pred-2 result-2 (… (if pred-n result-n))))
 -- condTransform :: Sexp.T -> Sexp.T
 condTransform :: (MonadIO m, Meta.HasMeta m) => Sexp.T -> m Sexp.T
 condTransform xs =
-  Trace.withScope "Desguar.condTransform" [show xs] $ do
+  Trace.withScope "Desugar.condTransform" [show xs] $ do
     Sexp.traversePredStar xs (== Structure.nameCond) condToIf
   where
     condToIf sexp@(Sexp.Atom atom Sexp.:> _) recur
@@ -160,4 +163,3 @@ condTransform xs =
     generation predAns acc =
       Structure.If (predAns ^. predicate) (predAns ^. answer) acc
         |> Structure.fromIf
-

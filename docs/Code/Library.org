@@ -2273,19 +2273,19 @@ from the syntax alone with no extra information needed!)
 ***** Env <<Desugar/Env>>
 - _Relies on_
   + [[Automation]]
+  + [[CircularList]]
+  + [[BerlinPipeline/Env]]
   + [[BerlinPipeline/Feedback]]
   + [[Meta]]
   + [[BerlinPipeline/Pipeline]]
-  + [[BerlinPipeline/Env]]
+  + [[Step]]
+  + [[Juvix/Context]]
   + [[Library]]
   + [[Library/Trace]]
   + [[Juvix/Sexp]]
+  + [[Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
-  + [[Step]]
-  + [[CircularList]]
-  + [[Lens]]
-  + [[Juvix/Context]]
 ***** Passes <<Desugar/Passes>>
 Passes contains a list of passes on the frontend syntax that can be
 done with no extra information needed. Thus we export the following passes
