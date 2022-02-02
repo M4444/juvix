@@ -5,11 +5,13 @@ import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as Feedback
+import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Context as Context
 import Juvix.Library hiding (trace)
+import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
 import Juvix.Sexp.Structure.Lens
@@ -163,3 +165,35 @@ condTransform xs =
     generation predAns acc =
       Structure.If (predAns ^. predicate) (predAns ^. answer) acc
         |> Structure.fromIf
+
+--------------------------------------------------------------------------------
+-- InPackage
+--------------------------------------------------------------------------------
+
+data InPackage = InPackage NameSymbol.T deriving (Show, Generic)
+
+instance Sexp.Serialize InPackage
+
+instance Sexp.DefaultOptions InPackage
+
+inPackageTransProper :: (MonadIO f) => Automation.SimplifiedPassArgument -> f Automation.Job
+inPackageTransProper simplify = do
+  let sexp = simplify ^. current
+  let ctx = simplify ^. context
+  case Sexp.deserialize @InPackage sexp of
+    Nothing -> Automation.noOpJob ctx (Pipeline.Sexp sexp) |> pure
+    Just (InPackage name) -> do
+      newCtx <- liftIO $ do
+        Context.switchNameSpace name ctx >>| either (const ctx) identity
+      Automation.noOpJob newCtx (Pipeline.Sexp sexp) |> pure
+
+inPackageTrans :: (MonadIO f) => Automation.SimplifiedPassArgument -> f Automation.SimplifiedPassArgument
+inPackageTrans simplify = do
+  let sexp = simplify ^. current
+  let ctx = simplify ^. context
+  case Sexp.deserialize @InPackage sexp of
+    Nothing -> simplify |> pure
+    Just (InPackage name) -> do
+      newCtx <- liftIO $ do
+        Context.switchNameSpace name ctx >>| either (const ctx) identity
+      set context newCtx simplify |> pure
