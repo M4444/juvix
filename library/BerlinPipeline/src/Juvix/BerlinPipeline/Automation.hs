@@ -7,7 +7,19 @@ module Juvix.BerlinPipeline.Automation where
 
 import Control.Lens as Lens hiding ((|>))
 import qualified Control.Lens.TH as TH
+import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Meta as Meta
+--
+-- Automation Specific types imported here
+--
+import Juvix.BerlinPipeline.Pipeline
+  ( Job (..),
+    PassArgument (..),
+    ProcessJob (..),
+    ProcessJobNoEnv (..),
+    SimplifiedPassArgument (..),
+    Stage (..),
+  )
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import Juvix.Library
@@ -18,43 +30,17 @@ import qualified Juvix.Sexp as Sexp
 -- Type Declarations
 --------------------------------------------------------------------------------
 
-data T
-  = ProcessJob ProcessJobNoEnv
-  | UpdateJob
-      { newContext :: Context.T Sexp.T Sexp.T Sexp.T,
-        process :: ProcessJob
-      }
-  deriving (Show)
+type T = Job
 
-type Job = T
+-- Automation Specific types have been moved to Pipeline.hs
 
-class HasExtract a m | a -> m where
-  extract :: a x -> m (Pipeline.COut x)
+--------------------------------------------------------------------------------
+-- Type Operations
+--------------------------------------------------------------------------------
 
 ----------------------------------------
--- Output Types
+-- Output Types Operations
 ----------------------------------------
-
-data Stage
-  = Current
-  | FromTopToCurrent
-  | Eval
-  deriving (Show, Eq)
-
-data ProcessJob = Process
-  { _current :: Pipeline.EnvOrSexp,
-    _newForms :: [(Stage, Pipeline.EnvOrSexp)]
-  }
-  deriving (Show)
-
-data ProcessJobNoEnv = ProcessNoEnv
-  { _current :: Sexp.T,
-    _newForms :: [(Stage, Sexp.T)]
-  }
-  deriving (Show)
-
-TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''ProcessJob
-TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''ProcessJobNoEnv
 
 promoteSimpleForms :: [(Stage, Sexp.T)] -> [(Stage, Pipeline.EnvOrSexp)]
 promoteSimpleForms = fmap (second Pipeline.Sexp)
@@ -66,24 +52,9 @@ promoteNoEnvToEnv process =
       _current = Pipeline.Sexp (process ^. current)
     }
 
-----------------------------------------
--- Input Types
-----------------------------------------
-
-data PassArgument = PassArgument
-  { _current :: Pipeline.EnvOrSexp,
-    _context :: Context.T Sexp.T Sexp.T Sexp.T
-  }
-  deriving (Show)
-
-data SimplifiedPassArgument = SimplifiedArgument
-  { _current :: Sexp.T,
-    _context :: Context.T Sexp.T Sexp.T Sexp.T
-  }
-  deriving (Show)
-
-TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''PassArgument
-TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''SimplifiedPassArgument
+--------------------------------------------------------------------------------
+-- Main Functionality
+--------------------------------------------------------------------------------
 
 applySimplifiedPass ::
   Meta.HasMeta m =>
@@ -91,18 +62,18 @@ applySimplifiedPass ::
   Pipeline.CIn ->
   m Pipeline.WorkingEnv
 applySimplifiedPass f input =
-  let workingEnv = input ^. Pipeline.languageData
-      metaInform = input ^. Pipeline.surroundingData . Pipeline.metaInfo
-      initialOut = set Pipeline.currentExp [] workingEnv
+  let workingEnv = input ^. languageData
+      metaInform = input ^. surroundingData . metaInfo
+      initialOut = set currentExp [] workingEnv
    in Meta.put metaInform
-        >> foldM g initialOut (workingEnv ^. Pipeline.currentExp)
+        >> foldM g initialOut (workingEnv ^. currentExp)
   where
     g workingEnv@Pipeline.WorkingEnv {_context} nextSexp = do
       job <- f PassArgument {_current = nextSexp, _context = _context}
       (sexp, newContext, newForms) <- extractFromJob _context job
       workingEnv
-        |> set Pipeline.context newContext
-        |> over Pipeline.currentExp (<> [Pipeline.Sexp sexp] <> map snd newForms)
+        |> set context newContext
+        |> over currentExp (<> [Pipeline.Sexp sexp] <> map snd newForms)
         |> pure
 
 runSimplifiedPass ::

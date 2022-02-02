@@ -177,7 +177,8 @@ instance Sexp.Serialize InPackage
 
 instance Sexp.DefaultOptions InPackage
 
-inPackageTransProper :: (MonadIO f) => Automation.SimplifiedPassArgument -> f Automation.Job
+inPackageTransProper ::
+  MonadIO f => Automation.SimplifiedPassArgument -> f Automation.Job
 inPackageTransProper simplify = do
   let sexp = simplify ^. current
   let ctx = simplify ^. context
@@ -188,7 +189,8 @@ inPackageTransProper simplify = do
         Context.switchNameSpace name ctx >>| either (const ctx) identity
       Automation.noOpJob newCtx (Pipeline.Sexp sexp) |> pure
 
-inPackageTrans :: (MonadIO f) => Automation.SimplifiedPassArgument -> f Automation.SimplifiedPassArgument
+inPackageTrans ::
+  MonadIO f => Automation.SimplifiedPassArgument -> f Automation.SimplifiedPassArgument
 inPackageTrans simplify = do
   let sexp = simplify ^. current
   let ctx = simplify ^. context

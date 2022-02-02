@@ -1,3 +1,17 @@
-module Juvix.BerlinPipeline.Lens (context, current, newForms) where
+module Juvix.BerlinPipeline.Lens
+  ( context,
+    current,
+    newForms,
+    languageData,
+    surroundingData,
+    meta,
+    result,
+    partialResult,
+    metaInfo,
+    onSexp,
+    currentStepName,
+    currentExp,
+  )
+where
 
-import Juvix.BerlinPipeline.Automation
+import Juvix.BerlinPipeline.Pipeline
