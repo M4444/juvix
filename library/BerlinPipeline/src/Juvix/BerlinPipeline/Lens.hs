@@ -8,9 +8,9 @@ module Juvix.BerlinPipeline.Lens
     result,
     partialResult,
     metaInfo,
-    onSexp,
     currentStepName,
     currentExp,
+    onSinglePass,
   )
 where
 

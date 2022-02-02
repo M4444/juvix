@@ -7,9 +7,10 @@ module Juvix.BerlinPipeline.Pipeline where
 
 import Control.Lens as Lens hiding ((|>))
 import qualified Control.Lens.TH as TH
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.Context as Context
-import Juvix.Library
+import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
@@ -37,7 +38,7 @@ data CIn = CIn
   { _languageData :: WorkingEnv,
     _surroundingData :: SurroundingEnv
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Generic)
 
 data WorkingEnv = WorkingEnv
   { _currentExp :: [EnvOrSexp],
@@ -48,9 +49,11 @@ data WorkingEnv = WorkingEnv
 data SurroundingEnv = SurroundingEnv
   { _currentStepName :: Maybe NameSymbol.T,
     _metaInfo :: Meta.T,
-    _onSexp :: [(Around, ProcessJob)]
+    -- | _onSinglePass denotes the list of functions that ought to be run
+    -- before or after every pass on a single @EnvOrSexp@
+    _onSinglePass :: [(Around, PassArgument -> AroundMIO PassArgument)]
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Generic)
 
 --------------------------------------------------------------------------------
 -- Output
@@ -66,7 +69,7 @@ data COut a
       { _meta :: Meta.T,
         _partialResult :: Maybe a
       }
-  deriving (Eq, Generic)
+  deriving (Generic)
 
 class HasExtract a where
   extract :: a x -> IO (COut x)
@@ -120,6 +123,51 @@ data SimplifiedPassArgument = SimplifiedArgument
     _context :: Context.T Sexp.T Sexp.T Sexp.T
   }
   deriving (Show)
+
+--------------------------------------------------------------------------------
+-- Minimal Environment
+--------------------------------------------------------------------------------
+
+-- Have to put it here to get rid of the Generic in CIn and the line
+
+data AroundEnv = AroundEnv
+  { trace :: Trace.T,
+    feedback :: Feedback.T
+  }
+  deriving (Generic, Show)
+
+type AroundAliasIO =
+  ExceptT Sexp.T (StateT AroundEnv IO)
+
+newtype AroundMIO a = MinIO {_runIO :: AroundAliasIO a}
+  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving
+    ( HasState "feedback" Feedback.T,
+      HasSource "feedback" Feedback.T,
+      HasSink "feedback" Feedback.T
+    )
+    via StateField "feedback" AroundAliasIO
+  deriving
+    ( HasState "trace" Trace.T,
+      HasSource "trace" Trace.T,
+      HasSink "trace" Trace.T
+    )
+    via StateField "trace" AroundAliasIO
+
+runEnv :: AroundMIO a -> Meta.T -> IO (Either Sexp.T a, AroundEnv)
+runEnv (MinIO a) (Meta.T {_trace, _feedback}) =
+  runStateT (runExceptT a) AroundEnv {trace = _trace, feedback = _feedback}
+
+extractAroundEnv ::
+  AroundMIO PassArgument -> Meta.T -> IO (Either Sexp.T (PassArgument, Meta.T))
+extractAroundEnv a env = do
+  (either, env) <- runEnv a env
+  let meta = Meta.T {_trace = trace env, _feedback = feedback env}
+  fmap (\pass -> (pass, meta)) either |> pure
+
+--------------------------------------------------------------------------------
+-- Lens
+--------------------------------------------------------------------------------
 
 TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''PassArgument
 TH.makeLensesWith TH.classUnderscoreNoPrefixFields ''SimplifiedPassArgument

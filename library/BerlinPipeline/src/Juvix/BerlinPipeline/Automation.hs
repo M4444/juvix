@@ -1,12 +1,12 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE TemplateHaskell #-}
 
-module Juvix.BerlinPipeline.Automation where
+module Juvix.BerlinPipeline.Automation
+  ( module Juvix.BerlinPipeline.Automation,
+    module Juvix.BerlinPipeline.Pipeline,
+  )
+where
 
 import Control.Lens as Lens hiding ((|>))
-import qualified Control.Lens.TH as TH
 import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Meta as Meta
 --
@@ -57,7 +57,7 @@ promoteNoEnvToEnv process =
 --------------------------------------------------------------------------------
 
 applySimplifiedPass ::
-  Meta.HasMeta m =>
+  (MonadIO m, Meta.HasMeta m) =>
   (PassArgument -> m Job) ->
   Pipeline.CIn ->
   m Pipeline.WorkingEnv
@@ -66,18 +66,49 @@ applySimplifiedPass f input =
       metaInform = input ^. surroundingData . metaInfo
       initialOut = set currentExp [] workingEnv
    in Meta.put metaInform
-        >> foldM g initialOut (workingEnv ^. currentExp)
+        >> foldM runPassOnEnv initialOut (workingEnv ^. currentExp)
   where
-    g workingEnv@Pipeline.WorkingEnv {_context} nextSexp = do
-      job <- f PassArgument {_current = nextSexp, _context = _context}
-      (sexp, newContext, newForms) <- extractFromJob _context job
+    onStepPasses = input ^. surroundingData . onSinglePass
+    beforSteps = filter ((== Pipeline.Before) . fst) onStepPasses |> fmap snd
+    afterSteps = filter ((== Pipeline.After) . fst) onStepPasses |> fmap snd
+    --
+    runManyPasses passArg passes = do
+      meta <- Meta.get
+      value <-
+        foldM (\pass fun -> fun pass) passArg passes
+          |> (`Pipeline.extractAroundEnv` meta)
+          |> liftIO
+      case value of
+        Left sexp -> throw @"error" sexp
+        Right (pass, meta) -> pass <$ Meta.put meta
+    --
+    runPassOnEnv workingEnv@Pipeline.WorkingEnv {_context} nextSexp = do
+      -- run before step passes
+      -------------------------
+      passArgumentWithBeforeStepsRan <-
+        runManyPasses
+          PassArgument {_current = nextSexp, _context = _context}
+          beforSteps
+      -- run the pass itself!
+      -------------------------
+      job <- f passArgumentWithBeforeStepsRan
+      --
+      let (sexp, newContext, newForms) = extractFromJobEnv _context job
+      -- run the after step passes
+      ----------------------------
+      PassArgument {_current = sexp, _context = newContext} <-
+        runManyPasses
+          PassArgument {_current = sexp, _context = newContext}
+          afterSteps
+      -- Stitch back the output type
+      ------------------------------
       workingEnv
         |> set context newContext
-        |> over currentExp (<> [Pipeline.Sexp sexp] <> map snd newForms)
+        |> over currentExp (<> [sexp] <> map snd newForms)
         |> pure
 
 runSimplifiedPass ::
-  (Pipeline.HasExtract m, Meta.HasMeta m) =>
+  (Pipeline.HasExtract m, Meta.HasMeta m, MonadIO m) =>
   (PassArgument -> m Job) ->
   Pipeline.CIn ->
   IO (Pipeline.COut Pipeline.WorkingEnv)
@@ -137,6 +168,24 @@ noOpJob ::
   Context.T Sexp.T Sexp.T Sexp.T -> Pipeline.EnvOrSexp -> Job
 noOpJob context current = UpdateJob context Process {_current = current, _newForms = []}
 
+-- | @extractFromJob@ extracts the @EnvOrSexp@ that a Job processed,
+-- the context after the Job was run and any new forms that the Job
+-- introduced.
+extractFromJobEnv ::
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  Job ->
+  ( Pipeline.EnvOrSexp,
+    Context.T Sexp.T Sexp.T Sexp.T,
+    [(Stage, Pipeline.EnvOrSexp)]
+  )
+extractFromJobEnv context job =
+  case job of
+    ProcessJob process ->
+      let sexp = process ^. current |> Pipeline.Sexp
+       in (sexp, context, promoteSimpleForms (process ^. newForms))
+    UpdateJob {newContext, process} ->
+      (process ^. current, newContext, process ^. newForms)
+
 -- | @extractFromJob@ extracts the Sexp that a Job processed, the context after
 -- the Job was run and any new forms that the Job introduced.
 extractFromJob ::
@@ -149,15 +198,11 @@ extractFromJob ::
       [(Stage, Pipeline.EnvOrSexp)]
     )
 extractFromJob context job =
-  case job of
-    ProcessJob process ->
-      (process ^. current, context, promoteSimpleForms (process ^. newForms))
-        |> pure
-    UpdateJob {newContext, process} ->
-      case process ^. current of
-        Pipeline.Sexp sexp ->
-          (sexp, newContext, process ^. newForms) |> pure
-        Pipeline.InContext name ->
+  let contents = extractFromJobEnv context job
+   in case contents of
+        (Pipeline.Sexp sexp, ctx, newForms) ->
+          (sexp, ctx, newForms) |> pure
+        (Pipeline.InContext name, _, _) ->
           ("Attempting to redefine term already in env" <> NameSymbol.toText name)
             |> Sexp.string
             |> throw @"error"

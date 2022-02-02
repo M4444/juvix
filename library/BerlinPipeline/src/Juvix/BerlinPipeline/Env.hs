@@ -5,6 +5,7 @@ module Juvix.BerlinPipeline.Env where
 import Control.Lens as Lens hiding ((|>))
 import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
+import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Context as Context
@@ -51,6 +52,24 @@ data StopADT = Stop
 --------------------------------------------------------------------------------
 -- Environment Functions
 --------------------------------------------------------------------------------
+
+-- | Registers a function that will run before each pass that takes an
+-- argument
+registerBeforeEachStep ::
+  (Pipeline.PassArgument -> Pipeline.AroundMIO Pipeline.PassArgument) -> EnvS ()
+registerBeforeEachStep fun = do
+  modify
+    @"information"
+    (over (surroundingData . onSinglePass) ((Pipeline.Before, fun) :))
+
+-- | Registers a function that will run after each pass that takes an
+-- argument
+registerAfterEachStep ::
+  (Pipeline.PassArgument -> Pipeline.AroundMIO Pipeline.PassArgument) -> EnvS ()
+registerAfterEachStep fun = do
+  modify
+    @"information"
+    (over (surroundingData . onSinglePass) ((Pipeline.After, fun) :))
 
 -- | Register the pipeline function to the environment
 registerStep :: CircularList.T Step.Named -> EnvS ()
@@ -105,7 +124,7 @@ eval T {information = input, pipeline, stoppingStep} = do
       | otherwise -> do
         res <- Step.call step (Pipeline.setNameCIn name input)
         --
-        let information = reconstructInput (input ^. Pipeline.languageData) res
+        let information = reconstructInput input res
         --
         case shouldContinue res of
           True -> eval T {information, pipeline = remainder, stoppingStep}
@@ -142,15 +161,17 @@ shouldContinue Pipeline.Success {} = True
 shouldContinue Pipeline.Failure {} = False -- if we get back data it might be True
 
 -- | @reconstructInput@ reconstructs a computational input from an
--- output and an existing work environment. In the case the step
--- succeeds the computational input goes unused.
+-- output and an existing input. In the case the step
+-- succeeds the computational input's @WorkingEnv@ goes unused.
 reconstructInput ::
-  Pipeline.WorkingEnv -> Pipeline.COut Pipeline.WorkingEnv -> Pipeline.CIn
-reconstructInput workEnv res =
-  Pipeline.CIn {_surroundingData = newEnv (Pipeline.getMeta res), _languageData}
+  Pipeline.CIn -> Pipeline.COut Pipeline.WorkingEnv -> Pipeline.CIn
+reconstructInput cin res =
+  cin
+    |> set (surroundingData . currentStepName) Nothing
+    |> set languageData newLanguageData
   where
-    newEnv = Pipeline.SurroundingEnv Nothing
-    _languageData =
+    newLanguageData =
       case res of
         Pipeline.Success {_result = work} -> work
-        Pipeline.Failure {_partialResult} -> fromMaybe workEnv _partialResult
+        Pipeline.Failure {_partialResult} ->
+          fromMaybe (cin ^. languageData) _partialResult

@@ -587,7 +587,9 @@ Provides a mechanism for defining Sum types
 **** BerlinPipeline
 ***** Automation
 - _Relies on_
+  + [[BerlinPipeline/Lens]]
   + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Library]]
@@ -601,6 +603,7 @@ Provides a mechanism for defining Sum types
 ***** Env <<BerlinPipeline/Env>>
 - _Relies on_
   + [[CircularList]]
+  + [[BerlinPipeline/Lens]]
   + [[BerlinPipeline/Pipeline]]
   + [[Step]]
   + [[Juvix/Context]]
@@ -612,7 +615,7 @@ Provides a mechanism for defining Sum types
   + [[Juvix/Sexp]]
 ***** Lens <<BerlinPipeline/Lens>>
 - _Relies on_
-  + [[Automation]]
+  + [[BerlinPipeline/Pipeline]]
 ***** Meta
 - _Relies on_
   + [[BerlinPipeline/Feedback]]
@@ -621,6 +624,7 @@ Provides a mechanism for defining Sum types
   + [[Juvix/Sexp]]
 ***** Pipeline <<BerlinPipeline/Pipeline>>
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
   + [[Meta]]
   + [[Juvix/Context]]
   + [[Library]]
@@ -636,7 +640,6 @@ step can contain more steps.
   + [[NameSymbol]]
 ***** Step
 - _Relies on_
-  + [[Meta]]
   + [[BerlinPipeline/Pipeline]]
   + [[Library]]
   + [[NameSymbol]]

@@ -135,8 +135,8 @@ condPass =
 
 condTrans :: Automation.SimplifiedPassArgument -> MinimalMIO Automation.Job
 condTrans simplify = do
-  Trace.withScope "Desugar.condTrans" [show (simplify ^. Automation.current)] $ do
-    condTransform (simplify ^. Automation.current)
+  Trace.withScope "Desugar.condTrans" [show (simplify ^. current)] $ do
+    condTransform (simplify ^. current)
       >>| (\transformed -> Automation.ProcessNoEnv transformed [])
       >>| Automation.ProcessJob
 
@@ -207,17 +207,16 @@ inPackageTrans simplify = do
 
 injectCurrentPackageContext :: Pipeline.CIn -> Pipeline.CIn
 injectCurrentPackageContext cin =
-  over (Pipeline.languageData . Pipeline.currentExp) f cin
+  over (languageData . currentExp) f cin
   where
     f =
-      context
+      (cin ^. languageData . context)
         |> Context.currentName
         |> NameSymbol.cons Context.topLevelName
         |> InPackage
         |> Sexp.serialize
         |> Pipeline.Sexp
         |> (:)
-    context = cin ^. Pipeline.languageData . Pipeline.context
 
 headerPass :: Step.Named
 headerPass =
