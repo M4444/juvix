@@ -60,6 +60,7 @@ llvm =
       PrimSub -> Param.check3Equal ty
       PrimMul -> Param.check3Equal ty
       PrimEq -> Param.check3Equal ty
+      PrimNeq -> Param.check3Equal ty
       PrimLe -> Param.check3Equal ty
       PrimLeq -> Param.check3Equal ty
       PrimLitInt _ -> length ty == 1
