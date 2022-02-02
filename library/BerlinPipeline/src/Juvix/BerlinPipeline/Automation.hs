@@ -141,7 +141,7 @@ simplify f PassArgument {_current = current, _context = context} =
               updateTerms name (formRecord r) context jobViaSimplified [recordMTy]
             u@Context.Unknown {definitionMTy = Just definitionMTy} -> do
               updateTerms name (formUnknown u) context jobViaSimplified [definitionMTy]
-            _ -> noOpJob |> pure
+            _ -> noOpJob context current |> pure
         Nothing ->
           throw @"error" $
             Sexp.string
@@ -161,7 +161,10 @@ simplify f PassArgument {_current = current, _context = context} =
             maybe [defTerm] (\mty -> [defTerm, mty]) defMTy
        in updateTerms name formDefn context jobViaSimplified arguments
 
-    noOpJob = UpdateJob context Process {_current = current, _newForms = []}
+-- | @noOpJob@ is a Job that does nothing to the passed context and current form.
+noOpJob ::
+  Context.T Sexp.T Sexp.T Sexp.T -> Pipeline.EnvOrSexp -> Job
+noOpJob context current = UpdateJob context Process {_current = current, _newForms = []}
 
 -- | @extractFromJob@ extracts the Sexp that a Job processed, the context after
 -- the Job was run and any new forms that the Job introduced.
