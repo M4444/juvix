@@ -123,6 +123,7 @@ exampleIndexing = do
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
+  Pipeline.Env.registerStep (CircularList.init headerPass)
   Pipeline.Env.registerStep (CircularList.init condPass)
 
 condPass :: Step.Named
@@ -197,3 +198,46 @@ inPackageTrans simplify = do
       newCtx <- liftIO $ do
         Context.switchNameSpace name ctx >>| either (const ctx) identity
       set context newCtx simplify |> pure
+
+--------------------------------------------------------------------------------
+-- Header
+--------------------------------------------------------------------------------
+
+injectCurrentPackageContext :: Pipeline.CIn -> Pipeline.CIn
+injectCurrentPackageContext cin =
+  over (Pipeline.languageData . Pipeline.currentExp) f cin
+  where
+    f =
+      context
+        |> Context.currentName
+        |> NameSymbol.cons Context.topLevelName
+        |> InPackage
+        |> Sexp.serialize
+        |> Pipeline.Sexp
+        |> (:)
+    context = cin ^. Pipeline.languageData . Pipeline.context
+
+headerPass :: Step.Named
+headerPass =
+  (Trace.withScope "Desugar.header-runner" [] . Automation.simplify headerTrans)
+    |> (\f -> Automation.runSimplifiedPass f . injectCurrentPackageContext)
+    |> Step.T
+    |> Step.namePass "Desugar.header"
+
+headerTrans :: Automation.SimplifiedPassArgument -> MinimalMIO Automation.Job
+headerTrans simplify =
+  Trace.withScope "Desugar.headerTrans" [show (simplify ^. current)] $
+    headerTransform (simplify ^. current)
+      >>| (\(h, sexps) -> Automation.ProcessNoEnv h (fmap f sexps))
+      >>| Automation.ProcessJob
+  where
+    f s = (Automation.Current, s)
+
+-- TODO: Make this recursive?
+headerTransform :: (Meta.HasMeta m) => Sexp.T -> m (Sexp.T, [Sexp.T])
+headerTransform sexp = case Structure.toHeader sexp of
+  Nothing -> (sexp, []) |> pure
+  Just (Structure.Header name xs) ->
+    case Sexp.toList @Maybe xs of
+      Just sexps -> (Sexp.serialize (InPackage name), sexps) |> pure
+      Nothing -> Juvix.Desugar.Env.throw $ MalformedData "header is in an invalid format"
