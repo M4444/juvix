@@ -43,6 +43,7 @@ Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetType
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetSignature
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.DefModule
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetModule
+Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Header
 Lens.makeLensesWith Lens.camelCaseFields ''Named.Star
 Lens.makeLensesWith Lens.camelCaseFields ''Named.PrimTy
 Lens.makeLensesWith Lens.camelCaseFields ''Named.Prim

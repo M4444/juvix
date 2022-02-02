@@ -350,7 +350,9 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "DoOp" (repeat 2 "sexp") ":do-op")
 
-  (generate-haskell "Via" (repeat 2 "sexp") ":via"))
+  (generate-haskell "Via" (repeat 2 "sexp") ":via")
+
+  (generate-haskell "Header" '("nameSymbol" "sexp") ":header" :list-star t))
 
 (defun transition-types ()
   (generate-haskell "ArgBody" '("sexp" "sexp") nil)
