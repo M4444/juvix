@@ -610,6 +610,9 @@ Provides a mechanism for defining Sum types
 - _Relies on_
   + [[Library]]
   + [[Juvix/Sexp]]
+***** Lens <<BerlinPipeline/Lens>>
+- _Relies on_
+  + [[Automation]]
 ***** Meta
 - _Relies on_
   + [[BerlinPipeline/Feedback]]
@@ -969,7 +972,7 @@ keeps the extensions.
   + [[Juvix/Sexp]]
   + [[Structure]]
   + [[CoreNamed]]
-  + [[Lens]]
+  + [[Structure/Lens]]
 ****** Types <<HR/Types>>
 - _Relies on_
   + [[Application]]
@@ -1819,7 +1822,7 @@ _TODO_
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-****** Lens
+****** Lens <<Structure/Lens>>
 - _Relies on_
   + [[CoreNamed]]
   + [[Structure/Parsing]]
@@ -2184,7 +2187,7 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Sexp]]
   + [[CoreNamed]]
   + [[Structure/Helpers]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 ***** InfixPrecedence
@@ -2276,14 +2279,16 @@ from the syntax alone with no extra information needed!)
   + [[CircularList]]
   + [[BerlinPipeline/Env]]
   + [[BerlinPipeline/Feedback]]
+  + [[BerlinPipeline/Lens]]
   + [[Meta]]
   + [[BerlinPipeline/Pipeline]]
   + [[Step]]
   + [[Juvix/Context]]
   + [[Library]]
+  + [[NameSymbol]]
   + [[Library/Trace]]
   + [[Juvix/Sexp]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 ***** Passes <<Desugar/Passes>>
@@ -2297,7 +2302,7 @@ done with no extra information needed. Thus we export the following passes
 - _Relies on_
   + [[Library]]
   + [[Juvix/Sexp]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 **** Translate <<Juvix/Translate>>
@@ -2313,6 +2318,7 @@ done with no extra information needed. Thus we export the following passes
   + [[NameSymbol]]
   + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
 ** test
 *** Main <<Translate/test/Main>>
 - _Relies on_
