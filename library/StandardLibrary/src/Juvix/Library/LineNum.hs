@@ -6,9 +6,30 @@ module Juvix.Library.LineNum where
 
 import Control.Lens
 import qualified Data.Aeson as A
-import Juvix.Library (Data, Eq, Generic, Hashable (hash), Int, NFData, Ord, Show)
+import Juvix.Library
+  ( Data,
+    Eq,
+    Generic,
+    Hashable (hash),
+    Int,
+    NFData,
+    Ord,
+    Read,
+    Show,
+    Typeable,
+  )
 
-data T = T {tLine :: Int, tCol :: Int} deriving (Show, Eq, Ord, Data, Generic, NFData)
+data T = T {tLine :: Int, tCol :: Int}
+  deriving
+    ( Show,
+      Eq,
+      Ord,
+      Data,
+      Generic,
+      NFData,
+      Read,
+      Typeable
+    )
 
 instance A.ToJSON T where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})

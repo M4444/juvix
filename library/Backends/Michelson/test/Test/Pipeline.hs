@@ -13,9 +13,9 @@ import Juvix.Library hiding (bool, identity, log)
 import qualified Juvix.Library.Usage as Usage
 import qualified Morley.Michelson.TypeCheck as Michelson
 import qualified Morley.Michelson.Typed as MT
+import qualified Morley.Michelson.Typed.Existential as Michelson
 import qualified Morley.Michelson.Untyped as M
 import qualified Morley.Michelson.Untyped as Michelson
-import qualified Morley.Michelson.Typed.Existential as Michelson
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 import Prelude (String)

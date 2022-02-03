@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -10,6 +11,9 @@ module Juvix.Sexp.Types where
 
 import Control.Lens hiding (List, from, (:>), (|>))
 import qualified Data.Aeson as A
+import qualified Data.Fix as Fix
+import qualified Data.Functor.Foldable as Foldable
+import qualified Data.Functor.Foldable.TH as FunctorTemplates
 import Data.Hashable ()
 import Juvix.Library hiding (show, toList)
 import qualified Juvix.Library.LineNum as LineNum
@@ -24,13 +28,28 @@ data Base a
   = Atom (Atom a)
   | Cons {tCar :: Base a, tCdr :: Base a}
   | Nil
-  deriving (Eq, Data, Generic, NFData)
+  deriving
+    ( Eq,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Read,
+      Functor,
+      Foldable,
+      Traversable
+    )
 
-instance A.ToJSON T where
+instance (A.ToJSON a) => A.ToJSON (Base a) where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
-instance A.FromJSON T where
+instance (A.FromJSON a) => A.FromJSON (Base a) where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+deriving anyclass instance (A.ToJSON a) => A.ToJSONKey (Base a)
+
+deriving anyclass instance (A.FromJSON a) => A.FromJSONKey (Base a)
 
 data Atom a
   = A {atomName :: NameSymbol.T, atomLineNum :: Maybe LineNum.T}
@@ -38,13 +57,27 @@ data Atom a
   | D {atomDouble :: Double, atomLineNum :: Maybe LineNum.T}
   | S {atomText :: Text, atomLineNum :: Maybe LineNum.T}
   | P {atomTerm :: a, atomLineNum :: Maybe LineNum.T}
-  deriving (Show, Data, Generic, NFData)
+  deriving
+    ( Generic,
+      Typeable,
+      Data,
+      NFData,
+      Read,
+      Show,
+      Functor,
+      Foldable,
+      Traversable
+    )
 
 instance A.ToJSON a => A.ToJSON (Atom a) where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
 instance A.FromJSON a => A.FromJSON (Atom a) where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+deriving anyclass instance (A.ToJSON a) => A.ToJSONKey (Atom a)
+
+deriving anyclass instance (A.FromJSON a) => A.FromJSONKey (Atom a)
 
 noLoc :: Atom a -> Atom a
 noLoc a = a {atomLineNum = Nothing}
@@ -62,7 +95,7 @@ instance Hashable a => Hashable (Atom a) where
   hash (A {atomName}) = hash ('A', atomName)
   hash (N {atomNum}) = hash ('N', atomNum)
 
-instance Hashable T where
+instance (Hashable a) => Hashable (Base a) where
   hash (Atom atom) = hash atom
   hash Nil = 1
   hash (Cons {tCar, tCdr}) = hash (hash tCar, hash tCdr)
@@ -132,3 +165,22 @@ showNoParens (Cons car cdr)
     show car <> " " <> showNoParens cdr
 showNoParens Nil = ")"
 showNoParens xs = show xs
+
+---------------------------
+---- Recursion schemes ----
+---------------------------
+
+-- Define fixpoint versions of Sexp.Base, which provide instances of
+-- Recursive and Corecursive, and thereby allow the use of recursion-schemes.
+
+FunctorTemplates.makeBaseFunctor ''Base
+
+type instance Foldable.Base (Base a) = BaseF a
+
+-- Define explicit general fixpoints, least fixpoints, and greatest fixpoints
+-- of BaseF (they are all isomorphic to each other and to Base).
+type FixBase a = Fix.Fix (BaseF a)
+
+type MuBase a = Fix.Mu (BaseF a)
+
+type NuBase a = Fix.Nu (BaseF a)

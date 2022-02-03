@@ -30,6 +30,8 @@ dependencies:
 - word8
 - generic-deriving
 - unordered-containers
+- recursion-schemes
+- data-fix
 
 default-extensions:
   - NoImplicitPrelude
