@@ -124,6 +124,7 @@ exampleIndexing = do
 eval :: Pipeline.Env.EnvS ()
 eval = do
   Pipeline.Env.registerStep (CircularList.init headerPass)
+  Pipeline.Env.registerAfterEachStep inPackageTrans
   Pipeline.Env.registerStep (CircularList.init condPass)
 
 condPass :: Step.Named
@@ -177,29 +178,22 @@ instance Sexp.Serialize InPackage
 
 instance Sexp.DefaultOptions InPackage
 
-inPackageTransProper ::
-  MonadIO f => Automation.SimplifiedPassArgument -> f Automation.Job
-inPackageTransProper simplify = do
-  let sexp = simplify ^. current
-  let ctx = simplify ^. context
-  case Sexp.deserialize @InPackage sexp of
-    Nothing -> Automation.noOpJob ctx (Pipeline.Sexp sexp) |> pure
-    Just (InPackage name) -> do
-      newCtx <- liftIO $ do
-        Context.switchNameSpace name ctx >>| either (const ctx) identity
-      Automation.noOpJob newCtx (Pipeline.Sexp sexp) |> pure
-
+-- | @inPackageTrans@ - If the current Sexp is an `:in-package` form then this function
+-- updates the current Context to the corresponding namespace.
 inPackageTrans ::
-  MonadIO f => Automation.SimplifiedPassArgument -> f Automation.SimplifiedPassArgument
-inPackageTrans simplify = do
-  let sexp = simplify ^. current
-  let ctx = simplify ^. context
-  case Sexp.deserialize @InPackage sexp of
-    Nothing -> simplify |> pure
-    Just (InPackage name) -> do
-      newCtx <- liftIO $ do
-        Context.switchNameSpace name ctx >>| either (const ctx) identity
-      set context newCtx simplify |> pure
+  MonadIO m => Automation.PassArgument -> m Automation.PassArgument
+inPackageTrans arg = case arg ^. current of
+    (Pipeline.InContext _) -> noOp
+    (Pipeline.Sexp sexp) -> Sexp.deserialize sexp |> maybe noOp f
+  where
+    f (InPackage name) = do
+      newCtx <- liftIO $
+        Context.switchNameSpace name ctx
+        >>| either (const ctx) identity
+      set context newCtx arg |> pure
+    noOp = arg |> pure
+    ctx = arg ^. context
+
 
 --------------------------------------------------------------------------------
 -- Header
