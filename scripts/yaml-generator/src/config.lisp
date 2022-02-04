@@ -215,7 +215,7 @@
   (make-groups :comment "LLVM-HS Library dependencies"
                :deps (list
                       (make-dependency-bare :name "llvm-hs-pure-9.0.0")
-                      (make-dependency-bare :name "llvm-hs-9.0.0")
+                      (make-dependency-bare :name "llvm-hs-9.0.1")
                       (make-dependency-bare :name "llvm-hs-pretty-0.9.0.0"))))
 
 ;; --------------------------------------
