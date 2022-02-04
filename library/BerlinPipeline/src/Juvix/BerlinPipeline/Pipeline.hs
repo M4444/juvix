@@ -153,6 +153,9 @@ newtype AroundMIO a = MinIO {_runIO :: AroundAliasIO a}
       HasSink "trace" Trace.T
     )
     via StateField "trace" AroundAliasIO
+  deriving
+    (HasThrow "error" Sexp.T)
+    via MonadError AroundAliasIO
 
 runEnv :: AroundMIO a -> Meta.T -> IO (Either Sexp.T a, AroundEnv)
 runEnv (MinIO a) (Meta.T {_trace, _feedback}) =
