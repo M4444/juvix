@@ -130,6 +130,10 @@ data SumConFilled = SumConFilled
   }
   deriving (Show)
 
+newtype InPackage = InPackage
+  {name :: NameSymbol.T}
+  deriving (Show)
+
 --------------------------------------------------------------------------------
 -- Converter functions
 -- The format for these are
@@ -524,3 +528,34 @@ fromSumConFilled (SumConFilled nameSymbol1 sexp2) =
 instance Sexp.Serialize SumConFilled where
   deserialize = toSumConFilled
   serialize = fromSumConFilled
+
+----------------------------------------
+-- InPackage
+----------------------------------------
+
+nameInPackage :: NameSymbol.T
+nameInPackage = ":in-package"
+
+isInPackage :: Sexp.T -> Bool
+isInPackage (Sexp.Cons form _) = Sexp.isAtomNamed form nameInPackage
+isInPackage _ = False
+
+toInPackage :: Sexp.T -> Maybe InPackage
+toInPackage form
+  | isInPackage form =
+    case form of
+      _nameInPackage Sexp.:> nameSymbol1 Sexp.:> Sexp.Nil
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+          InPackage nameSymbol1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromInPackage :: InPackage -> Sexp.T
+fromInPackage (InPackage nameSymbol1) =
+  Sexp.list [Sexp.atom nameInPackage, fromNameSymbol nameSymbol1]
+
+instance Sexp.Serialize InPackage where
+  deserialize = toInPackage
+  serialize = fromInPackage

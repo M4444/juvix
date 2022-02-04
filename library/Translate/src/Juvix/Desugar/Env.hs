@@ -172,12 +172,6 @@ condTransform xs =
 -- InPackage
 --------------------------------------------------------------------------------
 
-data InPackage = InPackage NameSymbol.T deriving (Show, Generic)
-
-instance Sexp.Serialize InPackage
-
-instance Sexp.DefaultOptions InPackage
-
 -- | @inPackageTrans@ - If the current Sexp is an `:in-package` form then this function
 -- updates the current Context to the corresponding namespace.
 inPackageTrans ::
@@ -186,7 +180,7 @@ inPackageTrans arg = case arg ^. current of
     (Pipeline.InContext _) -> noOp
     (Pipeline.Sexp sexp) -> Sexp.deserialize sexp |> maybe noOp f
   where
-    f (InPackage name) = do
+    f (Structure.InPackage name) = do
       newCtx <- liftIO $
         Context.switchNameSpace name ctx
         >>| either (const ctx) identity
@@ -207,7 +201,7 @@ injectCurrentPackageContext cin =
       (cin ^. languageData . context)
         |> Context.currentName
         |> NameSymbol.cons Context.topLevelName
-        |> InPackage
+        |> Structure.InPackage
         |> Sexp.serialize
         |> Pipeline.Sexp
         |> (:)
@@ -234,5 +228,5 @@ headerTransform sexp = case Structure.toHeader sexp of
   Nothing -> (sexp, []) |> pure
   Just (Structure.Header name xs) ->
     case Sexp.toList @Maybe xs of
-      Just sexps -> (Sexp.serialize (InPackage name), sexps) |> pure
+      Just sexps -> (Sexp.serialize (Structure.InPackage name), sexps) |> pure
       Nothing -> Juvix.Desugar.Env.throw $ MalformedData "header is in an invalid format"
