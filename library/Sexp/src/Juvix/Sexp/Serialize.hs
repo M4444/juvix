@@ -337,6 +337,16 @@ instance Serialize Integer where
   deserialize (Atom (N i Nothing)) = Just i
   deserialize _ = Nothing
 
+instance Serialize Natural where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
+instance Serialize Int where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
 instance Serialize () where
   serialize () = Nil
   deserialize Nil = Just ()

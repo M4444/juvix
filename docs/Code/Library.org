@@ -761,6 +761,7 @@ keeps the extensions.
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 ******* Globals
 - _Relies on_
   + [[Base/Types/Base]]

@@ -15,6 +15,7 @@ import Extensible (Config (..), NameAffix (..), defaultConfig, extensibleWith)
 import Juvix.Library hiding (Pos, datatypeName)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Usage
+import qualified Juvix.Sexp.Serialize as Serialize
 
 ------------------------------------------------------------------------------
 
@@ -22,6 +23,7 @@ import Juvix.Library.Usage
 newtype ConcUniverse = CU Natural
   deriving (Show, Read, Eq, Ord, Generic, Data)
   deriving newtype (NFData)
+  deriving anyclass (Serialize.DefaultOptions, Serialize.Serialize)
 
 instance A.ToJSON ConcUniverse where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
@@ -37,6 +39,7 @@ data Universe
   = U' ConcUniverse
   | UAny
   deriving (Show, Read, Eq, Ord, Generic, Data, NFData)
+  deriving anyclass (Serialize.DefaultOptions, Serialize.Serialize)
 
 pattern U :: Natural -> Universe
 pattern U i = U' (CU i)
@@ -50,6 +53,8 @@ instance A.FromJSON Universe where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
 type GlobalName = NameSymbol.T
+
+deriving anyclass instance Serialize.DefaultOptions GlobalName
 
 type PatternVar = Int
 
@@ -66,7 +71,7 @@ data Name
     Global GlobalName
   | -- | Pattern variable, unique within a scope
     Pattern PatternVar
-  deriving (Show, Eq, Generic, Data, NFData)
+  deriving (Show, Eq, Generic, Data, NFData, Serialize.DefaultOptions, Serialize.Serialize)
 
 instance A.ToJSON Name where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
@@ -76,7 +81,21 @@ instance A.FromJSON Name where
 
 -- TODO: maybe global functions can have any usage? (for private defs)
 data GlobalUsage = GZero | GSAny
-  deriving (Show, Eq, Generic, Data, Bounded, Enum, NFData)
+  deriving
+    ( Show,
+      Eq,
+      Generic,
+      Data,
+      Bounded,
+      Enum,
+      NFData,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+
+deriving anyclass instance Serialize.DefaultOptions Usage
+
+deriving anyclass instance Serialize.Serialize Usage
 
 instance A.ToJSON GlobalUsage where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
@@ -197,6 +216,105 @@ extensibleWith
       deriving (Show, Eq, Generic, Data, NFData)
     |]
 
+-- We make the following Serializable instances overlappable
+-- because HR needs to do non-generic serializarion/deserialization
+-- (using custom atoms).
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal
+  ) =>
+  Serialize.DefaultOptions (Term ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal
+  ) =>
+  Serialize.DefaultOptions (Elim ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal
+  ) =>
+  Serialize.DefaultOptions (Value ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal
+  ) =>
+  Serialize.DefaultOptions (Neutral ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal
+  ) =>
+  Serialize.DefaultOptions (Pattern ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.Serialize ext primTy primVal
+  ) =>
+  Serialize.Serialize (Term ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.Serialize ext primTy primVal
+  ) =>
+  Serialize.Serialize (Elim ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.Serialize ext primTy primVal
+  ) =>
+  Serialize.Serialize (Value ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.Serialize ext primTy primVal
+  ) =>
+  Serialize.Serialize (Neutral ext primTy primVal)
+
+deriving anyclass instance
+  {-# OVERLAPPABLE #-}
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal,
+    CoreSerializable Serialize.DefaultOptions ext primTy primVal,
+    CoreSerializable Serialize.Serialize ext primTy primVal
+  ) =>
+  Serialize.Serialize (Pattern ext primTy primVal)
+
 instance (A.ToJSON primTy, A.ToJSON primVal, CoreAll A.ToJSON ext primTy primVal) => A.ToJSON (Term ext primTy primVal) where
   toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
@@ -231,6 +349,14 @@ type CoreAll (c :: Type -> Constraint) ext primTy primVal =
   ( TermAll c ext primTy primVal,
     ElimAll c ext primTy primVal,
     PatternAll c ext primTy primVal
+  )
+
+type CoreSerializable (c :: Type -> Constraint) ext primTy primVal =
+  ( TermAll c ext primTy primVal,
+    ElimAll c ext primTy primVal,
+    PatternAll c ext primTy primVal,
+    ValueAll c ext primTy primVal,
+    NeutralAll c ext primTy primVal
   )
 
 type CoreShow ext primTy primVal = CoreAll Show ext primTy primVal
