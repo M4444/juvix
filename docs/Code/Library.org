@@ -586,6 +586,9 @@ Provides a mechanism for defining Sum types
 *** Juvix
 **** BerlinPipeline
 ***** Automation
+the job of @Automation@ is to make the step function more
+amenable to writing passes It is not ergonomic to take extra
+information one may not care about
 - _Relies on_
   + [[BerlinPipeline/Lens]]
   + [[Meta]]
@@ -639,6 +642,19 @@ step can contain more steps.
   + [[Library]]
   + [[NameSymbol]]
 ***** Step
+The Step Module serves as the base interface for any compiler
+step. The module is quite minimal, with only a few types along with
+a small set of operations.
+This main type of the module, @T@, is simply a function type that
+takes a structure type that has more than it needs to do any pass
+called @Pipeline.COut@ and gives back the result of the computation
+plus Meta-data.
+We say that the pass takes more than it needs because not only is
+@Piepline.COut@ composed of the @Pipeline._context@ and the
+@Pipeline._currentExp@ we are trying to compile against, but also
+the @Pipeline.SurroundingEnv@ which contains information such as
+metadata and enough data to fill the environment of any particular
+pass.
 - _Relies on_
   + [[BerlinPipeline/Pipeline]]
   + [[Library]]
@@ -2155,6 +2171,7 @@ TODO ∷ determine what has changed in the rebasing of this algo
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
+  + [[Transition]]
 ***** Binders <<Juvix/Contextify/Binders>>
 @Juvix.Contextify.Binders@ covers matching binders and the users
 patterns for means of processing. See examples of how partial
@@ -2377,6 +2394,7 @@ done with no extra information needed. Thus we export the following passes
   + [[ResolveOpenInfo]]
   + [[Library]]
   + [[Juvix/Sexp]]
+  + [[Transition]]
 ***** Binders <<Test/Contextify/Binders>>
 - _Relies on_
   + [[Juvix/Contextify/Binders]]

@@ -1,5 +1,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
+-- | the job of @Automation@ is to make the step function more
+-- amenable to writing passes It is not ergonomic to take extra
+-- information one may not care about
 module Juvix.BerlinPipeline.Automation
   ( module Juvix.BerlinPipeline.Automation,
     module Juvix.BerlinPipeline.Pipeline,

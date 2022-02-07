@@ -177,17 +177,17 @@ condTransform xs =
 inPackageTrans ::
   MonadIO m => Automation.PassArgument -> m Automation.PassArgument
 inPackageTrans arg = case arg ^. current of
-    (Pipeline.InContext _) -> noOp
-    (Pipeline.Sexp sexp) -> Sexp.deserialize sexp |> maybe noOp f
+  (Pipeline.InContext _) -> noOp
+  (Pipeline.Sexp sexp) -> Sexp.deserialize sexp |> maybe noOp f
   where
     f (Structure.InPackage name) = do
-      newCtx <- liftIO $
-        Context.switchNameSpace name ctx
-        >>| either (const ctx) identity
+      newCtx <-
+        liftIO $
+          Context.switchNameSpace name ctx
+            >>| either (const ctx) identity
       set context newCtx arg |> pure
     noOp = arg |> pure
     ctx = arg ^. context
-
 
 --------------------------------------------------------------------------------
 -- Header
