@@ -115,14 +115,15 @@ runM (M a) = runExceptT a
 --
 -- in-package forms that are followed by other in-package forms are ignored.
 sexpsByModule :: [Sexp.T] -> [(NameSymbol.T, [Sexp.T])]
-sexpsByModule sexps = let (sexpsByModule, remaining) = foldr f ([], []) sexps in
-  case remaining of
-    [] -> sexpsByModule
-    _ -> error "sexpByModule: sexps are not preceded by an :in-package form"
+sexpsByModule sexps =
+  let (sexpsByModule, remaining) = foldr f ([], []) sexps
+   in case remaining of
+        [] -> sexpsByModule
+        _ -> error "sexpByModule: sexps are not preceded by an :in-package form"
   where
     f sexp (sexpsByModule, sexpsInCurrentModule) =
       Sexp.deserialize sexp
-      |> maybe (sexpsByModule, sexp : sexpsInCurrentModule) g
+        |> maybe (sexpsByModule, sexp : sexpsInCurrentModule) g
       where
         g (Structure.InPackage name) = case sexpsInCurrentModule of
           [] -> (sexpsByModule, [])
