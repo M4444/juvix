@@ -1,4 +1,4 @@
-module Juvix.Contextify (fullyContextify, contextify, op, ResolveErr (..), PathError, sexpsByModule) where
+module Juvix.Contextify (fullyContextify, contextify, op, ResolveErr (..), PathError) where
 
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify.Environment as Environment
@@ -107,24 +107,3 @@ addTop = first Context.addTopName
 
 runM :: M a -> IO (Either Context.PathError a)
 runM (M a) = runExceptT a
-
--- | @sexpsByModule@ combines in-packages forms and forms following into named
--- module pairs that are suitable for passing into fullyContextify for processing.
---
--- The function assumes that the passed list of Sexps begins with an in-package form.
---
--- in-package forms that are followed by other in-package forms are ignored.
-sexpsByModule :: [Sexp.T] -> [(NameSymbol.T, [Sexp.T])]
-sexpsByModule sexps =
-  let (sexpsByModule, remaining) = foldr f ([], []) sexps
-   in case remaining of
-        [] -> sexpsByModule
-        _ -> error "sexpByModule: sexps are not preceded by an :in-package form"
-  where
-    f sexp (sexpsByModule, sexpsInCurrentModule) =
-      Sexp.deserialize sexp
-        |> maybe (sexpsByModule, sexp : sexpsInCurrentModule) g
-      where
-        g (Structure.InPackage name) = case sexpsInCurrentModule of
-          [] -> (sexpsByModule, [])
-          xs -> ((name, xs) : sexpsByModule, [])

@@ -1,6 +1,7 @@
 module Juvix.Desugar.Env where
 
 import Control.Lens hiding ((|>))
+import Data.List.NonEmpty (nonEmpty)
 import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
@@ -230,3 +231,34 @@ headerTransform sexp = case Structure.toHeader sexp of
     case Sexp.toList @Maybe xs of
       Just sexps -> (Sexp.serialize (Structure.InPackage name), sexps) |> pure
       Nothing -> Juvix.Desugar.Env.throw $ MalformedData "header is in an invalid format"
+
+--------------------------------------------------------------------------------
+-- Contextify
+--------------------------------------------------------------------------------
+
+-- | @sexpsByModule@ combines in-packages forms and forms following into named
+-- module pairs that are suitable for passing into fullyContextify for
+-- processing.
+--
+-- If the list of Sexps passed to the function does not begin with an in-package
+-- form then the first argument is used as the name of the module for all Sexps
+-- before the first in-package form
+--
+-- in-package forms that are followed by other in-package forms are ignored.
+sexpsByModule :: NameSymbol.T -> [Sexp.T] -> NonEmpty (NameSymbol.T, [Sexp.T])
+sexpsByModule initialModule sexps =
+  let (sexpsByModule, remaining) = foldr f ([], []) sexps
+      singleton a = a :| []
+   in case remaining of
+        [] ->
+          nonEmpty sexpsByModule
+            |> maybe ((initialModule, []) |> singleton) identity
+        prefix -> (initialModule, prefix) |> singleton
+  where
+    f sexp (sexpsByModule, sexpsInCurrentModule) =
+      Sexp.deserialize sexp
+        |> maybe (sexpsByModule, sexp : sexpsInCurrentModule) g
+      where
+        g (Structure.InPackage name) = case sexpsInCurrentModule of
+          [] -> (sexpsByModule, [])
+          xs -> ((name, xs) : sexpsByModule, [])
