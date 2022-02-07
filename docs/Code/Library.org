@@ -2293,7 +2293,7 @@ from the syntax alone with no extra information needed!)
   + [[Desugar/Passes]]
   + [[Library]]
   + [[Juvix/Sexp]]
-***** Env <<Desugar/Env>>
+***** Env <<Juvix/Desugar/Env>>
 - _Relies on_
   + [[Automation]]
   + [[CircularList]]
@@ -2394,7 +2394,6 @@ done with no extra information needed. Thus we export the following passes
   + [[ResolveOpenInfo]]
   + [[Library]]
   + [[Juvix/Sexp]]
-  + [[Transition]]
 ***** Binders <<Test/Contextify/Binders>>
 - _Relies on_
   + [[Juvix/Contextify/Binders]]
@@ -2422,6 +2421,13 @@ done with no extra information needed. Thus we export the following passes
   + [[InfixPrecedence/ShuntYard]]
   + [[Library]]
 **** Desugar
+***** Env <<Test/Desugar/Env>>
+- _Relies on_
+  + [[Juvix/Desugar/Env]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+  + [[Transition]]
 ***** Sexp <<Desugar/Sexp>>
 - _Relies on_
   + [[Desugar]]

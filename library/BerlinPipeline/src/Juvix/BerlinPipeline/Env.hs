@@ -16,12 +16,28 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 -- Type Specification
 --------------------------------------------------------------------------------
 
+-- TODO :: add a FullPipeline, that does not get consumed.
+--
+-- TODO :: rename to working environment, as this gets consumed
+-- over time
 data T = T
-  { information :: Pipeline.CIn,
-    -- TODO :: rename to working environment, as this gets consumed
-    -- over time
+  { -- | @information@ serves as the public facing data to the
+    -- environment that passes can access
+    information :: Pipeline.CIn,
+    --
+    -- All other information is made to be exclusive with the Pipeline as
+    -- a whole that the Steps do not bother with.
+    -- This consists of information like how to deal with Traces between passes
+    -- to the entire pass infrastructure itself.
+    --
+    --
+
+    -- | @pipeline@ is the pipeline itself.
+    -- It features all the steps named and registered with the system
     pipeline :: CircularList.T (Step.Named),
-    -- TODO :: add a FullPipeline, that does not get consumed.
+    -- | @stoppingStep@ determines if we are stopping the pipeline
+    -- evaluation early. If the value is @Nothing@ then the @eval@
+    -- function runs to the end.
     stoppingStep :: Maybe NameSymbol.T
   }
   deriving (Generic)
@@ -106,9 +122,15 @@ fullyEmpty =
     >>| Pipeline.emptyInput
     >>| empty
 
+-- | @run@ serves as the running point, the @EnvS b@ argument is the
+-- monadic function used to build up the environment, and the
+-- @Pipeline.CIn@ is the given pre-built environment
 run :: EnvS b -> Pipeline.CIn -> IO Pipeline.CIn
-run (EnvS st) = eval . execState st . empty
+run env = eval . extract env . empty
 
+-- | @extract@ extracts the @T@ value from a staring environment, @T@,
+-- and a series of computation @EnvS@ that represents the registration
+-- of passes making up a new environment @T@.
 extract :: EnvS a -> T -> T
 extract (EnvS st) = execState st
 

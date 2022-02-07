@@ -33,6 +33,8 @@ import qualified Juvix.Sexp as Sexp
 -- Type Declarations
 --------------------------------------------------------------------------------
 
+-- | @T@ is the main type of the Automation Module, represents the
+-- output type of an Automation pass.
 type T = Job
 
 -- Automation Specific types have been moved to Pipeline.hs
@@ -45,9 +47,12 @@ type T = Job
 -- Output Types Operations
 ----------------------------------------
 
+-- | @promoteSimpleForms@
 promoteSimpleForms :: [(Stage, Sexp.T)] -> [(Stage, Pipeline.EnvOrSexp)]
 promoteSimpleForms = fmap (second Pipeline.Sexp)
 
+-- | @promoteNoEnvToEnv@ promotes a @ProcessJobNoEnv@ into a
+-- @ProcessJob@
 promoteNoEnvToEnv :: ProcessJobNoEnv -> ProcessJob
 promoteNoEnvToEnv process =
   Process
@@ -59,6 +64,15 @@ promoteNoEnvToEnv process =
 -- Main Functionality
 --------------------------------------------------------------------------------
 
+-- | @applySimplifiedPass@ serves as a HOF that allows for passes to
+-- be a more simplified type, namely a function that takes a
+-- @PassArgument@ to an effectual result over @Job@ that determines
+-- how the pass should be brought together. Note that
+--
+-- @Meta.HasMega m => Pipeline.CIn -> Pipeline.WorkingEnv@
+--
+-- is an approximation of the @Step.T@ type without the Meta
+-- information attached
 applySimplifiedPass ::
   (MonadIO m, Meta.HasMeta m) =>
   (PassArgument -> m Job) ->
@@ -110,6 +124,9 @@ applySimplifiedPass f input =
         |> over currentExp (<> [sexp] <> map snd newForms)
         |> pure
 
+-- | @runSimplifiedPass@ simply combines the @Pipeline.extract@
+-- function with @applySimplifiedPass@, to get the output effect,
+-- which corresponds to a @Step.T@ with an effect attached to it
 runSimplifiedPass ::
   (Pipeline.HasExtract m, Meta.HasMeta m, MonadIO m) =>
   (PassArgument -> m Job) ->
@@ -118,6 +135,9 @@ runSimplifiedPass ::
 runSimplifiedPass f =
   Pipeline.extract . applySimplifiedPass f
 
+-- | @simplify@ allows a pass to ignore the fact that expression
+-- coming in may be added to the @Context.T@ already, and we can act
+-- as if it were just a normal @Sexp.T@ being passed in.
 simplify ::
   Meta.HasMeta m => (SimplifiedPassArgument -> m Job) -> PassArgument -> m Job
 simplify f PassArgument {_current = current, _context = context} =
@@ -189,8 +209,9 @@ extractFromJobEnv context job =
     UpdateJob {newContext, process} ->
       (process ^. current, newContext, process ^. newForms)
 
--- | @extractFromJob@ extracts the Sexp that a Job processed, the context after
--- the Job was run and any new forms that the Job introduced.
+-- | @extractFromJob@ extracts the Sexp that a Job processed, the
+-- context after the Job was run and any new forms that the Job
+-- introduced.
 extractFromJob ::
   HasThrow "error" Sexp.T f =>
   Context.T Sexp.T Sexp.T Sexp.T ->
@@ -210,8 +231,8 @@ extractFromJob context job =
             |> Sexp.string
             |> throw @"error"
 
--- | @updateTerms@ Processes a list of sexps in order and repackages the resulting
--- sexps into a Context.Definition.
+-- | @updateTerms@ Processes a list of sexps in order and repackages
+-- the resulting sexps into a Context.Definition.
 updateTerms ::
   HasThrow "error" Sexp.T f =>
   -- | The name of the symbol being updated
