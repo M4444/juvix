@@ -7,6 +7,7 @@ module Juvix.Context.Types where
 import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
 import GHC.Show
+import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
 import Juvix.Context.Precedence
@@ -21,7 +22,7 @@ import Text.Read (Read (readsPrec))
 data T term ty sumRep = T
   { currentNameSpace :: Record term ty sumRep,
     currentName :: NameSymbol.T,
-    topLevelMap :: HashMap.T Symbol (Definition term ty sumRep),
+    topLevelMap :: HashMap.T Symbol (Info term ty sumRep),
     reverseLookup :: ReverseLookup
   }
   deriving (Show, Read, Eq, Generic, NFData)
@@ -35,6 +36,12 @@ data From b
   = Current (NameSpace.From b)
   | Outside b
   deriving (Show, Functor, Traversable, Foldable, Eq)
+
+data Info term ty sumRep =
+  Info { infoTable :: HashMap.T Symbol Sexp.T,
+         infoDef :: Definition term ty sumRep
+       }
+  deriving (Show, Read, Generic, Eq, NFData)
 
 -- TODO :: make known records that are already turned into core
 -- this will just emit the proper names we need, not any terms to translate
@@ -174,6 +181,18 @@ instance
 instance
   (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
   A.FromJSON (T term ty sumRep)
+  where
+  parseJSON = defaultFrom
+
+instance
+  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
+  A.ToJSON (Info term ty sumRep)
+  where
+  toJSON = defaultTo
+
+instance
+  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
+  A.FromJSON (Info term ty sumRep)
   where
   parseJSON = defaultFrom
 
