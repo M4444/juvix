@@ -476,9 +476,7 @@ overMaybe f field t =
 
 recurseImp ::
   (MapSym map, Monad m) =>
-  ( Stage (Maybe (Definition term ty sumRep)) ->
-    m (Return term ty sumRep)
-  ) ->
+  (Stage (Maybe (Definition term ty sumRep)) -> m (Return term ty sumRep)) ->
   NameSymbol.T ->
   map (Definition term ty sumRep) ->
   m (Maybe (map (Definition term ty sumRep)))
