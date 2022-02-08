@@ -461,19 +461,18 @@ modifySpaceImp f symbol@(s :| ymbol) t =
   where
     -- dumb repeat code but idk how to handle to remove the tuple ☹
     applyAndSetTop f =
-      t |> applyAndSet f (_topLevelMap, _topLevelMap)
+      t |> overMaybe f (_topLevelMap)
     applyAndSetCurrent f =
-      t |> applyAndSet f (_currentNameSpace . contents, _currentNameSpace . contents)
+      t |> overMaybe f (_currentNameSpace . contents)
 
-applyAndSet ::
-  (Monad m, Functor f) =>
-  (t -> m (f b1)) ->
-  (Getting t s t, ASetter s b2 a b1) ->
-  s ->
-  m (f b2)
-applyAndSet f (l1, l2) t = do
-  ret <- f (t ^. l1)
-  pure ((\r -> set l2 r t) <$> ret)
+-- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
+-- function may return a maybe instead of the value, and if that's the
+-- case, then the value is not set.
+overMaybe ::
+  Monad m => (b -> m (Maybe b)) -> Lens s s b b -> s -> m (Maybe s)
+overMaybe f field t =
+  f (t ^. field)
+    >>| fmap (\ret -> set field ret t)
 
 recurseImp ::
   (MapSym map, Monad m) =>
