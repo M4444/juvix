@@ -41,7 +41,8 @@ nameSymbolFromSymbol = NameSymbol.fromSymbol
 empty :: NameSymbol.T -> IO (T term ty sumRep)
 empty sym = do
   empty <- atomically fullyEmpty
-  res <- addPathWithValue (pure topLevelName <> sym') CurrentNameSpace empty
+  res <-
+    addPathWithValue (pure topLevelName <> sym') (Info mempty CurrentNameSpace) empty
   case res of
     Lib.Left _ -> error "impossible"
     Lib.Right x -> pure x
@@ -50,7 +51,7 @@ empty sym = do
       currentNameSpace <- emptyRecord
       pure $
         T
-          { currentNameSpace = currentNameSpace,
+          { currentNameSpace = InfoRecord mempty currentNameSpace,
             currentName = sym',
             topLevelMap = HashMap.empty,
             reverseLookup = HashMap.empty
@@ -113,7 +114,7 @@ persistDefinition T {reverseLookup} moduleName name =
 --------------------------------------------------------------------------------
 
 lookupCurrent ::
-  NameSymbol.T -> T term ty sumRep -> Maybe (NameSpace.From (Definition term ty sumRep))
+  NameSymbol.T -> T term ty sumRep -> Maybe (NameSpace.From (Info term ty sumRep))
 lookupCurrent =
   lookupGen (\_ currentLookup -> currentLookup)
 
@@ -121,24 +122,31 @@ lookupCurrent =
 -- By default add adds it to the public map by default!
 add ::
   NameSpace.From Symbol ->
+  Info term ty sumRep ->
+  T term ty sumRep ->
+  T term ty sumRep
+add sy term = over currentRecordContents (NameSpace.insert sy term)
+
+addNoMeta ::
+  NameSpace.From Symbol ->
   Definition term ty sumRep ->
   T term ty sumRep ->
   T term ty sumRep
-add sy term = over (_currentNameSpace . contents) (NameSpace.insert sy term)
+addNoMeta sy = add sy . Info mempty
 
 remove ::
   NameSpace.From Symbol -> T term ty sumRep -> T term ty sumRep
-remove sy = over (_currentNameSpace . contents) (NameSpace.remove sy)
+remove sy = over currentRecordContents (NameSpace.remove sy)
 
 publicNames :: T term ty sumRep -> [Symbol]
 publicNames t =
   let NameSpace.List {publicL} = toList t
    in fst <$> publicL
 
-toList :: T term ty sumRep -> NameSpace.List (Definition term ty sumRep)
-toList t = NameSpace.toList (t ^. _currentNameSpace . contents)
+toList :: T term ty sumRep -> NameSpace.List (Info term ty sumRep)
+toList t = NameSpace.toList (t ^. currentRecordContents)
 
-topList :: T term ty sumRep -> [(Symbol, Definition term ty sumRep)]
+topList :: T term ty sumRep -> [(Symbol, Info term ty sumRep)]
 topList T {topLevelMap} = HashMap.toList topLevelMap
 
 --------------------------------------------------------------------------------
@@ -156,10 +164,10 @@ inNameSpace newNameSpace t@T {currentName}
   | otherwise = do
     mdef <- t !? newNameSpace
     -- resolve the full name to be the new current module
-    let (def, fullName) = resolveName t (mdef, newNameSpace)
-    case def of
-      Record cont ->
-        Just (changeCurrentModuleWith t cont fullName)
+    let (defn, fullName) = resolveName t (mdef, newNameSpace)
+    case defn ^. def of
+      Record {} ->
+        Just (changeCurrentModuleWith t (infoToInfoRecordErr defn) fullName)
       _ ->
         Nothing
 
@@ -182,7 +190,7 @@ switchNameSpace newNameSpace t@T {currentName}
     -- already exist all the way to where we need it to be
     newT <-
       do
-        addPathWithValue newNameSpace (Record empty) t
+        addPathWithValue newNameSpace (Info mempty (Record empty)) t
         >>| \case
           Lib.Right t -> t
           Lib.Left {} -> t
@@ -194,19 +202,19 @@ switchNameSpace newNameSpace t@T {currentName}
       Just ct -> Lib.Right ct
 
 lookup ::
-  NameSymbol.T -> T term ty sumRep -> Maybe (From (Definition term ty sumRep))
+  NameSymbol.T -> T term ty sumRep -> Maybe (From (Info term ty sumRep))
 lookup key t@T {topLevelMap} =
   let f x currentLookup =
         fmap Current currentLookup <|> fmap Outside (HashMap.lookup x topLevelMap)
    in lookupGen f key t
 
 (!?) ::
-  T term ty sumRep -> NameSymbol.T -> Maybe (From (Definition term ty sumRep))
+  T term ty sumRep -> NameSymbol.T -> Maybe (From (Info term ty sumRep))
 (!?) = flip lookup
 
 modifyGlobal ::
   NameSymbol.T ->
-  (Maybe (Definition term ty sumRep) -> Definition term ty sumRep) ->
+  (Maybe (Info term ty sumRep) -> Info term ty sumRep) ->
   T term ty sumRep ->
   T term ty sumRep
 modifyGlobal sym g t =
@@ -216,14 +224,14 @@ modifyGlobal sym g t =
   where
     f (Final x) =
       UpdateNow (g x)
-    f (Continue (Just (Record record))) =
-      GoOn record
+    f (Continue (Just info@Info {infoDef = Record {}})) =
+      GoOn (infoToInfoRecordErr info)
     f (Continue _) =
       Abort
 
 addGlobal ::
   NameSymbol.T ->
-  Definition term ty sumRep ->
+  Info term ty sumRep ->
   T term ty sumRep ->
   T term ty sumRep
 addGlobal sym def t =
@@ -233,14 +241,14 @@ addGlobal sym def t =
   where
     f (Final _) =
       UpdateNow def
-    f (Continue (Just (Record record))) =
-      GoOn record
+    f (Continue (Just info@Info {infoDef = Record {}})) =
+      GoOn (infoToInfoRecordErr info)
     f (Continue _) =
       Abort
 
 addPathWithValue ::
   NameSymbol.T ->
-  Definition term ty sumRep ->
+  Info term ty sumRep ->
   T term ty sumRep ->
   IO (Either PathError (T term ty sumRep))
 addPathWithValue sym def t = do
@@ -253,9 +261,9 @@ addPathWithValue sym def t = do
     f (Final (Just _)) = pure Abort
     f (Continue Nothing) =
       atomically STM.new
-        >>| GoOn . Rec NameSpace.empty Nothing []
-    f (Continue (Just (Record record))) =
-      pure (GoOn record)
+        >>| GoOn . InfoRecord mempty . Rec NameSpace.empty Nothing []
+    f (Continue (Just info@Info {infoDef = Record {}})) =
+      GoOn (infoToInfoRecordErr info) |> pure
     f (Continue _) =
       pure Abort
 
@@ -269,8 +277,8 @@ removeNameSpace sym t =
       RemoveNow
     f (Final Nothing) =
       Abort
-    f (Continue (Just (Record record))) =
-      GoOn record
+    f (Continue (Just info@Info {infoDef = Record {}})) =
+      GoOn (infoToInfoRecordErr info)
     f (Continue Nothing) =
       Abort
     f (Continue (Just _)) =
@@ -287,7 +295,7 @@ removeTop sym t@T {topLevelMap} =
 -- | 'changeCurrentModuleWith' moves the current name space and inserts
 -- the new namespace as the top
 changeCurrentModuleWith ::
-  T term ty sumRep -> Record term ty sumRep -> NonEmpty Symbol -> T term ty sumRep
+  T term ty sumRep -> InfoRecord term ty sumRep -> NonEmpty Symbol -> T term ty sumRep
 changeCurrentModuleWith t startingContents newCurrName =
   let queued = queueCurrentModuleBackIn t
    in t
@@ -295,7 +303,7 @@ changeCurrentModuleWith t startingContents newCurrName =
           currentNameSpace = startingContents
         }
         |> queued
-        |> addGlobal newCurrName CurrentNameSpace
+        |> addGlobal newCurrName (Info mempty CurrentNameSpace)
 
 queueCurrentModuleBackIn ::
   T term ty sumRep -> T term ty sumRep -> T term ty sumRep
@@ -305,7 +313,7 @@ queueCurrentModuleBackIn T {currentNameSpace, currentName} =
   -- a potnentially local insertion
   addGlobal
     (addTopNameToSngle currentName)
-    (Record currentNameSpace)
+    (infoRecordToInfo currentNameSpace)
 
 -- 'putCurrentModuleBackIn' adds the current name space back to the
 -- environment map
@@ -367,13 +375,13 @@ data Stage b
 data Return term ty sumRep
   = -- | 'GoOn' signifies that we should continue
     -- going down records
-    GoOn (Record term ty sumRep)
+    GoOn (InfoRecord term ty sumRep)
   | -- | 'Abort' signifies that we should cancel
     -- the changes on the map and
     Abort
   | -- | 'UpdateNow' signifies that we should
     -- update the context with the current value
-    UpdateNow (Definition term ty sumRep)
+    UpdateNow (Info term ty sumRep)
   | -- | 'RemoveNow' signifies that we show remove
     -- the definition at this level
     RemoveNow
@@ -406,7 +414,7 @@ instance MapSym PrivNameSpace where
   insert' sym def = Priv . NameSpace.insert (NameSpace.Priv sym) def . unPriv
 
 modifySpace ::
-  (Stage (Maybe (Definition term ty sumRep)) -> Return term ty sumRep) ->
+  (Stage (Maybe (Info term ty sumRep)) -> Return term ty sumRep) ->
   NameSymbol.T ->
   T term ty sumRep ->
   Maybe (T term ty sumRep)
@@ -417,7 +425,7 @@ modifySpace f symbol t = runIdentity (modifySpaceImp (Identity . f) symbol t)
 -- private local, public local, or global
 modifySpaceImp ::
   Monad m =>
-  ( Stage (Maybe (Definition term ty sumRep)) ->
+  ( Stage (Maybe (Info term ty sumRep)) ->
     m (Return term ty sumRep)
   ) ->
   NameSymbol.T ->
@@ -425,7 +433,7 @@ modifySpaceImp ::
   m (Maybe (T term ty sumRep))
 modifySpaceImp f symbol@(s :| ymbol) t =
   -- check the current Module first, to properly determine which one to go down
-  case NameSpace.lookupInternal s (t ^. _currentNameSpace . contents) of
+  case NameSpace.lookupInternal s (t ^. currentRecordContents) of
     Just (NameSpace.Pub _) ->
       applyAndSetCurrent (recurseImp f (s :| ymbol))
     Just (NameSpace.Priv _) ->
@@ -463,7 +471,7 @@ modifySpaceImp f symbol@(s :| ymbol) t =
     applyAndSetTop f =
       t |> overMaybe f (_topLevelMap)
     applyAndSetCurrent f =
-      t |> overMaybe f (_currentNameSpace . contents)
+      t |> overMaybe f currentRecordContents
 
 -- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
 -- function may return a maybe instead of the value, and if that's the
@@ -476,17 +484,17 @@ overMaybe f field t =
 
 recurseImp ::
   (MapSym map, Monad m) =>
-  (Stage (Maybe (Definition term ty sumRep)) -> m (Return term ty sumRep)) ->
+  (Stage (Maybe (Info term ty sumRep)) -> m (Return term ty sumRep)) ->
   NameSymbol.T ->
-  map (Definition term ty sumRep) ->
-  m (Maybe (map (Definition term ty sumRep)))
+  map (Info term ty sumRep) ->
+  m (Maybe (map (Info term ty sumRep)))
 recurseImp f (x :| y : xs) cont = do
   ret <- f (Continue (lookup' x cont))
   case ret of
-    GoOn record -> do
-      recursed <- recurseImp f (y :| xs) (record ^. contents)
+    GoOn goRecord -> do
+      recursed <- recurseImp f (y :| xs) (goRecord ^. record . contents)
       let g newRecord =
-            insert' x (record |> set contents newRecord |> Record) cont
+            insert' x (goRecord |> set (record . contents) newRecord |> infoRecordToInfo) cont
        in pure (g <$> recursed)
     Abort ->
       pure Nothing
@@ -520,30 +528,30 @@ recurseImp f (x :| []) cont = do
 lookupGen ::
   Traversable t =>
   ( Symbol ->
-    Maybe (NameSpace.From (Definition term ty sumRep)) ->
-    Maybe (t (Definition term ty sumRep))
+    Maybe (NameSpace.From (Info term ty sumRep)) ->
+    Maybe (t (Info term ty sumRep))
   ) ->
   NameSymbol.T ->
   T term ty sumRep ->
-  Maybe (t (Definition term ty sumRep))
+  Maybe (t (Info term ty sumRep))
 lookupGen extraLookup nameSymb t =
   let recurse _ Nothing =
         Nothing
-      recurse [] (Just CurrentNameSpace) =
-        Just (Record (t ^. _currentNameSpace))
+      recurse [] (Just Info {infoDef = CurrentNameSpace}) =
+        Just (infoRecordToInfo (t ^. _currentNameSpace))
       recurse [] x =
         x
-      recurse (x : xs) (Just (Record record)) =
+      recurse (x : xs) (Just Info {infoDef = Record record }) =
         recurse xs (NameSpace.lookup x (record ^. contents))
       -- This can only happen when we hit from the global
       -- a precondition is that the current module
       -- will never have a currentNamespace inside
-      recurse (x : xs) (Just CurrentNameSpace) =
-        recurse xs (NameSpace.lookup x (t ^. _currentNameSpace . contents))
+      recurse (x : xs) (Just Info {infoDef = CurrentNameSpace}) =
+        recurse xs (NameSpace.lookup x (t ^. currentRecordContents))
       recurse (_ : _) _ =
         Nothing
       first (x :| xs) =
-        NameSpace.lookupInternal x (t ^. _currentNameSpace . contents)
+        NameSpace.lookupInternal x (t ^. currentRecordContents)
           |> second (x :| xs)
       second (x :| xs) looked =
         extraLookup x looked
@@ -565,8 +573,8 @@ lookupGen extraLookup nameSymb t =
 -- or private
 resolveName ::
   T a b c ->
-  (From (Definition a b c), NameSymbol.T) ->
-  (Definition a b c, NameSymbol.T)
+  (From (Info a b c), NameSymbol.T) ->
+  (Info a b c, NameSymbol.T)
 resolveName ctx (def, name) =
   case def of
     -- TODO ∷ update this case
@@ -589,3 +597,10 @@ qualifyLookup name ctx =
     Nothing -> Nothing
     Just (Outside _) -> Just (NameSymbol.cons topLevelName (removeTopName name))
     Just (Current _) -> Just (pure topLevelName <> currentName ctx <> name)
+
+currentRecordContents ::
+  Functor f =>
+  (NameSpace.T (Info term ty sumRep) -> f (NameSpace.T (Info term ty sumRep))) ->
+  T term ty sumRep ->
+  f (T term ty sumRep)
+currentRecordContents = _currentNameSpace . record . contents

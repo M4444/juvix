@@ -2,12 +2,13 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
+
 module Juvix.Context.Types where
 
 import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
+import qualified Prelude (error)
 import GHC.Show
-import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
 import Juvix.Context.Precedence
@@ -15,12 +16,13 @@ import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
+import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (Read (readsPrec))
 
 data T term ty sumRep = T
-  { currentNameSpace :: Record term ty sumRep,
+  { currentNameSpace :: InfoRecord term ty sumRep,
     currentName :: NameSymbol.T,
     topLevelMap :: HashMap.T Symbol (Info term ty sumRep),
     reverseLookup :: ReverseLookup
@@ -37,11 +39,27 @@ data From b
   | Outside b
   deriving (Show, Functor, Traversable, Foldable, Eq)
 
-data Info term ty sumRep =
-  Info { infoTable :: HashMap.T Symbol Sexp.T,
-         infoDef :: Definition term ty sumRep
-       }
+data Info term ty sumRep = Info
+  { infoTable :: HashMap.T Symbol Sexp.T,
+    infoDef :: Definition term ty sumRep
+  }
   deriving (Show, Read, Generic, Eq, NFData)
+
+data InfoRecord term ty sumRep = InfoRecord
+  { infoRecordTable :: HashMap.T Symbol Sexp.T,
+    infoRecordRecord :: Record term ty sumRep
+  }
+  deriving (Show, Read, Generic, Eq, NFData)
+
+infoToInfoRecordErr Info {infoTable, infoDef} =
+  case infoDef of
+    Record record ->
+      InfoRecord {infoRecordTable = infoTable, infoRecordRecord = record}
+    _ ->
+      Prelude.error "non record sent into coercsion in infoToInfoRecordErr"
+
+infoRecordToInfo InfoRecord {infoRecordTable, infoRecordRecord} =
+  Info {infoTable = infoRecordTable, infoDef = Record infoRecordRecord}
 
 -- TODO :: make known records that are already turned into core
 -- this will just emit the proper names we need, not any terms to translate
@@ -79,7 +97,7 @@ data SumT term ty = Sum
   deriving (Show, Read, Generic, Eq, Data, NFData)
 
 data Record term ty sumRep = Rec
-  { recordContents :: NameSpace.T (Definition term ty sumRep),
+  { recordContents :: NameSpace.T (Info term ty sumRep),
     -- Maybe as I'm not sure what to put here for now
     -- TODO ∷ reconsider the type when we have proper module typing up.
     recordMTy :: Maybe ty,
@@ -152,6 +170,10 @@ makeLensesWith camelCaseFields ''Def
 
 makeLensesWith camelCaseFields ''Record
 
+makeLensesWith camelCaseFields ''Info
+
+makeLensesWith camelCaseFields ''InfoRecord
+
 -- to avoid refactor we just add _ infront
 makeLensesFor
   [ ("currentNameSpace", "_currentNameSpace"),
@@ -181,6 +203,18 @@ instance
 instance
   (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
   A.FromJSON (T term ty sumRep)
+  where
+  parseJSON = defaultFrom
+
+instance
+  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
+  A.ToJSON (InfoRecord term ty sumRep)
+  where
+  toJSON = defaultTo
+
+instance
+  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
+  A.FromJSON (InfoRecord term ty sumRep)
   where
   parseJSON = defaultFrom
 
