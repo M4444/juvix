@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Juvix.Context.Types where
 
 import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as A
 import qualified Prelude (error)
 import GHC.Show
 import qualified Juvix.Context.NameSpace as NameSpace
@@ -277,6 +277,7 @@ defaultTo =
   A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField}
     |> A.genericToJSON
 
+defaultFrom :: (Generic a, A.GFromJSON A.Zero (Rep a)) => A.Value -> A.Parser a
 defaultFrom =
   A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField}
     |> A.genericParseJSON

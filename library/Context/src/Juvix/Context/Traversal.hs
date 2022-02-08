@@ -36,15 +36,18 @@ class
 -- @ContextForms@ in that it can commit back many definitions and
 -- change the current form.
 data ContextFormGeneral m term ty sumRep = CtxFormGeneral
-  { sumGeneral :: sumRep -> T term ty sumRep -> ExtraOptions -> m (Additional sumRep term ty sumRep),
-    termGeneral :: term -> T term ty sumRep -> ExtraOptions -> m (Additional term term ty sumRep),
-    tyGeneral :: ty -> T term ty sumRep -> ExtraOptions -> m (Additional ty term ty sumRep)
+  { sumGeneral ::
+      sumRep -> T term ty sumRep -> ExtraOptions -> m (Additional sumRep term ty sumRep),
+    termGeneral ::
+      term -> T term ty sumRep -> ExtraOptions -> m (Additional term term ty sumRep),
+    tyGeneral ::
+      ty -> T term ty sumRep -> ExtraOptions -> m (Additional ty term ty sumRep)
   }
   deriving (Show)
 
 data Additional t term ty sumRep = Additional
   { formPutBack :: Maybe t,
-    extra :: [(NameSpace.From Symbol, Definition term ty sumRep)]
+    extra :: [(NameSpace.From Symbol, Info term ty sumRep)]
   }
   deriving (Show)
 
@@ -75,7 +78,7 @@ newtype ContextChangeSumRep m rep
       ( rep ->
         T rep rep rep ->
         ExtraOptions ->
-        m (Maybe (NameSpace.From Symbol, Definition rep rep rep))
+        m (Maybe (NameSpace.From Symbol, Info rep rep rep))
       )
   deriving (Show)
 
@@ -166,7 +169,7 @@ mapWithContext t f =
 mapWithName ::
   Monad m =>
   T tm ty sum ->
-  (Definition tm ty sum -> NameSpace.From Symbol -> T tm ty sum -> m (Definition tm ty sum)) ->
+  (Info tm ty sum -> NameSpace.From Symbol -> T tm ty sum -> m (Info tm ty sum)) ->
   m (T tm ty sum)
 mapWithName t f = overTopLevelMap t (mapWithCurrentName f)
 
@@ -174,12 +177,12 @@ mapWithName t f = overTopLevelMap t (mapWithCurrentName f)
 mapSumWithName ::
   Monad m =>
   T term ty sumRep ->
-  (SumT term ty -> Symbol -> T term ty sumRep -> m (Definition term ty sumRep)) ->
+  (SumT term ty -> Symbol -> T term ty sumRep -> m (Info term ty sumRep)) ->
   m (T term ty sumRep)
 mapSumWithName ctx f =
   mapWithName ctx fOnSum
   where
-    fOnSum (SumCon s) name ctx =
+    fOnSum (Info {infoDef = SumCon s}) name ctx =
       f s (NameSpace.extractValue name) ctx
     fOnSum def _ _ = pure def
 
@@ -209,9 +212,9 @@ mapCurrentContext transformers ctx =
               traverse callTyF defMTy >>| maybeAdditionToAddition
             pure $
               Additional
-                (fmap (\term -> d {defTerm = term, defMTy}) newTerm)
+                (fmap (\term -> (d {defTerm = term, defMTy})) newTerm)
                 (extraDefs <> extraDefs')
-       in case form of
+       in case form ^. def of
             Record r -> do
               -- call the signature change
               Additional newTy extraDefs <-
@@ -220,26 +223,30 @@ mapCurrentContext transformers ctx =
               let recordToRecurseOn = r {recordMTy = newTy}
               pure $
                 Additional
-                  (Just (Record recordToRecurseOn))
+                  (Just (set def (Record recordToRecurseOn) form))
                   extraDefs
-            SumCon (Sum def name') ->
-              traverse defCase def
+            SumCon (Sum def' name') ->
+              traverse defCase def'
                 >>| maybeAdditionToAddition
                 >>| \(Additional mNewDef extraDefs) ->
-                  Additional (Just (SumCon (Sum mNewDef name'))) extraDefs
+                  Additional (Just (set def (SumCon (Sum mNewDef name')) form)) extraDefs
             Unknown mUnknown ->
               traverse callTyF mUnknown
                 >>| maybeAdditionToAddition
                 >>| \(Additional mUnknown extraDefs) ->
-                  Additional (Just (Unknown mUnknown)) extraDefs
-            Def definition'' -> defCase definition'' >>| mapDef Def
-            TypeDeclar type' -> sumGeneral f type' ctx (Extra name) >>| mapDef TypeDeclar
-            Information info -> pure (Additional (Just (Information info)) [])
-            CurrentNameSpace -> pure (Additional (Just CurrentNameSpace) [])
+                  Additional (Just (set def (Unknown mUnknown) form)) extraDefs
+            Def definition'' ->
+              defCase definition''
+                >>| mapDef (\d -> set def (Def d) form)
+            TypeDeclar type' ->
+              sumGeneral f type' ctx (Extra name)
+              >>| mapDef (\d -> set def (TypeDeclar d) form)
+            Information _inf -> pure (Additional (Just form) [])
+            CurrentNameSpace -> pure (Additional (Just form) [])
 
 mapWithCurrentName ::
   Monad m =>
-  (Definition tm ty sp -> NameSpace.From Symbol -> T tm ty sp -> m (Definition tm ty sp)) ->
+  (Info tm ty sp -> NameSpace.From Symbol -> T tm ty sp -> m (Info tm ty sp)) ->
   T tm ty sp ->
   m (T tm ty sp)
 mapWithCurrentName f =
@@ -249,10 +256,10 @@ mapWithCurrentName f =
 
 mapWithCurrentNameAddition ::
   Monad m =>
-  ( Definition tm ty sp ->
+  ( Info tm ty sp ->
     NameSpace.From Symbol ->
     T tm ty sp ->
-    m (Additional (Definition tm ty sp) tm ty sp)
+    m (Additional (Info tm ty sp) tm ty sp)
   ) ->
   T tm ty sp ->
   m (T tm ty sp)
@@ -260,8 +267,8 @@ mapWithCurrentNameAddition f ctx@T {currentNameSpace, currentName} =
   foldM dispatch ctx names
   where
     names =
-      NameSpace.toList1FSymb (currentNameSpace ^. contents)
-    isRecord (Just (Record _)) = True
+      NameSpace.toList1FSymb (currentNameSpace ^. record . contents)
+    isRecord (Just (Info {infoDef = Record {}})) = True
     isRecord _ = False
     dispatch ctx (name, form) = do
       -- we want to recurse on records handed back
