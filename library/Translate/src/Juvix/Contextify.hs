@@ -1,4 +1,4 @@
-module Juvix.Contextify (fullyContextify, contextify, op, ResolveErr (..), PathError) where
+module Juvix.Contextify (fullyContextify, contextify, op, ResolveErr (..), PathError, resolveOpens, RunM, M (..)) where
 
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify.Environment as Environment

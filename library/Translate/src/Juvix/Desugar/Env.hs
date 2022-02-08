@@ -2,6 +2,7 @@ module Juvix.Desugar.Env where
 
 import Control.Lens hiding ((|>))
 import Data.List.NonEmpty (nonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
@@ -11,6 +12,9 @@ import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Context as Context
+import qualified Juvix.Contextify as Contextify
+import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
+import qualified Juvix.Contextify.ToContext.Types as Contextify
 import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
@@ -293,4 +297,47 @@ inContextSexps (moduleName, sexps) = sexps >>= f
         g (Sexp.A {atomName}) =
           (Pipeline.InContext $ moduleName <> atomName) |> Just
         g _ = Nothing
-    getName _ = Nothing
+
+op ::
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  NonEmpty Sexp.T ->
+  IO (Either Contextify.ResolveErr Pipeline.WorkingEnv)
+op ctx sexps = do
+  context <- fullyContextify ctx moduleSexps
+  case context of
+    Left err -> err |> Left |> pure
+    Right ctx -> Pipeline.WorkingEnv ctxSexps ctx |> Right |> pure
+  where
+    moduleSexps =
+      NonEmpty.toList sexps
+        |> sexpsByModule (Context.currentName ctx)
+    ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
+
+fullyContextify ::
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  NonEmpty (NameSymbol.T, [Sexp.T]) ->
+  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+fullyContextify ctx ts = do
+  cont <- contextify ctx ts
+  case cont of
+    Left e -> pure $ Left $ Contextify.Path e
+    Right x -> do
+      addedOpens <- uncurry ResolveOpen.run x
+      case addedOpens of
+        Left e -> pure $ Left $ Contextify.Resolve e
+        Right x ->
+          pure $ Right x
+
+contextify ::
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  NonEmpty (NameSymbol.T, [Sexp.T]) ->
+  IO (Contextify.PathError (Contextify.ContextSexp, [ResolveOpen.PreQualified]))
+contextify ctx t = do
+  runM $
+    foldM Contextify.resolveOpens (ctx, []) (addTop <$> t)
+
+addTop :: Bifunctor p => p NameSymbol.T c -> p NameSymbol.T c
+addTop = first (NameSymbol.cons Context.topLevelName)
+
+runM :: Contextify.M a -> IO (Either Context.PathError a)
+runM (Contextify.M a) = runExceptT a
