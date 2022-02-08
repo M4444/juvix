@@ -1,10 +1,12 @@
 module Test.Desugar.Env (top) where
 
 import Data.List.NonEmpty (fromList)
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Desugar.Env as Env
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
@@ -13,9 +15,10 @@ top :: T.TestTree
 top =
   T.testGroup
     "testing berlin pipeline passes functions"
-    [sexpsByModuleTest]
+    [sexpsByModuleTest, inContextSexpsTest]
 
-defaultName :: NameSymbol.T = "default"
+defaultName :: NameSymbol.T
+defaultName = "default"
 
 sexpsByModuleTest :: T.TestTree
 sexpsByModuleTest =
@@ -45,4 +48,37 @@ sexpsByModuleTest =
         let forms1 = package1 : following
         let forms2 = package2 : following
         fromList [("foo1", following), ("foo2", following)] T.@=? (Env.sexpsByModule defaultName (forms1 <> forms2))
+    ]
+
+inContextSexpsTest :: T.TestTree
+inContextSexpsTest =
+  T.testGroup
+    "Testing inContextSexps utility"
+    [ T.testCase "empty sexps are ignored" $ do
+        [] T.@=? Env.inContextSexps ("foo", []),
+      T.testCase "extracts a defsig-match and adds module prefix" $ do
+        let defSigMatch = Structure.DefunSigMatch (Sexp.atom "myDefun") (Sexp.atom "sig") [] |> Sexp.serialize
+        let expected = [Pipeline.InContext $ fromList ["foo", "myDefun"]]
+        expected T.@=? Env.inContextSexps ("foo", [defSigMatch]),
+      T.testCase "extracts a type name, constructor and adds module prefix" $ do
+        let sig = Sexp.list [Sexp.atom "myType", Sexp.atom ":type"]
+        let args = Sexp.list []
+        let body = Sexp.list [Sexp.atom "A", Sexp.atom "B"]
+        let sexpType = Structure.Type sig args body |> Sexp.serialize
+        let expected =
+              [ Pipeline.InContext $ fromList ["foo", "myType"],
+                Pipeline.InContext $ fromList ["foo", "A"],
+                Pipeline.InContext $ fromList ["foo", "B"]
+              ]
+        expected T.@=? Env.inContextSexps ("foo", [sexpType]),
+      T.testCase "declare is not emitted" $ do
+        let defSigMatch = Structure.DefunSigMatch (Sexp.atom "myDefun") (Sexp.atom "sig") [] |> Sexp.serialize
+        let declare = (Structure.Declare $ Sexp.list [Sexp.atom "infixl", Sexp.atom "+", Sexp.atom "5"]) |> Sexp.serialize
+        let expected = [Pipeline.InContext $ fromList ["foo", "myDefun"]]
+        expected T.@=? Env.inContextSexps ("foo", [defSigMatch, declare]),
+      T.testCase "open is not emitted" $ do
+        let defSigMatch = Structure.DefunSigMatch (Sexp.atom "myDefun") (Sexp.atom "sig") [] |> Sexp.serialize
+        let open = (Structure.Open $ Sexp.atom "bar") |> Sexp.serialize
+        let expected = [Pipeline.InContext $ fromList ["foo", "myDefun"]]
+        expected T.@=? Env.inContextSexps ("foo", [defSigMatch, open])
     ]

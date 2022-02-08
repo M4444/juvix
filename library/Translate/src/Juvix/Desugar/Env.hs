@@ -262,3 +262,35 @@ sexpsByModule initialModule sexps =
         g (Structure.InPackage name) = case sexpsInCurrentModule of
           [] -> (sexpsByModule, [])
           xs -> ((name, xs) : sexpsByModule, [])
+
+-- | @inContextSexps@ extracts sexps that require further processing after
+-- contextify transforms them to name symbols that reference the corresponding
+-- item in the context.
+inContextSexps :: (NameSymbol.T, [Sexp.T]) -> [Pipeline.EnvOrSexp]
+inContextSexps (moduleName, sexps) = sexps >>= f
+  where
+    f (formName Sexp.:> body)
+      | named ":defsig-match" = defun body
+      | named "type" = type' body
+      | otherwise = []
+      where
+        named = Sexp.isAtomNamed formName
+
+    defun form = (getName (Sexp.car form)) |> maybe (error "malformed defun") pure
+    type' form = (processType form) |> maybe (error "malformed type") identity
+
+    processType (assocName Sexp.:> _ Sexp.:> typeBody) = do
+      name <- getName (Sexp.car assocName)
+      (name : getSumConsNames typeBody) |> pure
+    processType _ = Nothing
+
+    getSumConsNames typeBody = Sexp.toList typeBody |> maybe [] g
+      where
+        g s = traverse (getName . Sexp.car) s |> maybe [] identity
+
+    getName e = Sexp.atomFromT e >>= g
+      where
+        g (Sexp.A {atomName}) =
+          (Pipeline.InContext $ moduleName <> atomName) |> Just
+        g _ = Nothing
+    getName _ = Nothing
