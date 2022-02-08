@@ -275,22 +275,24 @@ sexpsByModule initialModule sexps =
 inContextSexps :: (NameSymbol.T, [Sexp.T]) -> [Pipeline.EnvOrSexp]
 inContextSexps (moduleName, sexps) = sexps >>= f
   where
-    f (formName Sexp.:> body)
-      | named ":defsig-match" = defun body
-      | named "type" = type' body
+    f sexp
+      | (Just defun) <-
+          sexp |> Sexp.deserialize @Structure.DefunSigMatch =
+        processDefun defun
+          |> maybe (error "malformed defun") pure
+      | (Just typ) <-
+          sexp |> Sexp.deserialize @Structure.Type =
+        processType typ
+          |> maybe (error "malformed type") identity
       | otherwise = []
-      where
-        named = Sexp.isAtomNamed formName
 
-    defun form = (getName (Sexp.car form)) |> maybe (error "malformed defun") pure
-    type' form = (processType form) |> maybe (error "malformed type") identity
+    processDefun defun = getName (defun ^. name)
 
-    processType (assocName Sexp.:> _ Sexp.:> typeBody) = do
-      name <- getName (Sexp.car assocName)
-      (name : getSumConsNames typeBody) |> pure
-    processType _ = Nothing
+    processType typ = do
+      name <- getName (Sexp.car $ typ ^. nameAndSig)
+      (name : (getSumConsNames $ typ ^. body)) |> pure
 
-    getSumConsNames typeBody = Sexp.toList typeBody |> maybe [] g
+    getSumConsNames body = Sexp.toList body |> maybe [] g
       where
         g s = traverse (getName . Sexp.car) s |> maybe [] identity
 
