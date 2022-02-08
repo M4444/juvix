@@ -233,7 +233,9 @@ headerTransform sexp = case Structure.toHeader sexp of
   Nothing -> (sexp, []) |> pure
   Just (Structure.Header name xs) ->
     case Sexp.toList @Maybe xs of
-      Just sexps -> (Sexp.serialize (Structure.InPackage name), sexps) |> pure
+      Just sexps ->
+        (Sexp.serialize (Structure.InPackage (Context.topLevelName <> name)), sexps)
+          |> pure
       Nothing -> Juvix.Desugar.Env.throw $ MalformedData "header is in an invalid format"
 
 --------------------------------------------------------------------------------
