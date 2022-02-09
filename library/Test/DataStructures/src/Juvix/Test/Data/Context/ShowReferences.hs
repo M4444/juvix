@@ -16,6 +16,7 @@ import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
 import qualified Juvix.Context.Types as Types
 import Juvix.Library
+import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified ListT
@@ -24,6 +25,12 @@ import qualified StmContainers.Map as STM
 type ShowSymbolMap = HashMap.T Symbol Types.SymbolInfo
 
 -- Aren't Closed Types wonderful
+
+data Info term ty sumRep = Info
+  { infoTable :: HashMap.T Symbol Sexp.T,
+    infoDef :: Definition term ty sumRep
+  }
+  deriving (Show, Read, Generic, Eq)
 
 -- | Definition acts like Types.Record, except that the Record type
 -- with an STM map is replaced by a showable variant
@@ -44,7 +51,7 @@ data Definition term ty sumRep
   deriving (Show, Read, Generic, Eq)
 
 data ShowRecord term ty sumRep = ShowRec
-  { contents :: NameSpace.T (Definition term ty sumRep),
+  { contents :: NameSpace.T (Info term ty sumRep),
     mTy :: Maybe ty,
     openList :: [Open.TName NameSymbol.T],
     qualifiedMap :: ShowSymbolMap
@@ -65,14 +72,21 @@ stmRecordToShowRecord record = do
       }
 
 defToShowDef ::
-  Types.Definition term ty sumRep -> IO (Definition term ty sumRep)
-defToShowDef (Types.Def definition) = Def definition |> pure
-defToShowDef (Types.SumCon sumcons) = SumCon sumcons |> pure
-defToShowDef (Types.Unknown unknow) = Unknown unknow |> pure
-defToShowDef (Types.TypeDeclar typ) = TypeDeclar typ |> pure
-defToShowDef (Types.Information fo) = Information fo |> pure
-defToShowDef Types.CurrentNameSpace = CurrentNameSpace |> pure
-defToShowDef (Types.Record d) = stmRecordToShowRecord d >>| Record
+  Types.Info term ty sumRep -> IO (Info term ty sumRep)
+defToShowDef (Types.Info m (Types.Def definition)) =
+  Def definition |> Info m |> pure
+defToShowDef (Types.Info m (Types.SumCon sumcons)) =
+  SumCon sumcons |> Info m |> pure
+defToShowDef (Types.Info m (Types.Unknown unknow)) =
+  Unknown unknow |> Info m |> pure
+defToShowDef (Types.Info m (Types.TypeDeclar typ)) =
+  TypeDeclar typ |> Info m |> pure
+defToShowDef (Types.Info m (Types.Information fo)) =
+  Information fo |> Info m |> pure
+defToShowDef (Types.Info m Types.CurrentNameSpace) =
+  CurrentNameSpace |> Info m |> pure
+defToShowDef (Types.Info m (Types.Record d)) =
+  stmRecordToShowRecord d >>| Record >>| Info m
 
 stmMapToHashMap ::
   (Eq key, Hashable key) => STM.Map key value -> IO (HashMap.T key value)
