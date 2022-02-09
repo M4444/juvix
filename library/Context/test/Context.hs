@@ -39,7 +39,7 @@ switchAboveLookupCheck =
   T.testCase
     "switch to module above and lookup value from below"
     ( do
-        let added = Context.add (NameSpace.Pub "a") (Context.TypeDeclar 3) foo
+        let added = Context.add (NameSpace.Pub "a") (Context.TypeDeclar 3 |> Context.Info mempty) foo
             --
             looked = Context.lookup (pure "a") added
         Right switched <- Context.switchNameSpace ("Foo" :| ["Bar"]) added
@@ -105,13 +105,19 @@ checkCorrectResolution =
       Right inner <- Context.switchNameSpace (pure "Gkar") foo
       --
       let added =
-            Context.add (NameSpace.Pub "londo") (Context.TypeDeclar 3) inner
+            Context.add
+              (NameSpace.Pub "londo")
+              (Context.TypeDeclar 3 |> Context.Info mempty)
+              inner
       --
       Right topGkar <-
         Context.switchNameSpace (Context.topLevelName :| ["Gkar"]) added
       --
       let addedTop =
-            Context.add (NameSpace.Pub "londo") (Context.TypeDeclar 3) topGkar
+            Context.add
+              (NameSpace.Pub "londo")
+              (Context.TypeDeclar 3 |> Context.Info mempty)
+              topGkar
       --
       Right switchBack <-
         Context.switchNameSpace ("Foo" :| ["Bar", "Baz"]) addedTop
@@ -136,6 +142,7 @@ privateFromAbove =
               (NameSpace.Priv "too-late")
               ( Context.TypeDeclar
                   "The avalanche has already started; It is too late for the pebbles to vote."
+                  |> Context.Info mempty
               )
               empt
       --
@@ -154,6 +161,7 @@ privateBeatsPublic =
           (NameSpace.Priv "joy")
           ( Context.TypeDeclar
               "What do you want, you moon-faced assassin of joy?"
+              |> Context.Info mempty
           )
           empt
       added2 =
@@ -162,11 +170,13 @@ privateBeatsPublic =
           ( Context.TypeDeclar
               "Now, I go to spread happiness to the rest of the station. \
               \ It is a terrible responsibility but I have learned to live with it."
+              |> Context.Info mempty
           )
           added
       looked = added2 Context.!? pure "joy"
    in "What do you want, you moon-faced assassin of joy?"
         |> Context.TypeDeclar
+        |> Context.Info mempty
         |> NameSpace.Priv
         |> Context.Current
         |> Just
@@ -184,6 +194,7 @@ localBeatsGlobal =
           ( Context.TypeDeclar
               "I have seen what power does, and I have seen what power costs. \
               \ The one is never equal to the other."
+              |> Context.Info mempty
           )
           empt
       added2 =
@@ -193,12 +204,14 @@ localBeatsGlobal =
               "I'm delirious with joy. It proves that if you confront the universe \
               \ with good intentions in your heart, it will reflect that and reward \
               \ your intent. Usually. It just doesn't always do it in the way you expect."
+              |> Context.Info mempty
           )
           added
       looked = added2 Context.!? pure "cost"
    in "I have seen what power does, and I have seen what power costs. \
       \ The one is never equal to the other."
         |> Context.TypeDeclar
+        |> Context.Info mempty
         |> NameSpace.Priv
         |> Context.Current
         |> Just
@@ -215,7 +228,8 @@ nonRelatedModuleStillPersists =
         --
         let looked = food Context.!? (Context.topLevelName :| ["Bar"])
             --
-            isOutSideRec (Just (Context.Outside (Context.Record {}))) = True
+            isOutSideRec (Just (Context.Outside (Context.Info _ Context.Record {}))) =
+              True
             isOutSideRec _ = False
         --
         isOutSideRec looked T.@=? True
@@ -231,9 +245,9 @@ emptyWorksAsExpectedSingle =
         contents <- atomically Context.emptyRecord
         pure $
           Context.T
-            contents
+            (Context.InfoRecord mempty contents)
             (pure "Mr-Morden")
-            (HashMap.fromList [("Mr-Morden", Context.CurrentNameSpace)])
+            (HashMap.fromList [("Mr-Morden", Context.Info mempty Context.CurrentNameSpace)])
             HashMap.empty
       created T.@=? empt
 
@@ -254,12 +268,13 @@ topLevelDoesNotMessWithInnerRes =
           created
       empt <- do
         emptyRecord <- atomically Context.emptyRecord
-        emptyNameSpace <- atomically Context.emptyRecord
+        emptyNameSpace <- atomically Context.emptyRecord >>| Context.InfoRecord mempty
         emptyRecord
           |> over
             Context.contents
-            (NameSpace.insert (NameSpace.Pub "Mr-Morden") Context.CurrentNameSpace)
+            (NameSpace.insert (NameSpace.Pub "Mr-Morden") (Context.Info mempty Context.CurrentNameSpace))
           |> Context.Record
+          |> Context.Info mempty
           |> (\record -> HashMap.fromList [("Shadows", record)])
           |> (\x -> Context.T emptyNameSpace ("Shadows" :| ["Mr-Morden"]) x HashMap.empty)
           |> pure
