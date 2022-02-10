@@ -12,9 +12,9 @@ where
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
-import qualified Juvix.Context.Traversal as Context
+import qualified Juvix.Context.Traversal as ContextT
 import qualified Juvix.Core.Base as Core
-import qualified Juvix.Core.Common.Context.Traverse as Context
+import qualified Juvix.Core.Common.Context.Traverse as ContextT
 import qualified Juvix.Core.HR as HR
 import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.IR.Types as IR
@@ -39,9 +39,9 @@ contextToHR ::
   Either (Types.Error HR.T primTy primVal) (Core.RawGlobals HR.T primTy primVal)
 contextToHR ctx param =
   Env.evalEnvEither ctx param do
-    newCtx <- Context.mapSumWithName ctx attachConstructor
+    newCtx <- ContextT.mapSumWithName ctx attachConstructor
 
-    let ordered = Context.recGroups newCtx
+    let ordered = ContextT.recGroups newCtx
 
     for_ ordered \grp -> do
       traverse_ addSig grp
@@ -59,7 +59,7 @@ contextToHR ctx param =
       Context.SumT Sexp.T Sexp.T ->
       Symbol ->
       Context.T term ty Sexp.T ->
-      m (Context.Definition Sexp.T Sexp.T sumRep)
+      m (Context.Info Sexp.T Sexp.T sumRep)
     attachConstructor s@Context.Sum {sumTDef, sumTName} dataCons c = do
       modify @"closure" $ Closure.insertGeneric sumTName
       case sumTDef of
@@ -69,10 +69,11 @@ contextToHR ctx param =
               typeConsSexp = Sexp.atom $ NameSymbol.fromSymbol sumTName
            in s {Context.sumTDef = mkDef typeConsSexp dataConsSexp s c}
         |> Context.SumCon
+        |> Context.Info mempty
         |> pure
 
     mkDef typeCons dataConstructor Context.Sum {sumTName} c = do
-      t <- extractTypeDeclar . Context.extractValue =<< Context.lookup (NameSymbol.fromSymbol sumTName) c
+      t <- extractTypeDeclar . (Context.infoDef) . Context.extractValue =<< Context.lookup (NameSymbol.fromSymbol sumTName) c
       declaration <- Sexp.findKey Sexp.car dataConstructor t
       Just $
         Context.D
@@ -102,9 +103,9 @@ addSig ::
     HasState "coreSigs" (Types.CoreSigs HR.T primTy primVal) m,
     HasState "patVars" (HM.HashMap Core.GlobalName Core.PatternVar) m
   ) =>
-  Context.Entry Sexp.T Sexp.T Sexp.T ->
+  ContextT.Entry Sexp.T Sexp.T Sexp.T ->
   m ()
-addSig (Context.Entry x feDef) = do
+addSig (ContextT.Entry x feDef) = do
   sigs <- Sig.transformSig x feDef
   for_ sigs $ modify @"coreSigs" . HM.insertWith Sig.mergeSigs x
 
@@ -119,9 +120,9 @@ addDef ::
     HasState "nextPatVar" Core.PatternVar m,
     HasState "patVars" (HM.HashMap Core.GlobalName Core.PatternVar) m
   ) =>
-  Context.Entry Sexp.T Sexp.T Sexp.T ->
+  ContextT.Entry Sexp.T Sexp.T Sexp.T ->
   m ()
-addDef (Context.Entry x feDef) = do
+addDef (ContextT.Entry x feDef) = do
   defs <- Def.transformDef x feDef
   for_ defs \def -> do
     modify @"coreDefs" $ HM.insert (Def.defName def) def
