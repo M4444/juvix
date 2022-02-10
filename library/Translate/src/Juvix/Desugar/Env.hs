@@ -302,20 +302,25 @@ inContextSexps (moduleName, sexps) = sexps >>= f
           (Pipeline.InContext $ moduleName <> atomName) |> Just
         g _ = Nothing
 
-op ::
+initContext ::
   Context.T Sexp.T Sexp.T Sexp.T ->
   NonEmpty Sexp.T ->
-  IO (Either Contextify.ResolveErr Pipeline.WorkingEnv)
-op ctx sexps = do
+  IO (Pipeline.COut Pipeline.WorkingEnv)
+initContext ctx sexps = do
   context <- fullyContextify ctx moduleSexps
   case context of
-    Left err -> err |> Left |> pure
-    Right ctx -> Pipeline.WorkingEnv ctxSexps ctx |> Right |> pure
-  where
-    moduleSexps =
-      NonEmpty.toList sexps
-        |> sexpsByModule (Context.currentName ctx)
-    ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
+    -- TODO: Calls to fullyContextify and below should use MinimialIO so
+    -- we get proper Feedback and Tracing
+    Left err -> Pipeline.Failure Meta.empty Nothing |> pure
+    Right ctx ->
+      Pipeline.WorkingEnv ctxSexps ctx
+      |> Pipeline.Success Meta.empty
+      |> pure
+    where
+      moduleSexps =
+        NonEmpty.toList sexps
+          |> sexpsByModule (Context.currentName ctx)
+      ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
 
 fullyContextify ::
   Context.T Sexp.T Sexp.T Sexp.T ->
