@@ -20,6 +20,7 @@
 -- with any stage of the compiler while modifying the source code.
 module Easy where
 
+import Control.Lens ((^.))
 import qualified Data.ByteString as BS
 import qualified Data.Field.Galois as Field
 import qualified Data.HashMap.Strict as HM
@@ -639,6 +640,7 @@ definedFunctionsInModule option context =
     Just ctx ->
       ctx
         |> Context.currentNameSpace
+        |> (^. Context.record)
         |> Context.recordContents
         |> NameSpace.toList1
         |> fmap fst

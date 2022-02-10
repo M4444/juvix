@@ -35,6 +35,10 @@ dependencies:
   - plonk
   - llvm
   ###########################
+  # To make life easier
+  ###########################
+  - lens
+  ###########################
   # Dependency for Structs
   ###########################
   - unordered-containers

@@ -175,7 +175,10 @@ addHandlersToContext context form =
   where
     addToContext handler context
       | Just (Str.Handler {..}) <- Str.toHandler handler = do
-        Context.add (mkNameSpaceFrom handlerName) (mkDef handler) context
+        Context.add
+          (mkNameSpaceFrom handlerName)
+          (Context.Info mempty (mkDef handler))
+          context
       | otherwise = context
 
 -- make NameSpace.From
@@ -209,8 +212,10 @@ construct sexp ctx
     extractValue <$> Context.lookupCurrent (Core.varName var) ctx
   | otherwise = Just sexp
   where
-    extractValue (NameSpace.Pub (Context.Def Context.D {..})) = defTerm
-    extractValue (NameSpace.Priv (Context.Def Context.D {..})) = defTerm
+    extractValue (NameSpace.Pub (Context.Info _ (Context.Def Context.D {..}))) =
+      defTerm
+    extractValue (NameSpace.Priv (Context.Info _ (Context.Def Context.D {..}))) =
+      defTerm
     extractValue _ = Sexp.empty
 
 -- `convert` takes care of the actual translation
