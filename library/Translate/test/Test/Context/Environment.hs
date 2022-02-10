@@ -32,7 +32,7 @@ data Capture = Cap
   deriving (Generic, Show)
 
 type CaptureAlias =
-  ExceptT Env.ErrorS (State Capture)
+  ExceptT Sexp.T (State Capture)
 
 newtype Context a = Ctx {_run :: CaptureAlias a}
   deriving (Functor, Applicative, Monad)
@@ -47,10 +47,10 @@ newtype Context a = Ctx {_run :: CaptureAlias a}
     )
     via WriterField "report" CaptureAlias
   deriving
-    (HasThrow "error" Env.ErrorS)
+    (HasThrow "error" Sexp.T)
     via MonadError CaptureAlias
 
-runCtx :: Context a -> Capture -> (Either Env.ErrorS a, Capture)
+runCtx :: Context a -> Capture -> (Either Sexp.T a, Capture)
 runCtx (Ctx c) = runState (runExceptT c)
 
 emptyClosure :: Capture

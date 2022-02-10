@@ -22,7 +22,7 @@ newtype M a = M (RunM a)
 data ResolveErr
   = Path Context.PathError
   | Resolve ResolveOpen.Error
-  | PassErr Environment.ErrorS
+  | PassErr Sexp.T
   deriving (Show, Eq)
 
 type PathError t = Either Context.PathError t

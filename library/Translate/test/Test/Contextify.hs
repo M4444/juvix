@@ -78,8 +78,10 @@ infixResolution =
         t <- contextualizeFoo "open A let fi a = a ** a *** a"
         empt <- Context.empty "foo"
         case t of
-          Left (Contextify.PassErr (Env.Clash p1 p2)) ->
-            Left (Contextify.PassErr (Env.Clash p1 p2)) T.@=? t
+          x@(Left (Contextify.PassErr err)) ->
+            case Sexp.deserialize @Env.ErrorS err of
+              Just (Env.Clash _ _) -> x T.@=? t
+              _ -> T.assertFailure "Expected error to be Env.ErrorS.Clash"
           _ ->
             t T.@=? Right empt,
       T.testCase "two forms with infix will error" $ do

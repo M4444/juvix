@@ -20,6 +20,7 @@ module Juvix.Contextify.Environment
     MinimalMIO (..),
     Pass,
     PassNoCtx,
+    throwSexp,
     runMIO,
     runM,
     namedForms,
@@ -48,11 +49,26 @@ data ErrorS
   | Clash
       (Shunt.Precedence NameSymbol.T)
       (Shunt.Precedence NameSymbol.T)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Sexp.DefaultOptions (Shunt.Associativity)
+
+instance Sexp.Serialize (Shunt.Associativity)
+
+instance Sexp.DefaultOptions (Shunt.Precedence NameSymbol.T)
+
+instance Sexp.Serialize (Shunt.Precedence NameSymbol.T)
+
+instance Sexp.DefaultOptions ErrorS
+
+instance Sexp.Serialize ErrorS
 
 type HasClosure m = HasReader "closure" Closure.T m
 
-type ErrS m = HasThrow "error" ErrorS m
+type ErrS m = HasThrow "error" Sexp.T m
+
+throwSexp :: (HasThrow "error" Sexp.T m) => ErrorS -> m a
+throwSexp err = throw @"error" (Sexp.serialize err)
 
 type HasSearch m = (ErrS m, HasClosure m)
 
@@ -66,7 +82,7 @@ newtype Minimal = Minimal
   deriving (Generic, Show)
 
 type MinimalAlias =
-  ExceptT ErrorS (State Minimal)
+  ExceptT Sexp.T (State Minimal)
 
 newtype MinimalM a = Ctx {_run :: MinimalAlias a}
   deriving (Functor, Applicative, Monad)
@@ -76,11 +92,11 @@ newtype MinimalM a = Ctx {_run :: MinimalAlias a}
     )
     via ReaderField "closure" MinimalAlias
   deriving
-    (HasThrow "error" ErrorS)
+    (HasThrow "error" Sexp.T)
     via MonadError MinimalAlias
 
 type MinimalAliasIO =
-  ExceptT ErrorS (StateT Minimal IO)
+  ExceptT Sexp.T (StateT Minimal IO)
 
 newtype MinimalMIO a = CtxIO {_runIO :: MinimalAliasIO a}
   deriving (Functor, Applicative, Monad, MonadIO)
@@ -90,13 +106,13 @@ newtype MinimalMIO a = CtxIO {_runIO :: MinimalAliasIO a}
     )
     via ReaderField "closure" MinimalAliasIO
   deriving
-    (HasThrow "error" ErrorS)
+    (HasThrow "error" Sexp.T)
     via MonadError MinimalAliasIO
 
-runMIO :: MinimalMIO a -> IO (Either ErrorS a, Minimal)
+runMIO :: MinimalMIO a -> IO (Either Sexp.T a, Minimal)
 runMIO (CtxIO c) = runStateT (runExceptT c) (Minimal Closure.empty)
 
-runM :: MinimalM a -> (Either ErrorS a, Minimal)
+runM :: MinimalM a -> (Either Sexp.T a, Minimal)
 runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty)
 
 ------------------------------------------------------------
@@ -282,7 +298,7 @@ lookupPrecedence name ctx = do
     Just Closure.Info {mOpen = Just prefix} ->
       contextCase (prefix <> name) |> pure
     Just Closure.Info {} ->
-      throw @"error" (UnknownSymbol name)
+      throwSexp (UnknownSymbol name)
     Nothing ->
       contextCase name |> pure
   where
@@ -378,9 +394,9 @@ openIn ctx name body cont = do
               local @"closure" (\cnt -> foldr addSymbolInfo cnt newSymbs) $
                 Bind.OpenIn newMod <$> cont body
         _ ->
-          throw @"error" (CantResolve [Sexp.serialize newMod])
+          throwSexp (CantResolve [Sexp.serialize newMod])
     _ ->
-      throw @"error" (CantResolve [Sexp.serialize newMod])
+      throwSexp (CantResolve [Sexp.serialize newMod])
 
 -- | @lambdaCase@ we encounter a @:lambda-case@ at the start of every
 -- Definition in the context. This ensures the arguments are properly

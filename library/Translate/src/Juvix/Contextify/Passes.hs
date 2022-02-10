@@ -149,9 +149,9 @@ infixConversion context atom rec' =
         Right shunted ->
           rec' (convertShunt shunted)
         Left (Shunt.Clash pred1 pred2) ->
-          throw @"error" (Env.Clash pred1 pred2)
+          Env.throwSexp (Env.Clash pred1 pred2)
         Left Shunt.MoreEles ->
-          throw @"error" Env.ImpossibleMoreEles
+          Env.throwSexp Env.ImpossibleMoreEles
     _ -> Env.handleAtom context atom rec' >>| Sexp.Atom
 
 ------------------------------------------------------------
@@ -243,22 +243,22 @@ figureRecord Context.Input {info} =
 ------------------------------------------------------------
 
 recordToFields ::
-  (HasThrow "error" Env.ErrorS m) => Structure.RecordDec -> m [CoreNamed.Field]
+  (HasThrow "error" Sexp.T m) => Structure.RecordDec -> m [CoreNamed.Field]
 recordToFields record =
   traverse notPunnedToField (record ^. value)
 
 notPunnedToField ::
-  (HasThrow "error" Env.ErrorS m) => Structure.NameUsage -> m CoreNamed.Field
+  (HasThrow "error" Sexp.T m) => Structure.NameUsage -> m CoreNamed.Field
 notPunnedToField notPunned = do
   name <- sexpToNameSymbolErr (notPunned ^. name)
   pure $ CoreNamed.Field name (notPunned ^. usage) (notPunned ^. value)
 
 sexpToNameSymbolErr ::
-  HasThrow "error" Env.ErrorS m => Sexp.T -> m NameSymbol.T
+  HasThrow "error" Sexp.T m => Sexp.T -> m NameSymbol.T
 sexpToNameSymbolErr sexp =
   case Sexp.atomFromT sexp of
     Nothing ->
-      throw @"error" (Env.ImproperForm sexp)
+      Env.throwSexp (Env.ImproperForm sexp)
     Just form ->
       pure (Sexp.atomName form)
 
