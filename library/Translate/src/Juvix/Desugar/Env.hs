@@ -14,6 +14,7 @@ import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
+import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Contextify.ToContext.Types as Contextify
 import Juvix.Library hiding (trace)
@@ -258,6 +259,23 @@ headerTransform sexp = case Structure.toHeader sexp of
         (Sexp.serialize (Structure.InPackage (Context.topLevelName <> name)), sexps)
           |> pure
       Nothing -> Juvix.Desugar.Env.throw $ MalformedData "header is in an invalid format"
+
+--------------------------------------------------------------------------------
+-- Resolve Modules
+--------------------------------------------------------------------------------
+
+resolveModuleTransform ::
+  ( HasThrow "error" Sexp.T m,
+    HasClosure m,
+    MonadIO m
+  ) =>
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  Sexp.T ->
+  m Sexp.T
+resolveModuleTransform ctx sexp =
+  Sexp.withSerialization sexp (`Sexp.traverseOnAtoms` f)
+  where
+    f = Passes.openResolution ctx
 
 --------------------------------------------------------------------------------
 -- Contextify

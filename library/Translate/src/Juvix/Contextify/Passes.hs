@@ -5,6 +5,7 @@ module Juvix.Contextify.Passes
     inifixSoloPass,
     recordDeclaration,
     notFoundSymbolToLookup,
+    openResolution,
   )
 where
 
