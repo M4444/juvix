@@ -36,3 +36,11 @@ globalName (Core.GDatatype (Core.Datatype {dataName})) = dataName
 globalName (Core.GDataCon (Core.DataCon {dataConName})) = dataConName
 globalName (Core.GFunction (Core.Function {funName})) = funName
 globalName (Core.GAbstract (Core.Abstract {absName})) = absName
+
+-- | 'VFree' creates the value corresponding to a free variable
+pattern VFree :: Core.Name -> Value primTy primVal
+pattern VFree n = Core.VFree n
+
+-- | 'VBound' creates the value corresponding to a bound variable
+pattern VBound :: Core.BoundVar -> Value primTy primVal
+pattern VBound n = Core.VBound n

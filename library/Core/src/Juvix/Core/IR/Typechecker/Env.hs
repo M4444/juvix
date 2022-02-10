@@ -63,9 +63,9 @@ type PrimSubstValue primTy primVal =
 type PrimPatSubstTerm primTy primVal =
   ( Eval.HasPatSubstType
       (OnlyExts.T IR.T)
-      (Typed.PrimTy primTy)
+      primTy
       (Typed.Prim primTy primVal)
-      (Typed.PrimTy primTy),
+      primTy,
     Eval.HasPatSubstTerm
       (OnlyExts.T IR.T)
       (Typed.PrimTy primTy)
@@ -78,6 +78,9 @@ type CanTC' ext primTy primVal m =
     HasGlobals primTy primVal m,
     PrimSubstValue primTy primVal,
     PrimPatSubstTerm primTy primVal,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasWeak primTy,
     Eval.HasWeak primVal
   )
 

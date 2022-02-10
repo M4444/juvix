@@ -19,6 +19,9 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library hiding (Datatype)
 import qualified Juvix.Library.Usage as Usage
+import qualified Data.HashSet as HashSet
+import Control.Comonad
+import qualified Data.HashMap.Strict as HashMap
 
 data Leftovers a = Leftovers
   { loValue :: a,
@@ -193,7 +196,7 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       void $ requireStar ty
       a' <- typeTerm' a ann
       av <- evalTC a'
-      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann
+      b' <- withLocal0 av $ typeTerm' b ann
       pure $ Typed.Pi π a' b' ann
     Core.Lam t _ -> do
       (π, a, b) <- requirePi ty
@@ -207,7 +210,7 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       void $ requireStar ty
       a' <- typeTerm' a ann
       av <- evalTC a'
-      b' <- withLocal (Typed.Annotation mempty av) $ typeTerm' b ann
+      b' <- withLocal0 av $ typeTerm' b ann
       pure $ Typed.Sig π a' b' ann
     Core.Pair s t _ -> do
       (π, a, b) <- requireSig ty
@@ -273,6 +276,17 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
     Core.Unit _ -> do
       requireUnitTy ty
       pure $ Typed.Unit ann
+    Core.RecordTy flds _ -> do
+      checkDups flds Core.tfName
+      requireZero σ
+      j <- requireStar ty
+      flds' <- typeTele j flds
+      pure $ Typed.RecordTy flds' ann
+    Core.Record flds _ -> do
+      fldTys <- requireRecordTy ty
+      -- [todo] reorder flds if necessary
+      flds' <- typeFields σ fldTys flds
+      pure $ Typed.Record flds' ann
     Core.Let σb b t _ -> do
       b' <- typeElim' b σb
       let bAnn = Typed.getElimAnn b'
@@ -287,6 +301,79 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
       pure $ Typed.Elim e' ann
     Core.TermX x ->
       Error.throwTC $ Error.UnsupportedTermExt x
+
+typeFields ::
+  ( Eq primTy,
+    Eq primVal,
+    Show primVal,
+    Show ext,
+    ShowExt ext primTy primVal,
+    (Show (Core.XAnn ext primTy primVal)),
+    Show primTy,
+    (Show (Core.ElimX ext primTy primVal)),
+    Env.CanInnerTC' ext primTy primVal m,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
+      (OnlyExts.T Typed.T)
+      primTy
+      (Param.TypedPrim primTy primVal)
+      primTy
+  ) =>
+  Usage.T ->
+  [Typed.TypeFieldT IR.T primTy primVal] ->
+  [Core.ValField ext primTy primVal] ->
+  m [Typed.ValField primTy primVal]
+typeFields _ [] [] = pure []
+typeFields σ (Core.TF π x a : tys) (Core.VF x' s : vals)
+  | x == x' = do
+      s' <- typeTerm' s $ Typed.Annotation (π <.> σ) a
+      vals' <- withLocal0 a $ typeFields σ tys vals
+      pure $ Core.VF x s' : vals'
+  | otherwise =
+      Error.throwTC $ Error.UnknownFieldName {expectedName = x, actualName = x'}
+typeFields _ [] vals@(_:_) =
+  Error.throwTC $ Error.ExtraFields vals
+typeFields _ tys@(_:_) [] =
+  Error.throwTC $ Error.MissingFields tys
+
+typeTele ::
+  ( Eq primTy,
+    Eq primVal,
+    Show primTy,
+    Show primVal,
+    Show ext,
+    ShowExt ext primTy primVal,
+    Env.CanInnerTC' ext primTy primVal m,
+    Param.CanPrimApply Param.Star primTy,
+    Param.CanPrimApply primTy primVal,
+    Eval.HasPatSubstType
+      (OnlyExts.T Typed.T)
+      primTy
+      (Param.TypedPrim primTy primVal)
+      primTy,
+    Comonad w
+  ) =>
+  Core.Universe ->
+  [w (Core.Term ext primTy primVal)] ->
+  m [w (Typed.Term primTy primVal)]
+typeTele _ [] = pure []
+typeTele j (fld:flds) = do
+  a' <- typeTerm' (extract fld) $ Typed.Annotation mempty (IR.VStar j)
+  local <- Typed.Annotation mempty <$> evalTC a'
+  flds' <- withLocal local $ typeTele j flds
+  pure $ (a' <$ fld) : flds'
+
+checkDups ::
+  Error.HasThrowTC' IR.T ext primTy primVal m =>
+  [a] -> (a -> Symbol) -> m ()
+checkDups lst f = go (map f lst) mempty mempty where
+  go [] _ dups =
+    unless (null dups) $
+      Error.throwTC $ Error.DuplicateFieldNames $ toList dups
+  go (x:xs) seen dups =
+    go xs (HashSet.insert x seen) $
+      if x `elem` seen then HashSet.insert x dups else dups
 
 typeElim' ::
   ( Eq primTy,
@@ -326,6 +413,30 @@ typeElim' elim σ =
       t' <- typeTerm' t tAnn
       ty <- substApp b t'
       pure $ Typed.App s' t' $ Typed.Annotation σ ty
+    Core.RecElim ns e a t _ -> do
+      -- infer e's type, and check it is a record type {Δ} with fields ns
+      e' <- typeElim' e σ
+      let eTy = Typed.annType $ Typed.getElimAnn e'
+      tys <- requireRecordTy eTy
+      checkRecordNames ns tys
+      -- check a is a type assuming #0 : {Δ}
+      a' <- withLocal0 eTy $
+        typeTerm' a (Typed.Annotation mempty (IR.VStar Core.UAny))
+      av <- evalTC a'
+      -- add the fields of Δ to the context, and check that
+      -- t : a[〈n₀ = #(i-1), ..., nᵢ = #0〉]
+      -- where i = |ns|
+      --
+      -- before substituting, indices #1 and up need to be incremented by |ns|,
+      -- so that they don't crash into the new variables introduced by the
+      -- fields. then #0 is substituted with the 〈...〉
+      let recVal = indexRecord ns
+      tTy <- av |> Eval.weakBy' (lengthN ns) 1 |> substTC recVal
+      let locals = recordLocals tys
+      t' <- withLocals locals $ typeTerm' t (Typed.Annotation σ tTy)
+      -- ... then the final type is a[e]
+      ty <- substApp av $ Typed.Elim e' (Typed.getElimAnn e')
+      pure $ Typed.RecElim ns e' a' t' (Typed.Annotation σ ty)
     Core.Ann s a _ -> do
       a' <- typeTerm' a $ Typed.Annotation mempty (IR.VStar Core.UAny)
       ty <- evalTC a'
@@ -335,11 +446,43 @@ typeElim' elim σ =
     Core.ElimX x ->
       Error.throwTC $ Error.UnsupportedElimExt x
 
+recordLocals :: [Typed.TypeFieldT ext primTy primVal]
+             -> [Typed.AnnotationT ext primTy primVal]
+recordLocals tys =
+  Typed.Annotation (Usage.SNat 1) . Core.tfType <$> tys |> reverse
+
+indexRecord :: [Symbol] -> Core.Value IR.T primTy primVal
+indexRecord ns = IR.VRecord $ HashMap.fromList $ zip (reverse ns) indices
+  where indices = IR.VBound <$> [0 ..]
+
+checkRecordNames ::
+  Error.HasThrowTC' extV extT primTy primVal m =>
+  [Symbol] -> [Core.TypeField' a] -> m ()
+checkRecordNames ns flds =
+  let fldNames = fmap Core.tfName flds in
+  unless (ns == fldNames) $ Error.throwTC $
+    Error.WrongNamesInRecElim {expectedNames = ns, actualNames = fldNames}
+
+-- | adds a list of local variables to the context. the input has the
+-- **innermost** binding first.
+pushLocals ::
+  Env.HasBound primTy primVal m =>
+  [Typed.AnnotationT IR.T primTy primVal] ->
+  m ()
+pushLocals anns = modify @"bound" (anns ++)
+
 pushLocal ::
   Env.HasBound primTy primVal m =>
   Typed.AnnotationT IR.T primTy primVal ->
   m ()
-pushLocal ann = modify @"bound" (ann :)
+pushLocal ann = pushLocals [ann]
+
+popLocals ::
+  ( Env.HasBound primTy primVal m,
+    Error.HasThrowTC' IR.T ext primTy primVal m
+  ) =>
+  Int -> m ()
+popLocals n = replicateM_ n popLocal
 
 popLocal ::
   ( Env.HasBound primTy primVal m,
@@ -355,6 +498,15 @@ popLocal = do
     [] -> do
       Error.throwTC (Error.UnboundLocal 0)
 
+withLocals ::
+  ( Env.HasBound primTy primVal m,
+    Error.HasThrowTC' IR.T ext primTy primVal m
+  ) =>
+  [Typed.AnnotationT IR.T primTy primVal] ->
+  m a ->
+  m a
+withLocals anns m = pushLocals anns *> m <* popLocals (length anns)
+
 withLocal ::
   ( Env.HasBound primTy primVal m,
     Error.HasThrowTC' IR.T ext primTy primVal m
@@ -362,7 +514,16 @@ withLocal ::
   Typed.AnnotationT IR.T primTy primVal ->
   m a ->
   m a
-withLocal ann m = pushLocal ann *> m <* popLocal
+withLocal ann = withLocals [ann]
+
+withLocal0 ::
+  ( Env.HasBound primTy primVal m,
+    Error.HasThrowTC' IR.T ext primTy primVal m
+  ) =>
+  Typed.ValueT IR.T primTy primVal ->
+  m a ->
+  m a
+withLocal0 = withLocal . Typed.Annotation mempty
 
 requireZero ::
   Error.HasThrowTC' IR.T ext primTy primVal m =>
@@ -468,6 +629,13 @@ requireUnitTy ::
 requireUnitTy IR.VUnitTy = pure ()
 requireUnitTy ty = Error.throwTC (Error.ShouldBeUnitType ty)
 
+requireRecordTy ::
+  Error.HasThrowTC' IR.T ext primTy primVal m =>
+  Typed.ValueT IR.T primTy primVal ->
+  m [Core.TypeField' (Typed.ValueT IR.T primTy primVal)]
+requireRecordTy (IR.VRecordTy flds) = pure flds
+requireRecordTy ty = Error.throwTC $ Error.ShouldBeRecordType ty
+
 requireSubtype ::
   (Eq primTy, Eq primVal, Error.HasThrowTC' IR.T ext primTy primVal m) =>
   Core.Elim ext primTy primVal ->
@@ -554,7 +722,14 @@ substApp ::
   m (Typed.ValueT IR.T primTy primVal)
 substApp ty arg = do
   arg' <- evalTC arg
-  liftEval $ first Eval.ErrorValue (Eval.substV arg' ty)
+  substTC arg' ty
+
+substTC ::
+  ( Error.HasThrowTC' IR.T extT primTy primVal m,
+    Eval.HasSubstV IR.T (Typed.PrimTy primTy) (Typed.Prim primTy primVal) a
+  ) =>
+  Typed.ValueT IR.T primTy primVal -> a -> m a
+substTC e v = liftEval $ first Eval.ErrorValue (Eval.substV e v)
 
 evalTC ::
   ( Error.HasThrowTC' IR.T ext primTy primVal m,

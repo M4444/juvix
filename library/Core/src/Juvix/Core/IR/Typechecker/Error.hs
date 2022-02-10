@@ -46,6 +46,9 @@ data TypecheckError' extV extT primTy primVal
   | ShouldBeUnitType
       { typeActual :: ValueT extV primTy primVal
       }
+  | ShouldBeRecordType
+      { typeActual :: ValueT extV primTy primVal
+      }
   | LeftoverUsage
       { usageLeftover :: Usage.T
       }
@@ -96,6 +99,13 @@ data TypecheckError' extV extT primTy primVal
         name :: Core.GlobalName,
         tel :: Core.RawTelescope extT primTy primVal
       }
+  | DuplicateFieldNames [Symbol]
+  | UnknownFieldName
+      { expectedName, actualName :: Symbol }
+  | ExtraFields [Core.ValField extT primTy primVal]
+  | MissingFields [TypeFieldT extV primTy primVal]
+  | WrongNamesInRecElim
+      { expectedNames, actualNames :: [Symbol] }
 
 type TypecheckError = TypecheckError' IR.T IR.T
 
