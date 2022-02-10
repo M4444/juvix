@@ -317,7 +317,7 @@ captureToConversion xs = do
               ------------------------------
               loc <- Block.mallocType (Typed.typeOf var)
               Block.store loc var
-              pure loc
+              Block.bitCast loc Closure.environmentPtrDeref
             Types.FromClosureEnv index ->
               loadElementIndex index
         locPtr <-

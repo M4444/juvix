@@ -1,0 +1,55 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( ":defsig" "llvm-litint" "int8" )
+,
+    ( ":defun" "llvm-litint" () ( ":primitive" "LLVM.litint" ) )
+,
+    ( ":defsig" "test-int8" "int8" )
+,
+    ( ":defun" "test-int8" () 42 )
+,
+    ( ":defsig" "test-int16" "int16" )
+,
+    ( ":defun" "test-int16" () 48 )
+,
+    ( ":defsig" "test-litint-add" "int8" )
+,
+    ( ":defun" "test-litint-add" () ( "Int.add" "llvm-litint" 43 ) )
+,
+    ( ":defsig" "test-add" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun" "test-add" () ( "Int.add" 44 ) )
+,
+    ( ":defsig" "test-sub" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun" "test-sub" () ( "Int.sub" 46 ) )
+,
+    ( ":defsig" "test-mul" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun" "test-mul" () ( "Int.mul" 50 ) )
+,
+    ( ":defsig" "hello-world" "string" )
+,
+    ( ":defun" "hello-world" () "Hello, world!" )
+,
+    ( ":defsig" "hello-again-world" "string" )
+,
+    ( ":defun" "hello-again-world" () "Hello again, world!" )
+,
+    ( ":defsig" "main" "string" )
+,
+    ( ":defun" "main" ()
+        ( "let" "ti8" () "test-int8"
+            ( "let" "ti16" () "test-int16"
+                ( "let" "tli" () "test-litint-add"
+                    ( "let" "ta" ()
+                        ( "test-add" 45 )
+                        ( "let" "ts" ()
+                            ( "test-sub" 47 )
+                            ( "let" "tm" ()
+                                ( "test-mul" 51 )
+                                ( "let" "hw" () "hello-world"
+                                    ( "let" "haw" () "hello-again-world" "hw" ) ) ) ) ) ) ) ) ) ]

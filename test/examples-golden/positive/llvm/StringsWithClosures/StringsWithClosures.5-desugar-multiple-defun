@@ -1,0 +1,61 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( ":defsig" "llvm-litint" "int8" )
+,
+    ( ":defun-match" "llvm-litint" ( () ( ":primitive" "LLVM.litint" ) ) )
+,
+    ( ":defsig" "test-int8" "int8" )
+,
+    ( ":defun-match" "test-int8" ( () 42 ) )
+,
+    ( ":defsig" "test-int16" "int16" )
+,
+    ( ":defun-match" "test-int16" ( () 48 ) )
+,
+    ( ":defsig" "test-litint-add" "int8" )
+,
+    ( ":defun-match" "test-litint-add" ( () ( "Int.add" "llvm-litint" 43 ) ) )
+,
+    ( ":defsig" "test-add" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun-match" "test-add" ( () ( "Int.add" 44 ) ) )
+,
+    ( ":defsig" "test-sub" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun-match" "test-sub" ( () ( "Int.sub" 46 ) ) )
+,
+    ( ":defsig" "test-mul" ( ":infix" "->" "int8" "int8" ) )
+,
+    ( ":defun-match" "test-mul" ( () ( "Int.mul" 50 ) ) )
+,
+    ( ":defsig" "hello-world" "string" )
+,
+    ( ":defun-match" "hello-world" ( () "Hello, world!" ) )
+,
+    ( ":defsig" "hello-again-world" "string" )
+,
+    ( ":defun-match" "hello-again-world" ( () "Hello again, world!" ) )
+,
+    ( ":defsig" "main" "string" )
+,
+    ( ":defun-match" "main"
+        ( ()
+            ( ":let-match" "ti8"
+                ( () "test-int8" )
+                ( ":let-match" "ti16"
+                    ( () "test-int16" )
+                    ( ":let-match" "tli"
+                        ( () "test-litint-add" )
+                        ( ":let-match" "ta"
+                            ( () ( "test-add" 45 ) )
+                            ( ":let-match" "ts"
+                                ( () ( "test-sub" 47 ) )
+                                ( ":let-match" "tm"
+                                    ( () ( "test-mul" 51 ) )
+                                    ( ":let-match" "hw"
+                                        ( () "hello-world" )
+                                        ( ":let-match" "haw"
+                                            ( () "hello-again-world" ) "hw" ) ) ) ) ) ) ) ) ) ) ]

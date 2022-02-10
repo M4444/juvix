@@ -1,0 +1,111 @@
+; ModuleID = 'juvix-module'
+
+
+ 
+
+
+%closure = type <{i8*, i8**}>
+
+
+declare external fastcc  i8* @malloc(i32)    
+
+
+declare external fastcc  void @free(i8*)    
+
+
+@LitString =    global [14 x i8] c"Hello, world!\00"
+
+
+@LitString1 =    global [20 x i8] c"Hello again, world!\00"
+
+
+define external fastcc  i8* @closure(i8**  %juvix_environmentArray, i8*  %"7")    {
+closure1:
+  %0 = getelementptr inbounds i8*, i8** %juvix_environmentArray, i32 0 
+  %1 = load  i8*, i8** %0 
+  %2 = bitcast i8* %1 to i8** 
+  %3 = load  i8*, i8** %2 
+  ret i8* %3 
+}
+
+
+define external fastcc  i8* @lambda7(i8**  %juvix_environmentArray, i8*  %"6")    {
+lambda7:
+  %0 = getelementptr inbounds [20 x i8], [20 x i8]* @LitString1, i32 0, i32 0 
+  %1 =  call fastcc  i8*  @malloc(i32  128)  
+  %2 = bitcast i8* %1 to %closure* 
+  %3 = getelementptr inbounds %closure, %closure* %2, i32 0, i32 0 
+  %4 = bitcast i8* (i8**, i8*)* @closure to i8* 
+  store  i8* %4, i8** %3 
+  %5 =  call fastcc  i8*  @malloc(i32  64)  
+  %6 = bitcast i8* %5 to i8** 
+  %7 =  call fastcc  i8*  @malloc(i32  ptrtoint (i8** getelementptr inbounds (i8*, i8** inttoptr (i32 0 to i8**), i32 1) to i32))  
+  %8 = bitcast i8* %7 to i8** 
+  store  i8* %"6", i8** %8 
+  %9 = bitcast i8** %8 to i8* 
+  %10 = getelementptr inbounds i8*, i8** %6, i32 0 
+  store  i8* %9, i8** %10 
+  %11 = getelementptr inbounds %closure, %closure* %2, i32 0, i32 1 
+  store  i8** %6, i8*** %11 
+  %12 = getelementptr inbounds %closure, %closure* %2, i32 0, i32 0 
+  %13 = load  i8*, i8** %12 
+  %14 = bitcast i8* %13 to i8* (i8**, i8*)* 
+  %15 = getelementptr inbounds %closure, %closure* %2, i32 0, i32 1 
+  %16 = load  i8**, i8*** %15 
+  %17 =  call fastcc  i8*  %14(i8**  %16, i8*  %0)  
+  ret i8* %17 
+}
+
+
+define external fastcc  i8* @lambda6(i8**  %juvix_environmentArray, i8  %"5")    {
+lambda6:
+  %0 = getelementptr inbounds [14 x i8], [14 x i8]* @LitString, i32 0, i32 0 
+  %1 =  call fastcc  i8*  @lambda7(i8**  zeroinitializer, i8*  %0)  
+  ret i8* %1 
+}
+
+
+define external fastcc  i8* @lambda5(i8**  %juvix_environmentArray, i8  %"4")    {
+lambda5:
+  %0 = mul nuw nsw i8 50, 51 
+  %1 =  call fastcc  i8*  @lambda6(i8**  zeroinitializer, i8  %0)  
+  ret i8* %1 
+}
+
+
+define external fastcc  i8* @lambda4(i8**  %juvix_environmentArray, i8  %"3")    {
+lambda4:
+  %0 = sub nuw nsw i8 46, 47 
+  %1 =  call fastcc  i8*  @lambda5(i8**  zeroinitializer, i8  %0)  
+  ret i8* %1 
+}
+
+
+define external fastcc  i8* @lambda3(i8**  %juvix_environmentArray, i8  %"2")    {
+lambda3:
+  %0 = add nuw nsw i8 44, 45 
+  %1 =  call fastcc  i8*  @lambda4(i8**  zeroinitializer, i8  %0)  
+  ret i8* %1 
+}
+
+
+define external fastcc  i8* @lambda2(i8**  %juvix_environmentArray, i16  %"1")    {
+lambda2:
+  %0 = add nuw nsw i8 0, 43 
+  %1 =  call fastcc  i8*  @lambda3(i8**  zeroinitializer, i8  %0)  
+  ret i8* %1 
+}
+
+
+define external fastcc  i8* @lambda(i8**  %juvix_environmentArray, i8  %"0")    {
+lambda1:
+  %0 =  call fastcc  i8*  @lambda2(i8**  zeroinitializer, i16  48)  
+  ret i8* %0 
+}
+
+
+define external fastcc  i8* @main()    {
+main:
+  %0 =  call fastcc  i8*  @lambda(i8**  zeroinitializer, i8  42)  
+  ret i8* %0 
+}
