@@ -335,13 +335,13 @@ initContext ctx sexps = do
     Left err -> Pipeline.Failure Meta.empty Nothing |> pure
     Right ctx ->
       Pipeline.WorkingEnv ctxSexps ctx
-      |> Pipeline.Success Meta.empty
-      |> pure
-    where
-      moduleSexps =
-        NonEmpty.toList sexps
-          |> sexpsByModule (Context.currentName ctx)
-      ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
+        |> Pipeline.Success Meta.empty
+        |> pure
+  where
+    moduleSexps =
+      NonEmpty.toList sexps
+        |> sexpsByModule (Context.currentName ctx)
+    ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
 
 fullyContextify ::
   Context.T Sexp.T Sexp.T Sexp.T ->
