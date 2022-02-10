@@ -237,12 +237,41 @@ instance
           (False, "The type of a datatype must be zero or more function"),
           (False, "types, ending in the datatype.")
         ]
+    ShouldBeRecordType ty ->
+      expected "a record type" ty
+    DuplicateFieldNames ns ->
+      PP.sepIndent'
+        [ (False, "Duplicate record fields:"),
+          (True,  fieldList ns)
+        ]
+    UnknownFieldName exp act ->
+      PP.hsep ["Expected the field name", PP.symbol exp,
+               "but got", PP.symbol act]
+    ExtraFields flds ->
+      PP.sepIndent'
+        [ (False, "Extra fields in record literal:"),
+          (True,  fieldList $ map Core.vfName flds)
+        ]
+    MissingFields flds ->
+      PP.sepIndent'
+        [ (False, "Missing fields in record literal:"),
+          (True,  fieldList $ map Core.tfName flds)
+            -- [todo] include usage/type?
+        ]
+    WrongNamesInRecElim exp act ->
+      PP.sepIndent'
+        [ (False, "Record was destructured into fields"),
+          (True,  fieldList act),
+          (False, "but actually has fields"),
+          (True,  fieldList exp)
+        ]
     where
       expected what ty =
         PP.sepIndent'
           [ (False, PP.hsep ["Expected", what, "but got a term of type"]),
             (True, prettyVal ty)
           ]
+      fieldList = PP.hsep . PP.punctuate "," . map PP.symbol
 
 prettySA :: Show a => a -> Doc
 prettySA = PP.annotate' HR.ATyCon . PP.show

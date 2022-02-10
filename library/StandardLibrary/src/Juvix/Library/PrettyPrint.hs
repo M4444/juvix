@@ -17,6 +17,7 @@ module Juvix.Library.PrettyPrint
     show,
     string,
     text,
+    symbol,
 
     -- * Extensions
     renderIO,
@@ -136,6 +137,9 @@ withPrec p = local @"prec" \_ -> p
 
 show :: (Monoid ann, Show a) => a -> Doc ann
 show = string . Show.show
+
+symbol :: Monoid ann => Symbol -> Doc ann
+symbol = text . textify
 
 string :: Monoid ann => String -> Doc ann
 string = Base.text
