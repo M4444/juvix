@@ -11,6 +11,7 @@ import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
+import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
@@ -30,7 +31,8 @@ import Prelude (error)
 
 data Env = Env
   { trace :: Trace.T,
-    feedback :: Feedback.T
+    feedback :: Feedback.T,
+    closure :: Closure.T
   }
   deriving (Generic, Show)
 
@@ -39,6 +41,11 @@ type MinimalAliasIO =
 
 newtype MinimalMIO a = MinIO {_runIO :: MinimalAliasIO a}
   deriving (Functor, Applicative, Monad, MonadIO)
+  deriving
+    ( HasReader "closure" Closure.T,
+      HasSource "closure" Closure.T
+    )
+    via ReaderField "closure" MinimalAliasIO
   deriving
     ( HasState "feedback" Feedback.T,
       HasSource "feedback" Feedback.T,
@@ -55,6 +62,8 @@ newtype MinimalMIO a = MinIO {_runIO :: MinimalAliasIO a}
     (HasThrow "error" Sexp.T)
     via MonadError MinimalAliasIO
 
+type HasClosure m = HasReader "closure" Closure.T m
+
 data Error = MalformedData Text
   deriving (Generic, Show, Eq)
 
@@ -64,7 +73,13 @@ instance Sexp.Serialize Error
 
 runEnv :: MinimalMIO a -> Meta.T -> IO (Either Sexp.T a, Env)
 runEnv (MinIO a) (Meta.T {_trace, _feedback}) =
-  runStateT (runExceptT a) Env {trace = _trace, feedback = _feedback}
+  runStateT
+    (runExceptT a)
+    Env
+      { trace = _trace,
+        feedback = _feedback,
+        closure = Closure.empty
+      }
 
 -- TODO ∷ update to use feedback before throwing. (Sadly not finished)
 throw :: (Feedback.Eff m, HasThrow "error" Sexp.T m) => Error -> m a2
@@ -75,7 +90,13 @@ throw err = do
 -- Do not use externally
 runEnvEmpty :: MinimalMIO a -> IO (Either Sexp.T a, Env)
 runEnvEmpty (MinIO a) =
-  runStateT (runExceptT a) Env {trace = Trace.empty, feedback = Feedback.empty}
+  runStateT
+    (runExceptT a)
+    Env
+      { trace = Trace.empty,
+        feedback = Feedback.empty,
+        closure = Closure.empty
+      }
 
 instance Pipeline.HasExtract MinimalMIO where
   -- it's fine to run empty as the meta information gets injected in
