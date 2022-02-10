@@ -83,11 +83,18 @@ data Error extV extT primTy primVal
     UnsupportedElimExt (Core.ElimX extT primTy primVal)
 
 -- | Errors that can occur during evaluation.
-data ErrorValue extV primTy primVal = -- | Error during application.
-  CannotApply
-  { fun, arg :: Core.Value extV primTy primVal,
-    paramErr :: ApplyError primTy primVal
-  }
+data ErrorValue extV primTy primVal
+  = -- | Error during application.
+    CannotApply
+    { fun, arg :: Core.Value extV primTy primVal,
+      paramErr :: ApplyError primTy primVal
+    }
+  | -- | Non-record value, or record with the wrong fields,
+    -- in the head of a record elimination.
+    ExpectedRecord
+    { fields :: [Symbol], -- ^ expected field names
+      val :: Core.Value extV primTy primVal -- ^ actual head
+    }
 
 type instance PP.Ann (Error IR.T TC.T _ _) = HR.PPAnn
 
@@ -108,6 +115,15 @@ instance
             (True, PP.pretty0 $ irToHR $ Core.quote arg)
           ],
         PP.prettyT paramErr
+      ]
+  prettyT (ExpectedRecord {fields, val}) =
+    PP.vcat
+      [ PP.sepIndent'
+          [ (False, "Expected a record with fields"),
+            (True,  PP.hsep $ PP.punctuate "," $ map PP.symbol fields),
+            (False, "but got"),
+            (True,  PP.pretty0 $ irToHR $ Core.quote val)
+          ]
       ]
 
 -- | Pretty-printer intance for errors.

@@ -147,6 +147,10 @@ instance
     Core.UnitTy <$> patSubst' b m a
   patSubst' b m (Core.Unit a) =
     Core.Unit <$> patSubst' b m a
+  patSubst' b m (Core.RecordTy flds a) =
+    Core.RecordTy <$> traverse (patSubst' b m) flds <*> patSubst' b m a
+  patSubst' b m (Core.Record flds a) =
+    Core.Record <$> traverse (patSubst' b m) flds <*> patSubst' b m a
   patSubst' b m (Core.Let π l t a) =
     Core.Let π <$> patSubst' b m l
       <*> patSubst' (succ b) m t
@@ -172,6 +176,12 @@ instance
   patSubst' b m (Core.App f e a) =
     Core.App <$> patSubst' b m f
       <*> patSubst' b m e
+      <*> patSubst' b m a
+  patSubst' b m (Core.RecElim ns e s t a) =
+    Core.RecElim ns
+      <$> patSubst' b m e
+      <*> patSubst' b m s
+      <*> patSubst' b m t
       <*> patSubst' b m a
   patSubst' b m (Core.Ann s t a) =
     Core.Ann <$> patSubst' b m s
@@ -236,6 +246,14 @@ instance HasPatSubst ext primTy primVal Natural where
 
 instance HasPatSubst ext primTy primVal Usage.T where
   patSubst' _ _ π = pure π
+
+instance HasPatSubst ext primTy primVal a =>
+  HasPatSubst ext primTy primVal (Core.TypeField' a)
+  where patSubst' b m = traverse $ patSubst' b m
+
+instance HasPatSubst ext primTy primVal a =>
+  HasPatSubst ext primTy primVal (Core.ValField' a)
+  where patSubst' b m = traverse $ patSubst' b m
 
 instance
   ( HasPatSubst ext primTy primVal a,

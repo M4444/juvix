@@ -6,12 +6,13 @@
 module Juvix.Core.IR.Evaluator.SubstV
   ( HasSubstValue (..),
     HasSubstValueType (..),
+    HasSubstV (..),
     substV,
     vapp,
+    vrecelim,
   )
 where
 
-import Data.Foldable (foldr1) -- on NonEmpty
 import qualified Juvix.Core.Application as App
 import qualified Juvix.Core.Base.Types as Core
 import Juvix.Core.IR.Evaluator.Types
@@ -21,6 +22,10 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
+import Control.Comonad
+import Data.HashMap.Strict ((!))
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.HashSet as HashSet
 
 -- | Class of values that support substitution, allows failure using @Either@.
 class HasWeak a => HasSubstV extV primTy primVal a where
@@ -173,6 +178,10 @@ instance
     Core.VUnitTy <$> substVWith w i e a
   substVWith w i e (Core.VUnit a) =
     Core.VUnit <$> substVWith w i e a
+  substVWith w i e (Core.VRecordTy flds a) =
+    Core.VRecordTy <$> substTele w i e flds <*> substVWith w i e a
+  substVWith w i e (Core.VRecord flds a) =
+    Core.VRecord <$> traverse (substVWith w i e) flds <*> substVWith w i e a
   substVWith w i e (Core.VNeutral n a) =
     substNeutralWith w i e n a
   substVWith w i e (Core.VPrim p _) =
@@ -181,8 +190,26 @@ instance
   substVWith w i e (Core.ValueX a) =
     Core.ValueX <$> substVWith w i e a
 
--- | Perform substitution on a `IR.Neutral` and a `IR.XVNeutral`.
--- (not quite an instance of @HasSubstValue@ because of the @XVNeutral@ stuff)
+substTele ::
+  (Comonad w, HasSubstV extV primTy primVal a) =>
+  Natural ->
+  Core.BoundVar ->
+  Core.Value extV primTy primVal ->
+  [w a] ->
+  Either (ErrorValue extV primTy primVal) [w a]
+substTele _ _ _ [] = pure []
+substTele w i e (f : fs) = do
+  t'  <- substVWith w i e $ extract f
+  fs' <- substTele (succ w) (succ i) e fs
+  pure $ (t' <$ f) : fs'
+
+
+-- | Perform substitution on a 'IR.Neutral'.
+--
+-- In general this might create any kind of value, which is why this can't be
+-- made into a 'HasSubstV' instance. In the case that it is, then the outermost
+-- 'IR.VNeutral' constructor might need an annotation, which is what the final
+-- argument is for. In many cases there is no actual annotation so @()@ will do.
 substNeutralWith ::
   ( AllSubstV extV primTy primVal,
     Monoid (Core.XVNeutral extV primTy primVal),
@@ -200,10 +227,9 @@ substNeutralWith ::
   Core.Value extV primTy primVal ->
   -- | Neutral to perform substitution on.
   Core.Neutral extV primTy primVal ->
-  -- | Extended Neutral to perform substitution on.
+  -- | Annotation to use if the result is still neutral.
   Core.XVNeutral extV primTy primVal ->
   Either (ErrorValue extV primTy primVal) (Core.Value extV primTy primVal)
--- not Neutral!!!
 substNeutralWith w i e (Core.NBound j a) b = do
   a' <- substVWith w i e a
   b' <- substVWith w i e b
@@ -215,13 +241,54 @@ substNeutralWith w i e (Core.NFree x a) b =
   Core.VNeutral <$> (Core.NFree x <$> substVWith w i e a)
     <*> substVWith w i e b
 substNeutralWith w i e (Core.NApp f s a) _ =
-  join $
-    vapp <$> substNeutralWith w i e f mempty
-      <*> substVWith w i e s
-      <*> substVWith w i e a
+  join $ vapp
+    <$> substVWith w i e a
+    <*> substNeutralWith w i e f mempty
+    <*> substVWith w i e s
+substNeutralWith w i e (Core.NRecElim ns f s t a) _ =
+  join $ vrecelim
+    <$> substVWith w i e a
+    <*> pure ns
+    <*> substNeutralWith w i e f mempty
+    <*> substVWith (succ w) (succ i) e s
+    <*> substVWith (len + w) (len + i) e t
+  where len = lengthN ns
 substNeutralWith w i e (Core.NeutralX a) b =
   Core.VNeutral <$> (Core.NeutralX <$> substVWith w i e a)
     <*> substVWith w i e b
+
+-- | Perform a record elimination.
+vrecelim ::
+  forall extV primTy primVal.
+  ( AllSubstV extV primTy primVal,
+    Monoid (Core.XVNeutral extV primTy primVal),
+    Monoid (Core.XVLam extV primTy primVal),
+    Monoid (Core.XVPrimTy extV primTy primVal),
+    Monoid (Core.XVPrim extV primTy primVal),
+    Show primVal,
+    Show primTy
+  ) =>
+  -- | the annotation to use if the result is another application node
+  -- (if it isn't, then this annotation is unused)
+  Core.XNRecElim extV primTy primVal ->
+  -- | List of field names.
+  [Symbol] ->
+  -- | Record being eliminated.
+  Core.Value extV primTy primVal ->
+  -- | Return type.
+  Core.Value extV primTy primVal ->
+  -- | Body.
+  Core.Value extV primTy primVal ->
+  Either (ErrorValue extV primTy primVal) (Core.Value extV primTy primVal)
+vrecelim a ns f s t = case f of
+  Core.VNeutral n _ ->
+    pure $ Core.VNeutral (Core.NRecElim ns n s t a) mempty
+  Core.VRecord flds _
+    | HashSet.fromList ns == HashMap.keysSet flds ->
+        foldrM (\x -> substV $ flds!x) t ns
+        -- [todo] simultaneous substitution
+  _ ->
+    Left $ ExpectedRecord {fields = ns, val = f}
 
 -- | Apply two values.
 vapp ::
@@ -234,15 +301,15 @@ vapp ::
     Show primVal,
     Show primTy
   ) =>
+  -- | the annotation to use if the result is another application node
+  -- (if it isn't, then this annotation is unused)
+  Core.XNApp extV primTy primVal ->
   -- | Function value.
   Core.Value extV primTy primVal ->
   -- | Argument to the function.
   Core.Value extV primTy primVal ->
-  -- | the annotation to use if the result is another application node
-  -- (if it isn't, then this annotation is unused)
-  Core.XNApp extV primTy primVal ->
   Either (ErrorValue extV primTy primVal) (Core.Value extV primTy primVal)
-vapp s t ann =
+vapp ann s t =
   case s of
     Core.VLam s _ -> substV t s
     Core.VNeutral f _ -> pure $ Core.VNeutral (Core.NApp f s ann) mempty
@@ -397,7 +464,7 @@ instance
   where
   substValueTypeWith b i e (App.Cont {fun, args}) = do
     args <- traverse (substVWith b i e . argToValueType) args
-    foldlM (\f x -> vapp f x ()) (IR.VPrimTy $ App.takeToReturn fun) args
+    foldlM (vapp ()) (IR.VPrimTy $ App.takeToReturn fun) args
   substValueTypeWith _ _ _ ret@(App.Return {}) =
     pure $ IR.VPrimTy ret
 
@@ -418,7 +485,7 @@ instance
   where
   substValueWith b i e (App.Cont {fun, args}) = do
     args <- traverse (substVWith b i e . argToValue) args
-    foldlM (\f x -> vapp f x ()) (IR.VPrim $ App.takeToReturn fun) args
+    foldlM (vapp ()) (IR.VPrim $ App.takeToReturn fun) args
   substValueWith _ _ _ ret@(App.Return {}) =
     pure $ IR.VPrim ret
 

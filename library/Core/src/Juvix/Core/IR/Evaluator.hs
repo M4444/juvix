@@ -1,6 +1,3 @@
-{-# LANGUAGE EmptyCase #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 -- |
 -- This includes the evaluators (`evalTerm` and `evalElim`),
 -- the value application function (`vapp`) and
@@ -23,7 +20,6 @@ module Juvix.Core.IR.Evaluator
   )
 where
 
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.IntMap as IntMap
 import qualified Data.IntMap.Strict as PM
 import Juvix.Core.Base.TransformExt
@@ -37,6 +33,7 @@ import Juvix.Core.IR.Evaluator.Weak
 import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as Param
 import Juvix.Library
+import qualified Data.HashMap.Strict as HashMap
 
 -- | Constraint for terms and eliminations without extensions.
 type NoExtensions ext primTy primVal =
@@ -89,6 +86,10 @@ inlineAllGlobals ::
   Core.Term ext primTy primVal
 inlineAllGlobals t lookupFun patternMap =
   case t of
+    Core.Record flds ann ->
+      Core.Record (fmap (\t -> inlineAllGlobals t lookupFun patternMap) <$> flds) ann
+    Core.RecordTy flds ann ->
+      Core.RecordTy (fmap (\t -> inlineAllGlobals t lookupFun patternMap) <$> flds) ann
     Core.Unit {} -> t
     Core.UnitTy {} -> t
     Core.Pair p1 p2 ann ->
@@ -144,6 +145,8 @@ inlineAllGlobalsElim t lookupFun patternMap =
     Core.Free (Core.Pattern i) _ -> fromMaybe t $ PM.lookup i patternMap >>= lookupFun
     Core.App elim term ann ->
       Core.App (inlineAllGlobalsElim elim lookupFun patternMap) (inlineAllGlobals term lookupFun patternMap) ann
+    Core.RecElim ns e a t ann ->
+      Core.RecElim ns (inlineAllGlobalsElim e lookupFun patternMap) (inlineAllGlobals a lookupFun patternMap) (inlineAllGlobals t lookupFun patternMap) ann
     Core.Ann t1 t2 ann ->
       Core.Ann (inlineAllGlobals t1 lookupFun patternMap) (inlineAllGlobals t2 lookupFun patternMap) ann
     Core.ElimX {} -> t
@@ -159,8 +162,7 @@ evalTermWith ::
   -- | The term to evaluate.
   Core.Term (OnlyExts.T extT) primTy primVal ->
   Either (Error IR.T extT primTy primVal) (IR.Value primTy primVal)
-evalTermWith _ _ (Core.Star u _) =
-  pure $ IR.VStar u
+evalTermWith _ _ (Core.Star u _) = pure $ IR.VStar u
 evalTermWith _ _ (Core.PrimTy p _) =
   pure $ IR.VPrimTy p
 evalTermWith _ _ (Core.Prim p _) =
@@ -193,6 +195,10 @@ evalTermWith _ _ (Core.UnitTy _) =
   pure IR.VUnitTy
 evalTermWith _ _ (Core.Unit _) =
   pure IR.VUnit
+evalTermWith g exts (Core.RecordTy flds _) =
+  IR.VRecordTy <$> traverse (traverse $ evalTermWith g exts) flds
+evalTermWith g exts (Core.Record flds _) =
+  IR.VRecord . HashMap.fromList <$> traverse (evalValField g exts) flds
 evalTermWith g exts (Core.Let _ l b _) = do
   l' <- evalElimWith g exts l
   b' <- evalTermWith g exts b
@@ -201,6 +207,15 @@ evalTermWith g exts (Core.Elim e _) =
   evalElimWith g exts e
 evalTermWith g exts (Core.TermX a) =
   tExtFun exts g a
+
+evalValField ::
+  CanEval extT extG primTy primVal =>
+  LookupFun extG primTy primVal ->
+  ExtFuns extG extT primTy primVal ->
+  Core.ValField (OnlyExts.T extT) primTy primVal ->
+  Either (Error IR.T extT primTy primVal) (Symbol, IR.Value primTy primVal)
+evalValField g exts (Core.VF {vfName, vfVal}) =
+  (vfName,) <$> evalTermWith g exts vfVal
 
 -- | Evaluate an elimination with extensions, discards annotations but keeps
 -- the extensions.
@@ -221,14 +236,24 @@ evalElimWith g exts (Core.Free x _)
     evalElimWith g exts $ toOnlyExtsE e
   | otherwise = pure $ Core.VFree x
 evalElimWith g exts (Core.App s t _) =
-  join $
-    (\s t -> first ErrorValue (vapp s t ()))
-      <$> evalElimWith g exts s
-      <*> evalTermWith g exts t
+  joinEval $ vapp ()
+    <$> evalElimWith g exts s
+    <*> evalTermWith g exts t
+evalElimWith g exts (Core.RecElim ns e a t _) = do
+  joinEval $ vrecelim () ns
+    <$> evalElimWith g exts e
+    <*> evalTermWith g exts a
+    <*> evalTermWith g exts t
 evalElimWith g exts (Core.Ann s _ _) =
   evalTermWith g exts s
 evalElimWith g exts (Core.ElimX a) =
   eExtFun exts g a
+
+joinEval ::
+  Either (Error IR.T extT primTy primVal)
+    (Either (ErrorValue IR.T primTy primVal) a) ->
+  Either (Error IR.T extT primTy primVal) a
+joinEval = join . fmap (first ErrorValue)
 
 -- | Evaluate a term, discarding annotations.
 -- Throws 'UnsupportedTermExt' or 'UnsupportedElimExt' if the
