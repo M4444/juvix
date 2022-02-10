@@ -93,12 +93,20 @@ instance AllWeak ext primTy primVal => HasWeak (Core.Term ext primTy primVal) wh
     Core.UnitTy (weakBy' b i a)
   weakBy' b i (Core.Unit a) =
     Core.Unit (weakBy' b i a)
+  weakBy' b i (Core.RecordTy flds a) =
+    Core.RecordTy (weakTele b i flds) (weakBy' b i a)
+  weakBy' b i (Core.Record flds a) =
+    Core.Record (weakBy' b i <$> flds) (weakBy' b i a)
   weakBy' b i (Core.Let π s t a) =
     Core.Let π (weakBy' b i s) (weakBy' b (succ i) t) (weakBy' b i a)
   weakBy' b i (Core.Elim f a) =
     Core.Elim (weakBy' b i f) (weakBy' b i a)
   weakBy' b i (Core.TermX a) =
     Core.TermX (weakBy' b i a)
+
+weakTele :: HasWeak a => Natural -> Natural -> [a] -> [a]
+weakTele _ _ [] = []
+weakTele b i (x:xs) = weakBy' b i x : weakTele b (succ i) xs
 
 -- | Weakening implementation for eliminations.
 instance AllWeak ext primTy primVal => HasWeak (Core.Elim ext primTy primVal) where
@@ -111,6 +119,12 @@ instance AllWeak ext primTy primVal => HasWeak (Core.Elim ext primTy primVal) wh
     Core.Free x (weakBy' b i a)
   weakBy' b i (Core.App s t a) =
     Core.App (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
+  weakBy' b i (Core.RecElim ns e s t a) =
+    Core.RecElim ns
+      (weakBy' b i e)
+      (weakBy' b (succ i) s)
+      (weakBy' b (lengthN ns + i) t)
+      (weakBy' b i a)
   weakBy' b i (Core.Ann s t a) =
     Core.Ann (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
   weakBy' b i (Core.ElimX a) =
@@ -161,6 +175,10 @@ instance
     Core.VUnitTy (weakBy' b i a)
   weakBy' b i (Core.VUnit a) =
     Core.VUnit (weakBy' b i a)
+  weakBy' b i (Core.VRecordTy flds a) =
+    Core.VRecordTy (weakTele b i flds) (weakBy' b i a)
+  weakBy' b i (Core.VRecord flds a) =
+    Core.VRecord (weakBy' b i <$> flds) (weakBy' b i a)
   weakBy' b i (Core.VNeutral n a) =
     Core.VNeutral (weakBy' b i n) (weakBy' b i a)
   weakBy' b i (Core.VPrim p a) =
@@ -182,6 +200,12 @@ instance
     Core.NFree x (weakBy' b i a)
   weakBy' b i (Core.NApp f s a) =
     Core.NApp (weakBy' b i f) (weakBy' b i s) (weakBy' b i a)
+  weakBy' b i (Core.NRecElim ns e s t a) =
+    Core.NRecElim ns
+      (weakBy' b i e)
+      (weakBy' b (succ i) s)
+      (weakBy' b (lengthN ns + i) t)
+      (weakBy' b i a)
   weakBy' b i (Core.NeutralX a) =
     Core.NeutralX (weakBy' b i a)
 
@@ -221,6 +245,10 @@ instance HasWeak Void
 instance HasWeak Natural where weakBy' _ _ n = n
 
 instance HasWeak Usage.T where weakBy' _ _ π = π
+
+instance HasWeak a => HasWeak (Core.ValField' a)
+
+instance HasWeak a => HasWeak (Core.TypeField' a)
 
 instance (HasWeak a, HasWeak b) => HasWeak (a, b)
 
