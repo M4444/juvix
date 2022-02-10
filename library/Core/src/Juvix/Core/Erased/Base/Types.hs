@@ -33,7 +33,7 @@ extensible
       | Record [ValField primVal]
       | Let NameSymbol.T (Term primVal) (Term primVal)
       | App (Term primVal) (Term primVal)
-      | RecElim [Symbol] (Term primVal) (Term primVal)
+      | RecElim [NameSymbol.T] (Term primVal) (Term primVal)
       deriving (Show, Eq, Generic)
 
     type ValField primVal = Core.ValField' (Term primVal)

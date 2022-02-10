@@ -204,6 +204,9 @@ eraseTerm (Typed.CatCoproductElim a b cp s t ann) =
         <*> eraseType (Typed.annType ann)
 eraseTerm t@Typed.UnitTy {} = throwEra $ Erasure.UnsupportedTermT t
 eraseTerm (Typed.Unit ann) = Erasure.Unit <$> eraseType (Typed.annType ann)
+eraseTerm t@(Typed.RecordTy {}) = throwEra $ Erasure.UnsupportedTermT t
+eraseTerm (Typed.Record flds ann) =
+  Erasure.Record <$> traverse (traverse eraseTerm) flds <*> eraseType (Typed.annType ann)
 eraseTerm (Typed.Let π b t anns) = do
   (x, t) <- withName \x -> (x,) <$> eraseTerm t
   if π == mempty
@@ -237,8 +240,12 @@ eraseElim (Typed.App e s ann) = do
     else do
       s <- eraseTerm s
       Erasure.App e s <$> eraseType (Typed.annType ann)
-eraseElim (Typed.Ann s _ _) = do
-  eraseTerm s
+eraseElim (Typed.RecElim ns e _ t ann) =
+  Erasure.RecElim (pure <$> ns)
+    <$> eraseElim e
+    <*> eraseTerm t
+    <*> eraseType (Typed.annType ann)
+eraseElim (Typed.Ann s _ _) = eraseTerm s
 
 eraseType ::
   ErasureM primTy1 primTy2 primVal1 primVal2 m =>
@@ -251,10 +258,7 @@ eraseType (IR.VPrimTy t) = do
 eraseType (IR.VPi π a b) = do
   if π == mempty
     then eraseType b
-    else -- FIXME dependency
-
-      Erasure.Pi π <$> eraseType a
-        <*> withName \_ -> eraseType b
+    else Erasure.Pi π <$> eraseType a <*> withName \_ -> eraseType b -- FIXME dependency
 eraseType v@(IR.VLam _) = do
   throwEra $ Erasure.UnsupportedTypeV v
 eraseType (IR.VSig π a b) = do
@@ -277,6 +281,9 @@ eraseType IR.VUnitTy = do
   pure Erasure.UnitTy
 eraseType IR.VUnit = do
   throwEra $ Erasure.UnsupportedTypeV IR.VUnit
+eraseType v@IR.VRecord {} = throwEra $ Erasure.UnsupportedTypeV v
+eraseType (IR.VRecordTy flds) =
+  Erasure.RecordTy <$> traverse (traverse eraseType) flds
 eraseType (IR.VNeutral n) = do
   eraseTypeN n
 eraseType v@(IR.VPrim _) = do
@@ -291,11 +298,14 @@ eraseTypeN (IR.NBound x) = do
 eraseTypeN (IR.NFree (Core.Global x)) = do
   pure $ Erasure.SymT x
 eraseTypeN n@(IR.NFree (Core.Pattern _)) = do
-  -- FIXME ??????
   throwEra $ Erasure.UnsupportedTypeN n
+    -- [todo] when erased terms/types are unified
 eraseTypeN n@(IR.NApp _ _) = do
-  -- FIXME add AppT and fill this in
   throwEra $ Erasure.UnsupportedTypeN n
+    -- [todo] when erased terms/types are unified
+eraseTypeN n@(IR.NRecElim {}) =
+  throwEra $ Erasure.UnsupportedTypeN n
+    -- [todo] when erased terms/types are unified
 
 pushName ::
   (HasState "nextName" Int m, HasState "nameStack" [NameSymbol.T] m) =>
