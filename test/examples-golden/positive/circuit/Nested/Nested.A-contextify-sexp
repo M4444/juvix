@@ -3,24 +3,26 @@ ShowRec
         { public = fromList
             [
                 ( "main"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "->" "field"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just
                                 ( ":infix" "->" "field"
-                                    ( ":infix" "->" "field" "field" ) ) )
-                        , defTerm =
-                            ( ":lambda-case"
-                                (
-                                    ( "x" "y" "z" )
-                                    ( ":infix" "^" "x"
-                                        ( ":infix" "+" 2
-                                            ( ":infix" "^" "y"
-                                                ( ":infix" "+" 2
-                                                    ( ":infix" "^" "z"
-                                                        ( ":infix" "+" 2 5 ) ) ) ) ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) ) ]
+                                    ( ":infix" "->" "field"
+                                        ( ":infix" "->" "field" "field" ) ) )
+                            , defTerm =
+                                ( ":lambda-case"
+                                    (
+                                        ( "x" "y" "z" )
+                                        ( ":infix" "^" "x"
+                                            ( ":infix" "+" 2
+                                                ( ":infix" "^" "y"
+                                                    ( ":infix" "+" 2
+                                                        ( ":infix" "^" "z"
+                                                            ( ":infix" "+" 2 5 ) ) ) ) ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } ) ]
         , private = fromList [] }
     , mTy = Nothing
     , openList = []

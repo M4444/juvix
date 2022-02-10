@@ -3,14 +3,17 @@ ShowRec
         { public = fromList
             [
                 ( "main"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "TopLevel.Prelude.LLVM.int"
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( () ( "TopLevel.Prelude.LLVM.Int.add" 4 6 ) ) )
-                        , defPrecedence = Pred Left 9 } ) ) ]
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just "TopLevel.Prelude.LLVM.int"
+                            , defTerm =
+                                ( ":lambda-case"
+                                    ( ()
+                                        ( "TopLevel.Prelude.LLVM.Int.add" 4 6 ) ) )
+                            , defPrecedence = Pred Left 9 } ) } ) ]
         , private = fromList [] }
     , mTy = Nothing
     , openList = []

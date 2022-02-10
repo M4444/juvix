@@ -3,24 +3,26 @@ ShowRec
         { public = fromList
             [
                 ( "main"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just
                                 ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
-                                    ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) )
-                        , defTerm =
-                            ( ":lambda-case"
-                                (
-                                    ( "x" "y" "z" )
-                                    ( "TopLevel.Prelude.Circuit.Field.+"
-                                        ( "TopLevel.Prelude.Circuit.Field.^" "x" 2 )
+                                    ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
+                                        ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) )
+                            , defTerm =
+                                ( ":lambda-case"
+                                    (
+                                        ( "x" "y" "z" )
                                         ( "TopLevel.Prelude.Circuit.Field.+"
-                                            ( "TopLevel.Prelude.Circuit.Field.^" "y" 2 )
+                                            ( "TopLevel.Prelude.Circuit.Field.^" "x" 2 )
                                             ( "TopLevel.Prelude.Circuit.Field.+"
-                                                ( "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) 5 ) ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) ) ]
+                                                ( "TopLevel.Prelude.Circuit.Field.^" "y" 2 )
+                                                ( "TopLevel.Prelude.Circuit.Field.+"
+                                                    ( "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) 5 ) ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } ) ]
         , private = fromList [] }
     , mTy = Nothing
     , openList = []

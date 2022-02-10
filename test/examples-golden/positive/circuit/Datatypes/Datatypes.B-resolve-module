@@ -3,173 +3,217 @@ ShowRec
         { public = fromList
             [
                 ( "sExpField"
-                , TypeDeclar
-                    { definitionRepr =
-                        ( "type" "sExpField" ()
-                            ( "Atom" "TopLevel.Prelude.Circuit.field" )
-                            ( "SPair" "sExpField" "sExpField" ) ) } )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = TypeDeclar
+                        { definitionRepr =
+                            ( "type" "sExpField" ()
+                                ( "Atom" "TopLevel.Prelude.Circuit.field" )
+                                ( "SPair" "sExpField" "sExpField" ) ) } } )
             ,
                 ( "Atom"
-                , SumCon
-                    ( Sum { sumTDef = Nothing, sumTName = "sExpField" } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum
+                            { sumTDef = Nothing, sumTName = "sExpField" } ) } )
             ,
                 ( "s1"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "sExpField"
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( ()
-                                    ( "SPair"
-                                        ( ":paren" ( "Atom" 1 ) )
-                                        ( ":paren"
-                                            ( "SPair"
-                                                ( ":paren"
-                                                    ( "SPair"
-                                                        ( ":paren"
-                                                            ( "Atom" 2 ) )
-                                                        ( ":paren"
-                                                            ( "Atom" 3 ) ) ) )
-                                                ( ":paren"
-                                                    ( "Atom" 4 ) ) ) ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just "sExpField"
+                            , defTerm =
+                                ( ":lambda-case"
+                                    ( ()
+                                        ( "SPair"
+                                            ( ":paren" ( "Atom" 1 ) )
+                                            ( ":paren"
+                                                ( "SPair"
+                                                    ( ":paren"
+                                                        ( "SPair"
+                                                            ( ":paren"
+                                                                ( "Atom" 2 ) )
+                                                            ( ":paren"
+                                                                ( "Atom" 3 ) ) ) )
+                                                    ( ":paren"
+                                                        ( "Atom" 4 ) ) ) ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "functionTypeInConstructor"
-                , TypeDeclar
-                    { definitionRepr =
-                        ( "type"
-                            ( "functionTypeInConstructor" ":type" "TopLevel.Prelude.ty" ) ()
-                            ( "FTIC_Left" "TopLevel.Prelude.Circuit.field" )
-                            ( "FTIC_Right"
-                                ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) ) } )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = TypeDeclar
+                        { definitionRepr =
+                            ( "type"
+                                ( "functionTypeInConstructor" ":type" "TopLevel.Prelude.ty" ) ()
+                                ( "FTIC_Left" "TopLevel.Prelude.Circuit.field" )
+                                ( "FTIC_Right"
+                                    ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) ) } } )
             ,
-                ( "P", SumCon ( Sum { sumTDef = Nothing, sumTName = "bar" } ) )
+                ( "P"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum { sumTDef = Nothing, sumTName = "bar" } ) } )
             ,
                 ( "fticTestFunc"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" )
-                        , defTerm =
-                            ( ":lambda-case" ( ( "x" ) "x" ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just
+                                ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" )
+                            , defTerm =
+                                ( ":lambda-case" ( ( "x" ) "x" ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "fticTestTerm"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "functionTypeInConstructor"
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( () ( "FTIC_Right" "fticTestFunc" ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just "functionTypeInConstructor"
+                            , defTerm =
+                                ( ":lambda-case"
+                                    ( () ( "FTIC_Right" "fticTestFunc" ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "main"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "TopLevel.Prelude.Circuit.field"
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( ()
-                                    ( ":let-match" "vst"
-                                        ( () "verySimpleTerm" )
-                                        ( ":let-match" "pm"
-                                            ( ()
-                                                ( "patternMatch"
-                                                    ( ":paren"
-                                                        ( "Q" 0 1 2 ) ) ) )
-                                            ( ":let-match" "ftict"
-                                                ( () "fticTestTerm" )
-                                                ( ":let-match" "sexpTest"
-                                                    ( ()
-                                                        ( "ssize" "s1" ) ) 3 ) ) ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just "TopLevel.Prelude.Circuit.field"
+                            , defTerm =
+                                ( ":lambda-case"
+                                    ( ()
+                                        ( ":let-match" "vst"
+                                            ( () "verySimpleTerm" )
+                                            ( ":let-match" "pm"
+                                                ( ()
+                                                    ( "patternMatch"
+                                                        ( ":paren"
+                                                            ( "Q" 0 1 2 ) ) ) )
+                                                ( ":let-match" "ftict"
+                                                    ( () "fticTestTerm" )
+                                                    ( ":let-match" "sexpTest"
+                                                        ( ()
+                                                            ( "ssize" "s1" ) ) 3 ) ) ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "ssize"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "TopLevel.Prelude.->" "sExpField" "TopLevel.Prelude.Circuit.field" )
-                        , defTerm =
-                            ( ":lambda-case"
-                                ( ( ( "Atom" "x" ) ) 1 )
-                                (
-                                    ( ( "SPair" "x" "y" ) )
-                                    ( ":infix" "TopLevel.Prelude.Circuit.Field.+"
-                                        ( "ssize" "x" )
-                                        ( "ssize" "y" ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just
+                                ( ":infix" "TopLevel.Prelude.->" "sExpField" "TopLevel.Prelude.Circuit.field" )
+                            , defTerm =
+                                ( ":lambda-case"
+                                    ( ( ( "Atom" "x" ) ) 1 )
+                                    (
+                                        ( ( "SPair" "x" "y" ) )
+                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.+"
+                                            ( "ssize" "x" )
+                                            ( "ssize" "y" ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "verySimpleType"
-                , TypeDeclar
-                    { definitionRepr =
-                        ( "type" "verySimpleType" ()
-                            ( "One" "TopLevel.Prelude.Circuit.field" ) ) } )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = TypeDeclar
+                        { definitionRepr =
+                            ( "type" "verySimpleType" ()
+                                ( "One" "TopLevel.Prelude.Circuit.field" ) ) } } )
             ,
                 ( "SPair"
-                , SumCon
-                    ( Sum { sumTDef = Nothing, sumTName = "sExpField" } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum
+                            { sumTDef = Nothing, sumTName = "sExpField" } ) } )
             ,
-                ( "Q", SumCon ( Sum { sumTDef = Nothing, sumTName = "bar" } ) )
+                ( "Q"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum { sumTDef = Nothing, sumTName = "bar" } ) } )
             ,
                 ( "FTIC_Left"
-                , SumCon
-                    ( Sum
-                        { sumTDef = Nothing
-                        , sumTName = "functionTypeInConstructor" } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum
+                            { sumTDef = Nothing
+                            , sumTName = "functionTypeInConstructor" } ) } )
             ,
                 ( "One"
-                , SumCon
-                    ( Sum { sumTDef = Nothing, sumTName = "verySimpleType" } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum
+                            { sumTDef = Nothing
+                            , sumTName = "verySimpleType" } ) } )
             ,
                 ( "FTIC_Right"
-                , SumCon
-                    ( Sum
-                        { sumTDef = Nothing
-                        , sumTName = "functionTypeInConstructor" } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = SumCon
+                        ( Sum
+                            { sumTDef = Nothing
+                            , sumTName = "functionTypeInConstructor" } ) } )
             ,
                 ( "verySimpleTerm"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just "verySimpleType"
-                        , defTerm =
-                            ( ":lambda-case" ( () ( "One" 0 ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just "verySimpleType"
+                            , defTerm =
+                                ( ":lambda-case" ( () ( "One" 0 ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "patternMatch"
-                , Def
-                    ( D
-                        { defUsage = Nothing
-                        , defMTy = Just
-                            ( ":infix" "TopLevel.Prelude.->" "bar" "TopLevel.Prelude.Circuit.field" )
-                        , defTerm =
-                            ( ":lambda-case"
-                                (
-                                    ( ( "P" "x" "y" ) )
-                                    ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "x"
-                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
-                                            ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "y" 2 ) ) ) )
-                                (
-                                    ( ( "Q" "x" "y" "z" ) )
-                                    ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "x"
-                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
-                                            ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "y"
-                                                ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
-                                                    ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) ) ) ) ) ) )
-                        , defPrecedence = Pred Left 9 } ) )
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Def
+                        ( D
+                            { defUsage = Nothing
+                            , defMTy = Just
+                                ( ":infix" "TopLevel.Prelude.->" "bar" "TopLevel.Prelude.Circuit.field" )
+                            , defTerm =
+                                ( ":lambda-case"
+                                    (
+                                        ( ( "P" "x" "y" ) )
+                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "x"
+                                            ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
+                                                ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "y" 2 ) ) ) )
+                                    (
+                                        ( ( "Q" "x" "y" "z" ) )
+                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "x"
+                                            ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
+                                                ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "y"
+                                                    ( ":infix" "TopLevel.Prelude.Circuit.Field.+" 2
+                                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) ) ) ) ) ) )
+                            , defPrecedence = Pred Left 9 } ) } )
             ,
                 ( "bar"
-                , TypeDeclar
-                    { definitionRepr =
-                        ( "type"
-                            ( "bar" ":type" "TopLevel.Prelude.ty" ) ()
-                            ( "P" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" )
-                            ( "Q" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) } ) ]
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = TypeDeclar
+                        { definitionRepr =
+                            ( "type"
+                                ( "bar" ":type" "TopLevel.Prelude.ty" ) ()
+                                ( "P" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" )
+                                ( "Q" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) } } ) ]
         , private = fromList [] }
     , mTy = Nothing
     , openList = []
