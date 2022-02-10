@@ -77,6 +77,8 @@ Core.extendTerm "Term'" [] [t|T|] $
             Core.typeCatCoproductElim = typed,
             Core.typeUnitTy = typed,
             Core.typeUnit = typed,
+            Core.typeRecordTy = typed,
+            Core.typeRecord = typed,
             Core.typeLam = bindTyped,
             Core.typeLet = bindTyped,
             Core.typeElim = typed
@@ -89,6 +91,7 @@ Core.extendElim "Elim'" [] [t|T|] $
           { Core.typeBound = typed,
             Core.typeFree = typed,
             Core.typeApp = typed,
+            Core.typeRecElim = typed,
             Core.typeAnn = typed
           }
 
@@ -99,6 +102,11 @@ type Elim primTy primVal = Elim' (PrimTy primTy) (Prim primTy primVal)
 type Prim primTy primVal = P.TypedPrim primTy primVal
 
 type PrimTy primTy = P.KindedType primTy
+
+type TypeField primTy primVal = Core.TypeField' (Term primTy primVal)
+
+type ValField primTy primVal = Core.ValField' (Term primTy primVal)
+
 
 -- TODO: Remove T
 type GlobalT extV extT primTy primVal =
@@ -140,6 +148,12 @@ type AnnotationT ext primTy primVal =
 type BindAnnotationT ext primTy primVal =
   BindAnnotation ext (PrimTy primTy) (Prim primTy primVal)
 
+type TypeFieldT ext primTy primVal =
+  Core.TypeField' (ValueT ext primTy primVal)
+
+type ValFieldT ext primTy primVal =
+  Core.ValField' (ValueT ext primTy primVal)
+
 getTermAnn :: Core.Term T primTy primVal -> Annotation IR.T primTy primVal
 getTermAnn (Star _ ann) = ann
 getTermAnn (PrimTy _ ann) = ann
@@ -157,6 +171,8 @@ getTermAnn (CatCoproductIntroRight _ ann) = ann
 getTermAnn (CatCoproductElim _ _ _ _ _ ann) = ann
 getTermAnn (UnitTy ann) = ann
 getTermAnn (Unit ann) = ann
+getTermAnn (RecordTy _ ann) = ann
+getTermAnn (Record _ ann) = ann
 getTermAnn (Lam _ anns) = baResAnn anns
 getTermAnn (Let _ _ _ anns) = baResAnn anns
 getTermAnn (Elim _ ann) = ann
@@ -165,4 +181,5 @@ getElimAnn :: Core.Elim T primTy primVal -> Annotation IR.T primTy primVal
 getElimAnn (Bound _ ann) = ann
 getElimAnn (Free _ ann) = ann
 getElimAnn (App _ _ ann) = ann
+getElimAnn (RecElim _ _ _ _ ann) = ann
 getElimAnn (Ann _ _ ann) = ann

@@ -23,6 +23,8 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfCatCoproductIntroLeft :: XCatCoproductIntroLeft ext1 primTy primVal -> f (XCatCoproductIntroLeft ext2 primTy primVal),
     etfCatCoproductIntroRight :: XCatCoproductIntroRight ext1 primTy primVal -> f (XCatCoproductIntroRight ext2 primTy primVal),
     etfCatCoproductElim :: XCatCoproductElim ext1 primTy primVal -> f (XCatCoproductElim ext2 primTy primVal),
+    etfRecordTy :: XRecordTy ext1 primTy primVal -> f (XRecordTy ext2 primTy primVal),
+    etfRecord :: XRecord ext1 primTy primVal -> f (XRecord ext2 primTy primVal),
     etfUnitTy :: XUnitTy ext1 primTy primVal -> f (XUnitTy ext2 primTy primVal),
     etfUnit :: XUnit ext1 primTy primVal -> f (XUnit ext2 primTy primVal),
     etfLet :: XLet ext1 primTy primVal -> f (XLet ext2 primTy primVal),
@@ -30,6 +32,7 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfBound :: XBound ext1 primTy primVal -> f (XBound ext2 primTy primVal),
     etfFree :: XFree ext1 primTy primVal -> f (XFree ext2 primTy primVal),
     etfApp :: XApp ext1 primTy primVal -> f (XApp ext2 primTy primVal),
+    etfRecElim :: XRecElim ext1 primTy primVal -> f (XRecElim ext2 primTy primVal),
     etfAnn :: XAnn ext1 primTy primVal -> f (XAnn ext2 primTy primVal),
     etfTermX :: TermX ext1 primTy primVal -> f (TermX ext2 primTy primVal),
     etfElimX :: ElimX ext1 primTy primVal -> f (ElimX ext2 primTy primVal)
@@ -59,6 +62,8 @@ pattern ExtTransformTE ::
   (XCatCoproductIntroLeft ext1 primTy primVal -> XCatCoproductIntroLeft ext2 primTy primVal) ->
   (XCatCoproductIntroRight ext1 primTy primVal -> XCatCoproductIntroRight ext2 primTy primVal) ->
   (XCatCoproductElim ext1 primTy primVal -> XCatCoproductElim ext2 primTy primVal) ->
+  (XRecordTy ext1 primTy primVal -> XRecordTy ext2 primTy primVal) ->
+  (XRecord ext1 primTy primVal -> XRecord ext2 primTy primVal) ->
   (XUnitTy ext1 primTy primVal -> XUnitTy ext2 primTy primVal) ->
   (XUnit ext1 primTy primVal -> XUnit ext2 primTy primVal) ->
   (XLet ext1 primTy primVal -> XLet ext2 primTy primVal) ->
@@ -66,6 +71,7 @@ pattern ExtTransformTE ::
   (XBound ext1 primTy primVal -> XBound ext2 primTy primVal) ->
   (XFree ext1 primTy primVal -> XFree ext2 primTy primVal) ->
   (XApp ext1 primTy primVal -> XApp ext2 primTy primVal) ->
+  (XRecElim ext1 primTy primVal -> XRecElim ext2 primTy primVal) ->
   (XAnn ext1 primTy primVal -> XAnn ext2 primTy primVal) ->
   (TermX ext1 primTy primVal -> TermX ext2 primTy primVal) ->
   (ElimX ext1 primTy primVal -> ElimX ext2 primTy primVal) ->
@@ -86,6 +92,8 @@ pattern ExtTransformTE
     etCatCoproductIntroLeft,
     etCatCoproductIntroRight,
     etCatCoproductElim,
+    etRecordTy,
+    etRecord,
     etUnitTy,
     etUnit,
     etLet,
@@ -93,6 +101,7 @@ pattern ExtTransformTE
     etBound,
     etFree,
     etApp,
+    etRecElim,
     etAnn,
     etTermX,
     etElimX
@@ -104,6 +113,8 @@ pattern ExtTransformTE
       etfPi = Coerce etPi,
       etfLam = Coerce etLam,
       etfSig = Coerce etSig,
+      etfRecordTy = Coerce etRecordTy,
+      etfRecord = Coerce etRecord,
       etfUnitTy = Coerce etUnitTy,
       etfUnit = Coerce etUnit,
       etfPair = Coerce etPair,
@@ -120,6 +131,7 @@ pattern ExtTransformTE
       etfBound = Coerce etBound,
       etfFree = Coerce etFree,
       etfApp = Coerce etApp,
+      etfRecElim = Coerce etRecElim,
       etfAnn = Coerce etAnn,
       etfTermX = Coerce etTermX,
       etfElimX = Coerce etElimX
@@ -156,10 +168,12 @@ extTransformTF fs (CatCoproductIntroRight s e) =
   CatCoproductIntroRight <$> extTransformTF fs s <*> etfCatCoproductIntroRight fs e
 extTransformTF fs (CatCoproductElim a b cp s t e) =
   CatCoproductElim <$> extTransformTF fs a <*> extTransformTF fs b <*> extTransformTF fs cp <*> extTransformTF fs s <*> extTransformTF fs t <*> etfCatCoproductElim fs e
-extTransformTF fs (UnitTy e) =
-  UnitTy <$> etfUnitTy fs e
-extTransformTF fs (Unit e) =
-  Unit <$> etfUnit fs e
+extTransformTF fs (RecordTy flds e) =
+  RecordTy <$> traverse (traverse $ extTransformTF fs) flds <*> etfRecordTy fs e
+extTransformTF fs (Record flds e) =
+  Record <$> traverse (traverse $ extTransformTF fs) flds <*> etfRecord fs e
+extTransformTF fs (UnitTy e) = UnitTy <$> etfUnitTy fs e
+extTransformTF fs (Unit e) = Unit <$> etfUnit fs e
 extTransformTF fs (Let π l b e) =
   Let π <$> extTransformEF fs l <*> extTransformTF fs b <*> etfLet fs e
 extTransformTF fs (Elim f e) = Elim <$> extTransformEF fs f <*> etfElim fs e
@@ -179,13 +193,14 @@ extTransformEF ::
 extTransformEF fs (Bound x e) = Bound x <$> etfBound fs e
 extTransformEF fs (Free x e) = Free x <$> etfFree fs e
 extTransformEF fs (App f s e) =
-  App <$> extTransformEF fs f
-    <*> extTransformTF fs s
-    <*> etfApp fs e
+  App <$> extTransformEF fs f <*> extTransformTF fs s <*> etfApp fs e
 extTransformEF fs (Ann s t e) =
-  Ann <$> extTransformTF fs s
-    <*> extTransformTF fs t
-    <*> etfAnn fs e
+  Ann <$> extTransformTF fs s <*> extTransformTF fs t <*> etfAnn fs e
+extTransformEF fs (RecElim ns f a t e) =
+  RecElim ns <$> extTransformEF fs f
+             <*> extTransformTF fs a
+             <*> extTransformTF fs t
+             <*> etfRecElim fs e
 extTransformEF fs (ElimX e) = ElimX <$> etfElimX fs e
 
 extTransformE ::
@@ -209,6 +224,8 @@ type ForgotExt ext primTy primVal =
     XCatCoproductIntroLeft ext primTy primVal ~ (),
     XCatCoproductIntroRight ext primTy primVal ~ (),
     XCatCoproductElim ext primTy primVal ~ (),
+    XRecordTy ext primTy primVal ~ (),
+    XRecord ext primTy primVal ~ (),
     XUnitTy ext primTy primVal ~ (),
     XUnit ext primTy primVal ~ (),
     XLam ext primTy primVal ~ (),
@@ -217,6 +234,7 @@ type ForgotExt ext primTy primVal =
     XBound ext primTy primVal ~ (),
     XFree ext primTy primVal ~ (),
     XApp ext primTy primVal ~ (),
+    XRecElim ext primTy primVal ~ (),
     XAnn ext primTy primVal ~ ()
   )
 
@@ -242,6 +260,8 @@ forgetter =
       etCatCoproductIntroLeft = const (),
       etCatCoproductIntroRight = const (),
       etCatCoproductElim = const (),
+      etRecordTy = const (),
+      etRecord = const (),
       etUnitTy = const (),
       etUnit = const (),
       etLam = const (),
@@ -250,6 +270,7 @@ forgetter =
       etBound = const (),
       etFree = const (),
       etApp = const (),
+      etRecElim = const (),
       etAnn = const (),
       etTermX = absurd,
       etElimX = absurd
@@ -294,6 +315,8 @@ compose fs gs =
       etfCatCoproductIntroLeft = etfCatCoproductIntroLeft fs <=< etfCatCoproductIntroLeft gs,
       etfCatCoproductIntroRight = etfCatCoproductIntroRight fs <=< etfCatCoproductIntroRight gs,
       etfCatCoproductElim = etfCatCoproductElim fs <=< etfCatCoproductElim gs,
+      etfRecordTy = etfRecordTy fs <=< etfRecordTy gs,
+      etfRecord = etfRecord fs <=< etfRecord gs,
       etfUnitTy = etfUnitTy fs <=< etfUnitTy gs,
       etfUnit = etfUnit fs <=< etfUnit gs,
       etfLam = etfLam fs <=< etfLam gs,
@@ -302,6 +325,7 @@ compose fs gs =
       etfBound = etfBound fs <=< etfBound gs,
       etfFree = etfFree fs <=< etfFree gs,
       etfApp = etfApp fs <=< etfApp gs,
+      etfRecElim = etfRecElim fs <=< etfRecElim gs,
       etfAnn = etfAnn fs <=< etfAnn gs,
       etfTermX = etfTermX fs <=< etfTermX gs,
       etfElimX = etfElimX fs <=< etfElimX gs

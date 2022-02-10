@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass, DeriveTraversable #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Juvix.Core.Base.Types.Base
@@ -16,6 +16,9 @@ import Juvix.Library hiding (Pos, datatypeName)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Usage
 import qualified Juvix.Sexp.Serialize as Serialize
+import Juvix.Library.HashMap (HashMap)
+import qualified Juvix.Library.HashMap as HashMap
+import Control.Comonad
 
 ------------------------------------------------------------------------------
 
@@ -103,6 +106,38 @@ instance A.ToJSON GlobalUsage where
 instance A.FromJSON GlobalUsage where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
+
+data TypeField' term = TF {tfUsage :: Usage, tfName :: Symbol, tfType :: term}
+  deriving (Show, Eq, Generic, Data, NFData,
+            Serialize.DefaultOptions, Serialize.Serialize,
+            Functor, Foldable, Traversable)
+
+instance A.ToJSON term => A.ToJSON (TypeField' term) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance A.FromJSON term => A.FromJSON (TypeField' term) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance Comonad TypeField' where
+  extract = tfType
+  extend k t = t {tfType = k t}
+
+
+data ValField' term = VF {vfName :: Symbol, vfVal :: term}
+  deriving (Show, Eq, Generic, Data, NFData,
+            Serialize.DefaultOptions, Serialize.Serialize,
+            Functor, Foldable, Traversable)
+
+instance A.ToJSON term => A.ToJSON (ValField' term) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance A.FromJSON term => A.FromJSON (ValField' term) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance Comonad ValField' where
+  extract = vfVal
+  extend k t = t {vfVal = k t}
+
 ------------------------------------------------------------------------------
 
 extensibleWith
@@ -151,6 +186,12 @@ extensibleWith
       | -- | Higher-order elimination category-theoretical coproduct (in
         -- effect, a case statement).
         CatCoproductElim (Term primTy primVal) (Term primTy primVal) (Term primTy primVal) (Term primTy primVal) (Term primTy primVal)
+      | -- | Record type.
+        -- **The names are only used on the outside.** Within field types,
+        -- previous fields are referred to by de Bruijn index.
+        RecordTy [TypeField primTy primVal]
+      | -- | Record value.
+        Record [ValField primTy primVal]
       | -- | Let binder.
         -- the local definition is bound to de Bruijn index 0.
         Let Usage (Elim primTy primVal) (Term primTy primVal)
@@ -163,6 +204,9 @@ extensibleWith
         Elim (Elim primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
+    type TypeField primTy primVal = TypeField' (Term primTy primVal)
+    type ValField primTy primVal = ValField' (Term primTy primVal)
+
     -- inferable terms
     data Elim primTy primVal
       = -- | Bound variables, in de Bruijn indices
@@ -171,6 +215,15 @@ extensibleWith
         Free Name
       | -- | Function application.
         App (Elim primTy primVal) (Term primTy primVal)
+      | -- | Record elimination. In @RecElim ns e a t@:
+        --
+        -- * @ns@: expected field names (all of them, in order, for now)
+        -- * @e@: record value to destruct
+        -- * @a@: return type; index 0 is @e@
+        -- * @t@: body; indices 0–@(length ns)@ are the fields of @e@,
+        --   index 0 is the last
+        RecElim [Symbol] (Elim primTy primVal) (Term primTy primVal) (Term primTy primVal)
+            -- [todo] allow permuted & missing field names (fixed up in tc)
       | -- | Type annotation.
         Ann (Term primTy primVal) (Term primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
@@ -191,17 +244,23 @@ extensibleWith
       | VCatCoproductIntroLeft (Value primTy primVal)
       | VCatCoproductIntroRight (Value primTy primVal)
       | VCatCoproductElim (Value primTy primVal) (Value primTy primVal) (Value primTy primVal) (Value primTy primVal) (Value primTy primVal)
+      | VRecordTy [TypeFieldV primTy primVal]
+            -- [todo] topo sort fields so {1·x: int, 1·y: int} ≡ {1·y: int, 1·x: int}
+      | VRecord (HashMap Symbol (Value primTy primVal))
       | VUnitTy
       | VUnit
       | VNeutral (Neutral primTy primVal)
       | VPrim primVal
       deriving (Eq, Show, Generic, Data, NFData)
 
+    type TypeFieldV primTy primVal = TypeField' (Value primTy primVal)
+
     -- A neutral term is either a variable or an application of a neutral term
     -- to a value
     data Neutral primTy primVal
       = NBound BoundVar
       | NFree Name
+      | NRecElim [Symbol] (Neutral primTy primVal) (Value primTy primVal) (Value primTy primVal)
       | NApp (Neutral primTy primVal) (Value primTy primVal)
       deriving (Eq, Show, Generic, Data, NFData)
 
@@ -378,6 +437,8 @@ type QuoteContext ext primTy primVal =
     XVCatCoproductIntroLeft ext primTy primVal ~ XCatCoproductIntroLeft ext primTy primVal,
     XVCatCoproductIntroRight ext primTy primVal ~ XCatCoproductIntroRight ext primTy primVal,
     XVCatCoproductElim ext primTy primVal ~ XCatCoproductElim ext primTy primVal,
+    XVRecordTy ext primTy primVal ~ XRecordTy ext primTy primVal,
+    XVRecord ext primTy primVal ~ XRecord ext primTy primVal,
     XVUnitTy ext primTy primVal ~ XUnitTy ext primTy primVal,
     XVUnit ext primTy primVal ~ XUnit ext primTy primVal,
     XVPrim ext primTy primVal ~ XPrim ext primTy primVal,
@@ -387,6 +448,7 @@ type QuoteContext ext primTy primVal =
     XNBound ext primTy primVal ~ XBound ext primTy primVal,
     XNFree ext primTy primVal ~ XFree ext primTy primVal,
     XNApp ext primTy primVal ~ XApp ext primTy primVal,
+    XNRecElim ext primTy primVal ~ XRecElim ext primTy primVal,
     NeutralX ext primTy primVal ~ ElimX ext primTy primVal
   )
 
@@ -406,6 +468,9 @@ quote (VCatProductElimRight a s ext) = CatProductElimRight (quote a) (quote s) e
 quote (VCatCoproductIntroLeft s ext) = CatCoproductIntroLeft (quote s) ext
 quote (VCatCoproductIntroRight s ext) = CatCoproductIntroRight (quote s) ext
 quote (VCatCoproductElim a b cp s t ext) = CatCoproductElim (quote a) (quote b) (quote cp) (quote s) (quote t) ext
+quote (VRecordTy flds ext) = RecordTy (fmap quote <$> flds) ext
+quote (VRecord flds ext) =
+  Record [VF x (quote v) | (x, v) <- HashMap.toList flds] ext
 quote (VUnitTy ext) = UnitTy ext
 quote (VUnit ext) = Unit ext
 quote (VPrim pri ext) = Prim pri ext
@@ -416,6 +481,7 @@ neutralQuote :: QuoteContext ext primTy primVal => Neutral ext primTy primVal ->
 neutralQuote (NBound x ext) = Bound x ext
 neutralQuote (NFree x ext) = Free x ext
 neutralQuote (NApp n v ext) = App (neutralQuote n) (quote v) ext
+neutralQuote (NRecElim ns e a v ext) = RecElim ns (neutralQuote e) (quote a) (quote v) ext
 neutralQuote (NeutralX ext) = ElimX ext
 
 -- | 'VFree' creates the value corresponding to a free variable

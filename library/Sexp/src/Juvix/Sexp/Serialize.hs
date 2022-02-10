@@ -95,6 +95,8 @@ import Juvix.Library hiding (foldr)
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Sexp.Types as Sexp hiding (double)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
 
 class Serialize a where
   serialize :: a -> T
@@ -171,7 +173,7 @@ instance (GSerializeOptions a) => GSerializeOptions (D1 i a) where
 -- Make an alternative version that cares about the selector
 -- constructor
 instance (Selector i, GSerializeOptions a) => GSerializeOptions (S1 i a) where
-  gputOpt opt y@(M1 x) =
+  gputOpt opt (M1 x) =
     gputOpt opt x
   ggetOpt opt xs =
     -- see if car is correct
@@ -351,6 +353,21 @@ instance Serialize () where
   serialize () = Nil
   deserialize Nil = Just ()
   deserialize _ = Nothing
+
+instance (Serialize a, Serialize b) => Serialize (a, b) where
+  serialize (x, y) =
+    List [Atom $ A ":pair" Nothing, serialize x, serialize y]
+
+  deserialize (List [Atom (A ":pair" _), x, y]) =
+    (,) <$> deserialize x <*> deserialize y
+  deserialize _ = Nothing
+
+instance
+    (Hashable k, Eq k, Serialize k, Serialize v) =>
+    Serialize (HashMap k v)
+  where
+    serialize   = serialize . HashMap.toList
+    deserialize = fmap HashMap.fromList . deserialize
 
 ----------------------------------------
 -- Sexp helper functions

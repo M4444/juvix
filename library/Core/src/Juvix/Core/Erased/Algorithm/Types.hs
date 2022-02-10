@@ -22,6 +22,7 @@ import Juvix.Core.Erased.Types as Type
     pattern Star,
     pattern SymT,
     pattern UnitTy,
+    pattern RecordTy,
   )
 import qualified Juvix.Core.Erased.Types as Erased
 import qualified Juvix.Core.HR.Pretty as HR
@@ -170,8 +171,10 @@ do
           Erased.typeCatCoproductIntroRight = typed,
           Erased.typeCatCoproductElim = typed,
           Erased.typeUnit = typed,
+          Erased.typeRecord = typed,
           Erased.typeLet = typedTuple,
-          Erased.typeApp = typed
+          Erased.typeApp = typed,
+          Erased.typeRecElim = typed
         }
 
 type TypeT primTy =

@@ -1,9 +1,15 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module Juvix.Core.Erased.Base.Types where
+module Juvix.Core.Erased.Base.Types
+  ( module Juvix.Core.Erased.Base.Types,
+    Core.Universe,
+    pattern Core.VF, Core.vfName, Core.vfVal,
+    pattern Core.TF, Core.tfUsage, Core.tfName, Core.tfType,
+  )
+where
 
 import Extensible
-import Juvix.Core.Base.Types (Universe)
+import qualified Juvix.Core.Base.Types as Core
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -24,13 +30,17 @@ extensible
       | CatCoproductIntroRight (Term primVal)
       | CatCoproductElim (Term primVal) (Term primVal) (Term primVal) (Term primVal) (Term primVal)
       | Unit
+      | Record [ValField primVal]
       | Let NameSymbol.T (Term primVal) (Term primVal)
       | App (Term primVal) (Term primVal)
+      | RecElim [Symbol] (Term primVal) (Term primVal)
       deriving (Show, Eq, Generic)
+
+    type ValField primVal = Core.ValField' (Term primVal)
 
     data Type primTy
       = SymT NameSymbol.T
-      | Star Universe
+      | Star Core.Universe
       | PrimTy primTy
       | -- TODO: How to deal with dependency?
         Pi Usage.T (Type primTy) (Type primTy)
@@ -38,7 +48,10 @@ extensible
       | Sig Usage.T (Type primTy) (Type primTy)
       | CatProduct (Type primTy) (Type primTy)
       | CatCoproduct (Type primTy) (Type primTy)
+      | RecordTy [TypeField primTy]
       deriving (Show, Eq, Generic)
+
+    type TypeField primTy = Core.TypeField' (Type primTy)
 
     type TypeAssignment primTy = Map.T NameSymbol.T (Type primTy)
     |]
