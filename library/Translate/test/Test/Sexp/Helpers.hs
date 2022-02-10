@@ -18,7 +18,7 @@ import Prelude (error)
 unwrapLookup :: NameSymbol.T -> Context.T a ty sumRep -> Maybe a
 unwrapLookup symbol ctx =
   case Context.lookup symbol ctx >>| Context.extractValue of
-    Just ((Context.Def Context.D {defTerm})) ->
+    Just ((Context.Info _ (Context.Def Context.D {defTerm}))) ->
       Just defTerm
     _ -> Nothing
 

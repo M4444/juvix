@@ -317,7 +317,7 @@ handleContextPass desuagredSexp contextPass =
   where
     getModuleName name context =
       case fmap Context.extractValue $ Context.lookup name context of
-        Just (Context.Record r) ->
+        Just (Context.Info _ (Context.Record r)) ->
           pure r
         maybeDef ->
           Feedback.fail ("Definition is not a Record:" <> show maybeDef)

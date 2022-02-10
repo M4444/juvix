@@ -13,6 +13,7 @@ import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Translate.Pipeline.TopLevel as TopLevel
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
+import Control.Lens ((^.))
 
 --------------------------------------------------------------------------------
 -- Top
@@ -46,7 +47,7 @@ sumConTestS =
       Right (ctx, _) <-
         Contextify.contextify (("Foo", desugared) :| [])
       ctx Context.!? str
-        |> fmap Context.extractValue
+        |> fmap ((^. Context.def) . Context.extractValue)
         |> (T.@=? Just (Context.SumCon (Context.Sum Nothing "bool")))
     Right desugared =
       extract "type bool = True | False"
@@ -58,7 +59,9 @@ defunTransfomrationWorks =
     test = do
       Right (ctx, _) <-
         Contextify.contextify (("Foo", desugared) :| [])
-      let Just (Context.Def x) = ctx Context.!? "foo" >>| Context.extractValue
+      let Just (Context.Def x) = ctx Context.!? "foo"
+                               >>| Context.extractValue
+                               >>| (^. Context.def)
       [Context.defMTy x, Just (Context.defTerm x)] T.@=? [Just sig, Just function]
     Right desugared =
       extract "sig foo : int -> int let foo 1 = 1 let foo n = n * foo (pred n)"
