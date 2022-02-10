@@ -16,9 +16,9 @@ import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
 import qualified Juvix.Context.Types as Types
 import Juvix.Library
-import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Juvix.Sexp as Sexp
 import qualified ListT
 import qualified StmContainers.Map as STM
 

@@ -13,6 +13,7 @@ module Juvix.Core.Common.Context.Traverse
   )
 where
 
+import Control.Lens hiding ((|>))
 import qualified Data.Graph as Graph
 import qualified Data.HashSet as HashSet
 import qualified Data.List.NonEmpty as NonEmpty
@@ -131,8 +132,8 @@ recGroups' ::
   m ()
 recGroups' injection ns = do
   defs <-
-    concat <$> for (NameSpace.toList1' ns) \(name, def) ->
-      case def of
+    concat <$> for (NameSpace.toList1' ns) \(name, term) ->
+      case term ^. Context.def of
         Context.Record ns -> do
           contextName <- gets @"context" Context.currentName
           modify @"context"
@@ -145,18 +146,18 @@ recGroups' injection ns = do
                       >>= (`Context.inNameSpace` ctx)
                   )
             )
-          recGroups' identity (Context.recordContents ns)
+          recGroups' identity ((ns ^. Context.contents))
           modify @"context"
             (\ctx -> fromMaybe ctx (Context.inNameSpace contextName ctx))
           pure []
         Context.CurrentNameSpace -> do
           curNS <- gets @"context" Context.currentNameSpace
-          recGroups' identity (Context.recordContents curNS)
+          recGroups' identity (curNS ^. Context.record . Context.contents)
           pure []
         _ -> do
           qname <- qualify name
           fvs <-
-            case def of
+            case term ^. Context.def of
               Context.Unknown mt ->
                 fv mt
               Context.Information xs ->
@@ -168,7 +169,7 @@ recGroups' injection ns = do
               _ -> pure []
           -- we remove the TopLevel. from fvs as it screws with the
           -- algorithm resolution
-          pure [(def, qname, fmap Context.removeTopName fvs)]
+          pure [((term ^. Context.def), qname, fmap Context.removeTopName fvs)]
   let (g, fromV, _) = Graph.graphFromEdges defs
   let accum1 xs v =
         let (def, name, ys) = fromV v

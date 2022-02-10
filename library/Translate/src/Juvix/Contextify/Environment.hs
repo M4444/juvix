@@ -136,7 +136,7 @@ newtype PassChange m
       ( SexpContext ->
         Sexp.T ->
         NameSpace.From Symbol ->
-        m (Maybe (NameSpace.From Symbol, Context.Definition Sexp.T Sexp.T Sexp.T))
+        m (Maybe (NameSpace.From Symbol, Context.Info Sexp.T Sexp.T Sexp.T))
       )
   deriving (Show)
 
@@ -315,7 +315,8 @@ lookupPrecedence name ctx = do
       contextCase name
   where
     contextCase name =
-      case Context.lookup name ctx >>= extractInformation . Context.extractValue of
+      case Context.lookup name ctx
+        >>= extractInformation . (^. Context.def) . Context.extractValue of
         Nothing -> throw @"error" (UnknownSymbol name)
         Just pr -> pure (fromMaybe Context.default' (Context.precedenceOf pr))
 
@@ -394,7 +395,7 @@ openIn ctx name body cont = do
   -- Now let us open up the box
   case Sexp.atomFromT newMod of
     Just Sexp.A {atomName} ->
-      case ctx Context.!? atomName >>| Context.extractValue of
+      case ctx Context.!? atomName >>| (^. Context.def) . Context.extractValue of
         Just (Context.Record record) ->
           let NameSpace.List {publicL} = NameSpace.toList (record ^. Context.contents)
               --

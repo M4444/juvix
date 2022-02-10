@@ -63,7 +63,7 @@ data Error
   deriving (Show, Eq)
 
 data Resolve a b c = Res
-  { resolved :: [(Context.From (Context.Definition a b c), NameSymbol.T)],
+  { resolved :: [(Context.From (Context.Info a b c), NameSymbol.T)],
     notResolved :: [NameSymbol.T]
   }
   deriving (Show)
@@ -189,10 +189,10 @@ grabInScopeNames ::
   HasThrow "left" Error m =>
   Context.T a b c ->
   NameSymbol.T ->
-  m (NameSpace.T (Context.Definition a b c))
+  m (NameSpace.T (Context.Info a b c))
 grabInScopeNames ctx name =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Record rec') ->
+    Just (Context.Info _ (Context.Record rec')) ->
       pure (rec' ^. Context.contents)
     _ ->
       throw @"left" (UnknownModule (Context.qualifyName name ctx))
@@ -201,7 +201,7 @@ grabQualifiedMap ::
   HasThrow "left" Error m => Context.T a b c -> NameSymbol.T -> m Context.SymbolMap
 grabQualifiedMap ctx name =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Record rec') ->
+    Just (Context.Info _ (Context.Record rec')) ->
       pure (rec' ^. Context.qualifiedMap)
     _ ->
       throw @"left" (UnknownModule (Context.qualifyName name ctx))
@@ -282,8 +282,8 @@ resolveLoop ctx map Res {resolved, notResolved = cantResolveNow} = do
       Context.resolveName ctx <$> resolved
     qualifedAns =
       fmap snd fullyQualifyRes
-    addToModMap map (def, sym) =
-      case def of
+    addToModMap map (defn, sym) =
+      case defn ^. Context.def of
         Context.Record Context.Rec {recordContents} ->
           let NameSpace.List {publicL} = NameSpace.toList recordContents
            in foldlM
@@ -374,10 +374,10 @@ firstName xs =
 ----------------------------------------
 
 grabList ::
-  NameSymbol.T -> Context.T a b c -> NameSpace.List (Context.Definition a b c)
+  NameSymbol.T -> Context.T a b c -> NameSpace.List (Context.Info a b c)
 grabList name ctx =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Record Context.Rec {recordContents}) ->
+    Just (Context.Info _ (Context.Record Context.Rec {recordContents})) ->
       NameSpace.toList recordContents
     Just _ ->
       NameSpace.List [] []

@@ -7,7 +7,6 @@ module Juvix.Context.Types where
 import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
-import qualified Prelude (error)
 import GHC.Show
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
@@ -20,6 +19,7 @@ import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (Read (readsPrec))
+import qualified Prelude (error)
 
 data T term ty sumRep = T
   { currentNameSpace :: InfoRecord term ty sumRep,
@@ -29,7 +29,7 @@ data T term ty sumRep = T
   }
   deriving (Show, Read, Eq, Generic, NFData)
 
-type NameSpace term ty sumRep = NameSpace.T (Definition term ty sumRep)
+type NameSpace term ty sumRep = NameSpace.T (Info term ty sumRep)
 
 -- | From constitutes where the value we are looking up comes from
 -- Does it come from the Current name space, or does it come from some

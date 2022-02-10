@@ -37,11 +37,20 @@ class
 -- change the current form.
 data ContextFormGeneral m term ty sumRep = CtxFormGeneral
   { sumGeneral ::
-      sumRep -> T term ty sumRep -> ExtraOptions -> m (Additional sumRep term ty sumRep),
+      sumRep ->
+      T term ty sumRep ->
+      ExtraOptions ->
+      m (Additional sumRep term ty sumRep),
     termGeneral ::
-      term -> T term ty sumRep -> ExtraOptions -> m (Additional term term ty sumRep),
+      term ->
+      T term ty sumRep ->
+      ExtraOptions ->
+      m (Additional term term ty sumRep),
     tyGeneral ::
-      ty -> T term ty sumRep -> ExtraOptions -> m (Additional ty term ty sumRep)
+      ty ->
+      T term ty sumRep ->
+      ExtraOptions ->
+      m (Additional ty term ty sumRep)
   }
   deriving (Show)
 
@@ -240,7 +249,7 @@ mapCurrentContext transformers ctx =
                 >>| mapDef (\d -> set def (Def d) form)
             TypeDeclar type' ->
               sumGeneral f type' ctx (Extra name)
-              >>| mapDef (\d -> set def (TypeDeclar d) form)
+                >>| mapDef (\d -> set def (TypeDeclar d) form)
             Information _inf -> pure (Additional (Just form) [])
             CurrentNameSpace -> pure (Additional (Just form) [])
 

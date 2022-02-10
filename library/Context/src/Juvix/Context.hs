@@ -541,7 +541,7 @@ lookupGen extraLookup nameSymb t =
         Just (infoRecordToInfo (t ^. _currentNameSpace))
       recurse [] x =
         x
-      recurse (x : xs) (Just Info {infoDef = Record record }) =
+      recurse (x : xs) (Just Info {infoDef = Record record}) =
         recurse xs (NameSpace.lookup x (record ^. contents))
       -- This can only happen when we hit from the global
       -- a precondition is that the current module

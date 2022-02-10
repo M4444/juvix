@@ -13,6 +13,9 @@ type ContextSexp =
 type DefinitionSexp =
   Context.Definition Sexp.T Sexp.T Sexp.T
 
+type InfoSexp =
+  Context.Info Sexp.T Sexp.T Sexp.T
+
 data PassSexp = PS
   { ctxS :: ContextSexp,
     opensS :: [NameSymbol.T],

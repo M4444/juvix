@@ -654,6 +654,7 @@ Traversals serves as generic Context Traversal modules.
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp]]
 ** test
 *** Context <<test/Context>>
 - _Relies on_
@@ -2003,6 +2004,7 @@ the full symbol qualifying map.
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 *** test
 **** Spec <<DataStructures/test/Spec>>
 - _Relies on_
@@ -2101,6 +2103,7 @@ serialization works in Test.Contextify.Binders
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
+  + [[NameSpace]]
   + [[Juvix/Contextify/Binders]]
   + [[Contextify/Environment]]
   + [[InfixPrecedence/ShuntYard]]
@@ -2154,6 +2157,7 @@ serialization works in Test.Contextify.Binders
   + [[NameSpace]]
   + [[ToContext/Types]]
   + [[Library]]
+  + [[HashMap]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
 ****** Types <<ToContext/Types>>

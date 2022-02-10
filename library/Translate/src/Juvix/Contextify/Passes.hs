@@ -12,6 +12,7 @@ import Control.Lens hiding (op, (|>))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
+import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify.Binders as Bind
 import qualified Juvix.Contextify.Environment as Env
 import qualified Juvix.Contextify.InfixPrecedence.ShuntYard as Shunt
@@ -84,7 +85,8 @@ atomResolution context (atom@Sexp.A {atomName = name}) = do
       pure (Sexp.addMetaToCar atom (Sexp.atom (prefix <> name)))
     Just Closure.Info {} -> pure (Sexp.Atom atom)
     Nothing -> do
-      let qualified = context ^. Context._currentNameSpace . Context.qualifiedMap
+      let qualified =
+            context ^. Context._currentNameSpace . Context.record . Context.qualifiedMap
       looked <- liftIO $ atomically $ STM.lookup symbolName qualified
       case looked of
         Just Context.SymInfo {mod = prefix} ->
@@ -218,7 +220,7 @@ figureRecord ::
   ExpressionIO m => Env.PassChange m
 figureRecord = Env.PassChange rec
   where
-    rec _ctx (Structure.toType -> Just type') defName
+    rec ctx (Structure.toType -> Just type') defName
       | -- make sure it's a record only declaration
         -- how do we handle sum types?
         maybe 0 length (Sexp.toList (type' ^. body)) == 1,
@@ -239,9 +241,18 @@ figureRecord = Env.PassChange rec
                     }
               )
           >>| Context.Def
+          >>| Context.Info (getInfoTableOf ctx defName)
           >>| \x -> Just (defName, x)
     rec _ _ _ =
       pure Nothing
+
+getInfoTableOf ::
+  Context.T term ty sumRep -> NameSpace.From Symbol -> Map.T Symbol Sexp.T
+getInfoTableOf ctx sym =
+  let lookupSymb = NameSpace.extractValue sym |> NameSymbol.fromSymbol
+   in ctx
+        |> Context.lookup lookupSymb
+        |> maybe mempty ((^. Context.table) . Context.extractValue)
 
 ------------------------------------------------------------
 -- Structure Conversion Helpers

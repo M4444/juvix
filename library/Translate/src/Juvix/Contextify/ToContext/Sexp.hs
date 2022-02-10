@@ -6,12 +6,13 @@ module Juvix.Contextify.ToContext.Sexp
   )
 where
 
-import Control.Lens (set)
+import Control.Lens (set, (^.))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify.ToContext.Types as Type
 import Juvix.Library
+import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
 import Prelude (error)
@@ -66,24 +67,36 @@ defun (f Sexp.:> sig Sexp.:> forms) ctx
   | Just name <- eleToSymbol f = do
     let precendent =
           case Context.extractValue <$> Context.lookup (pure name) ctx of
-            Just (Context.Def Context.D {defPrecedence}) ->
+            Just (Context.Info _ (Context.Def Context.D {defPrecedence})) ->
               defPrecedence
-            Just (Context.Information info) ->
+            Just (Context.Info _ (Context.Information info)) ->
               fromMaybe Context.default' (Context.precedenceOf info)
             _ -> Context.default'
+        meta = lookupInfoTable name ctx
         actualSig =
           case sig of
             Sexp.Nil -> Nothing
             ________ -> Just sig
-    (def, modsDefinedS) <-
+    (defn, modsDefinedS) <-
       decideRecordOrDef forms name (Context.currentName ctx) precendent actualSig
     pure $
       Type.PS
-        { ctxS = Context.add (NameSpace.Pub name) def ctx,
+        { ctxS =
+            Context.add
+              (NameSpace.Pub name)
+              (Context.Info meta (defn ^. Context.def))
+              ctx,
           opensS = [],
           modsDefinedS
         }
 defun _ _ctx = error "malformed defun"
+
+lookupInfoTable ::
+  Symbol -> Context.T term ty sumRep -> HashMap.T Symbol Sexp.T
+lookupInfoTable name ctx =
+  case Context.extractValue <$> Context.lookup (pure name) ctx of
+    Just (Context.Info i _) -> i
+    Nothing -> mempty
 
 -- | @declare@ takes a declaration and tries to add it to the
 -- context. This is a bit tricky, as we could have seen the definition
@@ -106,14 +119,18 @@ declare (Sexp.List [inf, n, i]) ctx
                   Context.Right
                 | otherwise -> error "malformed declaration"
             (fromIntegral atomNum)
+        meta = lookupInfoTable atomName ctx
      in pure $ case Context.extractValue <$> Context.lookup (pure atomName) ctx of
-          Just (Context.Def d) ->
+          Just (Context.Info _ (Context.Def d)) ->
             Type.PS
               { ctxS =
                   ctx
                     |> Context.add
                       (NameSpace.Pub atomName)
-                      (Context.Def (d {Context.defPrecedence = prec})),
+                      ( Context.Info
+                          meta
+                          (Context.Def (d {Context.defPrecedence = prec}))
+                      ),
                 opensS = [],
                 modsDefinedS = []
               }
@@ -122,7 +139,7 @@ declare (Sexp.List [inf, n, i]) ctx
               { ctxS =
                   Context.add
                     (NameSpace.Pub atomName)
-                    (Context.Information [Context.Prec prec])
+                    (Context.Info meta (Context.Information [Context.Prec prec]))
                     ctx,
                 opensS = [],
                 modsDefinedS = []
@@ -136,9 +153,11 @@ type' :: Sexp.T -> Context.T Sexp.T Sexp.T Sexp.T -> IO Type.PassSexp
 type' t@(assocName Sexp.:> _ Sexp.:> dat) ctx
   | Just name <- eleToSymbol (Sexp.car assocName) =
     let constructors = collectConstructors dat
+        meta = lookupInfoTable name ctx
         addSum con =
           Context.Sum Nothing name
             |> Context.SumCon
+            |> Context.Info meta
             |> Context.add (NameSpace.Pub con)
         newCtx = foldr addSum ctx constructors
      in pure $
@@ -146,7 +165,10 @@ type' t@(assocName Sexp.:> _ Sexp.:> dat) ctx
             { ctxS =
                 Context.add
                   (NameSpace.Pub name)
-                  (Context.TypeDeclar (Sexp.Cons (Sexp.atom "type") t))
+                  ( Context.Info
+                      meta
+                      (Context.TypeDeclar (Sexp.Cons (Sexp.atom "type") t))
+                  )
                   newCtx,
               opensS = [],
               modsDefinedS = []
@@ -188,7 +210,7 @@ decideRecordOrDef ::
   NameSymbol.T ->
   Context.Precedence ->
   Maybe Sexp.T ->
-  IO (Type.DefinitionSexp, [NameSymbol.T])
+  IO (Type.InfoSexp, [NameSymbol.T])
 decideRecordOrDef xs@(Sexp.List [Sexp.List [Sexp.Nil, body]]) recordName currModName pres ty =
   -- For the two matched cases eventually
   -- turn these into record expressions
@@ -202,9 +224,12 @@ decideRecordOrDef xs@(Sexp.List [Sexp.List [Sexp.Nil, body]]) recordName currMod
         --
         emptyRecord <- atomically Context.emptyRecord
         --
-        let updated = set Context.contents nameSpace . set Context.mTy ty
+        let updated =
+              set Context.contents nameSpace
+                . set Context.mTy ty
+            record = Context.Record (updated emptyRecord)
         --
-        pure (Context.Record (updated emptyRecord), newRecordName : innerMods)
+        pure (Context.Info mempty record, newRecordName : innerMods)
       where
         Just grouped = Sexp.toList (Sexp.groupBy2 rest)
         newRecordName = currModName <> pure recordName
@@ -224,13 +249,15 @@ decideRecordOrDef xs@(Sexp.List [Sexp.List [Sexp.Nil, body]]) recordName currMod
     def =
       pure
         ( Context.Def
-            (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres),
+            (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres)
+            |> Context.Info mempty,
           []
         )
 decideRecordOrDef xs _ _ pres ty =
   pure
     ( Context.Def
-        (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres),
+        (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres)
+        |> Context.Info mempty,
       []
     )
 
