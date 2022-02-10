@@ -103,9 +103,9 @@ discoverGoldenTestsParse,
     FilePath ->
     IO TestTree
 discoverGoldenTestsParse =
-  discoverGoldenTestsCompact [".ju"] ".parsed" getGolden parseContract
+  discoverAndRunGoldenTests pShowCompact ".parsed" getGolden parseContract
 discoverGoldenTestsParseNonCompact =
-  discoverGoldenTests [".ju"] ".parsed" getGolden parseContract
+  discoverAndRunGoldenTests pShowDefault ".parsed" getGolden parseContract
 
 discoverGoldenTestPasses ::
   (Eq a, Show a, Read a) => (t -> FilePath -> IO a) -> [(t, [Char])] -> FilePath -> IO [TestTree]
@@ -113,8 +113,8 @@ discoverGoldenTestPasses handleDiscoverFunction discoverPasses filePath =
   traverse callGolden discoverPasses
   where
     callGolden (passFunction, name) =
-      discoverGoldenTestsCompact
-        [".ju"]
+      discoverAndRunGoldenTests
+        pShowCompact
         ("." <> name)
         getGolden
         (handleDiscoverFunction passFunction)
@@ -126,7 +126,7 @@ discoverGoldenTestsDesugar ::
   IO [TestTree]
 discoverGoldenTestsDesugar =
   discoverGoldenTestPasses
-    (\pass -> expectSuccess . toNoQuotesCompact (handleDiscoverFunction pass))
+    (\pass -> expectSuccess . prettyAction pShowCompact (handleDiscoverFunction pass))
     discoverDesugar
   where
     handleDiscoverFunction desugarPass filePath =
@@ -138,7 +138,7 @@ discoverGoldenTestsContext ::
   IO [TestTree]
 discoverGoldenTestsContext =
   discoverGoldenTestPasses
-    (\contextPass -> expectSuccess . toNoQuotesCompact (handleDiscoverFunction contextPass))
+    (\contextPass -> expectSuccess . prettyAction pShowCompact (handleDiscoverFunction contextPass))
     discoverContext
   where
     handleDiscoverFunction contextPass filePath = do

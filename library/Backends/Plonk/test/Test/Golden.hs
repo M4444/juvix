@@ -60,8 +60,8 @@ typecheckTests =
         typecheckTestsNeg "test/examples/negative/circuit/typecheck"
       ]
   where
-    typecheckTestsPos = plonkGoldenTests ".typecheck" (expectSuccess . toNoQuotes typecheck)
-    typecheckTestsNeg = plonkGoldenTests ".typecheck" (expectFailure . toNoQuotes typecheck)
+    typecheckTestsPos = plonkGoldenTests ".typecheck" (expectSuccess . typecheck)
+    typecheckTestsNeg = plonkGoldenTests ".typecheck" (expectFailure . typecheck)
 
 typecheck file = do
   contract <- liftIO $ readFile file
@@ -76,8 +76,8 @@ hrTests =
         hrTestsNeg "test/examples/negative/circuit/hr"
       ]
   where
-    hrTestsPos = plonkGoldenTestsNoQuotes ".hr" (expectSuccess . toNoQuotes pipelineToHR)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".hr" (expectFailure . toNoQuotesEmpty pipelineToHR)
+    hrTestsPos = plonkGoldenTests' ".hr" (expectSuccess' pShowDefault . pipelineToHR)
+    hrTestsNeg = plonkGoldenTests' ".hr" (expectFailure . pipelineToHR)
 
 pipelineToHR file =
   do
@@ -100,8 +100,8 @@ irTests =
         hrTestsNeg "test/examples/negative/circuit/ir"
       ]
   where
-    hrTestsPos = plonkGoldenTestsNoQuotes ".ir" (expectSuccess . toNoQuotes pipelineToIR)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".ir" (expectFailure . toNoQuotesEmpty pipelineToIR)
+    hrTestsPos = plonkGoldenTests' ".ir" (expectSuccess' pShowDefault . pipelineToIR)
+    hrTestsNeg = plonkGoldenTests' ".ir" (expectFailure . pipelineToIR)
 
 erasedTests :: IO TestTree
 erasedTests =
@@ -111,8 +111,8 @@ erasedTests =
         hrTestsNeg "test/examples/negative/circuit/erased"
       ]
   where
-    hrTestsPos = plonkGoldenTestsNoQuotes ".erased" (expectSuccess . toNoQuotes toErased)
-    hrTestsNeg = plonkGoldenTestsNoQuotes ".erased" (expectFailure . toNoQuotesEmpty toErased)
+    hrTestsPos = plonkGoldenTests' ".erased" (expectSuccess' pShowDefault . toErased)
+    hrTestsNeg = plonkGoldenTests' ".erased" (expectFailure . toErased)
     toErased file =
       do
         liftIO (readFile file)
@@ -124,8 +124,8 @@ erasedTests =
 
     isNotPrelude (p NonEmpty.:| _) _ = p /= "Prelude"
 
-plonkGoldenTestsNoQuotes :: [Char] -> (FilePath -> IO NoQuotes) -> FilePath -> IO TestTree
-plonkGoldenTestsNoQuotes = discoverGoldenTestsNoQuotes withJuvixRootPath
+plonkGoldenTests' :: [Char] -> (FilePath -> IO NoQuotesText) -> FilePath -> IO TestTree
+plonkGoldenTests' ext f (withJuvixRootPath -> p) = discoverAndRunGoldenTests identity ext getGolden f p
 
 plonkGoldenTests ::
   (Show a, Eq a, Read a) =>
@@ -133,4 +133,4 @@ plonkGoldenTests ::
   (FilePath -> IO a) ->
   FilePath ->
   IO TestTree
-plonkGoldenTests ext f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ext getGolden f p
+plonkGoldenTests ext f (withJuvixRootPath -> p) = discoverAndRunGoldenTests pShowDefault ext getGolden f p

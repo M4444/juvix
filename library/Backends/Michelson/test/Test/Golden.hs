@@ -44,17 +44,17 @@ typecheckTests =
         typecheckTestNeg "test/examples/negative/michelson/typecheck"
       ]
   where
-    typecheckTestPos = typecheckTest (expectSuccess . toNoQuotes typecheck)
-    typecheckTestNeg = typecheckTest (expectFailure . toNoQuotesEmpty typecheck)
+    typecheckTestPos = typecheckTest (expectSuccess' pShowDefault . typecheck)
+    typecheckTestNeg = typecheckTest (expectFailure . typecheck)
 
 -- | Discover golden tests for input files with extension @.ju@ and output
 -- files with extension @.typecheck@.
 typecheckTest ::
-  (FilePath -> IO NoQuotes) ->
+  (FilePath -> IO NoQuotesText) ->
   -- | the directory in which to recursively look for golden tests
   FilePath ->
   IO TestTree
-typecheckTest f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ".typecheck" getGolden f p
+typecheckTest f (withJuvixRootPath -> p) = discoverAndRunGoldenTests pShowDefault ".typecheck" getGolden f p
 
 typecheck ::
   FilePath ->
@@ -76,4 +76,4 @@ compileTest ::
   -- | the directory in which to recursively look for golden tests
   FilePath ->
   IO TestTree
-compileTest f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ".michelson" getGolden f p
+compileTest f (withJuvixRootPath -> p) = discoverAndRunGoldenTests pShowDefault ".michelson" getGolden f p

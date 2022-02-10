@@ -374,7 +374,7 @@ coreify juvix options = do
   Right ctx <- contextifyDesugar juvix options
   case ToHR.contextToHR ctx (param options) of
     Left err -> do
-      printCompactParens err
+      pShowCompact err
       error "failure at coreify"
     Right env ->
       pure . ToIR.hrToIRDefs $ env
@@ -390,7 +390,7 @@ coreifyFile juvix options = do
   Right ctx <- contextifyDesugarFile juvix options
   case ToHR.contextToHR ctx (param options) of
     Left err -> do
-      printCompactParens err
+      pShowCompact err
       error "failure at coreify"
     Right env ->
       pure . ToIR.hrToIRDefs $ env
@@ -487,10 +487,10 @@ erase input options = do
     Feedback.runFeedbackT (Pipeline.toErased (param options) (patToSym, globalDefs))
   case feed of
     Feedback.Success msg erased -> do
-      printCompactParens msg
+      pShowCompact msg
       pure erased
     Feedback.Fail failure -> do
-      printCompactParens failure
+      pShowCompact failure
       error "Failure on erase step"
 
 eraseFile ::
@@ -508,18 +508,18 @@ eraseFile fp options = do
     Feedback.runFeedbackT (Pipeline.toErased (param options) (patToSym, globalDefs))
   case feed of
     Feedback.Success msg erased -> do
-      printCompactParens msg
+      pShowCompact msg
       pure erased
     Feedback.Fail failure -> do
-      printCompactParens failure
+      pShowCompact failure
       error "Failure on erase step"
 
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
 
-printCompactParens :: (MonadIO m, Show a) => a -> m ()
-printCompactParens =
+pShowCompact :: (MonadIO m, Show a) => a -> m ()
+pShowCompact =
   Pretty.pPrintOpt
     Pretty.CheckColorTty
     ( Pretty.defaultOutputOptionsDarkBg
@@ -534,7 +534,7 @@ printModule ::
 printModule name ctx =
   case Context.inNameSpace name ctx of
     Just ctx ->
-      printCompactParens (Context.currentNameSpace ctx)
+      pShowCompact (Context.currentNameSpace ctx)
     Nothing ->
       pure ()
 
@@ -555,7 +555,7 @@ printCoreFunction ::
   Symbol ->
   m ()
 printCoreFunction core option functionName =
-  lookupCoreFunction core option functionName |> printCompactParens
+  lookupCoreFunction core option functionName |> pShowCompact
 
 printTimeLapse ::
   ( ty ~ Pipeline.Ty b,
@@ -568,10 +568,10 @@ printTimeLapse ::
   IO ()
 printTimeLapse byteString option = do
   let sexpd = sexp byteString
-  printCompactParens sexpd
+  pShowCompact sexpd
   --
   let desugared = desugar byteString
-  printCompactParens desugared
+  pShowCompact desugared
   --
   Right context <- contextifyDesugar byteString option
   printDefModule option context
@@ -583,11 +583,11 @@ printTimeLapse byteString option = do
   print "finished Cored"
   --
   (inlined, _, _) <- inline byteString option
-  printCompactParens inlined
+  pShowCompact inlined
   print "finished Inline"
   -- --
   erased <- erase byteString option
-  printCompactParens erased
+  pShowCompact erased
 
 printTimeLapseFile ::
   ( ty ~ Pipeline.Ty b,
@@ -600,10 +600,10 @@ printTimeLapseFile ::
   IO ()
 printTimeLapseFile file option = do
   sexpd <- sexpFile file
-  printCompactParens sexpd
+  pShowCompact sexpd
   --
   desugared <- desugarFile file
-  printCompactParens desugared
+  pShowCompact desugared
   --
   Right context <- contextifyDesugarFile file option
   printDefModule option context
@@ -615,11 +615,11 @@ printTimeLapseFile file option = do
   print "finished Cored"
   --
   (inlined, _, _) <- inlineFile file option
-  printCompactParens inlined
+  pShowCompact inlined
   print "finished Inline"
   --
   erased <- eraseFile file option
-  printCompactParens erased
+  pShowCompact erased
 
 printDefModule ::
   (MonadIO m, Show ty, Show term, Show sum) =>

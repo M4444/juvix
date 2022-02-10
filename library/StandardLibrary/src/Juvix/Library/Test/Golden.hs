@@ -15,36 +15,34 @@
 --   we use the =Compact= variant for S-expression showing as it's
 --   much clearer to see what the expressions mean.
 --
--- * NoQuotes
+-- * NoQuotesText
 -- This structure allows us to have golden tests that are based around
 -- show instances instead of normal read instances.
 module Juvix.Library.Test.Golden
-  ( NoQuotes (..),
+  ( NoQuotesText (..),
 
     -- * Testing functionalities with the normal show and with no colors
-    toNoQuotes,
+    prettyAction,
     compareGolden,
     mkGoldenTest,
-    discoverGoldenTests,
-    discoverGoldenTestsNoQuotes,
-
-    -- * Testing functions compact Variants
-    toNoQuotesCompact,
-    compareGoldenCompact,
-    mkGoldenTestCompact,
-    discoverGoldenTestsCompact,
+    runGoldenTests,
+    discoverAndRunGoldenTests,
 
     -- *
     getGolden,
     expectSuccess,
+    expectSuccess',
     expectFailure,
 
     -- * Running tests expecting failure
     defaultMainFail,
     runAll,
 
-    -- * For tests which only care about success/failure, not exact output
-    toNoQuotesEmpty,
+    -- * Priting options
+    PPrinter (..),
+    pShowDefault,
+    pShowText,
+    pShowCompact,
   )
 where
 
@@ -52,7 +50,6 @@ import qualified Control.Exception as Except
 import qualified Data.ByteString as ByteString (writeFile)
 import Data.String (String)
 import qualified Data.Text as Text
-import qualified Data.Text.Lazy as TLazy
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import System.Directory (createDirectoryIfMissing)
@@ -62,47 +59,34 @@ import qualified Test.Tasty.Ingredients as Ingredients
 import qualified Test.Tasty.Ingredients.Basic as Ingredients.Basic
 import qualified Test.Tasty.Silver as T
 import qualified Test.Tasty.Silver.Advanced as T
-import Text.Pretty.Simple (pShowNoColor)
 import qualified Text.Pretty.Simple as Pretty
 import Text.Read (Read (..))
 import qualified Prelude (error, show)
 
 type FileExtension = String
 
-newtype NoQuotes = NoQuotes Text
+-- | Text that doesn't duplicate quotes when applying `show` onto it
+newtype NoQuotesText = NoQuotesText {unText :: Text}
 
-emptyNoQuotes :: NoQuotes
-emptyNoQuotes = NoQuotes ""
+emptyNoQuotes :: NoQuotesText
+emptyNoQuotes = NoQuotesText ""
 
-instance Show NoQuotes where
-  show (NoQuotes t) = toS t
+instance Show NoQuotesText where
+  show (NoQuotesText t) = toS t
 
-instance Read NoQuotes where
-  readsPrec _ s = [(NoQuotes $ toS s, "")]
+instance Read NoQuotesText where
+  readsPrec _ s = [(NoQuotesText $ toS s, "")]
 
-instance Eq NoQuotes where
-  (NoQuotes s1) == (NoQuotes s2) = t1 == t2
-    where
-      -- TODO: This filter is potentially dangerous
-      t1 = Text.filter (/= '"') . Text.strip <$> lines s1
-      t2 = Text.filter (/= '"') . Text.strip <$> lines s2
+instance Eq NoQuotesText where
+  (NoQuotesText t1) == (NoQuotesText t2) = t1 == t2
 
-toNoQuotes,
-  toNoQuotesCompact,
-  toNoQuotesEmpty ::
-    (Monad m, Show a) =>
-    (FilePath -> m a) ->
-    FilePath ->
-    m NoQuotes
-toNoQuotes f filepath = do
-  t <- f filepath
-  pure $ NoQuotes $ toS $ pShowNoColor t
-toNoQuotesCompact f filepath = do
-  t <- f filepath
-  pure $ NoQuotes $ toS $ printCompactParens t
-toNoQuotesEmpty f filepath = do
-  _t <- f filepath
-  pure emptyNoQuotes
+prettyAction ::
+  (Monad m, Show a) =>
+  (a -> NoQuotesText) ->
+  (FilePath -> m a) ->
+  FilePath ->
+  m NoQuotesText
+prettyAction prettifier action filepath = prettifier <$> action filepath
 
 getGolden :: (Read a, Show a) => FilePath -> IO (Maybe a)
 getGolden file = do
@@ -114,7 +98,7 @@ getGolden file = do
     readMaybe $ Text.unpack $ decodeUtf8 bs
 
 compareGoldenPretty ::
-  (Eq a, Show a) => (a -> TLazy.Text) -> a -> a -> T.GDiff
+  (Eq a, Show a) => (a -> NoQuotesText) -> a -> a -> T.GDiff
 compareGoldenPretty prettyPrinter golden upcoming
   | upcoming == golden =
     T.Equal
@@ -124,9 +108,9 @@ compareGoldenPretty prettyPrinter golden upcoming
           Just $
             "Output doesn't match golden file."
               <> "The new result is \n"
-              <> toS (prettyPrinter upcoming)
+              <> show (prettyPrinter upcoming)
               <> "\n but the expected result is \n"
-              <> toS (prettyPrinter golden),
+              <> show (prettyPrinter golden),
         T.gActual = resultToText upcoming,
         T.gExpected = resultToText golden
       }
@@ -135,51 +119,54 @@ compareGoldenPretty prettyPrinter golden upcoming
     resultToText = Text.pack . show
 
 compareGolden :: (Eq a, Show a) => a -> a -> T.GDiff
-compareGolden = compareGoldenPretty pShowNoColor
+compareGolden = compareGoldenPretty pShowDefault
 
-compareGoldenCompact :: (Eq a, Show a) => a -> a -> T.GDiff
-compareGoldenCompact = compareGoldenPretty printCompactParens
+-- | Run golden tests over a list of files
+runGoldenTests ::
+  (Show a, Eq a) =>
+  -- | pretty show function for output code
+  (a -> NoQuotesText) ->
+  -- | the input file extensions
+  FileExtension ->
+  -- | the output file extension
+  FileExtension ->
+  -- | get golden
+  (FilePath -> IO (Maybe a)) ->
+  -- | action
+  (FilePath -> IO a) ->
+  -- | the directory in which to recursively look for golden tests
+  FilePath ->
+  -- | the names of the files to test
+  [FilePath] ->
+  TestTree
+runGoldenTests prettyShow exts_in ext_out getGolden action path filenames =
+  testGroup path $ map (mkGoldenTest prettyShow getGolden action ext_out) ((<> exts_in) <$> filenames)
 
--- | Discover golden tests.
-discoverGoldenTests,
-  discoverGoldenTestsCompact ::
-    (Show a, Eq a) =>
-    -- | the input file extensions
-    [FileExtension] ->
-    -- | the output file extension
-    FileExtension ->
-    -- | get golden
-    (FilePath -> IO (Maybe a)) ->
-    -- | action
-    (FilePath -> IO a) ->
-    -- | the directory in which to recursively look for golden tests
-    FilePath ->
-    IO TestTree
-discoverGoldenTests exts_in ext_out getGolden action path =
-  testGroup path
-    . map (mkGoldenTest getGolden action ext_out)
-    <$> T.findByExtension exts_in path
-discoverGoldenTestsCompact exts_in ext_out getGolden action path =
-  testGroup path
-    . map (mkGoldenTestCompact getGolden action ext_out)
-    <$> T.findByExtension exts_in path
-
-discoverGoldenTestsNoQuotes ::
-  (FilePath -> FilePath) ->
-  [Char] ->
-  (FilePath -> IO NoQuotes) ->
+-- | Discover files from an extension and a path and run golden tests
+discoverAndRunGoldenTests ::
+  (Show a, Eq a) =>
+  -- | pretty show function for output code
+  (a -> NoQuotesText) ->
+  -- | the output file extension
+  FileExtension ->
+  -- | get golden
+  (FilePath -> IO (Maybe a)) ->
+  -- | action
+  (FilePath -> IO a) ->
   -- | the directory in which to recursively look for golden tests
   FilePath ->
   IO TestTree
-discoverGoldenTestsNoQuotes withJuvixRootPath ext f p = discoverGoldenTests [".ju"] ext getGolden f (withJuvixRootPath p)
+discoverAndRunGoldenTests prettyShow extOut getGolden action path =
+  testGroup path . map (mkGoldenTest prettyShow getGolden action extOut) <$> T.findByExtension [".ju"] path
 
 toGolden :: (ConvertText a Text, ConvertText Text c) => a -> c
 toGolden = toS . Text.replace "examples" "examples-golden" . toS
 
--- | Make a single golden test.
+-- | Make a single golden test
 mkGoldenTest ::
-  forall a.
   (Show a, Eq a) =>
+  -- | pretty show function for output code
+  (a -> NoQuotesText) ->
   -- | get golden
   (FilePath -> IO (Maybe a)) ->
   -- | action
@@ -189,14 +176,14 @@ mkGoldenTest ::
   -- | the file path of the input file
   FilePath ->
   TestTree
-mkGoldenTest getGolden action ext pathToFile =
+mkGoldenTest prettyShow getGolden action ext pathToFile =
   T.goldenTest1
     outFilename
     (getGolden outfile)
     (action pathToFile)
     compareGolden
     -- show the golden/actual value
-    (T.ShowText . TLazy.toStrict . pShowNoColor)
+    (T.ShowText . unText . prettyShow)
     createOutput
   where
     directory = FP.dropFileName pathToFile
@@ -205,39 +192,13 @@ mkGoldenTest getGolden action ext pathToFile =
     outfile = toGolden directory FP.</> goldenBase FP.</> outFilename
     createOutput =
       ByteString.writeFile outfile
-        . (encodeUtf8 . TLazy.toStrict . pShowNoColor)
+        . (encodeUtf8 . unText . prettyShow)
 
--- | Make a single golden test with compact Parenthesis.
-mkGoldenTestCompact ::
-  forall a.
-  (Show a, Eq a) =>
-  -- | get golden
-  (FilePath -> IO (Maybe a)) ->
-  -- | action
-  (FilePath -> IO a) ->
-  -- | the extension of the outfile, e.g. @".parsed"@
-  FileExtension ->
-  -- | the file path of the input file
-  FilePath ->
-  TestTree
-mkGoldenTestCompact getGolden action ext pathToFile =
-  T.goldenTest1
-    outFilename
-    (getGolden outfile)
-    (action pathToFile)
-    compareGoldenCompact
-    -- show the golden/actual value
-    (T.ShowText . TLazy.toStrict . printCompactParens)
-    createOutput
-  where
-    directory = FP.dropFileName pathToFile
-    goldenBase = FP.takeBaseName pathToFile
-    outFilename = FP.replaceExtension (FP.takeFileName pathToFile) ext
-    outfile = toGolden directory FP.</> goldenBase FP.</> outFilename
-    createOutput =
-      ByteString.writeFile outfile
-        . (encodeUtf8 . TLazy.toStrict . printCompactParens)
+--------------------------------------------------------------------------------
+-- Expectations
+--------------------------------------------------------------------------------
 
+-- | Expect a successful computation
 expectSuccess :: (Monad m, Show (app msg)) => Feedback.FeedbackT app msg m b -> m b
 expectSuccess v = do
   feedback <- Feedback.runFeedbackT v
@@ -245,21 +206,40 @@ expectSuccess v = do
     Feedback.Success _msgs r -> pure r
     Feedback.Fail msgs -> panic $ "Expected success but failed: " <> show msgs
 
-expectFailure :: (Monad m, Show a, Show (app msg)) => Feedback.FeedbackT app msg m a -> m NoQuotes
+-- | Expect a successful computation. Prettify the output
+expectSuccess' :: (Monad m, Show (app msg), Show b, Eq b) => (b -> NoQuotesText) -> Feedback.FeedbackT app msg m b -> m NoQuotesText
+expectSuccess' prettifier v = prettifier <$> expectSuccess v
+
+-- | Expect that computation fails
+expectFailure :: (Monad m, Show a, Show (app msg)) => Feedback.FeedbackT app msg m a -> m NoQuotesText
 expectFailure v = do
   feedback <- Feedback.runFeedbackT v
   case feedback of
     Feedback.Success _msgs r -> panic $ "Expected failure but succeeded with: " <> show r
     Feedback.Fail _msgs -> pure emptyNoQuotes
 
-printCompactParens :: Show a => a -> TLazy.Text
-printCompactParens =
-  Pretty.pShowOpt
-    ( Pretty.defaultOutputOptionsNoColor
-        { Pretty.outputOptionsCompactParens = True,
-          Pretty.outputOptionsCompact = True
-        }
-    )
+--------------------------------------------------------------------------------
+-- Pretty Printers
+--------------------------------------------------------------------------------
+
+data PPrinter = PDefault | PText | PCompact
+  deriving (Show, Eq)
+
+pShowText :: Text -> NoQuotesText
+pShowText = NoQuotesText
+
+pShowDefault :: Show a => a -> NoQuotesText
+pShowDefault = NoQuotesText . toS . Pretty.pShowNoColor
+
+pShowCompact :: Show a => a -> NoQuotesText
+pShowCompact =
+  NoQuotesText . toS
+    . Pretty.pShowOpt
+      ( Pretty.defaultOutputOptionsNoColor
+          { Pretty.outputOptionsCompactParens = True,
+            Pretty.outputOptionsCompact = True
+          }
+      )
 
 --------------------------------------------------------------------------------
 -- Expecting Failure runners

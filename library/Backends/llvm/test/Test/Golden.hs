@@ -47,9 +47,9 @@ compileTests =
         compileTestNeg "test/examples/negative/llvm/compile"
       ]
   where
-    compileTestPos = compileTest (expectSuccess . toNoQuotes compile)
-    compileTestNeg = compileTest (expectFailure . toNoQuotes compile)
-    compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheck file
+    compileTestPos = llvmGoldenTests ".llvm" (expectSuccess' pShowText . compile)
+    compileTestNeg = llvmGoldenTests ".llvm" (expectFailure . compile)
+    compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheckFile file
 
 typecheckTests :: IO TestTree
 typecheckTests =
@@ -59,35 +59,16 @@ typecheckTests =
         typecheckTestNeg "test/examples/negative/llvm/typecheck"
       ]
   where
-    typecheckTestPos = typecheckTest (expectSuccess . toNoQuotes typecheck)
-    typecheckTestNeg = typecheckTest (expectFailure . toNoQuotesEmpty typecheck)
+    typecheckTestPos = llvmGoldenTests ".typecheck" (expectSuccess' pShowDefault . typecheckFile)
+    typecheckTestNeg = llvmGoldenTests ".typecheck" (expectFailure . typecheckFile)
 
--- | Discover golden tests for input files with extension @.ju@ and output
--- files with extension @.typecheck@.
-typecheckTest ::
-  (FilePath -> IO NoQuotes) ->
-  -- | the directory in which to recursively look for golden tests
-  FilePath ->
-  IO TestTree
-typecheckTest f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ".typecheck" getGolden f p
-
-typecheck ::
+typecheckFile ::
   FilePath ->
   Feedback.FeedbackT [] String IO (ErasedAnn.AnnTermT LLVM.PrimTy LLVM.RawPrimVal)
-typecheck file = do
+typecheckFile file = do
   contract <- liftIO $ readFile file
   context <- Pipeline.parse LLVM.BLLVM contract
   Pipeline.typecheck @LLVM.BLLVM context
-
--- | Discover golden tests for input files with extension @.ju@ and output
--- files with extension @.llvm@.
-compileTest ::
-  (Show b, Eq b, Read b) =>
-  (FilePath -> IO b) ->
-  -- | the directory in which to recursively look for golden tests
-  FilePath ->
-  IO TestTree
-compileTest f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ".llvm" getGolden f p
 
 hrTests :: IO TestTree
 hrTests =
@@ -97,8 +78,8 @@ hrTests =
         hrTestsNeg "test/examples/negative/llvm/hr"
       ]
   where
-    hrTestsPos = llvmGoldenTestsNoQuotes ".hr" (expectSuccess . toNoQuotes pipelineToHR)
-    hrTestsNeg = llvmGoldenTestsNoQuotes ".hr" (expectFailure . toNoQuotesEmpty pipelineToHR)
+    hrTestsPos = llvmGoldenTests ".hr" (expectSuccess' pShowDefault . pipelineToHR)
+    hrTestsNeg = llvmGoldenTests ".hr" (expectFailure . pipelineToHR)
 
 pipelineToHR file =
   do
@@ -117,8 +98,8 @@ irTests =
         hrTestsNeg "test/examples/negative/llvm/ir"
       ]
   where
-    hrTestsPos = llvmGoldenTestsNoQuotes ".ir" (expectSuccess . toNoQuotes pipelineToIR)
-    hrTestsNeg = llvmGoldenTestsNoQuotes ".ir" (expectFailure . toNoQuotesEmpty pipelineToIR)
+    hrTestsPos = llvmGoldenTests ".ir" (expectSuccess' pShowDefault . pipelineToIR)
+    hrTestsNeg = llvmGoldenTests ".ir" (expectFailure . pipelineToIR)
 
 erasedTests :: IO TestTree
 erasedTests =
@@ -128,8 +109,8 @@ erasedTests =
         hrTestsNeg "test/examples/negative/llvm/erased"
       ]
   where
-    hrTestsPos = llvmGoldenTestsNoQuotes ".erased" (expectSuccess . toNoQuotes toErased)
-    hrTestsNeg = llvmGoldenTestsNoQuotes ".erased" (expectFailure . toNoQuotesEmpty toErased)
+    hrTestsPos = llvmGoldenTests ".erased" (expectSuccess' pShowDefault . toErased)
+    hrTestsNeg = llvmGoldenTests ".erased" (expectFailure . toErased)
     toErased file =
       do
         liftIO (readFile file)
@@ -139,19 +120,15 @@ erasedTests =
         >>= Pipeline.toIR
         >>= Pipeline.toErased LLVM.llvm
 
-llvmGoldenTestsNoQuotes :: [Char] -> (FilePath -> IO NoQuotes) -> FilePath -> IO TestTree
-llvmGoldenTestsNoQuotes = discoverGoldenTestsNoQuotes withJuvixRootPath
-
 llvmGoldenTests ::
-  (Show a, Eq a, Read a) =>
   [Char] ->
-  (FilePath -> IO a) ->
+  (FilePath -> IO NoQuotesText) ->
   FilePath ->
   IO TestTree
-llvmGoldenTests ext f (withJuvixRootPath -> p) = discoverGoldenTests [".ju"] ext getGolden f p
+llvmGoldenTests ext action (withJuvixRootPath -> p) = discoverAndRunGoldenTests identity ext getGolden action p
 
 compile :: FilePath -> Feedback.FeedbackT [] String IO Text
-compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheck file
+compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheckFile file
 
 toEither :: Feedback.Feedback app msg b -> Either (app msg) (app msg, b)
 toEither (Feedback.Success app a) = Right (app, a)
