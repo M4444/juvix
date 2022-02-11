@@ -7,7 +7,8 @@ module Juvix.Contextify.Passes
     notFoundSymbolToLookup,
     openResolution,
     infixConversion,
-    primiveOrSymbol
+    primiveOrSymbol,
+    figureRecord,
   )
 where
 

@@ -13,7 +13,9 @@ import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
+import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify as Contextify
+import qualified Juvix.Contextify.Environment as Env
 import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Contextify.ToContext.Types as Contextify
@@ -304,6 +306,46 @@ unknownSymbolLookupTransform ::
   m Sexp.T
 unknownSymbolLookupTransform ctx =
   Passes.primiveOrSymbol ctx |> traverseOnDeserialized
+
+--------------------------------------------------------------------------------
+-- Record Recognition Transformation
+--------------------------------------------------------------------------------
+
+recordDeclaration ::
+  (Meta.HasMeta m, HasClosure m, MonadIO m) =>
+  Pipeline.PassArgument ->
+  m Pipeline.Job
+recordDeclaration pa = case pa ^. current of
+  Pipeline.InContext name -> case ctx Context.!? name of
+    Just def -> do
+      let (resolvedDef, resolvedName) = Context.resolveName ctx (def, name)
+      case resolvedDef of
+        Context.TypeDeclar typ -> do
+          let (Env.PassChange transType) = Passes.figureRecord
+          mdef <- transType ctx typ s
+          case mdef of
+            Just (_, newDef) -> updateJob resolvedName newDef |> pure
+            Nothing -> noOpJob |> pure
+        _ -> noOpJob |> pure
+    Nothing ->
+      Juvix.Library.throw @"error" $
+        Sexp.string
+          "Could not find definition when \
+          \ it was promised to be in the environment"
+  _ -> noOpJob |> pure
+  where
+    ctx = pa ^. context
+    noOpJob = Automation.noOpJob ctx (pa ^. current)
+    updateJob name def =
+      Pipeline.UpdateJob
+        { newContext = Context.addGlobal name def ctx,
+          process =
+            Pipeline.Process
+              { _current = Pipeline.InContext name,
+                _newForms = []
+              }
+        }
+    s = NameSpace.Pub "unused"
 
 --------------------------------------------------------------------------------
 -- Contextify
