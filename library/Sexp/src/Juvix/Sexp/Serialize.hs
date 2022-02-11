@@ -343,9 +343,8 @@ instance Serialize Natural where
   deserialize _ = Nothing
 
 instance Serialize Int where
-  serialize i = Atom (N (toInteger i) Nothing)
-  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
-  deserialize _ = Nothing
+  serialize i = serialize (toInteger i)
+  deserialize s = fmap fromIntegral (deserialize @Integer s)
 
 instance Serialize () where
   serialize () = Nil
