@@ -319,7 +319,7 @@ recordDeclaration pa = case pa ^. current of
   Pipeline.InContext name -> case ctx Context.!? name of
     Just def -> do
       let (resolvedDef, resolvedName) = Context.resolveName ctx (def, name)
-      case resolvedDef of
+      case resolvedDef  ^. Context.def of
         Context.TypeDeclar typ -> do
           let (Env.PassChange transType) = Passes.figureRecord
           mdef <- transType ctx typ s

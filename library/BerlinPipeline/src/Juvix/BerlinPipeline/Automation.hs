@@ -155,17 +155,22 @@ simplify f PassArgument {_current = current, _context = context} =
           -- Abstract this out, improve the interface to the
           -- Context... why is it this complicated?
           let (ourDef, resolvedName) = Context.resolveName context (def, name)
-          case ourDef of
+              --
+              updateInfo value = set Context.def value ourDef
+              --
+              updateSimplifiedCurrentContext f args =
+                updateTerms name f context jobViaSimplified args
+          case ourDef ^. Context.def of
             Context.Def d ->
-              updateDef d resolvedName Context.Def
+              updateDef d resolvedName (updateInfo . Context.Def)
             Context.SumCon s@Context.Sum {sumTDef = Just d} ->
-              updateDef d resolvedName (formSumCon s)
+              updateDef d resolvedName (updateInfo . formSumCon s)
             Context.TypeDeclar typ ->
-              updateTerms name formDeclaration context jobViaSimplified [typ]
+              updateSimplifiedCurrentContext (updateInfo . formDeclaration) [typ]
             Context.Record r@Context.Rec {recordMTy = Just recordMTy} ->
-              updateTerms name (formRecord r) context jobViaSimplified [recordMTy]
+              updateSimplifiedCurrentContext (updateInfo . formRecord r) [recordMTy]
             u@Context.Unknown {definitionMTy = Just definitionMTy} -> do
-              updateTerms name (formUnknown u) context jobViaSimplified [definitionMTy]
+              updateSimplifiedCurrentContext (updateInfo . formUnknown u) [definitionMTy]
             _ -> noOpJob context current |> pure
         Nothing ->
           throw @"error" $
@@ -238,7 +243,7 @@ updateTerms ::
   -- | The name of the symbol being updated
   NameSymbol.T ->
   -- | A function to repackage the processed sexps back into a Definition
-  ([Sexp.T] -> Context.Definition Sexp.T Sexp.T Sexp.T) ->
+  ([Sexp.T] -> Context.Info Sexp.T Sexp.T Sexp.T) ->
   -- | The starting context
   Context.T Sexp.T Sexp.T Sexp.T ->
   -- | A function to process an sexp
