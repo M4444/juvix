@@ -4,7 +4,7 @@ module Juvix.Core.Erased.Ann.Types where
 
 import qualified Data.Aeson as A
 import Juvix.Core.Application (IsParamVar (..))
-import Juvix.Core.Base.Types (Universe)
+import Juvix.Core.Base.Types (Universe, ValField' (..), TypeField' (..))
 import Juvix.Core.Parameterisation (KindedType', TypedPrim')
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -52,7 +52,11 @@ data Term primTy primVal
       (AnnTerm primTy primVal)
   | UnitM
   | AppM (AnnTerm primTy primVal) [AnnTerm primTy primVal]
+  | RecordM [ValField primTy primVal]
+  | RecElimM [NameSymbol.T] (AnnTerm primTy primVal) (AnnTerm primTy primVal)
   deriving (Show, Read, Eq, Generic)
+
+type ValField primTy primVal = ValField' (AnnTerm primTy primVal)
 
 data Type primTy
   = SymT NameSymbol.T
@@ -64,7 +68,10 @@ data Type primTy
   | CatProduct (Type primTy) (Type primTy)
   | CatCoproduct (Type primTy) (Type primTy)
   | UnitTy
+  | RecordTy [TypeField primTy]
   deriving (Show, Read, Eq, Generic)
+
+type TypeField primTy = TypeField' (Type primTy)
 
 data AnnTerm primTy primVal = Ann
   { usage :: Usage.T,

@@ -281,6 +281,8 @@ getType (CatCoproductIntroLeft _ ty) = ty
 getType (CatCoproductIntroRight _ ty) = ty
 getType (CatCoproductElim _ _ _ _ _ ty) = ty
 getType (Unit ty) = ty
+getType (Record _ ty) = ty
+getType (RecElim _ _ _ ty) = ty
 getType (Let _ _ _ (_, ty)) = ty
 getType (App _ _ ty) = ty
 
@@ -296,5 +298,7 @@ eraseAnn (CatCoproductIntroLeft a _) = Erased.CatCoproductIntroLeft (eraseAnn a)
 eraseAnn (CatCoproductIntroRight a _) = Erased.CatCoproductIntroRight (eraseAnn a)
 eraseAnn (CatCoproductElim t1 t2 cp a b _) = Erased.CatCoproductElim (eraseAnn t1) (eraseAnn t2) (eraseAnn cp) (eraseAnn a) (eraseAnn b)
 eraseAnn (Unit _) = Erased.Unit
+eraseAnn (Record flds _) = Erased.Record $ fmap eraseAnn <$> flds
+eraseAnn (RecElim ns e s _) = Erased.RecElim ns (eraseAnn e) (eraseAnn s)
 eraseAnn (Let s a b _) = Erased.Let s (eraseAnn a) (eraseAnn b)
 eraseAnn (App a b _) = Erased.App (eraseAnn a) (eraseAnn b)

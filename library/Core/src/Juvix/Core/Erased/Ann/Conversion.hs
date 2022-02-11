@@ -181,6 +181,8 @@ toRawTerm (ErasedAnn.CatCoproductElimM a b cp l r) =
   ErasedAnn.CatCoproductElimM (toRaw a) (toRaw b) (toRaw cp) (toRaw l) (toRaw r)
 toRawTerm ErasedAnn.UnitM = ErasedAnn.UnitM
 toRawTerm (ErasedAnn.AppM f xs) = ErasedAnn.AppM (toRaw f) (toRaw <$> xs)
+toRawTerm (ErasedAnn.RecordM flds) = ErasedAnn.RecordM $ fmap toRaw <$> flds
+toRawTerm (ErasedAnn.RecElimM ns e s) = ErasedAnn.RecElimM ns (toRaw e) (toRaw s)
 
 toRawType :: HasCallStack => ErasedAnn.TypeT ty -> ErasedAnn.Type ty
 toRawType (ErasedAnn.SymT x) = ErasedAnn.SymT x
@@ -197,6 +199,8 @@ toRawType (ErasedAnn.CatProduct a b) =
 toRawType (ErasedAnn.CatCoproduct a b) =
   ErasedAnn.CatCoproduct (toRawType a) (toRawType b)
 toRawType ErasedAnn.UnitTy = ErasedAnn.UnitTy
+toRawType (ErasedAnn.RecordTy flds) =
+  ErasedAnn.RecordTy $ fmap toRawType <$> flds
 
 primToRaw :: ErasedAnn.Prim ty val -> ErasedAnn.Term ty val
 primToRaw (App.Return {retTerm}) = ErasedAnn.Prim retTerm
@@ -350,6 +354,11 @@ convertTerm term usage =
               Ann usage ty' $ AppM f' [a']
           where
             a' = convertTerm a usage
+        E.Record flds _ ->
+          Ann usage ty' $ RecordM $ fmap (flip convertTerm usage) <$> flds
+        E.RecElim ns e s _ ->
+          Ann usage ty' $
+            RecElimM ns (convertTerm e usage) (convertTerm s usage)
 
 convertType :: E.TypeT primTy -> TypeT primTy
 convertType ty =
@@ -362,3 +371,4 @@ convertType ty =
     E.CatProduct a b -> CatProduct (convertType a) (convertType b)
     E.CatCoproduct a b -> CatCoproduct (convertType a) (convertType b)
     E.UnitTy -> UnitTy
+    E.RecordTy flds -> RecordTy $ fmap convertType <$> flds

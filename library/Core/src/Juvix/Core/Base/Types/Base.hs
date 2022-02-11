@@ -108,7 +108,7 @@ instance A.FromJSON GlobalUsage where
 
 
 data TypeField' term = TF {tfUsage :: Usage, tfName :: Symbol, tfType :: term}
-  deriving (Show, Eq, Generic, Data, NFData,
+  deriving (Show, Read, Eq, Generic, Data, NFData,
             Serialize.DefaultOptions, Serialize.Serialize,
             Functor, Foldable, Traversable)
 
@@ -124,7 +124,7 @@ instance Comonad TypeField' where
 
 
 data ValField' term = VF {vfName :: Symbol, vfVal :: term}
-  deriving (Show, Eq, Generic, Data, NFData,
+  deriving (Show, Read, Eq, Generic, Data, NFData,
             Serialize.DefaultOptions, Serialize.Serialize,
             Functor, Foldable, Traversable)
 
