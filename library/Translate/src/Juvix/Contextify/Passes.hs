@@ -6,6 +6,8 @@ module Juvix.Contextify.Passes
     recordDeclaration,
     notFoundSymbolToLookup,
     openResolution,
+    infixConversion,
+    primiveOrSymbol
   )
 where
 

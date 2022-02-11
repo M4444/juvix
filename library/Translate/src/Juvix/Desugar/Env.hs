@@ -272,10 +272,38 @@ resolveModuleTransform ::
   Context.T Sexp.T Sexp.T Sexp.T ->
   Sexp.T ->
   m Sexp.T
-resolveModuleTransform ctx sexp =
-  Sexp.withSerialization sexp (`Sexp.traverseOnAtoms` f)
-  where
-    f = Passes.openResolution ctx
+resolveModuleTransform ctx =
+  Passes.openResolution ctx |> traverseOnDeserialized
+
+--------------------------------------------------------------------------------
+-- Infix Form Transformation
+--------------------------------------------------------------------------------
+
+infixConversionTransform ::
+  ( HasThrow "error" Sexp.T m,
+    HasClosure m,
+    MonadIO m
+  ) =>
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  Sexp.T ->
+  m Sexp.T
+infixConversionTransform ctx =
+  Passes.infixConversion ctx |> traverseOnDeserialized
+
+--------------------------------------------------------------------------------
+-- Record Lookup from Unknown Symbols
+--------------------------------------------------------------------------------
+
+unknownSymbolLookupTransform ::
+  ( HasThrow "error" Sexp.T m,
+    HasClosure m,
+    MonadIO m
+  ) =>
+  Context.T Sexp.T Sexp.T Sexp.T ->
+  Sexp.T ->
+  m Sexp.T
+unknownSymbolLookupTransform ctx =
+  Passes.primiveOrSymbol ctx |> traverseOnDeserialized
 
 --------------------------------------------------------------------------------
 -- Contextify
@@ -389,3 +417,11 @@ addTop = first (NameSymbol.cons Context.topLevelName)
 
 runM :: Contextify.M a -> IO (Either Context.PathError a)
 runM (Contextify.M a) = runExceptT a
+
+traverseOnDeserialized ::
+  (Monad m, Sexp.Serialize a) =>
+  (Sexp.Atom a -> (Sexp.B a -> m (Sexp.B a)) -> m (Sexp.B a)) ->
+  Sexp.T ->
+  m Sexp.T
+traverseOnDeserialized f sexp =
+  Sexp.withSerialization sexp (`Sexp.traverseOnAtoms` f)
