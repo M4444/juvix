@@ -14,23 +14,11 @@ data T b = T
   }
   deriving (Show, Read, Eq, Data, Functor, Foldable, Traversable, Generic, NFData)
 
-instance (A.ToJSON b) => A.ToJSON (T b) where
-  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
-
-instance (A.FromJSON b) => A.FromJSON (T b) where
-  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
-
 data List b = List
   { publicL :: [(Symbol, b)],
     privateL :: [(Symbol, b)]
   }
   deriving (Show, Data, Generic, Functor)
-
-instance (A.ToJSON b) => A.ToJSON (List b) where
-  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
-
-instance (A.FromJSON b) => A.FromJSON (List b) where
-  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
 -- | From represents whether the variable came from
 -- the public names below us, or the private names below us
@@ -111,3 +99,19 @@ fromList List {publicL, privateL} =
 extractValue :: From a -> a
 extractValue (Pub aa) = aa
 extractValue (Priv a) = a
+
+--------------------------------------------------------------------------------
+-- Aeson Instances
+--------------------------------------------------------------------------------
+
+instance (A.ToJSON b) => A.ToJSON (T b) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON b) => A.FromJSON (T b) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.ToJSON b) => A.ToJSON (List b) where
+  toJSON = A.genericToJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+instance (A.FromJSON b) => A.FromJSON (List b) where
+  parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})

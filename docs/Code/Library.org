@@ -658,6 +658,7 @@ temporary lexical bindings as our code encounters binders.
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 ***** NameSpace
 - _Relies on_
   + [[Library]]
@@ -668,6 +669,7 @@ temporary lexical bindings as our code encounters binders.
 ***** Precedence
 - _Relies on_
   + [[Library]]
+  + [[Juvix/Sexp]]
 ***** Traversal
 Traversals serves as generic Context Traversal modules.
 - _Relies on_
@@ -680,11 +682,9 @@ Traversals serves as generic Context Traversal modules.
 - _Relies on_
   + [[NameSpace]]
   + [[Open]]
-  + [[Precedence]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
-  + [[Library/Usage]]
   + [[Juvix/Sexp]]
 ** test
 *** Context <<test/Context>>

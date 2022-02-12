@@ -10,116 +10,96 @@ import qualified Data.Aeson.Types as A
 import GHC.Show
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Open as Open
-import Juvix.Context.Precedence
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
-import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (Read (readsPrec))
 import qualified Prelude (error)
 
-data T term ty sumRep = T
-  { currentNameSpace :: InfoRecord term ty sumRep,
+data T = T
+  { currentNameSpace :: InfoRecord,
     currentName :: NameSymbol.T,
-    topLevelMap :: HashMap.T Symbol (Info term ty sumRep),
+    topLevelMap :: HashMap.T Symbol Info,
     reverseLookup :: ReverseLookup
   }
   deriving (Show, Read, Eq, Generic, NFData)
 
-type NameSpace term ty sumRep = NameSpace.T (Info term ty sumRep)
+data Definition
+  = Term Sexp.T
+  | Module Module
+  | -- | @CurrentNameSpace@ Signifies that this path is the current
+    -- module, and that we should search the currentNameSpace instead
+    CurrentNameSpace
+  deriving (Show, Read, Generic, Eq, NFData)
 
--- | From constitutes where the value we are looking up comes from
--- Does it come from the Current name space, or does it come from some
--- name space from the global map
-data From b
-  = Current (NameSpace.From b)
-  | Outside b
-  deriving (Show, Functor, Traversable, Foldable, Eq)
+data Module = Mod
+  { moduleContents :: NameSpace.T Info,
+    moduleOpenList :: [Open.TName NameSymbol.T],
+    moduleQualifiedMap :: SymbolMap
+  }
+  deriving (Show, Read, Generic, Eq, NFData)
 
-data Info term ty sumRep = Info
+data Info = Info
   { infoTable :: HashMap.T Symbol Sexp.T,
-    infoDef :: Definition term ty sumRep
+    infoDef :: Definition
   }
   deriving (Show, Read, Generic, Eq, NFData)
 
-data InfoRecord term ty sumRep = InfoRecord
+data InfoRecord = InfoRecord
   { infoRecordTable :: HashMap.T Symbol Sexp.T,
-    infoRecordRecord :: Record term ty sumRep
+    infoRecordRecord :: Module
   }
   deriving (Show, Read, Generic, Eq, NFData)
 
+infoToInfoRecordErr :: Info -> InfoRecord
 infoToInfoRecordErr Info {infoTable, infoDef} =
   case infoDef of
-    Record record ->
+    Module record ->
       InfoRecord {infoRecordTable = infoTable, infoRecordRecord = record}
     _ ->
       Prelude.error "non record sent into coercsion in infoToInfoRecordErr"
 
+infoRecordToInfo :: InfoRecord -> Info
 infoRecordToInfo InfoRecord {infoRecordTable, infoRecordRecord} =
-  Info {infoTable = infoRecordTable, infoDef = Record infoRecordRecord}
-
--- TODO :: make known records that are already turned into core
--- this will just emit the proper names we need, not any terms to translate
--- once we hit core, we can then populate it with the actual forms
-data Definition term ty sumRep
-  = Def (Def term ty)
-  | Record (Record term ty sumRep)
-  | TypeDeclar
-      { definitionRepr :: sumRep
-      }
-  | Unknown
-      { definitionMTy :: Maybe ty
-      }
-  | Information
-      { definitionInfo :: [Information]
-      }
-  | -- Signifies that this path is the current module, and that
-    -- we should search the currentNameSpace from here
-    CurrentNameSpace
-  | SumCon (SumT term ty)
-  deriving (Show, Read, Generic, Eq, NFData)
-
-data Def term ty = D
-  { defUsage :: Maybe Usage.T,
-    defMTy :: Maybe ty,
-    defTerm :: term,
-    defPrecedence :: Precedence
-  }
-  deriving (Show, Read, Generic, Eq, Data, NFData)
-
-data SumT term ty = Sum
-  { sumTDef :: Maybe (Def term ty),
-    sumTName :: Symbol
-  }
-  deriving (Show, Read, Generic, Eq, Data, NFData)
-
-data Record term ty sumRep = Rec
-  { recordContents :: NameSpace.T (Info term ty sumRep),
-    -- Maybe as I'm not sure what to put here for now
-    -- TODO ∷ reconsider the type when we have proper module typing up.
-    recordMTy :: Maybe ty,
-    recordOpenList :: [Open.TName NameSymbol.T],
-    recordQualifiedMap :: SymbolMap
-  }
-  deriving (Show, Read, Generic, Eq, NFData)
+  Info {infoTable = infoRecordTable, infoDef = Module infoRecordRecord}
 
 instance NFData (STM.Map k v) where rnf x = seq x ()
 
-newtype Information
-  = Prec Precedence
-  deriving (Show, Read, Generic, Eq, Data, NFData)
-  deriving newtype (A.ToJSON, A.FromJSON)
-
-instance Hashable Information where
-  hash (Prec pred) = hash pred
+--------------------------------------------------------------------------------
+-- Error data types
+--------------------------------------------------------------------------------
 
 newtype PathError
   = VariableShared NameSymbol.T
   deriving (Show, Read, Eq, Generic)
   deriving newtype (A.ToJSON, A.FromJSON)
+
+--------------------------------------------------------------------------------
+-- Insertion and Lookup Data Types
+--------------------------------------------------------------------------------
+
+-- | From constitutes where the value we are looking up comes from
+-- Does it come from the Current name space, or does it come from some
+-- name space from the global map
+data From = From
+  { fromNameSpace :: NameSpace,
+    fromQualifedName :: NameSymbol.T,
+    fromTerm :: Info
+  }
+  deriving (Show)
+
+data NameSpace
+  = Public
+  | Private
+  | Outside
+  deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- Symbol Location Types
+--------------------------------------------------------------------------------
 
 data WhoUses = Who
   { impExplict :: Open.T,
@@ -166,13 +146,13 @@ instance Eq (STM.Map a b) where
 -- not using lenses anymore but leaving this here anyway
 makeLensesWith camelCaseFields ''Definition
 
-makeLensesWith camelCaseFields ''Def
-
-makeLensesWith camelCaseFields ''Record
+makeLensesWith camelCaseFields ''Module
 
 makeLensesWith camelCaseFields ''Info
 
 makeLensesWith camelCaseFields ''InfoRecord
+
+makeLensesWith camelCaseFields ''From
 
 -- to avoid refactor we just add _ infront
 makeLensesFor
@@ -194,76 +174,34 @@ topLevelName = "TopLevel"
 -- Aeson instances
 --------------------------------------------------------------------------------
 
-instance
-  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
-  A.ToJSON (T term ty sumRep)
-  where
+instance A.ToJSON T where
   toJSON = defaultTo
 
-instance
-  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
-  A.FromJSON (T term ty sumRep)
-  where
+instance A.FromJSON T where
   parseJSON = defaultFrom
 
-instance
-  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
-  A.ToJSON (InfoRecord term ty sumRep)
-  where
+instance A.ToJSON InfoRecord where
   toJSON = defaultTo
 
-instance
-  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
-  A.FromJSON (InfoRecord term ty sumRep)
-  where
+instance A.FromJSON InfoRecord where
   parseJSON = defaultFrom
 
-instance
-  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
-  A.ToJSON (Info term ty sumRep)
-  where
+instance A.ToJSON Info where
   toJSON = defaultTo
 
-instance
-  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
-  A.FromJSON (Info term ty sumRep)
-  where
+instance A.FromJSON Info where
   parseJSON = defaultFrom
 
-instance
-  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
-  A.ToJSON (Definition term ty sumRep)
-  where
+instance A.ToJSON Definition where
   toJSON = defaultTo
 
-instance
-  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
-  A.FromJSON (Definition term ty sumRep)
-  where
+instance A.FromJSON Definition where
   parseJSON = defaultFrom
 
-instance (A.ToJSON term, A.ToJSON ty) => A.ToJSON (Def term ty) where
+instance A.ToJSON Module where
   toJSON = defaultTo
 
-instance (A.FromJSON term, A.FromJSON ty) => A.FromJSON (Def term ty) where
-  parseJSON = defaultFrom
-
-instance (A.ToJSON term, A.ToJSON ty) => A.ToJSON (SumT term ty) where
-  toJSON = defaultTo
-
-instance (A.FromJSON term, A.FromJSON ty) => A.FromJSON (SumT term ty) where
-  parseJSON = defaultFrom
-
-instance
-  (A.ToJSON term, A.ToJSON ty, A.ToJSON sumRep) =>
-  A.ToJSON (Record term ty sumRep)
-  where
-  toJSON = defaultTo
-
-instance
-  (A.FromJSON term, A.FromJSON ty, A.FromJSON sumRep) =>
-  A.FromJSON (Record term ty sumRep)
-  where
+instance A.FromJSON Module where
   parseJSON = defaultFrom
 
 instance A.ToJSON WhoUses where

@@ -19,6 +19,7 @@ import Juvix.Library hiding (Sum, modify, toList)
 import qualified Juvix.Library as Lib
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import Prelude (error)
 
@@ -38,7 +39,7 @@ nameSymbolFromSymbol = NameSymbol.fromSymbol
 --------------------------------------------------------------------------------
 
 -- |
-empty :: NameSymbol.T -> IO (T term ty sumRep)
+empty :: NameSymbol.T -> IO T
 empty sym = do
   empty <- atomically fullyEmpty
   res <-
@@ -58,18 +59,17 @@ empty sym = do
           }
     sym' = removeTopName sym
 
-qualifyName :: NameSymbol.T -> T term ty sumRep -> NameSymbol.T
+qualifyName :: NameSymbol.T -> T -> NameSymbol.T
 qualifyName sym T {currentName} = currentName <> sym
 
-emptyRecord :: STM (Record term ty sumRep)
+emptyRecord :: STM Module
 emptyRecord = do
   emptyQualificationMap <- STM.new
   pure
-    Rec
-      { recordContents = NameSpace.empty,
-        recordOpenList = [],
-        recordQualifiedMap = emptyQualificationMap,
-        recordMTy = Nothing
+    Mod
+      { moduleContents = NameSpace.empty,
+        moduleOpenList = [],
+        moduleQualifiedMap = emptyQualificationMap
       }
 
 data AmbiguousDef = AmbiguousDef NameSymbol.T
@@ -80,7 +80,7 @@ data AmbiguousDef = AmbiguousDef NameSymbol.T
 -- definitions not added. However this infra is not up, so the pass
 -- adding functions must add it themselves
 persistDefinition ::
-  T term ty sumRep -> NameSymbol.T -> Symbol -> IO (Either AmbiguousDef ())
+  T -> NameSymbol.T -> Symbol -> IO (Either AmbiguousDef ())
 persistDefinition T {reverseLookup} moduleName name =
   case HashMap.lookup moduleName reverseLookup of
     Just xs -> do
@@ -114,39 +114,30 @@ persistDefinition T {reverseLookup} moduleName name =
 --------------------------------------------------------------------------------
 
 lookupCurrent ::
-  NameSymbol.T -> T term ty sumRep -> Maybe (NameSpace.From (Info term ty sumRep))
-lookupCurrent =
-  lookupGen (\_ currentLookup -> currentLookup)
+  NameSymbol.T -> T -> Maybe From
+lookupCurrent = lookupGen False
 
 -- TODO ∷ Maybe change
 -- By default add adds it to the public map by default!
-add ::
-  NameSpace.From Symbol ->
-  Info term ty sumRep ->
-  T term ty sumRep ->
-  T term ty sumRep
+add :: NameSpace.From Symbol -> Info -> T -> T
 add sy term = over currentRecordContents (NameSpace.insert sy term)
 
-addNoMeta ::
-  NameSpace.From Symbol ->
-  Definition term ty sumRep ->
-  T term ty sumRep ->
-  T term ty sumRep
+addNoMeta :: NameSpace.From Symbol -> Definition -> T -> T
 addNoMeta sy = add sy . Info mempty
 
 remove ::
-  NameSpace.From Symbol -> T term ty sumRep -> T term ty sumRep
+  NameSpace.From Symbol -> T -> T
 remove sy = over currentRecordContents (NameSpace.remove sy)
 
-publicNames :: T term ty sumRep -> [Symbol]
+publicNames :: T -> [Symbol]
 publicNames t =
   let NameSpace.List {publicL} = toList t
    in fst <$> publicL
 
-toList :: T term ty sumRep -> NameSpace.List (Info term ty sumRep)
+toList :: T -> NameSpace.List Info
 toList t = NameSpace.toList (t ^. currentRecordContents)
 
-topList :: T term ty sumRep -> [(Symbol, Info term ty sumRep)]
+topList :: T -> [(Symbol, Info)]
 topList T {topLevelMap} = HashMap.toList topLevelMap
 
 --------------------------------------------------------------------------------
@@ -157,17 +148,17 @@ topList T {topLevelMap} = HashMap.toList topLevelMap
 
 -- | inNameSpace works like in-package in CL
 -- we simply just change from our current namespace to another
-inNameSpace :: NameSymbol.T -> T term ty sumRep -> Maybe (T term ty sumRep)
+inNameSpace :: NameSymbol.T -> T -> Maybe T
 inNameSpace newNameSpace t@T {currentName}
   | removeTopName newNameSpace == removeTopName currentName =
     pure t
   | otherwise = do
-    mdef <- t !? newNameSpace
-    -- resolve the full name to be the new current module
-    let (defn, fullName) = resolveName t (mdef, newNameSpace)
-    case defn ^. def of
-      Record {} ->
-        Just (changeCurrentModuleWith t (infoToInfoRecordErr defn) fullName)
+    from <- t !? newNameSpace
+    case from ^. term . def of
+      Module {} ->
+        from ^. qualifedName
+          |> changeCurrentModuleWith t (infoToInfoRecordErr (from ^. term))
+          |> Just
       _ ->
         Nothing
 
@@ -177,8 +168,7 @@ inNameSpace newNameSpace t@T {currentName}
 -- is a non record.
 -- This function also keeps the invariant that there is only one CurrentNameSpace
 -- tag
-switchNameSpace ::
-  NameSymbol.T -> T term ty sumRep -> IO (Either PathError (T term ty sumRep))
+switchNameSpace :: NameSymbol.T -> T -> IO (Either PathError T)
 switchNameSpace newNameSpace t@T {currentName}
   | removeTopName newNameSpace == removeTopName currentName =
     pure (Lib.Right t)
@@ -190,7 +180,7 @@ switchNameSpace newNameSpace t@T {currentName}
     -- already exist all the way to where we need it to be
     newT <-
       do
-        addPathWithValue newNameSpace (Info mempty (Record empty)) t
+        addPathWithValue newNameSpace (Info mempty (Module empty)) t
         >>| \case
           Lib.Right t -> t
           Lib.Left {} -> t
@@ -201,22 +191,13 @@ switchNameSpace newNameSpace t@T {currentName}
       Nothing -> Lib.Left (VariableShared newNameSpace)
       Just ct -> Lib.Right ct
 
-lookup ::
-  NameSymbol.T -> T term ty sumRep -> Maybe (From (Info term ty sumRep))
-lookup key t@T {topLevelMap} =
-  let f x currentLookup =
-        fmap Current currentLookup <|> fmap Outside (HashMap.lookup x topLevelMap)
-   in lookupGen f key t
+lookup :: NameSymbol.T -> T -> Maybe From
+lookup = lookupGen True
 
-(!?) ::
-  T term ty sumRep -> NameSymbol.T -> Maybe (From (Info term ty sumRep))
+(!?) :: T -> NameSymbol.T -> Maybe From
 (!?) = flip lookup
 
-modifyGlobal ::
-  NameSymbol.T ->
-  (Maybe (Info term ty sumRep) -> Info term ty sumRep) ->
-  T term ty sumRep ->
-  T term ty sumRep
+modifyGlobal :: NameSymbol.T -> (Maybe Info -> Info) -> T -> T
 modifyGlobal sym g t =
   case modifySpace f sym t of
     Just tt -> tt
@@ -224,16 +205,12 @@ modifyGlobal sym g t =
   where
     f (Final x) =
       UpdateNow (g x)
-    f (Continue (Just info@Info {infoDef = Record {}})) =
+    f (Continue (Just info@Info {infoDef = Module {}})) =
       GoOn (infoToInfoRecordErr info)
     f (Continue _) =
       Abort
 
-addGlobal ::
-  NameSymbol.T ->
-  Info term ty sumRep ->
-  T term ty sumRep ->
-  T term ty sumRep
+addGlobal :: NameSymbol.T -> Info -> T -> T
 addGlobal sym def t =
   case modifySpace f sym t of
     Just tt -> tt
@@ -241,16 +218,12 @@ addGlobal sym def t =
   where
     f (Final _) =
       UpdateNow def
-    f (Continue (Just info@Info {infoDef = Record {}})) =
+    f (Continue (Just info@Info {infoDef = Module {}})) =
       GoOn (infoToInfoRecordErr info)
     f (Continue _) =
       Abort
 
-addPathWithValue ::
-  NameSymbol.T ->
-  Info term ty sumRep ->
-  T term ty sumRep ->
-  IO (Either PathError (T term ty sumRep))
+addPathWithValue :: NameSymbol.T -> Info -> T -> IO (Either PathError T)
 addPathWithValue sym def t = do
   ret <- modifySpaceImp f sym t
   case ret of
@@ -261,13 +234,13 @@ addPathWithValue sym def t = do
     f (Final (Just _)) = pure Abort
     f (Continue Nothing) =
       atomically STM.new
-        >>| GoOn . InfoRecord mempty . Rec NameSpace.empty Nothing []
-    f (Continue (Just info@Info {infoDef = Record {}})) =
+        >>| GoOn . InfoRecord mempty . Mod NameSpace.empty []
+    f (Continue (Just info@Info {infoDef = Module {}})) =
       GoOn (infoToInfoRecordErr info) |> pure
     f (Continue _) =
       pure Abort
 
-removeNameSpace :: NameSymbol -> T term ty sumRep -> T term ty sumRep
+removeNameSpace :: NameSymbol -> T -> T
 removeNameSpace sym t =
   case modifySpace f sym t of
     Just tt -> tt
@@ -277,14 +250,14 @@ removeNameSpace sym t =
       RemoveNow
     f (Final Nothing) =
       Abort
-    f (Continue (Just info@Info {infoDef = Record {}})) =
+    f (Continue (Just info@Info {infoDef = Module {}})) =
       GoOn (infoToInfoRecordErr info)
     f (Continue Nothing) =
       Abort
     f (Continue (Just _)) =
       Abort
 
-removeTop :: Symbol -> T term ty sumRep -> T term ty sumRep
+removeTop :: Symbol -> T -> T
 removeTop sym t@T {topLevelMap} =
   t {topLevelMap = HashMap.delete sym topLevelMap}
 
@@ -294,8 +267,7 @@ removeTop sym t@T {topLevelMap} =
 
 -- | 'changeCurrentModuleWith' moves the current name space and inserts
 -- the new namespace as the top
-changeCurrentModuleWith ::
-  T term ty sumRep -> InfoRecord term ty sumRep -> NonEmpty Symbol -> T term ty sumRep
+changeCurrentModuleWith :: T -> InfoRecord -> NonEmpty Symbol -> T
 changeCurrentModuleWith t startingContents newCurrName =
   let queued = queueCurrentModuleBackIn t
    in t
@@ -305,8 +277,7 @@ changeCurrentModuleWith t startingContents newCurrName =
         |> queued
         |> addGlobal newCurrName (Info mempty CurrentNameSpace)
 
-queueCurrentModuleBackIn ::
-  T term ty sumRep -> T term ty sumRep -> T term ty sumRep
+queueCurrentModuleBackIn :: T -> T -> T
 queueCurrentModuleBackIn T {currentNameSpace, currentName} =
   -- we note that the currentName is a topLevel name so it
   -- gets added from the top and doesn't confuse itself with
@@ -321,7 +292,7 @@ queueCurrentModuleBackIn T {currentNameSpace, currentName} =
 -- as 'addGlobal' quits if it can't find the path
 -- we HAVE to remove the current module after this
 
-putCurrentModuleBackIn :: T term ty sumRep -> T term ty sumRep
+putCurrentModuleBackIn :: T -> T
 putCurrentModuleBackIn t = queueCurrentModuleBackIn t t
 
 addTopNameToSngle :: IsString a => NonEmpty a -> NonEmpty a
@@ -344,17 +315,19 @@ removeTopName xs = xs
 -- Functions on From
 -------------------------------------------------------------------------------
 
-extractValue :: From a -> a
-extractValue (Outside a) = a
-extractValue (Current c) = NameSpace.extractValue c
+extractValue :: From -> Info
+extractValue from = from ^. term
 
 -------------------------------------------------------------------------------
--- Functions on Information
+-- Functions on Info
 -------------------------------------------------------------------------------
-precedenceOf :: Foldable t => t Information -> Maybe Precedence
-precedenceOf = fmap (\(Prec p) -> p) . find f
-  where
-    f (Prec _) = True
+
+lookupInfo :: forall a. Sexp.Serialize a => Info -> Symbol -> Maybe a
+lookupInfo info sym =
+  HashMap.lookup sym (info ^. table) >>= Sexp.deserialize @a
+
+precedenceOf :: Info -> Maybe Precedence
+precedenceOf info = lookupInfo info "precedence"
 
 -------------------------------------------------------------------------------
 -- Generalized Helpers
@@ -372,16 +345,16 @@ data Stage b
     -- the namespace that we can still continue down
     Continue b
 
-data Return term ty sumRep
+data Return
   = -- | 'GoOn' signifies that we should continue
     -- going down records
-    GoOn (InfoRecord term ty sumRep)
+    GoOn InfoRecord
   | -- | 'Abort' signifies that we should cancel
     -- the changes on the map and
     Abort
   | -- | 'UpdateNow' signifies that we should
     -- update the context with the current value
-    UpdateNow (Info term ty sumRep)
+    UpdateNow Info
   | -- | 'RemoveNow' signifies that we show remove
     -- the definition at this level
     RemoveNow
@@ -413,24 +386,14 @@ instance MapSym PrivNameSpace where
   remove' sym = Priv . NameSpace.removePrivate sym . unPriv
   insert' sym def = Priv . NameSpace.insert (NameSpace.Priv sym) def . unPriv
 
-modifySpace ::
-  (Stage (Maybe (Info term ty sumRep)) -> Return term ty sumRep) ->
-  NameSymbol.T ->
-  T term ty sumRep ->
-  Maybe (T term ty sumRep)
+modifySpace :: (Stage (Maybe Info) -> Return) -> NameSymbol.T -> T -> Maybe T
 modifySpace f symbol t = runIdentity (modifySpaceImp (Identity . f) symbol t)
 
 -- This function dispatches to recurseImp, and serves to deal with
 -- giving recurseImp the proper map to run on. this is either the
 -- private local, public local, or global
 modifySpaceImp ::
-  Monad m =>
-  ( Stage (Maybe (Info term ty sumRep)) ->
-    m (Return term ty sumRep)
-  ) ->
-  NameSymbol.T ->
-  T term ty sumRep ->
-  m (Maybe (T term ty sumRep))
+  Monad m => (Stage (Maybe Info) -> m Return) -> NameSymbol.T -> T -> m (Maybe T)
 modifySpaceImp f symbol@(s :| ymbol) t =
   -- check the current Module first, to properly determine which one to go down
   case NameSpace.lookupInternal s (t ^. currentRecordContents) of
@@ -484,10 +447,10 @@ overMaybe f field t =
 
 recurseImp ::
   (MapSym map, Monad m) =>
-  (Stage (Maybe (Info term ty sumRep)) -> m (Return term ty sumRep)) ->
+  (Stage (Maybe Info) -> m Return) ->
   NameSymbol.T ->
-  map (Info term ty sumRep) ->
-  m (Maybe (map (Info term ty sumRep)))
+  map Info ->
+  m (Maybe (map Info))
 recurseImp f (x :| y : xs) cont = do
   ret <- f (Continue (lookup' x cont))
   case ret of
@@ -525,82 +488,47 @@ recurseImp f (x :| []) cont = do
 -- eventually to check if we are referencing an inner module via the top
 -- This will break code where you've added local
 
-lookupGen ::
-  Traversable t =>
-  ( Symbol ->
-    Maybe (NameSpace.From (Info term ty sumRep)) ->
-    Maybe (t (Info term ty sumRep))
-  ) ->
-  NameSymbol.T ->
-  T term ty sumRep ->
-  Maybe (t (Info term ty sumRep))
-lookupGen extraLookup nameSymb t =
-  let recurse _ Nothing =
-        Nothing
-      recurse [] (Just Info {infoDef = CurrentNameSpace}) =
-        Just (infoRecordToInfo (t ^. _currentNameSpace))
-      recurse [] x =
-        x
-      recurse (x : xs) (Just Info {infoDef = Record record}) =
-        recurse xs (NameSpace.lookup x (record ^. contents))
-      -- This can only happen when we hit from the global
-      -- a precondition is that the current module
-      -- will never have a currentNamespace inside
-      recurse (x : xs) (Just Info {infoDef = CurrentNameSpace}) =
-        recurse xs (NameSpace.lookup x (t ^. currentRecordContents))
-      recurse (_ : _) _ =
-        Nothing
-      first (x :| xs) =
-        NameSpace.lookupInternal x (t ^. currentRecordContents)
-          |> second (x :| xs)
-      second (x :| xs) looked =
-        extraLookup x looked
-          |> \case
-            Just x -> traverse (recurse xs . Just) x
-            Nothing -> Nothing
-   in case nameSymb of
-        -- we skip the local lookup if we get a top level
-        top :| x : xs
-          | topLevelName == top -> second (x :| xs) Nothing
-        top :| []
-          | topLevelName == top -> Nothing
-        x :| xs -> first (x :| xs)
-
--- TODO/ISSUE ∷ what if we resolve a private module
--- the path and lookup doesn't make sense much
--- we need to change namesymbol to something along
--- the lines of every symbol saying if it's public
--- or private
-resolveName ::
-  T a b c ->
-  (From (Info a b c), NameSymbol.T) ->
-  (Info a b c, NameSymbol.T)
-resolveName ctx (def, name) =
-  case def of
-    -- TODO ∷ update this case
-    Current (NameSpace.Priv x) ->
-      (x, fullyQualified)
-    Current (NameSpace.Pub x) ->
-      (x, fullyQualified)
-    Outside x ->
-      (x, nameAlreadyFully)
+lookupGen :: Bool -> NameSymbol.T -> T -> Maybe From
+lookupGen canGlobalLookup nameSymb t =
+  let -- Starting Lookups
+      ---------------------
+      firstSymbol :| restSymbol = removeTopName nameSymb
+      lookupPubi = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
+      lookupPriv = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
+      lookupGlob = HashMap.lookup firstSymbol (t ^. _topLevelMap)
+      -- From Instantiation
+      ---------------------
+      nameSpace
+        | NameSymbol.hd nameSymb == topLevelName = Outside
+        | isJust lookupPriv = Private
+        | isJust lookupPubi = Public
+        | otherwise = Outside
+      fullyQualifiedName = qualifySymbol t nameSpace nameSymb
+      form =
+        case nameSpace of
+          Outside | canGlobalLookup -> recursivelyLookup restSymbol lookupGlob
+          Outside -> Nothing
+          Private -> recursivelyLookup restSymbol lookupPriv
+          Public -> recursivelyLookup restSymbol lookupPubi
+   in From nameSpace fullyQualifiedName <$> form
   where
-    nameAlreadyFully =
-      pure topLevelName <> removeTopName name
-    fullyQualified =
-      pure topLevelName <> currentName ctx <> name
-
--- | qualifyLookup fully qualiifes a name in the current context.
-qualifyLookup :: NameSymbol.T -> T a b c -> Maybe NameSymbol.T
-qualifyLookup name ctx =
-  case lookup name ctx of
-    Nothing -> Nothing
-    Just (Outside _) -> Just (NameSymbol.cons topLevelName (removeTopName name))
-    Just (Current _) -> Just (pure topLevelName <> currentName ctx <> name)
+    recursivelyLookup [] mterm
+      | mterm ^? _Just . def == Just CurrentNameSpace =
+        infoRecordToInfo (t ^. _currentNameSpace) |> Just
+      | otherwise = mterm
+    recursivelyLookup (x : xs) maybeterm =
+      let lookupNext table =
+            recursivelyLookup xs (NameSpace.lookup x table)
+       in case maybeterm ^? _Just . def of
+            Just (Module module') -> lookupNext (module' ^. contents)
+            Just CurrentNameSpace -> lookupNext (t ^. currentRecordContents)
+            _____________________ -> Nothing
 
 currentRecordContents ::
-  Functor f =>
-  (NameSpace.T (Info term ty sumRep) -> f (NameSpace.T (Info term ty sumRep))) ->
-  T term ty sumRep ->
-  f (T term ty sumRep)
+  Functor f => (NameSpace.T Info -> f (NameSpace.T Info)) -> T -> f T
 currentRecordContents = _currentNameSpace . record . contents
+
+qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
+qualifySymbol _ Outside = addTopName
+qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
+qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
