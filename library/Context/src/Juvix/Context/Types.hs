@@ -89,7 +89,7 @@ data From = From
     fromQualifedName :: NameSymbol.T,
     fromTerm :: Info
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data NameSpace
   = Public

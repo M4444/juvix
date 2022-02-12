@@ -1,8 +1,9 @@
 module Context where
 
-import Control.Lens (over)
+import Control.Lens (over, (^.), _Just, (^?))
 import qualified Data.Text as Text
 import qualified Juvix.Context as Context
+import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
@@ -12,10 +13,10 @@ import qualified System.IO.Unsafe as Unsafe
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 
-foo :: Context.T Int Int Int
+foo :: Context.T
 foo = Unsafe.unsafePerformIO (Context.empty ("Foo" :| ["Bar", "Baz"]))
 
-unsafeEmpty :: NameSymbol.T -> Context.T term ty sumRep
+unsafeEmpty :: NameSymbol.T -> Context.T
 unsafeEmpty x = Unsafe.unsafePerformIO (Context.empty x)
 
 top :: T.TestTree
@@ -34,12 +35,15 @@ top =
       topLevelDoesNotMessWithInnerRes
     ]
 
+makeTm :: Sexp.Serialize a => a -> Context.Definition
+makeTm = Context.Term . Sexp.serialize
+
 switchAboveLookupCheck :: T.TestTree
 switchAboveLookupCheck =
   T.testCase
     "switch to module above and lookup value from below"
     ( do
-        let added = Context.add (NameSpace.Pub "a") (Context.TypeDeclar 3 |> Context.Info mempty) foo
+        let added = Context.add (NameSpace.Pub "a") (makeTm @Integer 3 |> Context.Info mempty) foo
             --
             looked = Context.lookup (pure "a") added
         Right switched <- Context.switchNameSpace ("Foo" :| ["Bar"]) added
@@ -97,17 +101,17 @@ checkCorrectResolution =
         )
     ]
   where
-    isOutside (Context.Outside _) = True
-    isOutside (Context.Current _) = False
-    isCurrent (Context.Outside _) = False
-    isCurrent (Context.Current _) = True
+    isOutside from =
+      from ^. Context.nameSpace == Context.Outside
+    isCurrent from =
+      from ^. Context.nameSpace /= Context.Outside
     run = do
       Right inner <- Context.switchNameSpace (pure "Gkar") foo
       --
       let added =
             Context.add
               (NameSpace.Pub "londo")
-              (Context.TypeDeclar 3 |> Context.Info mempty)
+              (makeTm @Integer 3 |> Context.Info mempty)
               inner
       --
       Right topGkar <-
@@ -116,7 +120,7 @@ checkCorrectResolution =
       let addedTop =
             Context.add
               (NameSpace.Pub "londo")
-              (Context.TypeDeclar 3 |> Context.Info mempty)
+              (makeTm @Integer 3 |> Context.Info mempty)
               topGkar
       --
       Right switchBack <-
@@ -135,12 +139,12 @@ privateFromAbove =
     $ do
       empt <-
         Context.empty ("Ambassador" :| ["Kosh", "Vorlons"]) ::
-          IO (Context.T Text.Text Text.Text Text.Text)
+          IO (Context.T)
       --
       let added =
             Context.add
               (NameSpace.Priv "too-late")
-              ( Context.TypeDeclar
+              ( makeTm @Text
                   "The avalanche has already started; It is too late for the pebbles to vote."
                   |> Context.Info mempty
               )
@@ -149,17 +153,17 @@ privateFromAbove =
       Right switched <- Context.switchNameSpace ("Ambassador" :| ["Kosh"]) added
       --
       let looked = switched Context.!? ("Vorlons" :| ["too-late"])
-      looked T.@=? Nothing
+      isNothing looked T.@=? True
 
 privateBeatsPublic :: T.TestTree
 privateBeatsPublic =
-  let empt :: Context.T Text.Text Text.Text Text.Text
+  let empt :: Context.T
       empt = unsafeEmpty ("Londo" :| ["Mollari", "Centauri"])
       --
       added =
         Context.add
           (NameSpace.Priv "joy")
-          ( Context.TypeDeclar
+          ( makeTm @Text
               "What do you want, you moon-faced assassin of joy?"
               |> Context.Info mempty
           )
@@ -167,7 +171,7 @@ privateBeatsPublic =
       added2 =
         Context.add
           (NameSpace.Pub "joy")
-          ( Context.TypeDeclar
+          ( makeTm @Text
               "Now, I go to spread happiness to the rest of the station. \
               \ It is a terrible responsibility but I have learned to live with it."
               |> Context.Info mempty
@@ -175,23 +179,21 @@ privateBeatsPublic =
           added
       looked = added2 Context.!? pure "joy"
    in "What do you want, you moon-faced assassin of joy?"
-        |> Context.TypeDeclar
+        |> makeTm @Text
         |> Context.Info mempty
-        |> NameSpace.Priv
-        |> Context.Current
         |> Just
-        |> (looked T.@=?)
+        |> ((looked ^? _Just . Context.term) T.@=?)
         |> T.testCase "Can't access private var from above"
 
 localBeatsGlobal :: T.TestTree
 localBeatsGlobal =
-  let empt :: Context.T Text.Text Text.Text Text.Text
+  let empt :: Context.T
       empt = unsafeEmpty ("GKar" :| ["Narn"])
       --
       added =
         Context.add
           (NameSpace.Priv "cost")
-          ( Context.TypeDeclar
+          ( makeTm @Text
               "I have seen what power does, and I have seen what power costs. \
               \ The one is never equal to the other."
               |> Context.Info mempty
@@ -200,7 +202,7 @@ localBeatsGlobal =
       added2 =
         Context.addGlobal
           (Context.topLevelName :| ["cost"])
-          ( Context.TypeDeclar
+          ( makeTm @Text
               "I'm delirious with joy. It proves that if you confront the universe \
               \ with good intentions in your heart, it will reflect that and reward \
               \ your intent. Usually. It just doesn't always do it in the way you expect."
@@ -210,12 +212,10 @@ localBeatsGlobal =
       looked = added2 Context.!? pure "cost"
    in "I have seen what power does, and I have seen what power costs. \
       \ The one is never equal to the other."
-        |> Context.TypeDeclar
+        |> makeTm @Text
         |> Context.Info mempty
-        |> NameSpace.Priv
-        |> Context.Current
         |> Just
-        |> (looked T.@=?)
+        |> ((looked ^? _Just . Context.term) T.@=?)
         |> T.testCase "public beats global"
 
 nonRelatedModuleStillPersists :: T.TestTree
@@ -228,9 +228,13 @@ nonRelatedModuleStillPersists =
         --
         let looked = food Context.!? (Context.topLevelName :| ["Bar"])
             --
-            isOutSideRec (Just (Context.Outside (Context.Info _ Context.Record {}))) =
+            isMod (Context.From {fromTerm = Context.Info _ Context.Module {}}) =
               True
-            isOutSideRec _ = False
+            isMod _ =
+              False
+            isOutSideRec (Just from) =
+              from ^. Context.nameSpace == Context.Outside && isMod from
+            isOutSideRec Nothing = False
         --
         isOutSideRec looked T.@=? True
     )
@@ -240,7 +244,7 @@ emptyWorksAsExpectedSingle =
   T.testCase
     "empty properly adds a top level module as expected:"
     $ do
-      created <- Context.empty (pure "Mr-Morden") :: IO (Context.T Int Int Int)
+      created <- Context.empty (pure "Mr-Morden") :: IO Context.T
       empt <- do
         contents <- atomically Context.emptyRecord
         pure $
@@ -256,7 +260,7 @@ topLevelDoesNotMessWithInnerRes =
   T.testCase
     "TopLevelname does not prohibit inner module change"
     $ do
-      let created :: Context.T Int Int Int
+      let created :: Context.T
           created = unsafeEmpty (pure "Shadows")
       inner <-
         Context.switchNameSpace
@@ -273,7 +277,7 @@ topLevelDoesNotMessWithInnerRes =
           |> over
             Context.contents
             (NameSpace.insert (NameSpace.Pub "Mr-Morden") (Context.Info mempty Context.CurrentNameSpace))
-          |> Context.Record
+          |> Context.Module
           |> Context.Info mempty
           |> (\record -> HashMap.fromList [("Shadows", record)])
           |> (\x -> Context.T emptyNameSpace ("Shadows" :| ["Mr-Morden"]) x HashMap.empty)
