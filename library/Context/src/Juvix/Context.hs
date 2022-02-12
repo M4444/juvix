@@ -33,7 +33,6 @@ nameSymbolToSymbol = NameSymbol.toSymbol
 
 nameSymbolFromSymbol :: Symbol -> NameSymbol.T
 nameSymbolFromSymbol = NameSymbol.fromSymbol
-
 --------------------------------------------------------------------------------
 -- Body
 --------------------------------------------------------------------------------
@@ -79,8 +78,7 @@ data AmbiguousDef = AmbiguousDef NameSymbol.T
 -- called for all definitions added by default, with private
 -- definitions not added. However this infra is not up, so the pass
 -- adding functions must add it themselves
-persistDefinition ::
-  T -> NameSymbol.T -> Symbol -> IO (Either AmbiguousDef ())
+persistDefinition :: T -> NameSymbol.T -> Symbol -> IO (Either AmbiguousDef ())
 persistDefinition T {reverseLookup} moduleName name =
   case HashMap.lookup moduleName reverseLookup of
     Just xs -> do
@@ -113,8 +111,7 @@ persistDefinition T {reverseLookup} moduleName name =
 -- Functions on the Current NameSpace
 --------------------------------------------------------------------------------
 
-lookupCurrent ::
-  NameSymbol.T -> T -> Maybe From
+lookupCurrent :: NameSymbol.T -> T -> Maybe From
 lookupCurrent = lookupGen False
 
 -- TODO ∷ Maybe change
@@ -282,21 +279,8 @@ queueCurrentModuleBackIn T {currentNameSpace, currentName} =
   -- gets added from the top and doesn't confuse itself with
   -- a potnentially local insertion
   addGlobal
-    (addTopNameToSngle currentName)
+    (addTopName currentName)
     (infoRecordToInfo currentNameSpace)
-
--- 'putCurrentModuleBackIn' adds the current name space back to the
--- environment map
--- Note that we have to have the path to the module ready and open
--- as 'addGlobal' quits if it can't find the path
--- we HAVE to remove the current module after this
-
-putCurrentModuleBackIn :: T -> T
-putCurrentModuleBackIn t = queueCurrentModuleBackIn t t
-
-addTopNameToSngle :: IsString a => NonEmpty a -> NonEmpty a
-addTopNameToSngle (x :| []) = topLevelName :| [x]
-addTopNameToSngle xs = xs
 
 addTopName :: (IsString a, Eq a) => NonEmpty a -> NonEmpty a
 addTopName (x :| xs)
@@ -404,9 +388,8 @@ modifySpaceImp f symbol t = do
     Global _ _ ->
       applyAndSetTop (recurseImp f newSymb)
   where
-    -- dumb repeat code but idk how to handle to remove the tuple ☹
     applyAndSetTop f =
-      t |> overMaybe f (_topLevelMap)
+      t |> overMaybe f _topLevelMap
     applyAndSetCurrent f =
       t |> overMaybe f currentRecordContents
 
@@ -416,8 +399,7 @@ modifySpaceImp f symbol t = do
 overMaybe ::
   Monad m => (b -> m (Maybe b)) -> Lens s s b b -> s -> m (Maybe s)
 overMaybe f field t =
-  f (t ^. field)
-    >>| fmap (\ret -> set field ret t)
+  f (t ^. field) >>| fmap (\ret -> set field ret t)
 
 recurseImp ::
   (MapSym map, Monad m) =>
@@ -459,9 +441,6 @@ recurseImp f (x :| []) cont = do
 -- checkGlobal
 --   | NameSymbol.subsetOf currentName nameSymb
 
--- eventually to check if we are referencing an inner module via the top
--- This will break code where you've added local
-
 lookupGen :: Bool -> NameSymbol.T -> T -> Maybe From
 lookupGen canGlobalLookup nameSymb t =
   let (table, newNameSymb@(x :| symb)) = determineTableForFirstLookup t nameSymb
@@ -474,8 +453,8 @@ lookupGen canGlobalLookup nameSymb t =
           Global _ table
             | canGlobalLookup ->
               recursivelyLookup symb (HashMap.lookup x table)
-          Local Private table -> recursivelyLookup symb (NameSpace.lookupPrivate x table)
-          Local Public ttable -> recursivelyLookup symb (NameSpace.lookup x ttable)
+          Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
+          Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
           ___________________ -> Nothing
    in From nameSpace fullyQualifiedName <$> form
   where
@@ -561,6 +540,11 @@ determineTableForFirstLookup t nameSymb =
 -- Foo.Bar.Baz, this means that a function like in-module should check
 -- if the @topLevelName@ is in the name, and if not, then insert the
 -- currentname with it.
+--
+-- It is debatable what is better behavior, it might be good to always
+-- be local unless toplevel is given, or if we find it in the toplevel
+-- map at first, this can be tweaked by the code that calls the
+-- context, rather than the context itself. - Mariari
 determineTableForFirstModification :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
 determineTableForFirstModification t nameSymb =
   let (table, nameSymbol@(x :| symb)) = determineTableForFirstLookup t nameSymb
