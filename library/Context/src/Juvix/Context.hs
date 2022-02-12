@@ -555,7 +555,7 @@ determineTableForFirstModification t nameSymb =
    in case (table, symb) of
         (Global _ table, [])
           -- Rule 1. in the docs above
-          | not (isJust (HashMap.lookup x table)) ->
+          | not (isJust (HashMap.lookup x table)) && NameSymbol.hd nameSymb /= topLevelName ->
             (Local Public (t ^. currentRecordContents), nameSymbol)
         _ -> (table, nameSymbol)
 
@@ -564,6 +564,7 @@ data Table
     Global NameSpace (HashMap.T Symbol Info)
   | -- namespace can not be Outside in the Local Case
     Local NameSpace (NameSpace.T Info)
+  deriving (Show)
 
 nameFromTable :: Table -> NameSpace
 nameFromTable (Global name _) = name
