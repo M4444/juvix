@@ -70,6 +70,12 @@ removePublic :: Symbol -> T v -> T v
 removePublic sym T {public, private} =
   T {public = HashMap.delete sym public, private}
 
+markPrivate :: Symbol -> T v -> T v
+markPrivate sym T {public, private = oldPriv} =
+  let private =
+        maybe oldPriv (\val -> HashMap.insert sym val oldPriv) (public HashMap.!? sym)
+  in T {public = HashMap.delete sym public, private}
+
 remove :: From Symbol -> T v -> T v
 remove (Pub sym) = removePublic sym
 remove (Priv sym) = removePrivate sym

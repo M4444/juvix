@@ -126,6 +126,10 @@ remove ::
   NameSpace.From Symbol -> T -> T
 remove sy = over currentRecordContents (NameSpace.remove sy)
 
+markPrivate ::
+  Symbol -> T -> T
+markPrivate sy = over currentRecordContents (NameSpace.markPrivate sy)
+
 publicNames :: T -> [Symbol]
 publicNames t =
   let NameSpace.List {publicL} = toList t
