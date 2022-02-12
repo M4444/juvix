@@ -22,6 +22,7 @@ import Juvix.Library hiding (empty)
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import Juvix.Context.Precedence
 
 -- Currently we don't really use the signature however in the future
 -- the mSig will be used to detect the types of modules we will have
@@ -30,12 +31,19 @@ data Information = Info
   { -- | @mSig@ represents the type of the term in the closure
     mSig :: Maybe Sexp.T,
     -- | @info@ represents all the information we have on the term
-    info :: [Context.Information],
+    info :: [Information],
     -- | @mOpen@ represents a place where the term may have come
     -- from
     mOpen :: Maybe NameSymbol.T
   }
   deriving (Show, Eq, Generic)
+
+newtype Info
+  = Prec Precedence
+  deriving (Show, Read, Generic, Eq, Data, NFData)
+
+instance Hashable Info where
+  hash (Prec pred) = hash pred
 
 newtype T
   = T (Map.T Symbol Information)

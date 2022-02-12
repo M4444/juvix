@@ -61,6 +61,7 @@ default-extensions:
   - StandaloneDeriving
   - BlockArguments
   - FunctionalDependencies
+  - ScopedTypeVariables
 
 ghc-options:
   - -ferror-spans
