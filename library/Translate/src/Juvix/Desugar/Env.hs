@@ -154,6 +154,7 @@ exampleIndexing = do
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
+  Pipeline.Env.registerStep (CircularList.init initContextPass)
   Pipeline.Env.registerStep (CircularList.init headerPass)
   Pipeline.Env.registerAfterEachStep inPackageTrans
   Pipeline.Env.registerStep (CircularList.init condPass)
@@ -497,6 +498,25 @@ inContextSexps (moduleName, sexps) = sexps >>= f
         g (Sexp.A {atomName}) =
           (Pipeline.InContext $ moduleName <> atomName) |> Just
         g _ = Nothing
+
+-- | @initContextPass@ initializes the Context with input Sexps
+initContextPass :: Step.Named
+initContextPass =
+  initContextTrans
+    |> Step.T
+    |> Step.namePass "Context.initContext"
+
+initContextTrans ::
+  Pipeline.CIn -> IO (Pipeline.COut Pipeline.WorkingEnv)
+initContextTrans cin = do
+  let wenv = cin ^. languageData
+  let sexps = (wenv ^. currentExp) >>= f |> nonEmpty
+  case sexps of
+    Nothing -> Pipeline.Success {_meta = Meta.empty, _result = wenv} |> pure
+    Just toProcess -> initContext (wenv ^. context) toProcess
+  where
+    f (Pipeline.InContext _) = []
+    f (Pipeline.Sexp sexp) = [sexp]
 
 initContext ::
   Context.T Sexp.T Sexp.T Sexp.T ->
