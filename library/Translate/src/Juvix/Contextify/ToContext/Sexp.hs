@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LiberalTypeSynonyms #-}
 
 module Juvix.Contextify.ToContext.Sexp
@@ -6,8 +7,10 @@ module Juvix.Contextify.ToContext.Sexp
   )
 where
 
-import Control.Lens (set, (^.))
-import qualified Data.List.NonEmpty as NonEmpty
+import Control.Lens (set, (^.), over)
+import Juvix.Sexp.Structure.Lens
+import qualified Juvix.Context.InfoNames as Info
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify.ToContext.Types as Type
@@ -22,7 +25,7 @@ import Prelude (error)
 run,
   contextify ::
     MonadIO m =>
-    Type.ContextSexp ->
+    Context.T ->
     (Context.NameSymbol, [Sexp.T]) ->
     m (Either Context.PathError Type.PassSexp)
 contextify cont (nameSymb, xs) = do
@@ -45,12 +48,12 @@ contextify cont (nameSymb, xs) = do
           }
 run = contextify
 
-updateTopLevel :: Sexp.T -> Type.ContextSexp -> IO Type.PassSexp
+updateTopLevel :: Sexp.T -> Context.T -> IO Type.PassSexp
 updateTopLevel x ctx
   | Sexp.isAtomNamed x ":type-class" = pure $ Type.PS ctx [] []
   | Sexp.isAtomNamed x ":instance" = pure $ Type.PS ctx [] []
-updateTopLevel (name Sexp.:> body) ctx
-  | named ":defsig-match" = defun body ctx
+updateTopLevel full@(name Sexp.:> body) ctx
+  | named ":defsig-match" = defun full ctx
   | named "declare" = declare body ctx
   | named "type" = type' body ctx
   | named "open" = open body ctx
@@ -62,41 +65,49 @@ updateTopLevel _ ctx = pure $ Type.PS ctx [] []
 -- top levevl context. Since modules aren't identified yet, we first
 -- check to see if they are a module, and if they are a very simple
 -- module, then we insert a Record into the Context, and not a definition
-defun :: Sexp.T -> Context.T Sexp.T Sexp.T Sexp.T -> IO Type.PassSexp
-defun (f Sexp.:> sig Sexp.:> forms) ctx
-  | Just name <- eleToSymbol f = do
-    let precendent =
-          case Context.extractValue <$> Context.lookup (pure name) ctx of
-            Just (Context.Info _ (Context.Def Context.D {defPrecedence})) ->
-              defPrecedence
-            Just (Context.Info _ (Context.Information info)) ->
-              fromMaybe Context.default' (Context.precedenceOf info)
-            _ -> Context.default'
-        meta = lookupInfoTable name ctx
-        actualSig =
-          case sig of
-            Sexp.Nil -> Nothing
-            ________ -> Just sig
-    (defn, modsDefinedS) <-
-      decideRecordOrDef forms name (Context.currentName ctx) precendent actualSig
-    pure $
-      Type.PS
-        { ctxS =
-            Context.add
-              (NameSpace.Pub name)
-              (Context.Info meta (defn ^. Context.def))
-              ctx,
-          opensS = [],
-          modsDefinedS
-        }
+defun :: Sexp.T -> Context.T -> IO Type.PassSexp
+defun (Structure.toDefunSigMatch -> Just defn) ctx
+  | Just name <- eleToSymbol (defn ^. name) = do
+    let ctxWithSigInfo =
+          case defn ^. sig of
+            Sexp.Nil -> ctx
+            -- TODO ∷ add "type" to a proper name not just here
+            signatur -> injectMetaInformation ctx name (Info.signature, signatur)
+        term =
+          Structure.LambdaCase (defn ^. args) |> Structure.fromLambdaCase
+    pure $ Type.PS (injectNewTerm ctxWithSigInfo name term) [] []
+
 defun _ _ctx = error "malformed defun"
 
-lookupInfoTable ::
-  Symbol -> Context.T term ty sumRep -> HashMap.T Symbol Sexp.T
-lookupInfoTable name ctx =
-  case Context.extractValue <$> Context.lookup (pure name) ctx of
-    Just (Context.Info i _) -> i
-    Nothing -> mempty
+injectNewTerm :: Context.T -> Symbol -> Sexp.T -> Context.T
+injectNewTerm ctx name def =
+  let newTerm =
+        case Context.lookup (pure name) ctx of
+          Just info
+            -- If it comes from the outside then it's not the same
+            -- symbol we are adding here, since it's a local name we
+            -- are adding.
+            | (info ^. Context.nameSpace) /= Context.Outside ->
+              set Context.def (Context.Term def) (info ^. Context.term)
+          _ ->
+            Context.Info mempty (Context.Term def)
+   in Context.add (NameSpace.Pub name) newTerm ctx
+
+injectMetaInformation :: Context.T -> Symbol -> (Symbol, Sexp.T) -> Context.T
+injectMetaInformation ctx name (metaName, value) =
+  let newTerm =
+        case Context.lookup (pure name) ctx of
+          Just info
+            -- If it comes from the outside then it's not the same
+            -- symbol we are adding here, since it's a local name we
+            -- are adding.
+            | (info ^. Context.nameSpace) /= Context.Outside ->
+              over Context.table (HashMap.insert metaName value) (info ^. Context.term)
+          _ ->
+            Context.Info
+              (HashMap.singleton metaName value)
+              (Context.Term (Sexp.serialize @Text ":empty"))
+   in Context.add (NameSpace.Pub name) newTerm ctx
 
 -- | @declare@ takes a declaration and tries to add it to the
 -- context. This is a bit tricky, as we could have seen the definition
@@ -104,7 +115,7 @@ lookupInfoTable name ctx =
 -- great! Add it to a definition, however if we can't find it, then
 -- make a note about the information we have on this symbol, the
 -- definition will handle incorporating it
-declare :: Sexp.T -> Context.T Sexp.T Sexp.T Sexp.T -> IO Type.PassSexp
+declare :: Sexp.T -> Context.T -> IO Type.PassSexp
 declare (Sexp.List [inf, n, i]) ctx
   | Just Sexp.N {atomNum} <- Sexp.atomFromT i,
     Just atomName <- eleToSymbol n =
@@ -119,67 +130,33 @@ declare (Sexp.List [inf, n, i]) ctx
                   Context.Right
                 | otherwise -> error "malformed declaration"
             (fromIntegral atomNum)
-        meta = lookupInfoTable atomName ctx
-     in pure $ case Context.extractValue <$> Context.lookup (pure atomName) ctx of
-          Just (Context.Info _ (Context.Def d)) ->
-            Type.PS
-              { ctxS =
-                  ctx
-                    |> Context.add
-                      (NameSpace.Pub atomName)
-                      ( Context.Info
-                          meta
-                          (Context.Def (d {Context.defPrecedence = prec}))
-                      ),
-                opensS = [],
-                modsDefinedS = []
-              }
-          _ ->
-            Type.PS
-              { ctxS =
-                  Context.add
-                    (NameSpace.Pub atomName)
-                    (Context.Info meta (Context.Information [Context.Prec prec]))
-                    ctx,
-                opensS = [],
-                modsDefinedS = []
-              }
+        newCtx =
+          injectMetaInformation ctx atomName (Info.precedence, Sexp.serialize prec)
+     in Type.PS newCtx [] [] |> pure
 declare _ _ = error "malformed declare"
 
 -- | @type'@ will take its type and add it into the context. Note that
 -- since we store information with the type, we will keep the name in
 -- the top level form.
-type' :: Sexp.T -> Context.T Sexp.T Sexp.T Sexp.T -> IO Type.PassSexp
+type' :: Sexp.T -> Context.T -> IO Type.PassSexp
 type' t@(assocName Sexp.:> _ Sexp.:> dat) ctx
   | Just name <- eleToSymbol (Sexp.car assocName) =
     let constructors = collectConstructors dat
-        meta = lookupInfoTable name ctx
-        addSum con =
-          Context.Sum Nothing name
-            |> Context.SumCon
-            |> Context.Info meta
-            |> Context.add (NameSpace.Pub con)
+        addSum con ctx =
+          Structure.SumCon (pure name)
+            |> Structure.fromSumCon
+            |> injectNewTerm ctx con
         newCtx = foldr addSum ctx constructors
-     in pure $
-          Type.PS
-            { ctxS =
-                Context.add
-                  (NameSpace.Pub name)
-                  ( Context.Info
-                      meta
-                      (Context.TypeDeclar (Sexp.Cons (Sexp.atom "type") t))
-                  )
-                  newCtx,
-              opensS = [],
-              modsDefinedS = []
-            }
+        ctxWithType =
+          injectNewTerm newCtx name (Sexp.Cons (Sexp.atom "type") t)
+     in Type.PS ctxWithType [] [] |> pure
 type' _ _ = error "malformed type"
 
 -- | @open@ like type will simply take the open and register that the
 -- current module is opening it. Since the context does not have such a
 -- notion, we have to store this information for the resolve module to
 -- properly handle
-open :: Sexp.T -> Context.T Sexp.T Sexp.T Sexp.T -> IO Type.PassSexp
+open :: Sexp.T -> Context.T -> IO Type.PassSexp
 open (Sexp.List [mod]) ctx
   | Just Sexp.A {atomName} <- Sexp.atomFromT mod =
     pure $
@@ -189,77 +166,6 @@ open (Sexp.List [mod]) ctx
           modsDefinedS = []
         }
 open _ _ = error "malformed open"
-
--- TODO ∷ why is the context empty?
--- we should somehow note what lists are in scope
-
--- TODO ∷
--- - once we have type checking, rely on that
--- - for dep types where inference is undecidable, force signature
--- - for functions like (f x) where that evals to a module, where it
---   is dependent but decidable, force signature?
-
--- The NameSymbol.T return returns back all record names that are found
--- we don't return a map, as we can't do opens in a record
-
--- | decideRecordOrDef tries to figure out
--- if a given definition is a record or a definition
-decideRecordOrDef ::
-  Sexp.T ->
-  Symbol ->
-  NameSymbol.T ->
-  Context.Precedence ->
-  Maybe Sexp.T ->
-  IO (Type.InfoSexp, [NameSymbol.T])
-decideRecordOrDef xs@(Sexp.List [Sexp.List [Sexp.Nil, body]]) recordName currModName pres ty =
-  -- For the two matched cases eventually
-  -- turn these into record expressions
-  case body of
-    name Sexp.:> rest
-      | Sexp.isAtomNamed name ":record-no-pun" -> do
-        -- the type here can eventually give us arguments though looking at the
-        -- lambda for e, and our type can be found out similarly by looking at
-        -- types
-        (nameSpace, innerMods) <- foldM f (NameSpace.empty, []) grouped
-        --
-        emptyRecord <- atomically Context.emptyRecord
-        --
-        let updated =
-              set Context.contents nameSpace
-                . set Context.mTy ty
-            record = Context.Record (updated emptyRecord)
-        --
-        pure (Context.Info mempty record, newRecordName : innerMods)
-      where
-        Just grouped = Sexp.toList (Sexp.groupBy2 rest)
-        newRecordName = currModName <> pure recordName
-        --
-        f (nameSpace, prevModNames) (Sexp.List [s, e])
-          | Just Sexp.A {atomName} <- Sexp.atomFromT s =
-            let fieldN = NonEmpty.last atomName
-                like = Sexp.list [Sexp.list [Sexp.Nil, e]]
-             in Nothing
-                  |> decideRecordOrDef like fieldN newRecordName Context.default'
-                  >>| bimap
-                    (\d -> NameSpace.insert (NameSpace.Pub fieldN) d nameSpace)
-                    (<> prevModNames)
-        f x _ = pure x
-    _ -> def
-  where
-    def =
-      pure
-        ( Context.Def
-            (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres)
-            |> Context.Info mempty,
-          []
-        )
-decideRecordOrDef xs _ _ pres ty =
-  pure
-    ( Context.Def
-        (Context.D Nothing ty (Sexp.atom ":lambda-case" Sexp.:> xs) pres)
-        |> Context.Info mempty,
-      []
-    )
 
 collectConstructors :: Sexp.T -> [Symbol]
 collectConstructors dat

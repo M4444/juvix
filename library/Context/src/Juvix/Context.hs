@@ -12,6 +12,7 @@ module Juvix.Context
 where
 
 import Control.Lens hiding ((|>))
+import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Context.Precedence
 import Juvix.Context.Types
@@ -314,8 +315,9 @@ lookupInfo :: forall a. Sexp.Serialize a => Info -> Symbol -> Maybe a
 lookupInfo info sym =
   HashMap.lookup sym (info ^. table) >>= Sexp.deserialize @a
 
+-- TODO ∷ abstract out the name precedence
 precedenceOf :: Info -> Maybe Precedence
-precedenceOf info = lookupInfo info "precedence"
+precedenceOf info = lookupInfo info Info.precedence
 
 -------------------------------------------------------------------------------
 -- Generalized Helpers

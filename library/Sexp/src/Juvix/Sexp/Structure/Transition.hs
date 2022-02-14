@@ -120,6 +120,11 @@ data Handler = Handler
   }
   deriving (Show)
 
+data SumCon = SumCon
+  { sumConTypeOf :: NameSymbol.T
+  }
+  deriving (Show)
+
 --------------------------------------------------------------------------------
 -- Converter functions
 -- The format for these are
@@ -452,3 +457,34 @@ fromHandler (Handler sexp1 letRet2 letOp3) =
 instance Sexp.Serialize Handler where
   deserialize = toHandler
   serialize = fromHandler
+
+----------------------------------------
+-- SumCon
+----------------------------------------
+
+nameSumCon :: NameSymbol.T
+nameSumCon = ":sum-con"
+
+isSumCon :: Sexp.T -> Bool
+isSumCon (Sexp.Cons form _) = Sexp.isAtomNamed form nameSumCon
+isSumCon _ = False
+
+toSumCon :: Sexp.T -> Maybe SumCon
+toSumCon form
+  | isSumCon form =
+    case form of
+      _nameSumCon Sexp.:> nameSymbol1 Sexp.:> Sexp.Nil
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+          SumCon nameSymbol1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromSumCon :: SumCon -> Sexp.T
+fromSumCon (SumCon nameSymbol1) =
+  Sexp.list [Sexp.atom nameSumCon, fromNameSymbol nameSymbol1]
+
+instance Sexp.Serialize SumCon where
+  deserialize = toSumCon
+  serialize = fromSumCon

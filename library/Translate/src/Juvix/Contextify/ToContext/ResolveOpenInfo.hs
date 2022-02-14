@@ -62,8 +62,8 @@ data Error
   | IllegalModuleSwitch Context.NameSymbol
   deriving (Show, Eq)
 
-data Resolve a b c = Res
-  { resolved :: [(Context.From (Context.Info a b c), NameSymbol.T)],
+data Resolve = Res
+  { resolved :: [Context.From],
     notResolved :: [NameSymbol.T]
   }
   deriving (Show)
@@ -87,10 +87,7 @@ newtype M a = M (RunM a)
 runM :: M a -> IO (Either Error a)
 runM (M a) = runExceptT a
 
-run ::
-  Context.T term ty sumRep ->
-  [PreQualified] ->
-  IO (Either Error (Context.T term ty sumRep))
+run :: Context.T -> [PreQualified] -> IO (Either Error Context.T)
 run ctx qualifieds = do
   resolved <-
     runM $ do
@@ -106,18 +103,18 @@ run ctx qualifieds = do
 --------------------------------------------------------------------------------
 
 createReverseOpenMap ::
-  (HasThrow "left" Error m) => OpenMap -> Context.T a b c -> m Context.ReverseLookup
+  (HasThrow "left" Error m) => OpenMap -> Context.T -> m Context.ReverseLookup
 createReverseOpenMap open ctx = do
   foldM (resolveReverseOpen ctx) mempty (HashMap.toList open)
 
 populateOpens ::
-  (HasThrow "left" Error m, MonadIO m) => OpenMap -> Context.T a b c -> m ()
+  (HasThrow "left" Error m, MonadIO m) => OpenMap -> Context.T -> m ()
 populateOpens opens ctx = do
   traverse_ (populateOpen ctx) (HashMap.toList opens)
 
 populateOpen ::
   (HasThrow "left" Error m, MonadIO m) =>
-  Context.T a b c ->
+  Context.T ->
   (NameSymbol.T, [Open NameSymbol.T]) ->
   m ()
 populateOpen ctx (explicitModule, opens) = do
@@ -158,7 +155,7 @@ populateOpen ctx (explicitModule, opens) = do
 
 resolveReverseOpen ::
   (HasThrow "left" Error m) =>
-  Context.T a b c ->
+  Context.T ->
   Context.ReverseLookup ->
   (NameSymbol.T, [Open NameSymbol.T]) ->
   m Context.ReverseLookup
@@ -186,22 +183,19 @@ hashMaptoSTMMap pureMap stmMap =
 ----------------------------------------
 
 grabInScopeNames ::
-  HasThrow "left" Error m =>
-  Context.T a b c ->
-  NameSymbol.T ->
-  m (NameSpace.T (Context.Info a b c))
+  HasThrow "left" Error m => Context.T -> NameSymbol.T -> m (NameSpace.T Context.Info)
 grabInScopeNames ctx name =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Info _ (Context.Record rec')) ->
+    Just (Context.Info _ (Context.Module rec')) ->
       pure (rec' ^. Context.contents)
     _ ->
       throw @"left" (UnknownModule (Context.qualifyName name ctx))
 
 grabQualifiedMap ::
-  HasThrow "left" Error m => Context.T a b c -> NameSymbol.T -> m Context.SymbolMap
+  HasThrow "left" Error m => Context.T -> NameSymbol.T -> m Context.SymbolMap
 grabQualifiedMap ctx name =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Info _ (Context.Record rec')) ->
+    Just (Context.Info _ (Context.Module rec')) ->
       pure (rec' ^. Context.qualifiedMap)
     _ ->
       throw @"left" (UnknownModule (Context.qualifyName name ctx))
@@ -231,12 +225,12 @@ grabQualifiedMap ctx name =
 -- @resolve ctx PreQualified {opens = [Prelude]}@
 -- == @Right (fromList [(TopLevel :| [Londo],[Explicit (TopLevel :| [Prelude])])])@
 resolve ::
-  (HasThrow "left" Error m, MonadIO m) => Context.T a b c -> [PreQualified] -> m OpenMap
+  (HasThrow "left" Error m, MonadIO m) => Context.T -> [PreQualified] -> m OpenMap
 resolve ctx = foldM (resolveSingle ctx) mempty
 
 resolveSingle ::
   (HasThrow "left" Error m, MonadIO m) =>
-  Context.T a b c ->
+  Context.T ->
   OpenMap ->
   PreQualified ->
   m OpenMap
@@ -261,9 +255,9 @@ resolveSingle ctx openMap Pre {opens, implicitInner, explicitModule} = do
 -- this goes off after the checks have passed regarding if the paths
 -- are even possible to resolve
 resolveLoop ::
-  Context.T a b c ->
+  Context.T ->
   HashMap.Map Symbol NameSymbol.T ->
-  Resolve a b c ->
+  Resolve ->
   Either Error [NameSymbol.T]
 resolveLoop ctx map Res {resolved, notResolved = cantResolveNow} = do
   map <- foldM addToModMap map fullyQualifyRes
@@ -278,14 +272,13 @@ resolveLoop ctx map Res {resolved, notResolved = cantResolveNow} = do
       | otherwise ->
         (qualifedAns <>) <$> resolveLoop ctx map newResolve
   where
-    fullyQualifyRes =
-      Context.resolveName ctx <$> resolved
+    fullyQualifyRes = resolved
     qualifedAns =
-      fmap snd fullyQualifyRes
-    addToModMap map (defn, sym) =
+      fmap (^. Context.qualifedName) fullyQualifyRes
+    addToModMap map (Context.From {fromTerm = defn, fromQualifedName = sym}) =
       case defn ^. Context.def of
-        Context.Record Context.Rec {recordContents} ->
-          let NameSpace.List {publicL} = NameSpace.toList recordContents
+        Context.Module Context.Mod {moduleContents} ->
+          let NameSpace.List {publicL} = NameSpace.toList moduleContents
            in foldlM
                 ( \map x ->
                     case map HashMap.!? x of
@@ -323,8 +316,7 @@ liftEither (Right x) = pure x
 -- | @pathsCanBeResolved@ takes a context and a list of opens,
 -- we then try to resolve if the opens are legal, if so we return
 -- a list of ones that can be determined now, and a list to be resolved
-pathsCanBeResolved ::
-  Context.T a b c -> [NameSymbol.T] -> Either Error (Resolve a b c)
+pathsCanBeResolved :: Context.T -> [NameSymbol.T] -> Either Error Resolve
 pathsCanBeResolved ctx opens
   | fmap firstName (notResolved resFull) == notResolved resFirst =
     Right resFull
@@ -340,7 +332,7 @@ pathsCanBeResolved ctx opens
         (Set.difference (setRes resFull) (setRes resFirst))
         (Set.difference (setRes resFirst) (setRes resFull))
 
-resolveWhatWeCan :: Context.T a b c -> [NameSymbol.T] -> Resolve a b c
+resolveWhatWeCan :: Context.T -> [NameSymbol.T] -> Resolve
 resolveWhatWeCan ctx opens = Res {resolved, notResolved}
   where
     dupLook =
@@ -352,10 +344,10 @@ resolveWhatWeCan ctx opens = Res {resolved, notResolved}
 -- Helpers for resolve
 ----------------------------------------
 
-splitMaybes :: [(Maybe a, b)] -> ([(a, b)], [b])
+splitMaybes :: [(Maybe a, b)] -> ([a], [b])
 splitMaybes = foldr f ([], [])
   where
-    f (Just a, b) = first ((a, b) :)
+    f (Just a, b) = first (a :)
     f (Nothing, b) = second (b :)
 
 -- TODO ∷ add test for firstName
@@ -374,11 +366,11 @@ firstName xs =
 ----------------------------------------
 
 grabList ::
-  NameSymbol.T -> Context.T a b c -> NameSpace.List (Context.Info a b c)
+  NameSymbol.T -> Context.T -> NameSpace.List Context.Info
 grabList name ctx =
   case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Info _ (Context.Record Context.Rec {recordContents})) ->
-      NameSpace.toList recordContents
+    Just (Context.Info _ (Context.Module Context.Mod {moduleContents})) ->
+      NameSpace.toList moduleContents
     Just _ ->
       NameSpace.List [] []
     Nothing ->

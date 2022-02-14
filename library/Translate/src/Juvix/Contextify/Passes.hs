@@ -9,11 +9,11 @@ module Juvix.Contextify.Passes
 where
 
 import Control.Lens hiding (op, (|>))
-import qualified Juvix.Context.Traversal as Context
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
+import qualified Juvix.Context.Traversal as Context
 import qualified Juvix.Contextify.Binders as Bind
 import qualified Juvix.Contextify.Environment as Env
 import qualified Juvix.Contextify.InfixPrecedence.ShuntYard as Shunt

@@ -651,6 +651,7 @@ temporary lexical bindings as our code encounters binders.
 - This is parameterized per phase which may store the type and
   term in slightly different ways
 - _Relies on_
+  + [[InfoNames]]
   + [[NameSpace]]
   + [[Precedence]]
   + [[Context/Types]]
@@ -659,6 +660,9 @@ temporary lexical bindings as our code encounters binders.
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
+***** InfoNames
+- _Relies on_
+  + [[Library]]
 ***** NameSpace
 - _Relies on_
   + [[Library]]
@@ -2138,6 +2142,7 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
   + [[NameSpace]]
+  + [[Traversal]]
   + [[Juvix/Contextify/Binders]]
   + [[Contextify/Environment]]
   + [[InfixPrecedence/ShuntYard]]
@@ -2187,6 +2192,9 @@ serialization works in Test.Contextify.Binders
   + [[NameSymbol]]
 ****** Sexp <<ToContext/Sexp>>
 - _Relies on_
+  + [[Lens]]
+  + [[InfoNames]]
+  + [[Transition]]
   + [[Juvix/Context]]
   + [[NameSpace]]
   + [[ToContext/Types]]
@@ -2199,7 +2207,6 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
-  + [[Juvix/Sexp]]
 **** Core
 ***** Common
 ****** Context
