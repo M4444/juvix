@@ -2192,16 +2192,16 @@ serialization works in Test.Contextify.Binders
   + [[NameSymbol]]
 ****** Sexp <<ToContext/Sexp>>
 - _Relies on_
-  + [[Lens]]
-  + [[InfoNames]]
-  + [[Transition]]
   + [[Juvix/Context]]
+  + [[InfoNames]]
   + [[NameSpace]]
   + [[ToContext/Types]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
+  + [[Lens]]
+  + [[Transition]]
 ****** Types <<ToContext/Types>>
 - _Relies on_
   + [[Juvix/Context]]
@@ -2220,6 +2220,8 @@ Calculate mutually-recursive groups of definitions.
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Lens]]
+  + [[Transition]]
 ******** Types <<Traverse/Types>>
 - _Relies on_
   + [[Context/Types]]
@@ -2328,6 +2330,7 @@ done with no extra information needed. Thus we export the following passes
 ***** Contextify <<Contextualise/Contextify>>
 - _Relies on_
   + [[Juvix/Context]]
+  + [[InfoNames]]
   + [[Juvix/Contextify]]
   + [[Desugar]]
   + [[Library]]
@@ -2335,6 +2338,7 @@ done with no extra information needed. Thus we export the following passes
   + [[Parsing/Parser]]
   + [[Parsing/Types]]
   + [[Juvix/Sexp]]
+  + [[Transition]]
   + [[TopLevel]]
 ***** Infix
 ****** ShuntYard <<Infix/ShuntYard>>

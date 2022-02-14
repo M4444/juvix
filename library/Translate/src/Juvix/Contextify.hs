@@ -83,7 +83,7 @@ resolveOpens ::
 resolveOpens (ctx', openList) (sym, xs) = do
   ctx <- ContextSexp.run ctx' (sym, xs)
   case ctx of
-    Right Contextify.PS {ctxS, opensS, modsDefinedS} ->
+    Right Contextify.PS {ctxS, opensS, modsDefinedS} -> do
       pure
         ( ctxS,
           ResolveOpen.Pre
@@ -93,14 +93,15 @@ resolveOpens (ctx', openList) (sym, xs) = do
             } :
           openList
         )
-    Left err -> throw @"left" err
+    Left err ->
+      throw @"left" err
 
 ------------------------------------------------------------
 -- Misc Helpers
 ------------------------------------------------------------
 
 addTop :: Bifunctor p => p NameSymbol.T c -> p NameSymbol.T c
-addTop = first (NameSymbol.cons Context.topLevelName)
+addTop = first Context.addTopName
 
 runM :: M a -> IO (Either Context.PathError a)
 runM (M a) = runExceptT a

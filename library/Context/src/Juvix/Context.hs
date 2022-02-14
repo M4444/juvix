@@ -311,6 +311,10 @@ extractValue from = from ^. term
 -- Functions on Info
 -------------------------------------------------------------------------------
 
+lookupInfoSexp :: Info -> Symbol -> Maybe Sexp.T
+lookupInfoSexp info sym =
+  HashMap.lookup sym (info ^. table)
+
 lookupInfo :: forall a. Sexp.Serialize a => Info -> Symbol -> Maybe a
 lookupInfo info sym =
   HashMap.lookup sym (info ^. table) >>= Sexp.deserialize @a

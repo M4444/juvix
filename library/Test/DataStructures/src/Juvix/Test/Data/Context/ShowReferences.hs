@@ -42,7 +42,6 @@ data Definition
     CurrentNameSpace
   deriving (Show, Read, Generic, Eq)
 
-
 data ShowModule = ShowMod
   { contents :: NameSpace.T Info,
     openList :: [Open.TName NameSymbol.T],

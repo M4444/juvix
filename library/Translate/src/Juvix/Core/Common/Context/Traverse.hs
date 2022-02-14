@@ -1,5 +1,5 @@
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Calculate mutually-recursive groups of definitions.
 module Juvix.Core.Common.Context.Traverse
@@ -24,12 +24,11 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Core.Common.Context.Traverse.Types
 import qualified Juvix.FreeVars as FV
-import qualified Juvix.Sexp.Structure.Transition as Structure
-import qualified Juvix.Sexp.Structure.Lens as L
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
-
+import qualified Juvix.Sexp.Structure.Lens as L
+import qualified Juvix.Sexp.Structure.Transition as Structure
 
 -- | Traverses a whole context by performing an action on each recursive group.
 -- The groups are passed in dependency order but the order of elements within
@@ -72,7 +71,7 @@ traverseContext1_ = traverseContext_ . traverse_ . onEntry
 
 onEntry ::
   (NameSymbol.T -> Context.Definition -> t) ->
-  Entry  ->
+  Entry ->
   t
 onEntry f Entry {name, def} = f name def
 

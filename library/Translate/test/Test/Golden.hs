@@ -207,7 +207,7 @@ discoverDesugar =
     (fmap show ([0 ..] :: [Integer]))
 
 discoverContext ::
-  [(NonEmpty (NameSymbol.T, [Sexp.T]) -> Feedback Environment.SexpContext, [Char])]
+  [(NonEmpty (NameSymbol.T, [Sexp.T]) -> Feedback Context.T, [Char])]
 discoverContext =
   discoverPrefix
     [ (contextifySexp, "contextify-sexp"),
@@ -256,7 +256,7 @@ fullDesugar = desugarHandlerTransform
 contextifySexp ::
   (MonadIO m, MonadFail m) =>
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  m (Context.T Sexp.T Sexp.T Sexp.T)
+  m Context.T
 contextifySexp names = do
   context <- liftIO (Contextify.fullyContextify names)
   case context of
@@ -264,24 +264,24 @@ contextifySexp names = do
     Right ctx -> pure ctx
 
 resolveModuleContext ::
-  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Context.T
 resolveModuleContext =
   runPass (contextifySexp, Contextify.resolveModule) "not valid pass"
 
 resolveInfixContext ::
-  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Context.T
 resolveInfixContext =
   "can't resolve infix symbols"
     |> runPass (resolveModuleContext, Contextify.inifixSoloPass)
 
 resolveRecordDeclaration ::
-  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Context.T
 resolveRecordDeclaration =
   "Record to function can't be properly dealt with"
     |> runPass (resolveInfixContext, Contextify.recordDeclaration)
 
 resolveSymbolToLookup ::
-  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Environment.SexpContext
+  (MonadIO m, MonadFail m) => NonEmpty (NameSymbol.T, [Sexp.T]) -> m Context.T
 resolveSymbolToLookup =
   "NameSymbol Resolution to Lookup failed"
     |> runPass (resolveRecordDeclaration, Contextify.notFoundSymbolToLookup)
@@ -301,10 +301,10 @@ runPass (previousPass, currentPass) errString names = do
 ----------------------------------------------------------------------
 
 handleContextPass ::
-  (Monad m, Show ty, Show term, Show sumRep, MonadFail m, MonadIO m) =>
+  (Monad m, MonadFail m, MonadIO m) =>
   [(NonEmpty Symbol, b)] ->
-  (NonEmpty (NonEmpty Symbol, b) -> m (Context.T term ty sumRep)) ->
-  m (Context.ShowRef.ShowRecord term ty sumRep)
+  (NonEmpty (NonEmpty Symbol, b) -> m Context.T) ->
+  m Context.ShowRef.ShowModule
 handleContextPass desuagredSexp contextPass =
   case desuagredSexp of
     [] ->
@@ -317,7 +317,7 @@ handleContextPass desuagredSexp contextPass =
   where
     getModuleName name context =
       case fmap Context.extractValue $ Context.lookup name context of
-        Just (Context.Info _ (Context.Record r)) ->
+        Just (Context.Info _ (Context.Module r)) ->
           pure r
         maybeDef ->
           Feedback.fail ("Definition is not a Record:" <> show maybeDef)

@@ -1,5 +1,5 @@
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LiberalTypeSynonyms #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Juvix.Contextify.ToContext.Sexp
   ( run,
@@ -7,17 +7,17 @@ module Juvix.Contextify.ToContext.Sexp
   )
 where
 
-import Control.Lens (set, (^.), over)
-import Juvix.Sexp.Structure.Lens
-import qualified Juvix.Context.InfoNames as Info
-import qualified Juvix.Sexp.Structure.Transition as Structure
+import Control.Lens (over, set, (^.))
 import qualified Juvix.Context as Context
+import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify.ToContext.Types as Type
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import Juvix.Sexp.Structure.Lens
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import Prelude (error)
 
 -- the name symbols are the modules we are opening
@@ -76,7 +76,6 @@ defun (Structure.toDefunSigMatch -> Just defn) ctx
         term =
           Structure.LambdaCase (defn ^. args) |> Structure.fromLambdaCase
     pure $ Type.PS (injectNewTerm ctxWithSigInfo name term) [] []
-
 defun _ _ctx = error "malformed defun"
 
 injectNewTerm :: Context.T -> Symbol -> Sexp.T -> Context.T

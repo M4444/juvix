@@ -15,15 +15,15 @@ import Prelude (error)
 -- Give me sexp terms helpers
 ----------------------------------------------------------------------
 
-unwrapLookup :: NameSymbol.T -> Context.T a ty sumRep -> Maybe a
+unwrapLookup :: NameSymbol.T -> Context.T -> Maybe Sexp.T
 unwrapLookup symbol ctx =
   case Context.lookup symbol ctx >>| Context.extractValue of
-    Just ((Context.Info _ (Context.Def Context.D {defTerm}))) ->
+    Just ((Context.Info _ (Context.Term defTerm))) ->
       Just defTerm
     _ -> Nothing
 
 contextualizeFoo ::
-  ByteString -> IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  ByteString -> IO (Either Contextify.ResolveErr Context.T)
 contextualizeFoo byte =
   Contextify.op
     ( ( "A",
@@ -43,7 +43,7 @@ contextualizeFoo byte =
     )
 
 contextualizeFooAmbi ::
-  ByteString -> IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  ByteString -> IO (Either Contextify.ResolveErr Context.T)
 contextualizeFooAmbi byte =
   Contextify.op
     ( ( "A",

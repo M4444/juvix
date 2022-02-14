@@ -188,7 +188,7 @@ grabInScopeNames ctx name =
   case Context.extractValue <$> Context.lookup name ctx of
     Just (Context.Info _ (Context.Module rec')) ->
       pure (rec' ^. Context.contents)
-    _ ->
+    val ->
       throw @"left" (UnknownModule (Context.qualifyName name ctx))
 
 grabQualifiedMap ::

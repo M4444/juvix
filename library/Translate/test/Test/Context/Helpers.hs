@@ -20,7 +20,7 @@ contextualizeFoo ::
   IO
     ( Either
         Context.PathError
-        (Contextify.ContextSexp, [Contextify.PreQualified])
+        (Context.T, [Contextify.PreQualified])
     )
 contextualizeFoo byte =
   Contextify.contextify (("Foo", parseDesugarSexp byte) :| [])
