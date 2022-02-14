@@ -34,6 +34,10 @@ data CodegenState = CodegenState
     typTab :: TypeTable,
     -- | a mapping from the variants to the sum type
     varTab :: VariantToType,
+    -- | a mapping from names to record types
+    recordTab :: RecordTable,
+    -- | a mapping from names to sum types
+    sumTab :: SumTable,
     -- | Count of basic blocks
     blockCount :: Int,
     -- | Count of unnamed instructions
@@ -74,6 +78,56 @@ data Errors
     UnsupportedOperation Text
   | -- | Operation has the wrong number of arguments
     WrongNumberOfArguments Text
+  | -- | Mismatch between record type and record name (this indicates a
+    -- | bug in the typechecker, if the type an term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    MisnamedRecord Text
+  | -- | Found a record term with a non-record type (this indicates a
+    -- | bug in the typechecker, if the type of the term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    NonRecordType Text
+  | -- | Found a record term with an undeclared record type (this indicates a
+    -- | bug in the typechecker, if the type of the term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    NonExistentRecordType Text
+  | -- | Found a field term with a name not present in its type's list of
+    -- | fields (this indicates a bug in the typechecker, if the type of the
+    -- | term did not come directly from a test, or some other module that
+    -- | bypasses the typechecker)
+    NonExistentField Text
+  | -- | Found a record term whose fields' types did not match the field
+    -- | types in the record type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedFieldTypes Text
+  | -- | Found a sum term with an undeclared sum type (this indicates a
+    -- | bug in the typechecker, if the type of the term did not come
+    -- | directly from a test, or some other module that bypasses the
+    -- | typechecker)
+    NonExistentSumType Text
+  | -- | Found a sum term whose variants' types did not match the variant
+    -- | types in the sum type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedVariantTypes Text
+  | -- | Found a variant term with a name not present in its type's list of
+    -- | variants (this indicates a bug in the typechecker, if the type of the
+    -- | term did not come directly from a test, or some other module that
+    -- | bypasses the typechecker)
+    NonExistentVariant Text
+  | -- | Found a match term whose cases' types did not match the variant
+    -- | types in the sum type declaration (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedCaseTypes Text
+  | -- | Found a sum term whose type did not match the one found by
+    -- | looking up the type's name (this indicates a bug in the
+    -- | typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    MismatchedSumTypes Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)
@@ -116,6 +170,18 @@ newtype Codegen a = CodeGen {runCodegen :: CodegenAlias a}
       HasSource "typTab" TypeTable
     )
     via StateField "typTab" CodegenAlias
+  deriving
+    ( HasState "recordTab" RecordTable,
+      HasSink "recordTab" RecordTable,
+      HasSource "recordTab" RecordTable
+    )
+    via StateField "recordTab" CodegenAlias
+  deriving
+    ( HasState "sumTab" SumTable,
+      HasSink "sumTab" SumTable,
+      HasSource "sumTab" SumTable
+    )
+    via StateField "sumTab" CodegenAlias
   deriving
     ( HasState "blockCount" Int,
       HasSink "blockCount" Int,
@@ -212,28 +278,48 @@ type RetInstruction m =
     Instruct m
   )
 
-type MallocSum m =
-  ( RetInstruction m,
-    HasState "typTab" TypeTable m,
-    HasState "varTab" VariantToType m,
-    HasState "symTab" SymbolTable m
-  )
-
 type NewBlock m =
   ( HasState "blockCount" Int m,
     HasState "blocks" (Map.T Name BlockState) m,
     HasState "names" Names m
   )
 
+type MallocRecord m =
+  ( RetInstruction m,
+    HasState "recordTab" RecordTable m
+  )
+
+type AllocaRecord m =
+  ( RetInstruction m,
+    HasState "recordTab" RecordTable m,
+    HasState "symTab" SymbolTable m
+  )
+
+type MallocSum m =
+  ( RetInstruction m,
+    HasState "sumTab" SumTable m
+  )
+
 type AllocaSum m =
   ( RetInstruction m,
-    HasState "typTab" TypeTable m,
-    HasState "varTab" VariantToType m
+    HasState "sumTab" SumTable m,
+    HasState "symTab" SymbolTable m
+  )
+
+type LookupType m =
+  ( HasThrow "err" Errors m,
+    HasState "recordTab" RecordTable m,
+    HasState "sumTab" SumTable m,
+    HasState "symTab" SymbolTable m
   )
 
 type Define m =
   ( RetInstruction m,
     Externf m,
+    MallocRecord m,
+    AllocaRecord m,
+    MallocSum m,
+    AllocaSum m,
     HasState "blockCount" Int m,
     HasState "moduleDefinitions" [Definition] m,
     HasState "names" Names m
@@ -251,7 +337,7 @@ type Externf m =
 
 type Call m =
   ( RetInstruction m,
-    HasState "symTab" SymbolTable m
+    LookupType m
   )
 
 type Debug m = HasReader "debug" Int m

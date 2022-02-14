@@ -268,7 +268,7 @@ Surface language
   + [[Plonk/Types]]
   + [[Application]]
   + [[Core/Base/Types]]
-  + [[Conversion]]
+  + [[Ann/Conversion]]
   + [[Prim]]
   + [[Ann/Types]]
   + [[Evaluator]]
@@ -368,9 +368,11 @@ Surface language
 - _Relies on_
   + [[Block]]
   + [[Codegen/Closure]]
+  + [[Record]]
+  + [[Codegen/Sum]]
   + [[Codegen/Types]]
   + [[CString]]
-  + [[ClosureConversion]]
+  + [[Pass/Conversion]]
   + [[Pass/Types]]
   + [[Primitive]]
   + [[Ann]]
@@ -444,9 +446,8 @@ machine looks a bit different, we can see it in this example here
 @
   compileLam ty captures arguments body
    | length captures == 0 = do
-      let (llvmArgty, llvmRetty) =
-            functionTypeLLVM ty
-          llvmArgNames =
+      (llvmArgty, llvmRetty) <- functionTypeLLVM ty
+      let llvmArgNames =
             fmap (Block.internName . NameSymbol.toSymbol) arguments
           llvmArguments =
             zip llvmArgty llvmArgNames
@@ -481,12 +482,30 @@ compile a new top level declaration.
 Module for predefined constants
 - _Relies on_
   + [[Library]]
+******** Record
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Pass/Types]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
+******** Sum <<Codegen/Sum>>
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Closure]]
+  + [[Codegen/Types]]
+  + [[Shared]]
+  + [[Pass/Types]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
 ******** Types <<Codegen/Types>>
 - _Relies on_
   + [[CString]]
   + [[CString]]
   + [[Shared]]
-  + [[Sum]]
+  + [[Types/Sum]]
   + [[Library]]
   + [[HashMap]]
 ********* CString
@@ -500,7 +519,7 @@ Shared between Types and Sum
   + [[CString]]
   + [[Library]]
   + [[HashMap]]
-********* Sum
+********* Sum <<Types/Sum>>
 Provides a mechanism for defining Sum types
 - Has the code to encode a sum type via what is defined by the user or
   what is defined to create the interaction net system.
@@ -510,7 +529,7 @@ Provides a mechanism for defining Sum types
   + [[Library]]
   + [[HashMap]]
 ******* Pass
-******** ClosureConversion
+******** Conversion <<Pass/Conversion>>
 - _Relies on_
   + [[Pass/Types]]
   + [[Primitive]]
@@ -521,6 +540,7 @@ Provides a mechanism for defining Sum types
 ******** Types <<Pass/Types>>
 - _Relies on_
   + [[Primitive]]
+  + [[Core/Base/Types]]
   + [[Ann]]
   + [[Library]]
   + [[NameSymbol]]
@@ -531,6 +551,17 @@ Provides a mechanism for defining Sum types
   + [[Library]]
   + [[Fetch]]
 **** Test
+***** Codegen
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Types/Sum]]
+  + [[LLVM/Compilation]]
+  + [[Pass/Types]]
+  + [[Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Library/Usage]]
 ***** Golden <<llvm/test/Test/Golden>>
 - _Relies on_
   + [[LLVM]]
@@ -817,11 +848,11 @@ keeps the extensions.
   + [[Library/Usage]]
 ****** Ann
 - _Relies on_
-  + [[Conversion]]
+  + [[Ann/Conversion]]
   + [[Ann/Pretty]]
   + [[Prim]]
   + [[Ann/Types]]
-******* Conversion
+******* Conversion <<Ann/Conversion>>
 - _Relies on_
   + [[Application]]
   + [[Core/Base]]
@@ -1926,7 +1957,7 @@ runtime-relevant way.
 - _Relies on_
   + [[Library]]
   + [[Feedback]]
-******* NoQuotes
+******* NoQuotesText
 This structure allows us to have golden tests that are based around
 show instances instead of normal read instances.
 ***** Trace <<Library/Trace>>

@@ -46,9 +46,8 @@
 -- @
 --   compileLam ty captures arguments body
 --    | length captures == 0 = do
---       let (llvmArgty, llvmRetty) =
---             functionTypeLLVM ty
---           llvmArgNames =
+--       (llvmArgty, llvmRetty) <- functionTypeLLVM ty
+--       let llvmArgNames =
 --             fmap (Block.internName . NameSymbol.toSymbol) arguments
 --           llvmArguments =
 --             zip llvmArgty llvmArgNames
@@ -110,6 +109,10 @@ module Juvix.Backends.LLVM.Codegen.Block
     mallocType,
     free,
 
+    -- * Assertions / abnormal termination
+    defineAbort,
+    abort,
+
     -- * Operations
 
     -- ** Integer Operations
@@ -136,6 +139,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     phi,
     switch,
     generateIf,
+    generateSwitch,
 
     -- ** Calling Operations
     emptyArgs,
@@ -146,6 +150,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     alloca,
     load,
     store,
+    mapStore,
 
     -- ** Casting Operations
     bitCast,
@@ -165,6 +170,7 @@ where
 
 import qualified Data.ByteString as BS
 import Data.ByteString.Short hiding (length)
+import Data.List (unzip3)
 import Juvix.Backends.LLVM.Codegen.Types as Types
 import Juvix.Backends.LLVM.Codegen.Types.CString (CString)
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
@@ -181,7 +187,7 @@ import qualified LLVM.AST.Name as Name
 import qualified LLVM.AST.Operand as Operand
 import qualified LLVM.AST.ParameterAttribute as ParameterAttribute
 import qualified LLVM.AST.Type as Type
-import Prelude (String)
+import Prelude (String, uncurry)
 
 --------------------------------------------------------------------------------
 -- Codegen Operations
@@ -228,6 +234,8 @@ emptyCodegen =
       Types.symTab = Map.empty,
       Types.typTab = Map.empty,
       Types.varTab = Map.empty,
+      Types.recordTab = Map.empty,
+      Types.sumTab = Map.empty,
       Types.count = 0,
       Types.names = Map.empty,
       Types.strings = mempty,
@@ -441,6 +449,28 @@ entry = get @"currentBlock"
 -- @
 getBlock :: (HasState "currentBlock" Name m) => m Name
 getBlock = entry
+
+-- | Switches to a block, does something, and returns to the original block.
+withBlock :: (HasState "currentBlock" Name m) => Name -> m a -> m a
+withBlock tmpBlock action = do
+  cur <- getBlock
+  setBlock tmpBlock
+  a <- action
+  setBlock cur
+  return a
+
+-- | Creates a block and switches to a it. Does something, and returns to the
+-- original block.
+withNewBlock ::
+  ( HasState "currentBlock" Name m,
+    NewBlock m
+  ) =>
+  Symbol ->
+  m a ->
+  m a
+withNewBlock blockSym action = do
+  blockName <- addBlock blockSym
+  withBlock blockName action
 
 -- | @addBlock@ generates a new block. This is used every time a
 -- jump/decision/goto point is needed. For example:
@@ -743,7 +773,7 @@ printCString str args = do
 -- Memory management
 --------------------------------------------------------------------------------
 
--- malloc & free need to be defined once and then can be called
+-- malloc, free, and abort need to be defined once and then can be called
 -- normally with `externf`
 
 -- | @defineMalloc@ defines the malloc function
@@ -758,6 +788,13 @@ defineFree :: External m => m ()
 defineFree = do
   let name = "free"
   op <- external voidTy name [(Types.pointerOf Type.i8, "type")]
+  assign (intern name) op
+
+-- | @defineAbort@ defines the abort function
+defineAbort :: External m => m ()
+defineAbort = do
+  let name = "abort"
+  op <- external voidTy name []
   assign (intern name) op
 
 -- | @malloc@ takes the size and the resulting type of the @malloc@. the
@@ -795,6 +832,16 @@ free thing = do
   free <- externf "free"
   casted <- bitCast thing (Types.pointerOf Type.i8)
   unnminstr (callConvention CC.Fast free (emptyArgs [casted]))
+
+-- | @abort@ terminates the program abnormally.
+abort :: (RetInstruction m, Externf m) => m ()
+abort = do
+  abort <- externf "abort"
+  unnminstr $
+    callConvention
+      CC.Fast
+      abort
+      (emptyArgs [])
 
 -- * Operations are functions that are callable on the LLVM backend
 
@@ -1026,6 +1073,58 @@ generateIf ty cond tr fl = do
   setBlock ifExit
   phi ty [(t, ifThen), (f, ifElse)]
 
+-- | @generateSwitch@ is a layer over @switch@, similarly to how
+-- @generateIf@ is a layer over @cbr@.
+--
+-- @
+-- Block.generateSwitch ty term [(caseName, caseValue, caseBody)]
+-- @
+generateSwitch ::
+  forall m.
+  ( RetInstruction m,
+    HasState "blockCount" Int m,
+    HasState "names" Names m,
+    HasState "symTab" SymbolTable m
+  ) =>
+  -- | Type of caseValue.
+  Type ->
+  -- | Operand that we are comparing.
+  Operand ->
+  -- | List of (caseName, caseValue, caseBody).
+  -- * caseName: informative tag.
+  -- * caseValue: like a literal pattern.
+  -- * caseBody: the code to run.
+  [(Symbol, C.Constant, m Operand)] ->
+  -- | Default case. If Nothing, an error is thrown if the default block is
+  -- reached.
+  Maybe (m ()) ->
+  m Operand
+generateSwitch ty tag caseInfos mdefault = do
+  exitBlock <- addBlock "switch-exit"
+  defaultPhi@(_, defaultBlock) <- makeDefaultBlock exitBlock
+  phiPairs <- zipWithM (makePhiPair exitBlock) names cases
+  void $ switch tag defaultBlock $ zip values (map snd phiPairs)
+  setBlock exitBlock
+  phi ty $ defaultPhi : phiPairs
+  where
+    errVal = AST.ConstantOperand $ C.Int {C.integerBits = 8, C.integerValue = 0}
+    makeDefaultBlock :: Name -> m (Operand, Name)
+    makeDefaultBlock exitBlock = withNewBlock "switch-default" $ do
+      case mdefault of
+        Nothing -> abort
+        Just op -> op
+      void (br exitBlock)
+      castedErr <- bitCast errVal ty
+      defaultBlock <- getBlock
+      return (castedErr, defaultBlock)
+    makePhiPair :: Name -> Symbol -> m Operand -> m (Operand, Name)
+    makePhiPair exitBlock symbol case_ = withNewBlock ("switch." <> symbol) $ do
+      op <- case_
+      void (br exitBlock)
+      blockName <- getBlock
+      pure (op, blockName)
+    (names, values, cases) = unzip3 caseInfos
+
 --------------------------------------------------------------------------------
 -- Effects
 --------------------------------------------------------------------------------
@@ -1092,7 +1191,7 @@ callVoid fn args =
 -- --
 -- let -- We should probably get the type from the function itself
 --     -- rather than pass in what it should be here
---     functionType = typeToLLVM returnTy
+--     functionType <- typeToLLVM returnTy
 --     -- ignore attributes for now!
 --     argsAtrributes = zip arguments (repeat [])
 --
@@ -1152,6 +1251,10 @@ load typ ptr = instr typ $ Load False ptr Nothing 0 []
 -- See @load@ for an example call.
 store :: Instruct m => Operand -> Operand -> m ()
 store ptr val = unnminstr $ Store False ptr val Nothing 0 []
+
+-- | Performs a list of @store@ operations.
+mapStore :: Instruct m => [Operand] -> [Operand] -> m ()
+mapStore ptrs vals = mapM_ (Prelude.uncurry store) $ zip ptrs vals
 
 --------------------------------------------------------------------------------
 -- Casting Operations

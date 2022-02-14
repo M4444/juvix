@@ -22,18 +22,19 @@ description:         LLVM backend for the Juvix programming language.
 dependencies:
   - aeson
   - base >= 4.7 && < 5
-  - core
-  - hashable
-  - pipeline
-  - llvm-hs-pretty
-  - text
-  - llvm-hs-pure >= 9.0 && < 9.1
-  - llvm-hs
-  - standard-library
-  - unordered-containers >= 0.2.13
   - Cabal
   - bytestring
+  - core
   - data-structures
+  - hashable
+  - llvm-hs
+  - llvm-hs-pretty
+  - llvm-hs-pure >= 9.0 && < 9.1
+  - pipeline
+  - safe
+  - standard-library
+  - text
+  - unordered-containers >= 0.2.13
 
 default-extensions:
 - BlockArguments

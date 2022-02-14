@@ -2,6 +2,10 @@
 module Juvix.Backends.LLVM.Codegen.Types.Shared
   ( SymbolTable,
     TypeTable,
+    RecordDesc,
+    RecordTable,
+    SumDesc,
+    SumTable,
     StringsTable,
     SumInfo (..),
     VariantToType,
@@ -35,6 +39,20 @@ type VariantToType = Map.T Symbol SumInfo
 -- | Mapping from Symbols to Ints that allow us to pick an unique
 -- numbering to go along with a given name.
 type Names = Map.T Symbol Int
+
+-- | The information associated with a single record type.
+type RecordDesc = (Type, [(Symbol, Type)])
+
+-- | A mapping of record names to LLVM types and lists of (name, type) pairs
+-- | (one for each field).
+type RecordTable = Map.T Symbol RecordDesc
+
+-- | The information associated with a single sum type.
+type SumDesc = (Type, [(Symbol, Type)])
+
+-- | A mapping of sum names to LLVM types and lists of (name, type) pairs
+-- | (one for each variant).
+type SumTable = Map.T Symbol SumDesc
 
 -- | @uniqueName@ given a symbol and a name table, generate a new
 -- unique name and give back the updated nametable.

@@ -13,6 +13,9 @@ declare external fastcc  i8* @malloc(i32)
 declare external fastcc  void @free(i8*)    
 
 
+declare external fastcc  void @abort()    
+
+
 define external fastcc  i8 @main()    {
 main:
   %0 = add nuw nsw i8 4, 6 
