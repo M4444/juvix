@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE OverloadedLists #-}
 
 -- | Calculate mutually-recursive groups of definitions.
@@ -23,58 +24,55 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Core.Common.Context.Traverse.Types
 import qualified Juvix.FreeVars as FV
+import qualified Juvix.Sexp.Structure.Transition as Structure
+import qualified Juvix.Sexp.Structure.Lens as L
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
-type Shows a b c = (Show a, Show b, Show c)
-
-type Eqs a b c = (Eq a, Eq b, Eq c)
-
-type Datas a b c = (Data a, Data b, Data c)
 
 -- | Traverses a whole context by performing an action on each recursive group.
 -- The groups are passed in dependency order but the order of elements within
 -- each group is arbitrary.
 traverseContext ::
-  (Shows a b c, Applicative f, Monoid t, Datas a b c, Eqs a b c) =>
+  (Applicative f, Monoid t) =>
   -- | process one recursive group
-  (Group a b c -> f t) ->
-  Context.T a b c ->
+  (Group -> f t) ->
+  Context.T ->
   f t
 traverseContext f = foldMapA f . recGroups
 
 -- | As 'traverseContext' but ignoring the return value.
 traverseContext_ ::
-  (Shows a b c, Applicative f, Datas a b c, Eqs a b c) =>
+  Applicative f =>
   -- | process one recursive group
-  (Group a b c -> f z) ->
-  Context.T a b c ->
+  (Group -> f z) ->
+  Context.T ->
   f ()
 traverseContext_ f = traverse_ f . recGroups
 
 -- | Same as 'traverseContext', but the groups are split up into single
 -- definitions.
 traverseContext1 ::
-  (Shows a b c, Applicative f, Monoid t, Datas a b c, Eqs a b c) =>
+  (Applicative f, Monoid t) =>
   -- | process one definition
-  (NameSymbol.T -> Context.Definition a b c -> f t) ->
-  Context.T a b c ->
+  (NameSymbol.T -> Context.Definition -> f t) ->
+  Context.T ->
   f t
 traverseContext1 = traverseContext . foldMapA . onEntry
 
 -- | Same as 'traverseContext1', but ignoring the return value.
 traverseContext1_ ::
-  (Shows a b c, Applicative f, Datas a b c, Eqs a b c) =>
+  Applicative f =>
   -- | process one definition
-  (NameSymbol.T -> Context.Definition a b c -> f z) ->
-  Context.T a b c ->
+  (NameSymbol.T -> Context.Definition -> f z) ->
+  Context.T ->
   f ()
 traverseContext1_ = traverseContext_ . traverse_ . onEntry
 
 onEntry ::
-  (NameSymbol.T -> Context.Definition term ty sumRep -> t) ->
-  Entry term ty sumRep ->
+  (NameSymbol.T -> Context.Definition -> t) ->
+  Entry  ->
   t
 onEntry f Entry {name, def} = f name def
 
@@ -82,13 +80,9 @@ onEntry f Entry {name, def} = f name def
 -- a mutually-recursive group, whose elements depend only on each other and
 -- elements of previous groups. The first element of each pair is its
 -- fully-qualified name.
-recGroups ::
-  (Shows ty term sumRep, Datas ty term sumRep, Eqs ty term sumRep) =>
-  Context.T term ty sumRep ->
-  [Group term ty sumRep]
+recGroups :: Context.T -> [Group]
 recGroups ctx@Context.T {topLevelMap} =
-  let top = topLevelMap
-      (groups, deps) = run_ ctx $ recGroups' injectTopLevel $ toNameSpace top
+  let (groups, deps) = run_ ctx $ recGroups' injectTopLevel $ toNameSpace topLevelMap
       get n = maybe [] toList $ HashMap.lookup n deps
       edges = map (\(n, gs) -> (gs, n, get n)) $ HashMap.toList groups
       (g, fromV', _) = Graph.graphFromEdges edges
@@ -96,11 +90,12 @@ recGroups ctx@Context.T {topLevelMap} =
    in Graph.topSort g |> reverse |> concatMap fromV |> sortBy orderDatatypes |> groupCons
 
 -- | Join type and data constructors in a single group
-groupCons :: (Foldable t, Eqs ty term sumRep) => t (NonEmpty (Entry term ty sumRep)) -> [Group term ty sumRep]
+groupCons :: Foldable t => t (NonEmpty Entry) -> [Group]
 groupCons = fmap snd . foldr f mempty
   where
     f entry@(a NonEmpty.:| _as) acc
-      | Context.SumCon Context.Sum {sumTName} <- def a,
+      | Context.Term (Structure.toSumCon -> Just tm) <- def a,
+        let sumTName = NameSymbol.toSym (tm ^. L.typeOf),
         Just _ <- find (elem sumTName) (fst <$> acc) =
         -- Find if type declar of a data constructor exists
         foldr (g sumTName) mempty acc
@@ -111,42 +106,44 @@ groupCons = fmap snd . foldr f mempty
           | otherwise = (k, v) : a
 
 -- | Make data type come before data constructor
-orderDatatypes ::
-  Group term ty sumRep ->
-  Group term ty sumRep ->
-  Ordering
+orderDatatypes :: Group -> Group -> Ordering
 orderDatatypes (a NonEmpty.:| _as) (b NonEmpty.:| _bs) = case (def a, def b) of
-  (Context.SumCon Context.Sum {sumTName}, Context.TypeDeclar _)
-    | sumTName `elem` name b -> GT
-  (Context.TypeDeclar _, Context.SumCon Context.Sum {sumTName})
-    | sumTName `elem` name a -> LT
+  -- Bug here, what if we had
+  --
+  -- (:sum-con foo) and (type foo.Bar.x)
+  --
+  -- then it'll give the elem call a false ordering....
+  --
+  -- Thus we use NameSymbol.last and check that against the name
+  (Context.Term (Structure.toSumCon -> Just tm), _)
+    | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name b) ->
+      GT
+  (_, Context.Term (Structure.toSumCon -> Just tm))
+    | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name a) ->
+      LT
   (_, _) -> EQ
 
 injectTopLevel :: (Semigroup a, IsString a) => a -> a
 injectTopLevel name = Context.topLevelName <> "." <> name
 
 recGroups' ::
-  HasRecGroups term ty sumRep m =>
-  (Symbol -> Symbol) ->
-  Context.NameSpace term ty sumRep ->
-  m ()
+  HasRecGroups m => (Symbol -> Symbol) -> NameSpace.T Context.Info -> m ()
 recGroups' injection ns = do
   defs <-
     concat <$> for (NameSpace.toList1' ns) \(name, term) ->
       case term ^. Context.def of
-        Context.Record ns -> do
+        Context.Module ns -> do
           contextName <- gets @"context" Context.currentName
           modify @"context"
             ( \ctx ->
                 fromMaybe
                   ctx
-                  ( Context.qualifyLookup
-                      (NameSymbol.fromSymbol (injection name))
-                      ctx
+                  ( Context.lookup (NameSymbol.fromSymbol (injection name)) ctx
+                      >>| (^. Context.qualifedName)
                       >>= (`Context.inNameSpace` ctx)
                   )
             )
-          recGroups' identity ((ns ^. Context.contents))
+          recGroups' identity (ns ^. Context.contents)
           modify @"context"
             (\ctx -> fromMaybe ctx (Context.inNameSpace contextName ctx))
           pure []
@@ -158,14 +155,8 @@ recGroups' injection ns = do
           qname <- qualify name
           fvs <-
             case term ^. Context.def of
-              Context.Unknown mt ->
-                fv mt
-              Context.Information xs ->
-                fv xs
-              Context.TypeDeclar sum ->
-                fv sum
-              Context.Def (Context.D usage mty term prec) ->
-                (\a b c d -> a <> b <> c <> d) <$> fv usage <*> fv mty <*> fv term <*> fv prec
+              Context.Term tm ->
+                fv tm
               _ -> pure []
           -- we remove the TopLevel. from fvs as it screws with the
           -- algorithm resolution
@@ -181,20 +172,18 @@ recGroups' injection ns = do
   addDeps fvs
   for_ groups addGroup
 
-fv :: (ContextReader term ty sumRep m, Data a) => a -> m [NameSymbol.T]
+fv :: (ContextReader m, Data a) => a -> m [NameSymbol.T]
 fv t = gets @"context" \ctx ->
   SYB.everything (<>) (SYB.mkQ mempty FV.op) t
     |> HashSet.toList
-    |> mapMaybe (`Context.qualifyLookup` ctx)
+    |> mapMaybe (\name -> Context.lookup name ctx >>| (^. Context.qualifedName))
 
-toNameSpace :: HashMap.T Symbol a -> NameSpace.T a
+toNameSpace :: HashMap.T Symbol Context.Info -> NameSpace.T Context.Info
 toNameSpace public = NameSpace.T {public, private = mempty}
 
 -- | Add a group to the final output.
 addGroup ::
-  (ContextReader term ty sumRep m, OutputState term ty sumRep m, Foldable t) =>
-  t (Entry term ty sumRep) ->
-  m ()
+  (ContextReader m, OutputState m, Foldable t) => t Entry -> m ()
 addGroup grp = do
   prefix <- prefixM
   case nonEmpty $ toList grp of
@@ -204,7 +193,7 @@ addGroup grp = do
     Nothing -> pure ()
 
 -- | Add dependencies on the given names to the current namespace.
-addDeps :: (Foldable t, DepsState m, ContextReader a b c m) => t NameSymbol.T -> m ()
+addDeps :: (Foldable t, DepsState m, ContextReader m) => t NameSymbol.T -> m ()
 addDeps deps = do
   let mods = HashSet.fromList $ map NameSymbol.mod $ toList deps
   let f = Just . maybe mods (HashSet.union mods)
@@ -214,9 +203,9 @@ addDeps deps = do
 toMod :: NameSymbol.T -> NameSymbol.Mod
 toMod = toList
 
-prefixM :: ContextReader a b c m => m NameSymbol.Mod
+prefixM :: ContextReader m => m NameSymbol.Mod
 prefixM = gets @"context" (toMod . Context.currentName)
 
 -- | Qualify a name by the current module prefix.
-qualify :: ContextReader a b c m => Symbol -> m NameSymbol.T
+qualify :: ContextReader m => Symbol -> m NameSymbol.T
 qualify n = gets @"context" ((<> pure n) . Context.currentName)

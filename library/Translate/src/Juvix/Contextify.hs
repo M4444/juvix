@@ -29,9 +29,7 @@ type PathError t = Either Context.PathError t
 -- Main functionality
 --------------------------------------------------------------------------------
 
-op ::
-  NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  IO (Either ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+op :: NonEmpty (NameSymbol.T, [Sexp.T]) -> IO (Either ResolveErr Context.T)
 op names = do
   context <- fullyContextify names
   case context of
@@ -52,7 +50,7 @@ op names = do
 -- should come from
 fullyContextify ::
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  IO (Either ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  IO (Either ResolveErr Context.T)
 fullyContextify ts = do
   cont <- contextify ts
   case cont of
@@ -66,7 +64,7 @@ fullyContextify ts = do
 
 contextify ::
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  IO (PathError (Contextify.ContextSexp, [ResolveOpen.PreQualified]))
+  IO (PathError (Context.T, [ResolveOpen.PreQualified]))
 contextify t@((sym, _) :| _) = do
   emptyCtx <- Context.empty sym
   runM $
@@ -79,9 +77,9 @@ contextify t@((sym, _) :| _) = do
 -- we get the opens
 resolveOpens ::
   (MonadIO m, HasThrow "left" Context.PathError m) =>
-  (Contextify.ContextSexp, [ResolveOpen.PreQualified]) ->
+  (Context.T, [ResolveOpen.PreQualified]) ->
   (Context.NameSymbol, [Sexp.T]) ->
-  m (Contextify.ContextSexp, [ResolveOpen.PreQualified])
+  m (Context.T, [ResolveOpen.PreQualified])
 resolveOpens (ctx', openList) (sym, xs) = do
   ctx <- ContextSexp.run ctx' (sym, xs)
   case ctx of

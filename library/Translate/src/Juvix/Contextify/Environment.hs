@@ -107,8 +107,6 @@ type BindSexp a = Sexp.B (Bind.BinderPlus a)
 
 type BindAtom a = Sexp.Atom (Bind.BinderPlus a)
 
-type Pred = NameSymbol.T -> Bool
-
 type Pass m a = PassSig m (Bind.BinderPlus a)
 
 type PassNoCtx m a = PassNoCtxSig m (Bind.BinderPlus a)

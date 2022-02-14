@@ -5,7 +5,7 @@
 module Juvix.Test.Data.Context.ShowReferences
   ( stmRecordToShowRecord,
     defToShowDef,
-    ShowRecord (..),
+    ShowModule (..),
     Definition (..),
   )
 where
@@ -26,67 +26,49 @@ type ShowSymbolMap = HashMap.T Symbol Types.SymbolInfo
 
 -- Aren't Closed Types wonderful
 
-data Info term ty sumRep = Info
+data Info = Info
   { infoTable :: HashMap.T Symbol Sexp.T,
-    infoDef :: Definition term ty sumRep
+    infoDef :: Definition
   }
   deriving (Show, Read, Generic, Eq)
 
 -- | Definition acts like Types.Record, except that the Record type
 -- with an STM map is replaced by a showable variant
-data Definition term ty sumRep
-  = Def (Types.Def term ty)
-  | Record (ShowRecord term ty sumRep)
-  | TypeDeclar
-      { definitionRepr :: sumRep
-      }
-  | Unknown
-      { definitionMTy :: Maybe ty
-      }
-  | Information
-      { definitionInfo :: [Types.Information]
-      }
-  | CurrentNameSpace
-  | SumCon (Types.SumT term ty)
+data Definition
+  = Term Sexp.T
+  | Module ShowModule
+  | -- | @CurrentNameSpace@ Signifies that this path is the current
+    -- module, and that we should search the currentNameSpace instead
+    CurrentNameSpace
   deriving (Show, Read, Generic, Eq)
 
-data ShowRecord term ty sumRep = ShowRec
-  { contents :: NameSpace.T (Info term ty sumRep),
-    mTy :: Maybe ty,
+
+data ShowModule = ShowMod
+  { contents :: NameSpace.T Info,
     openList :: [Open.TName NameSymbol.T],
     qualifiedMap :: ShowSymbolMap
   }
   deriving (Show, Read, Generic, Eq)
 
 stmRecordToShowRecord ::
-  Types.Record term ty sumRep -> IO (ShowRecord term ty sumRep)
+  Types.Module -> IO (ShowModule)
 stmRecordToShowRecord record = do
-  newContents <- traverse defToShowDef (Types.recordContents record)
-  newMap <- stmMapToHashMap (Types.recordQualifiedMap record)
+  newContents <- traverse defToShowDef (Types.moduleContents record)
+  newMap <- stmMapToHashMap (Types.moduleQualifiedMap record)
   pure
-    ShowRec
+    ShowMod
       { contents = newContents,
-        mTy = Types.recordMTy record,
-        openList = Types.recordOpenList record,
+        openList = Types.moduleOpenList record,
         qualifiedMap = newMap
       }
 
-defToShowDef ::
-  Types.Info term ty sumRep -> IO (Info term ty sumRep)
-defToShowDef (Types.Info m (Types.Def definition)) =
-  Def definition |> Info m |> pure
-defToShowDef (Types.Info m (Types.SumCon sumcons)) =
-  SumCon sumcons |> Info m |> pure
-defToShowDef (Types.Info m (Types.Unknown unknow)) =
-  Unknown unknow |> Info m |> pure
-defToShowDef (Types.Info m (Types.TypeDeclar typ)) =
-  TypeDeclar typ |> Info m |> pure
-defToShowDef (Types.Info m (Types.Information fo)) =
-  Information fo |> Info m |> pure
+defToShowDef :: Types.Info -> IO Info
+defToShowDef (Types.Info m (Types.Term term)) =
+  Term term |> Info m |> pure
 defToShowDef (Types.Info m Types.CurrentNameSpace) =
   CurrentNameSpace |> Info m |> pure
-defToShowDef (Types.Info m (Types.Record d)) =
-  stmRecordToShowRecord d >>| Record >>| Info m
+defToShowDef (Types.Info m (Types.Module d)) =
+  stmRecordToShowRecord d >>| Module >>| Info m
 
 stmMapToHashMap ::
   (Eq key, Hashable key) => STM.Map key value -> IO (HashMap.T key value)

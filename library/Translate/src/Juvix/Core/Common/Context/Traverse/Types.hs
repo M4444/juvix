@@ -30,88 +30,85 @@ import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
 -- | A definition identified by its fully-qualified name.
-data Entry term ty sumRep = Entry
+data Entry = Entry
   { name :: NameSymbol.T,
-    def :: Definition term ty sumRep
+    def :: Definition
   }
   deriving (Eq, Show, Generic)
 
 -- | A recursive group of definitions, in an arbitrary order.
-type Group term ty sumRep = NonEmpty (Entry term ty sumRep)
+type Group = NonEmpty Entry
 
-type Group' term ty sumRep = D.DList (Entry term ty sumRep)
+type Group' = D.DList Entry
 
 -- | All recursive groups in a context. Each namespace has its groups in
 -- dependency order.
-type Groups term ty sumRep =
-  HashMap NameSymbol.Mod [Group term ty sumRep]
+type Groups =
+  HashMap NameSymbol.Mod [Group]
 
-type Groups' term ty sumRep =
-  HashMap NameSymbol.Mod (D.DList (Group term ty sumRep))
+type Groups' =
+  HashMap NameSymbol.Mod (D.DList Group)
 
 -- | Module name prefix
 newtype Prefix = P (D.DList Symbol)
 
 type Deps = HashMap NameSymbol.Mod (HashSet NameSymbol.Mod)
 
-data S term ty sumRep = S
-  { output :: Groups' term ty sumRep,
-    context :: Context.T term ty sumRep,
+data S = S
+  { output :: Groups',
+    context :: Context.T,
     deps :: Deps
   }
   deriving (Generic)
 
-type Alias term ty sumRep = State (S term ty sumRep)
+type Alias = State S
 
-newtype Env term ty sumRep a = Env (Alias term ty sumRep a)
+newtype Env a = Env (Alias a)
   deriving newtype (Functor, Applicative, Monad)
   deriving
-    ( HasSource "output" (Groups' term ty sumRep),
-      HasSink "output" (Groups' term ty sumRep),
-      HasState "output" (Groups' term ty sumRep)
+    ( HasSource "output" Groups',
+      HasSink "output" Groups',
+      HasState "output" Groups'
     )
-    via StateField "output" (Alias term ty sumRep)
+    via StateField "output" Alias
   deriving
-    ( HasSource "context" (Context.T term ty sumRep),
-      HasSink "context" (Context.T term ty sumRep),
-      HasState "context" (Context.T term ty sumRep)
+    ( HasSource "context" Context.T,
+      HasSink "context" Context.T,
+      HasState "context" Context.T
     )
-    via StateField "context" (Alias term ty sumRep)
+    via StateField "context" Alias
   deriving
     ( HasSource "deps" Deps,
       HasSink "deps" Deps,
       HasState "deps" Deps
     )
-    via StateField "deps" (Alias term ty sumRep)
+    via StateField "deps" Alias
 
-type ContextReader term ty sumRep =
-  HasState "context" (Context.T term ty sumRep)
+type ContextReader =
+  HasState "context" Context.T
 
-type OutputState term ty sumRep =
-  HasState "output" (Groups' term ty sumRep)
+type OutputState =
+  HasState "output" Groups'
 
 type DepsState = HasState "deps" Deps
 
-type HasRecGroups term ty sumRep m =
-  ( ContextReader term ty sumRep m,
+type HasRecGroups m =
+  ( ContextReader m,
     DepsState m,
-    OutputState term ty sumRep m,
-    Data term,
-    Data ty,
-    Data sumRep
+    OutputState m
   )
 
 run_ ::
-  Context.T term ty sumRep ->
-  Env term ty sumRep a ->
-  (Groups term ty sumRep, Deps)
+  Context.T ->
+  Env a ->
+  (Groups, Deps)
 run_ context act =
   let (_, grps, deps) = run context act in (grps, deps)
 
 run ::
-  Context.T term ty sumRep ->
-  Env term ty sumRep a ->
-  (a, Groups term ty sumRep, Deps)
+  Context.T ->
+  Env a ->
+  (a, Groups, Deps)
 run context (Env act) =
   let (res, S {output, deps}) = runState act initState
    in (res, toList <$> output, deps)
