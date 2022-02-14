@@ -9,6 +9,7 @@ module Juvix.Contextify.Passes
 where
 
 import Control.Lens hiding (op, (|>))
+import qualified Juvix.Context.Traversal as Context
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
@@ -58,7 +59,7 @@ type Expression m = (Env.ErrS m, Env.HasClosure m)
 -- an open module
 
 resolveModule ::
-  ExpressionIO m => Env.SexpContext -> m Env.SexpContext
+  ExpressionIO m => Context.T -> m Context.T
 resolveModule context =
   Env.contextPassStar
     context
@@ -75,7 +76,7 @@ openResolution ctx atom rec' = do
     ________________________________ -> pure (Sexp.Atom res)
 
 atomResolution ::
-  ExpressionIO m => Context.T term ty sumRep -> Sexp.Atom a -> m (Sexp.B a)
+  ExpressionIO m => Context.T -> Sexp.Atom a -> m (Sexp.B a)
 atomResolution context (atom@Sexp.A {atomName = name}) = do
   closure <- ask @"closure"
   let symbolName = NameSymbol.hd name
@@ -134,7 +135,7 @@ instance Sexp.Serialize Infix where
 --   1. (:infix-3 3 (:infix-2 (:infix-4 1 5) 7))
 -- - Note :: infix-<num> stands for precedent <num>
 inifixSoloPass ::
-  Expression m => Env.SexpContext -> m Env.SexpContext
+  Expression m => Context.T -> m Context.T
 inifixSoloPass context =
   Env.contextPassStar @Infix context infixConversion
 
@@ -168,7 +169,7 @@ infixToInfFlat (Infix op lt rt) =
 
 groupInfix ::
   (Env.ErrS f, Env.HasClosure f) =>
-  Context.T t y s ->
+  Context.T ->
   Infix ->
   f (NonEmpty (Shunt.PredOrEle NameSymbol.T (Sexp.B (Bind.BinderPlus Infix))))
 groupInfix context inf =
@@ -198,9 +199,9 @@ convertShunt (Shunt.App s app1 app2) =
 --------------------------------------------------------------------------------
 
 recordDeclaration ::
-  ExpressionIO m => Env.SexpContext -> m Env.SexpContext
+  ExpressionIO m => Context.T -> m Context.T
 recordDeclaration context =
-  Env.contextPassChange context (== Structure.nameType) figureRecord
+  Context.traverseContext context figureRecord
 
 -- - input form
 --   1. (type name₁ (arg₁ … argₙ)
@@ -217,14 +218,14 @@ recordDeclaration context =
 --                               (fieldₙ usageₙ typeₙ))))
 --      }
 figureRecord ::
-  ExpressionIO m => Env.PassChange m
-figureRecord = Env.PassChange rec
-  where
-    rec ctx (Structure.toType -> Just type') defName
+  ExpressionIO m => Context.Input Context.Info -> m (Context.Additional Context.Info)
+figureRecord Context.Input {info} =
+  case info ^. Context.def of
+    Context.Term (Structure.toType -> Just type')
       | -- make sure it's a record only declaration
         -- how do we handle sum types?
         maybe 0 length (Sexp.toList (type' ^. body)) == 1,
-        Just record <- Structure.toRecordDec (Sexp.car (type' ^. body)) =
+        Just record <- Structure.toRecordDec (Sexp.car (type' ^. body)) ->
         recordToFields record
           >>| CoreNamed.RecordTy
           >>| CoreNamed.fromRecordTy
@@ -232,27 +233,10 @@ figureRecord = Env.PassChange rec
           >>| (: [])
           >>| Structure.LambdaCase
           >>| Structure.fromLambdaCase
-          >>| ( \arg ->
-                  Context.D
-                    { defUsage = Nothing,
-                      defMTy = Nothing,
-                      defTerm = arg,
-                      defPrecedence = Context.default'
-                    }
-              )
-          >>| Context.Def
-          >>| Context.Info (getInfoTableOf ctx defName)
-          >>| \x -> Just (defName, x)
-    rec _ _ _ =
-      pure Nothing
-
-getInfoTableOf ::
-  Context.T term ty sumRep -> NameSpace.From Symbol -> Map.T Symbol Sexp.T
-getInfoTableOf ctx sym =
-  let lookupSymb = NameSpace.extractValue sym |> NameSymbol.fromSymbol
-   in ctx
-        |> Context.lookup lookupSymb
-        |> maybe mempty ((^. Context.table) . Context.extractValue)
+          >>| Context.Term
+          >>| (\term -> set Context.def term info)
+          >>| (`Context.Additional` [])
+    _ -> Context.Additional info [] |> pure
 
 ------------------------------------------------------------
 -- Structure Conversion Helpers
@@ -294,7 +278,7 @@ sexpToNameSymbolErr sexp =
 --   3. (:let-match foo (() (:record-no-pun x (:record-no-pun y 3)))
 --         (:lookup foo (x y)))
 notFoundSymbolToLookup ::
-  ExpressionIO m => Env.SexpContext -> m Env.SexpContext
+  ExpressionIO m => Context.T -> m Context.T
 notFoundSymbolToLookup context =
   Env.contextPassStar
     context
@@ -311,7 +295,7 @@ primiveOrSymbol context atom rec' =
     _ -> Env.handleAtom context atom rec' >>| Sexp.Atom
 
 notFoundAtomRes ::
-  (Sexp.Serialize a, ExpressionIO m) => Env.SexpContext -> Sexp.Atom a -> m (Sexp.B a)
+  (Sexp.Serialize a, ExpressionIO m) => Context.T -> Sexp.Atom a -> m (Sexp.B a)
 notFoundAtomRes context atom@Sexp.A {atomName = name} = do
   -- we need to check if the first part of the var is in our
   closure <- ask @"closure"
