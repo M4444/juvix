@@ -467,8 +467,14 @@ lookupGen canGlobalLookup nameSymb t =
   where
     -- In the code below since @determineTableForFirstLookup@ ensure
     -- the path does not have @CurrentNameSpace@, we ignore that
-    -- possibility entirely
-    recursivelyLookup [] mterm = mterm
+    -- possibility entirely,
+    --
+    -- except when empty as if it's precisely the same then it will
+    -- have it - Mariari
+    recursivelyLookup [] mterm
+      | mterm ^? _Just . def == Just CurrentNameSpace =
+        Just (infoRecordToInfo (t ^. _currentNameSpace))
+      | otherwise = mterm
     recursivelyLookup (x : xs) maybeterm =
       let lookupNext table =
             recursivelyLookup xs (NameSpace.lookup x table)
