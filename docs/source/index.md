@@ -29,5 +29,6 @@ compiler/index
 distributed-ledger-integration
 examples/index
 future-work/index
+hacking/index
 ```
 

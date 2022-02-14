@@ -3,6 +3,9 @@ resolver: lts-18.16
 packages:
 - .
 
+nix:
+  enable: true
+  shell-file: ../../stack.nix
 
 extra-deps:
 

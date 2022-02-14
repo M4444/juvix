@@ -335,6 +335,11 @@ common ones to include"
   (make-nix :enabled nil
             :pure t))
 
+(defun nix-enable-custom ()
+  (make-nix :enabled t
+            :shell-file "stack.nix"
+            :pure t))
+
 (defun nix-enable-zlib (&rest packages)
   (apply #'nix-enable-with *nix-zlib* packages))
 
@@ -347,12 +352,13 @@ common ones to include"
 (defparameter *standard-library*
   (make-stack-yaml
    :name "StandardLibrary"
+   :nix-build  (nix-enable-custom)
    :extra-deps (list (general-dependencies) *standard-library-extra-deps*)))
 
 (defparameter *sexp*
   (make-stack-yaml
    :name "Sexp"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *standard-library*)
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*)))
@@ -360,14 +366,14 @@ common ones to include"
 (defparameter *parsing*
   (make-stack-yaml
    :name       "Parsing"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *standard-library*)
    :extra-deps (list (general-dependencies) *standard-library-extra-deps*)))
 
 (defparameter *context*
   (make-stack-yaml
    :name     "Context"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *standard-library* *sexp*)
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*
@@ -377,7 +383,7 @@ common ones to include"
   (make-stack-yaml
    :name     "Test/DataStructures"
    :path-to-other "../../"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *standard-library* *sexp* *context*)
    :extra-deps (list (general-dependencies)
                      *standard-library-extra-deps*
@@ -387,7 +393,7 @@ common ones to include"
 (defparameter *core*
   (make-stack-yaml
    :name       "Core"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *standard-library* *sexp*)
    :extra-deps (list (general-dependencies *extensible*)
                       *standard-library-extra-deps*
@@ -396,7 +402,7 @@ common ones to include"
 (defparameter *translate*
   (make-stack-yaml
    :name "Translate"
-   :nix-build  (nix-disable)
+   :nix-build  (nix-enable-custom)
    :packages   (list *core*
                      *parsing*
                      *standard-library*
@@ -422,7 +428,7 @@ common ones to include"
                    *context*)
    ;; hack name, for sub dirs
    :name "Pipeline"
-   :nix-build  (nix-disable) ;; (nix-enable-zlib *nix-curl*)
+   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib *nix-curl*)
    :extra-deps (big-dep-list)
    :extra "allow-newer: true"))
 
@@ -445,7 +451,7 @@ common ones to include"
 
                      ;; for standard-library
                      *standard-library-extra-deps*)
-   :nix-build (nix-disable) ;; (nix-enable-llvm *nix-zlib*)
+   :nix-build (nix-enable-custom) ;; (nix-enable-llvm *nix-zlib*)
    :extra "allow-newer: true"))
 
 (defparameter *michelson*
@@ -478,7 +484,7 @@ common ones to include"
   (make-stack-yaml
    :name "Backends/Plonk"
    :path-to-other "../../"
-   :nix-build  (nix-disable) ;; (nix-enable-zlib)
+   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
    :packages (list *standard-library*
                    *translate*
                    *parsing*
@@ -492,7 +498,7 @@ common ones to include"
 (defparameter *easy*
   (make-stack-yaml
    :path-to-other "../../"
-   :nix-build  (nix-disable) ;; (nix-enable-all)
+   :nix-build  (nix-enable-custom) ;; (nix-enable-all)
    :packages (list *standard-library*
                    *parsing*
                    *core*
@@ -512,7 +518,7 @@ common ones to include"
 (defparameter *berlin-pipeline*
   (make-stack-yaml
    :name "BerlinPipeline"
-   :nix-build  (nix-disable) ;; (nix-enable-zlib)
+   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
    :packages   (list *standard-library* *context* *sexp*)
    :extra-deps (big-dep-list)
    :extra      "allow-newer: true"))
@@ -522,7 +528,7 @@ common ones to include"
    ;; hack name, for sub dirs
    :name "Playground/HTTP"
    :path-to-other "../../"
-   :nix-build (nix-disable) ;; (nix-enable-all)
+   :nix-build (nix-enable-custom) ;; (nix-enable-all)
    :packages (list *standard-library*
                    *parsing*
                    *core*
@@ -552,7 +558,7 @@ common ones to include"
                      *plonk*
                      *data-structures*
                      *michelson*)
-   :nix-build  (nix-disable) ;; (nix-enable-zlib)
+   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
    :extra-deps (big-dep-list)
    :extra "allow-newer: true"))
 
@@ -574,7 +580,7 @@ common ones to include"
                    *context*
                    *sexp*
                    *data-structures*)
-   :nix-build  (nix-disable) ;; (nix-enable-all)
+   :nix-build (nix-enable-custom)
    :extra-deps (cons *servant-deps* (cons *llvm-hs-deps* (big-dep-list)))
    :path-to-other "./library/"
    :extra "allow-newer: true"))

@@ -12,6 +12,7 @@ of strings that determine what the valid packages are for it"
   (enabled nil :type boolean)
   (packages nil :type list)
   (shell-options nil :type list)
+  (shell-file "" :type string)
   (pure nil :type boolean))
 
 (defstruct stack-yaml
@@ -224,29 +225,39 @@ lists are indented by an extra 2 each"
       (format nil "~%~a" extra)
       ""))
 
-(defun format-nix (nix)
+(defun format-nix (nix relative-path)
   (if (nix-enabled nix)
       (format nil "~%~a"
               (indent-new-lines-by
                2
-               (format nil "nix:~%~a~%~a~a~a"
+               (format nil "nix:~%~a~a~a~a~a"
                        (format nil "enable: ~a" "true")
-                       (format nil "packages: [~{~a~^, ~}]" (nix-packages nix))
+                       (if (nix-packages nix)
+                           (format nil "~%packages: [~{~a~^, ~}]" (nix-packages nix))
+                           "")
+                       (if (string= "" (nix-shell-file nix))
+                           ""
+                           (format nil "~%shell-file: ~a"
+                                   (path-to-top-nix-file (nix-shell-file nix)
+                                                         relative-path)))
                        (if (nix-shell-options nix)
-                           (format nil "~%nix-shell-options: [~{~a~^, ~}]" (nix-shell-options nix))
+                           (format nil "~%nix-shell-options: [~{~a~^, ~}]"
+                                   (nix-shell-options nix))
                            "")
                        (if (nix-pure nix)
                            ""
                            (format nil "~%pure: false")))))
       ""))
 
+(defun path-to-top-nix-file (file relative-path)
+  (concatenate 'string relative-path "../"  file))
 
 (defun stack-yaml->string (yaml-config)
   (format nil "~a~%~%~a~%~a~%~%~a~a"
           (format-resolver (stack-yaml-resolver yaml-config))
           ;; TODO
           (format-packages yaml-config)
-          (format-nix (stack-yaml-nix-build yaml-config))
+          (format-nix (stack-yaml-nix-build yaml-config) (stack-yaml-path-to-other yaml-config))
           (format-extra-deps (stack-yaml-extra-deps yaml-config))
           (format-extra (stack-yaml-extra yaml-config))))
 

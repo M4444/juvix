@@ -1,0 +1,147 @@
+{ system
+  , compiler
+  , flags
+  , pkgs
+  , hsPkgs
+  , pkgconfPkgs
+  , errorHandler
+  , config
+  , ... }:
+  {
+    flags = { build-examples = false; dump-splices = false; };
+    package = {
+      specVersion = "2.2";
+      identifier = { name = "extensible-data"; version = "0.1.0"; };
+      license = "GPL-3.0-or-later";
+      copyright = "";
+      maintainer = "Andy Morris <andy@cryptium.ch>";
+      author = "Andy Morris <andy@cryptium.ch>";
+      homepage = "https://metastatedev.github.io/extensible-data";
+      url = "";
+      synopsis = "Generate the boilerplate for the Trees That Grow pattern";
+      description = "";
+      buildType = "Simple";
+      };
+    components = {
+      "library" = {
+        depends = [
+          (hsPkgs."base" or (errorHandler.buildDepError "base"))
+          (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+          (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+          ];
+        buildable = true;
+        };
+      exes = {
+        "basic" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "mutual" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "qualified" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "param" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "deriv" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "record" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "multifield" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "generic" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "reused-name" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "type-synonym" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "contexts" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        "lam" = {
+          depends = [
+            (hsPkgs."base" or (errorHandler.buildDepError "base"))
+            (hsPkgs."syb" or (errorHandler.buildDepError "syb"))
+            (hsPkgs."template-haskell" or (errorHandler.buildDepError "template-haskell"))
+            (hsPkgs."extensible-data" or (errorHandler.buildDepError "extensible-data"))
+            ];
+          buildable = if !flags.build-examples then false else true;
+          };
+        };
+      };
+    } // rec {
+    src = (pkgs.lib).mkDefault /nix/store/qnbhzmh6gpjm57cfgs12q34jxjxpldwl-extensible-data-d11dee6;
+    }

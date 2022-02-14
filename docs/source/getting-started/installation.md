@@ -52,3 +52,10 @@
    For Windows users, to use the command *make*, please visit [this
    link](https://stackoverflow.com/questions/32127524/how-to-install-and-use-make-in-windows).
    
+## Using Nix
+
+```
+nix flake clone github:anoma/juvix --dest juvix
+cd juvix
+nix build
+```

@@ -13,6 +13,9 @@ packages:
 - ../Test/DataStructures
 - ../Backends/Michelson
 
+nix:
+  enable: true
+  shell-file: ../../stack.nix
 
 extra-deps:
 

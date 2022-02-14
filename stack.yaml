@@ -18,6 +18,9 @@ packages:
 - ./library/Sexp
 - ./library/Test/DataStructures
 
+nix:
+  enable: true
+  shell-file: ./library/../stack.nix
 
 extra-deps:
 
