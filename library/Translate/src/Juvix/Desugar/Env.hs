@@ -155,10 +155,17 @@ exampleIndexing = do
 eval :: Pipeline.Env.EnvS ()
 eval = do
   Pipeline.Env.registerStep (CircularList.init initContextPass)
-  Pipeline.Env.registerStep (CircularList.init headerPass)
   Pipeline.Env.registerAfterEachStep inPackageTrans
-  Pipeline.Env.registerStep (CircularList.init condPass)
+  Pipeline.Env.registerStep desugarPasses
   Pipeline.Env.registerStep contextPasses
+
+desugarPasses :: CircularList.T Step.Named
+desugarPasses =
+  [ headerPass,
+    condPass
+  ]
+    >>| CircularList.init
+    |> Pipeline.Env.defPipelineGroup "DesugarPasses"
 
 contextPasses :: CircularList.T Step.Named
 contextPasses =
