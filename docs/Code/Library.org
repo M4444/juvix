@@ -631,7 +631,7 @@ This allows us to get a tree like structure, where a pipeline step can contain m
 Closure.T serves as the data structure in which we will store
 temporary lexical bindings as our code encounters binders.
 - _Relies on_
-  + [[Juvix/Context]]
+  + [[Precedence]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
@@ -678,6 +678,8 @@ Traversals serves as generic Context Traversal modules.
   + [[Context/Types]]
   + [[Library]]
   + [[HashMap]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 ***** Types <<Context/Types>>
 - _Relies on_
   + [[NameSpace]]
@@ -694,6 +696,7 @@ Traversals serves as generic Context Traversal modules.
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 *** Main <<Context/test/Main>>
 - _Relies on_
   + [[Fetch]]

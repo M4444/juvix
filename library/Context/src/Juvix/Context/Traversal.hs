@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 -- | Traversals serves as generic Context Traversal modules.
 module Juvix.Context.Traversal where
 
@@ -8,15 +10,16 @@ import Juvix.Context.Types
 import Juvix.Library hiding (Sum, modify, toList)
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Juvix.Sexp as Sexp
 
 ------------------------------------------------------------
 -- Traversal Function Transformers
 ------------------------------------------------------------
-data Additional = Additional
-  { formPutBack :: Info,
+data Additional dat = Additional
+  { formPutBack :: dat,
     extraPutBack :: [(NameSpace.From Symbol, Instruction)]
   }
-  deriving (Show)
+  deriving (Show, Functor)
 
 -- | @Instruction@ denotes what we should do with a given term
 data Instruction
@@ -24,8 +27,8 @@ data Instruction
   | Delete
   deriving (Show)
 
-data Input = Input
-  { info :: Info,
+data Input dat = Input
+  { info :: dat,
     name :: NameSpace.From Symbol,
     currentContext :: T
   }
@@ -35,10 +38,37 @@ data Input = Input
 -- Global Traversals
 ------------------------------------------------------------
 
-mapContext :: T -> (Input -> Identity Additional) -> T
+mapContext :: T -> (Input Info -> Identity (Additional Info)) -> T
 mapContext t f = runIdentity (traverseContext t f)
 
-traverseContext :: Monad m => T -> (Input -> m Additional) -> m T
+traverseContextSexp ::
+  Monad m => T -> (Input Sexp.T -> m (Additional Sexp.T)) -> m T
+traverseContextSexp t = traverseContext t . overInput
+
+-- | @overInput@ allows a function to run on the sexps alone of the
+-- context. Note that the record is skipped over in such cases.
+overInput ::
+  Monad m => (Input Sexp.T -> m (Additional Sexp.T)) -> (Input Info -> m (Additional Info))
+overInput sexpF = infoF
+  where
+    infoF (Input {info = (Info table def), name, currentContext}) = do
+      Additional term extra <-
+        case def of
+          Context.Term sexp -> do
+            sexpAdd <- sexpF (defaultInput sexp)
+            pure (fmap Context.Term sexpAdd)
+          _ ->
+            pure (Additional def [])
+      (extra, newTable) <- traverseAccumM combineF extra table
+      pure $ Additional (Info newTable term) extra
+      where
+        defaultInput sexp =
+          (Input {info = sexp, name, currentContext})
+        combineF putBack sexp = do
+          Additional sexp extra <- sexpF (defaultInput sexp)
+          pure (putBack <> extra, sexp)
+
+traverseContext :: Monad m => T -> (Input Info -> m (Additional Info)) -> m T
 traverseContext t f = do
   updatedEntireContext <- foldM siwtchTopAndUpdate t tops
   case Context.inNameSpace (Context.addTopName (t ^. _currentName)) updatedEntireContext of
@@ -54,7 +84,7 @@ traverseContext t f = do
         Nothing -> pure ctx
         Just ns -> traverseCurrentContext ns f
 
-traverseCurrentContext :: Monad m => T -> (Input -> m Additional) -> m T
+traverseCurrentContext :: Monad m => T -> (Input Info -> m (Additional Info)) -> m T
 traverseCurrentContext t f = do
   ctxOnCurrent <- foldM applyFunctionOnLocalTerms t (grabCurrentNameSpace t)
   --
@@ -93,3 +123,15 @@ runInsts ctx xs =
   where
     runInst ctx (sym, Add info) = Context.add sym info ctx
     runInst ctx (sym, Delete) = Context.remove sym ctx
+
+--------------------------------------------------------------------------------
+-- Generic Traversal Function
+--------------------------------------------------------------------------------
+
+traverseAccumM ::
+  (Monad m, Traversable t) => (a -> b -> m (a, c)) -> a -> t b -> m (a, t c)
+traverseAccumM f init trav =
+  runStateT (traverse (StateT . newF) trav) init
+    >>| swap
+  where
+    newF b a = f a b >>| swap

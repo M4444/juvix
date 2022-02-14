@@ -5,10 +5,12 @@
 module Juvix.Closure
   ( Information (..),
     T (..),
+    Info (..),
     insert,
     insertGeneric,
     keys,
     lookup,
+    precedenceof,
     empty,
 
     -- * Extended API
@@ -16,13 +18,11 @@ module Juvix.Closure
 where
 
 import qualified Data.HashSet as Set
-import Data.Hashable (Hashable (..), hash)
-import qualified Juvix.Context as Context
+import Juvix.Context.Precedence
 import Juvix.Library hiding (empty)
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
-import Juvix.Context.Precedence
 
 -- Currently we don't really use the signature however in the future
 -- the mSig will be used to detect the types of modules we will have
@@ -31,7 +31,7 @@ data Information = Info
   { -- | @mSig@ represents the type of the term in the closure
     mSig :: Maybe Sexp.T,
     -- | @info@ represents all the information we have on the term
-    info :: [Information],
+    info :: [Info],
     -- | @mOpen@ represents a place where the term may have come
     -- from
     mOpen :: Maybe NameSymbol.T
@@ -68,6 +68,10 @@ keys (T m) = Map.keysSet m
 
 lookup :: Symbol -> T -> Maybe Information
 lookup k (T m) = Map.lookup k m
+
+precedenceof :: Information -> Maybe Precedence
+precedenceof (Info {info}) =
+  find (\case Prec _ -> True) info >>| \(Prec a) -> a
 
 empty :: T
 empty = T Map.empty

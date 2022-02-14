@@ -33,6 +33,7 @@ nameSymbolToSymbol = NameSymbol.toSymbol
 
 nameSymbolFromSymbol :: Symbol -> NameSymbol.T
 nameSymbolFromSymbol = NameSymbol.fromSymbol
+
 --------------------------------------------------------------------------------
 -- Body
 --------------------------------------------------------------------------------

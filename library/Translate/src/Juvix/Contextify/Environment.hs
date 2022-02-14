@@ -6,15 +6,13 @@
 module Juvix.Contextify.Environment
   ( ErrorS (..),
     ErrS,
-    SexpContext,
+    Context.T,
     HasClosure,
     contextPassStar,
-    contextPassChange,
     extractInformation,
     lookupPrecedence,
     handleAtomNoCtx,
     handleAtom,
-    singlePass,
     Minimal (..),
     MinimalAlias,
     MinimalAliasIO,
@@ -109,14 +107,6 @@ type BindSexp a = Sexp.B (Bind.BinderPlus a)
 
 type BindAtom a = Sexp.Atom (Bind.BinderPlus a)
 
-type SexpContext = Context.T Sexp.T Sexp.T Sexp.T
-
-type SexpForms m =
-  Context.ContextForms m Sexp.T Sexp.T Sexp.T
-
-type SexpFormsGeneral m =
-  Context.ContextFormGeneral m Sexp.T Sexp.T Sexp.T
-
 type Pred = NameSymbol.T -> Bool
 
 type Pass m a = PassSig m (Bind.BinderPlus a)
@@ -124,7 +114,7 @@ type Pass m a = PassSig m (Bind.BinderPlus a)
 type PassNoCtx m a = PassNoCtxSig m (Bind.BinderPlus a)
 
 type PassSig m a =
-  SexpContext -> Sexp.Atom a -> (Sexp.B a -> m (Sexp.B a)) -> m (Sexp.B a)
+  Context.T -> Sexp.Atom a -> (Sexp.B a -> m (Sexp.B a)) -> m (Sexp.B a)
 
 type PassNoCtxSig m a =
   Sexp.Atom a -> (Sexp.B a -> m (Sexp.B a)) -> m (Sexp.B a)
@@ -133,10 +123,10 @@ type PassNoCtxSig m a =
 -- the top form and see if it needs to be changed.
 newtype PassChange m
   = PassChange
-      ( SexpContext ->
+      ( Context.T ->
         Sexp.T ->
         NameSpace.From Symbol ->
-        m (Maybe (NameSpace.From Symbol, Context.Info Sexp.T Sexp.T Sexp.T))
+        m (Maybe (NameSpace.From Symbol, Context.Info))
       )
   deriving (Show)
 
@@ -147,14 +137,9 @@ newtype PassChange m
 -- | @passContext@ like @passContextSingle@ but we supply a different
 -- function for each type term and sum representation form.
 contextPassStar ::
-  forall a m. (Sexp.Serialize a, HasSearch m) => SexpContext -> Pass m a -> m SexpContext
+  forall a m. (Sexp.Serialize a, HasSearch m) => Context.T -> Pass m a -> m Context.T
 contextPassStar ctx pass =
-  Context.mapWithContext ctx (singlePass pass)
-
-contextPassChange ::
-  Monad m => SexpContext -> Pred -> PassChange m -> m SexpContext
-contextPassChange ctx trigger pass =
-  Context.mapWithContext ctx (singlePassChange trigger pass)
+  Context.traverseContextSexp ctx (sexpFunctionToPass pass)
 
 -- | @onExpression@ runs an algorithm similar to @passContext@ however
 -- only on a single expression instead of an entire context. For this
@@ -169,25 +154,19 @@ onExpression form func =
 -- Pass infrastructure
 ------------------------------------------------------------
 
-singlePass :: forall a m. (Sexp.Serialize a, HasSearch m) => Pass m a -> SexpForms m
-singlePass function =
-  Context.CtxSingle
-    ( \sexp ctx ->
+sexpFunctionToPass ::
+  forall a m.
+  (Sexp.Serialize a, HasSearch m) =>
+  Pass m a ->
+  (Context.Input Sexp.T -> m (Context.Additional Sexp.T))
+sexpFunctionToPass func = newFunc
+  where
+    newFunc (Context.Input sexp _name ctx) = do
+      sexp <-
         Sexp.withSerialization
           sexp
-          (`Sexp.traverseOnAtoms` (function ctx))
-    )
-    |> Context.promote
-
-singlePassChange ::
-  Monad m => Pred -> PassChange m -> SexpFormsGeneral m
-singlePassChange trigger (PassChange f) =
-  let onRepresentation sexp ctx Context.Extra {name}
-        | Just atomName <- Sexp.nameFromT (Sexp.car sexp),
-          trigger atomName =
-          f ctx sexp name
-        | otherwise = pure Nothing
-   in Context.CtxChangeSumRep onRepresentation |> Context.promote
+          (`Sexp.traverseOnAtoms` (func ctx))
+      pure (Context.Additional sexp [])
 
 ------------------------------------------------------------
 -- Binding form infrastructure
@@ -226,7 +205,7 @@ handleAtom ::
   -- | the function for the user transformation
   -- | The Context, an extra function that is required the by the
   -- :open-in case.
-  SexpContext ->
+  Context.T ->
   -- | The sexp form in which the atom is called on
   (BindAtom a) ->
   -- | the continuation of continuing the changes
@@ -253,7 +232,7 @@ handleBinder ::
   -- | the function for the user transformation
   -- | The Context, an extra function that is required the by the
   -- :open-in case.
-  SexpContext ->
+  Context.T ->
   -- | The sexp form in which the atom is called on
   (Bind.BinderPlus a) ->
   -- | the continuation of continuing the changes
@@ -290,35 +269,29 @@ handleBinderNoCtx binder cont =
 ------------------------------------------------------------
 -- Environment functionality
 ------------------------------------------------------------
-extractInformation ::
-  Context.Definition term ty sumRep -> Maybe [Context.Information]
-extractInformation (Context.Def Context.D {defPrecedence}) =
-  Just [Context.Prec defPrecedence]
-extractInformation (Context.Information is) =
-  Just is
-extractInformation _ = Nothing
+
+extractInformation info = Context.precedenceOf
 
 lookupPrecedence ::
-  (ErrS m, HasClosure m) => NameSymbol.T -> Context.T t y s -> m Context.Precedence
+  (ErrS m, HasClosure m) => NameSymbol.T -> Context.T -> m Context.Precedence
 lookupPrecedence name ctx = do
   closure <- ask @"closure"
   let symbolName = NameSymbol.hd name
   case Closure.lookup symbolName closure of
-    Just Closure.Info {info}
+    Just info
       | NameSymbol.toSymbol name == symbolName ->
-        pure $ fromMaybe Context.default' (Context.precedenceOf info)
+        pure $ fromMaybe Context.default' (Closure.precedenceof info)
     Just Closure.Info {mOpen = Just prefix} ->
-      contextCase (prefix <> name)
+      contextCase (prefix <> name) |> pure
     Just Closure.Info {} ->
       throw @"error" (UnknownSymbol name)
     Nothing ->
-      contextCase name
+      contextCase name |> pure
   where
+    contextCase :: NameSymbol.T -> Context.Precedence
     contextCase name =
-      case Context.lookup name ctx
-        >>= extractInformation . (^. Context.def) . Context.extractValue of
-        Nothing -> throw @"error" (UnknownSymbol name)
-        Just pr -> pure (fromMaybe Context.default' (Context.precedenceOf pr))
+      (Context.lookup name ctx >>= Context.precedenceOf . (^. Context.term))
+        |> fromMaybe Context.default'
 
 ------------------------------------------------------------
 -- binderDispatchWith function dispatch table
@@ -384,7 +357,7 @@ type' nameAndSig args body cont =
 -- what the @mod@ is.
 openIn ::
   (ErrS m, HasClosure m, Sexp.Serialize a) =>
-  SexpContext ->
+  Context.T ->
   BindSexp a ->
   BindSexp a ->
   (BindSexp a -> m (BindSexp a)) ->
@@ -396,7 +369,7 @@ openIn ctx name body cont = do
   case Sexp.atomFromT newMod of
     Just Sexp.A {atomName} ->
       case ctx Context.!? atomName >>| (^. Context.def) . Context.extractValue of
-        Just (Context.Record record) ->
+        Just (Context.Module record) ->
           let NameSpace.List {publicL} = NameSpace.toList (record ^. Context.contents)
               --
               newSymbs = Juvix.Library.fst <$> publicL
@@ -557,7 +530,7 @@ declaration (Sexp.List [inf, n, i])
           ( atomName,
             Closure.Info
               Nothing
-              [Context.Prec $ Context.Pred func (fromInteger atomNum)]
+              [Closure.Prec $ Context.Pred func (fromInteger atomNum)]
               Nothing
           )
 declaration _ = Nothing

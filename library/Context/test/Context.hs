@@ -1,13 +1,13 @@
 module Context where
 
-import Control.Lens (over, (^.), _Just, (^?))
+import Control.Lens (over, (^.), (^?), _Just)
 import qualified Data.Text as Text
 import qualified Juvix.Context as Context
-import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import qualified System.IO.Unsafe as Unsafe
 import qualified Test.Tasty as T
