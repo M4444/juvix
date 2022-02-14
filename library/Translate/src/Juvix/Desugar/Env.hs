@@ -16,6 +16,7 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Env
+import Juvix.Contextify.Passes (notFoundSymbolToLookup)
 import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Contextify.ToContext.Types as Contextify
@@ -23,6 +24,7 @@ import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.CoreNamed as CoreNamed
 import Juvix.Sexp.Structure.Lens
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
@@ -155,6 +157,17 @@ eval = do
   Pipeline.Env.registerStep (CircularList.init headerPass)
   Pipeline.Env.registerAfterEachStep inPackageTrans
   Pipeline.Env.registerStep (CircularList.init condPass)
+  Pipeline.Env.registerStep contextPasses
+
+contextPasses :: CircularList.T Step.Named
+contextPasses =
+  [ resolveModulePass,
+    infixConversionPass,
+    recordDeclarationPass,
+    unknownSymbolLookupPass
+  ]
+    >>| CircularList.init
+    |> Pipeline.Env.defPipelineGroup "ContextPasses"
 
 condPass :: Step.Named
 condPass =
@@ -266,6 +279,12 @@ headerTransform sexp = case Structure.toHeader sexp of
 -- Resolve Modules
 --------------------------------------------------------------------------------
 
+resolveModulePass :: Step.Named
+resolveModulePass = mkPass name trans
+  where
+    name = "resolveModule"
+    trans = mkTrans name resolveModuleTransform
+
 resolveModuleTransform ::
   ( HasThrow "error" Sexp.T m,
     HasClosure m,
@@ -280,6 +299,12 @@ resolveModuleTransform ctx =
 --------------------------------------------------------------------------------
 -- Infix Form Transformation
 --------------------------------------------------------------------------------
+
+infixConversionPass :: Step.Named
+infixConversionPass = mkPass name trans
+  where
+    name = "infixConversion"
+    trans = mkTrans name infixConversionTransform
 
 infixConversionTransform ::
   ( HasThrow "error" Sexp.T m,
@@ -296,6 +321,12 @@ infixConversionTransform ctx =
 -- Record Lookup from Unknown Symbols
 --------------------------------------------------------------------------------
 
+unknownSymbolLookupPass :: Step.Named
+unknownSymbolLookupPass = mkPass name trans
+  where
+    name = "unknownSymbolLookup"
+    trans = mkTrans name unknownSymbolLookupTransform
+
 unknownSymbolLookupTransform ::
   ( HasThrow "error" Sexp.T m,
     HasClosure m,
@@ -308,31 +339,85 @@ unknownSymbolLookupTransform ctx =
   Passes.primiveOrSymbol ctx |> traverseOnDeserialized
 
 --------------------------------------------------------------------------------
+-- Helpers for Constructing Passes
+--------------------------------------------------------------------------------
+
+mkTrans ::
+  NameSymbol.T ->
+  -- | The name of the transform to be traced
+  ( Context.T Sexp.T Sexp.T Sexp.T ->
+    Sexp.T ->
+    MinimalMIO Sexp.T
+  ) ->
+  Automation.SimplifiedPassArgument ->
+  MinimalMIO Automation.Job
+mkTrans name trans simplify =
+  Trace.withScope scopeName [show (simplify ^. current)] $
+    trans (simplify ^. context) (simplify ^. current)
+      >>| (`Automation.ProcessNoEnv` [])
+      >>| Automation.ProcessJob
+  where
+    scopeName = "Context." <> name <> "trans"
+
+mkPass ::
+  NameSymbol.T ->
+  -- | The name of the transform to be traced
+  ( Automation.SimplifiedPassArgument ->
+    MinimalMIO Automation.Job
+  ) ->
+  Step.Named
+mkPass name trans =
+  ( Trace.withScope
+      runnerName
+      []
+      . simplifiedTrans
+  )
+    |> Automation.runSimplifiedPass
+    |> Step.T
+    |> Step.namePass passName
+  where
+    simplifiedTrans = Automation.simplify trans
+    runnerName = passName <> "-runner"
+    passName = "Context." <> name
+
+--------------------------------------------------------------------------------
 -- Record Recognition Transformation
 --------------------------------------------------------------------------------
 
+recordDeclarationPass :: Step.Named
+recordDeclarationPass =
+  ( Trace.withScope
+      "Context.recordDeclaration-runner"
+      []
+      . recordDeclaration
+  )
+    |> Automation.runSimplifiedPass
+    |> Step.T
+    |> Step.namePass "Context.recordDeclaration"
+
 recordDeclaration ::
-  (Meta.HasMeta m, HasClosure m, MonadIO m) =>
   Pipeline.PassArgument ->
-  m Pipeline.Job
-recordDeclaration pa = case pa ^. current of
-  Pipeline.InContext name -> case ctx Context.!? name of
-    Just def -> do
-      let (resolvedDef, resolvedName) = Context.resolveName ctx (def, name)
-      case resolvedDef  ^. Context.def of
-        Context.TypeDeclar typ -> do
-          let (Env.PassChange transType) = Passes.figureRecord
-          mdef <- transType ctx typ s
-          case mdef of
-            Just (_, newDef) -> updateJob resolvedName newDef |> pure
-            Nothing -> noOpJob |> pure
-        _ -> noOpJob |> pure
-    Nothing ->
-      Juvix.Library.throw @"error" $
-        Sexp.string
-          "Could not find definition when \
-          \ it was promised to be in the environment"
-  _ -> noOpJob |> pure
+  MinimalMIO Pipeline.Job
+recordDeclaration pa =
+  case pa ^. current of
+    Pipeline.InContext name ->
+      case ctx Context.!? name of
+        Just def -> do
+          let (resolvedDef, resolvedName) = Context.resolveName ctx (def, name)
+          case resolvedDef ^. Context.def of
+            Context.TypeDeclar typ -> do
+              let (Env.PassChange transType) = Passes.figureRecord
+              mdef <- transType ctx typ s
+              case mdef of
+                Just (_, newDef) -> updateJob resolvedName newDef |> pure
+                Nothing -> noOpJob |> pure
+            _ -> noOpJob |> pure
+        Nothing ->
+          Juvix.Library.throw @"error" $
+            Sexp.string
+              "Could not find definition when \
+              \ it was promised to be in the environment"
+    _ -> noOpJob |> pure
   where
     ctx = pa ^. context
     noOpJob = Automation.noOpJob ctx (pa ^. current)
@@ -345,6 +430,8 @@ recordDeclaration pa = case pa ^. current of
                 _newForms = []
               }
         }
+    -- TODO: `s` is required as an argument to `Passes.figureRecord`.
+    -- Remove this when refactoring these functions into Context.Passes.
     s = NameSpace.Pub "unused"
 
 --------------------------------------------------------------------------------
