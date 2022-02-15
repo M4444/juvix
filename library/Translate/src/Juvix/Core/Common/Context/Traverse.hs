@@ -162,9 +162,14 @@ recGroups' injection ns = do
         _ -> do
           qname <- qualify name
           fvs <-
+            -- need to inject the information from meta as well
             case term ^. Context.def of
-              Context.Term tm ->
-                fv tm
+              Context.Term tm -> do
+                fv1 <- fv tm
+                -- This needs to be here, otherwise signatures won't
+                -- be tested
+                fv2 <- fv (HashMap.toList (term ^. Context.table) >>| snd)
+                pure (fv1 <> fv2)
               _ -> pure []
           -- we remove the TopLevel. from fvs as it screws with the
           -- algorithm resolution
