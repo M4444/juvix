@@ -190,6 +190,7 @@ reconstructInput ::
 reconstructInput cin res =
   cin
     |> set (surroundingData . currentStepName) Nothing
+    |> set (surroundingData . metaInfo) (res ^. meta)
     |> set languageData newLanguageData
   where
     newLanguageData =
