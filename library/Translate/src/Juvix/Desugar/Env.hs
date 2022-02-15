@@ -163,9 +163,14 @@ eval = do
 desugarPasses :: CircularList.T Step.Named
 desugarPasses =
   [ headerPass,
+    moduleLetPass,
+    modulePass,
     condPass,
+    ifPass,
     multipleDefunPass,
-    combineSigPass
+    combineSigPass,
+    removePunnedRecordsPass,
+    handlerPass
   ]
     >>| CircularList.init
     |> Pipeline.Env.defPipelineGroup "DesugarPasses"
@@ -220,6 +225,47 @@ condTransform xs =
     generation predAns acc =
       Structure.If (predAns ^. predicate) (predAns ^. answer) acc
         |> Structure.fromIf
+
+modulePass :: Step.Named
+modulePass = desugarPass Desugar.Passes.moduleTransform "module"
+
+moduleLetPass :: Step.Named
+moduleLetPass = desugarPass Desugar.Passes.moduleLetTransform "moduleLet"
+
+ifPass :: Step.Named
+ifPass = desugarPass Desugar.Passes.ifTransform "if"
+
+removePunnedRecordsPass :: Step.Named
+removePunnedRecordsPass =
+  desugarPass Desugar.Passes.removePunnedRecords "removePunnedRecords"
+
+handlerPass :: Step.Named
+handlerPass = desugarPass Desugar.Passes.handlerTransform "handlerTransform"
+
+desugarPass ::
+  (Sexp.T -> Sexp.T) ->
+  NameSymbol.T ->
+  Step.Named
+desugarPass trans name =
+  (Trace.withScope scopeName [] . Automation.simplify f)
+    |> Automation.runSimplifiedPass
+    |> Step.T
+    |> Step.namePass passName
+  where
+    f = desugarTrans trans name
+    passName = "Desugar." <> name
+    scopeName = passName <> "-runner"
+
+desugarTrans ::
+  (Sexp.T -> Sexp.T) ->
+  NameSymbol.T ->
+  Automation.SimplifiedPassArgument ->
+  MinimalMIO Automation.Job
+desugarTrans trans name simplify = do
+  Trace.withScope ("Desugar." <> name) [show (simplify ^. current)] $ do
+    (pure . trans) (simplify ^. current)
+      >>| (\transformed -> Automation.ProcessNoEnv transformed [])
+      >>| Automation.ProcessJob
 
 --------------------------------------------------------------------------------
 -- InPackage
