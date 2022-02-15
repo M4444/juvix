@@ -17,7 +17,7 @@ data EnvOrSexp
 
 data WorkingEnv = WorkingEnv
   { currentExp :: [EnvOrSexp],
-    context :: Context.T Sexp.T Sexp.T Sexp.T
+    context :: Context.T
   }
   deriving (Show, Eq, Generic)
 
