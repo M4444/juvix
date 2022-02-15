@@ -20,6 +20,7 @@ import Juvix.Contextify.Passes (notFoundSymbolToLookup)
 import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Contextify.ToContext.Types as Contextify
+import qualified Juvix.Desugar.Passes as Desugar.Passes
 import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
@@ -154,15 +155,17 @@ exampleIndexing = do
 
 eval :: Pipeline.Env.EnvS ()
 eval = do
-  Pipeline.Env.registerStep (CircularList.init initContextPass)
   Pipeline.Env.registerAfterEachStep inPackageTrans
   Pipeline.Env.registerStep desugarPasses
+  Pipeline.Env.registerStep (CircularList.init initContextPass)
   Pipeline.Env.registerStep contextPasses
 
 desugarPasses :: CircularList.T Step.Named
 desugarPasses =
   [ headerPass,
-    condPass
+    condPass,
+    multipleDefunPass,
+    combineSigPass
   ]
     >>| CircularList.init
     |> Pipeline.Env.defPipelineGroup "DesugarPasses"
@@ -443,6 +446,48 @@ recordDeclaration pa =
     s = NameSpace.Pub "unused"
 
 --------------------------------------------------------------------------------
+-- Multiple Defun
+--------------------------------------------------------------------------------
+
+multipleDefunPass :: Step.Named
+multipleDefunPass =
+  (pure . transMultiSexpNoContext Desugar.Passes.multipleTransDefun)
+    |> Step.T
+    |> Step.namePass "Context.multipleDefun"
+
+--------------------------------------------------------------------------------
+-- Combine Sig
+--------------------------------------------------------------------------------
+
+combineSigPass :: Step.Named
+combineSigPass =
+  pure . transMultiSexpNoContext Desugar.Passes.combineSig
+    |> Step.T
+    |> Step.namePass "Context.combineSig"
+
+transMultiSexpNoContext ::
+  ([Sexp.T] -> [Sexp.T]) ->
+  Pipeline.CIn ->
+  Pipeline.COut Pipeline.WorkingEnv
+transMultiSexpNoContext trans cin =
+  Pipeline.Success Meta.empty newWenv
+  where
+    wenv = cin ^. languageData
+    sexps = (wenv ^. currentExp) >>= f
+
+    newSexps = trans sexps >>| Pipeline.Sexp
+
+    newWenv =
+      Pipeline.WorkingEnv
+        { _currentExp = newSexps,
+          _context = wenv ^. context
+        }
+
+    -- This pass runs before Context is initialized
+    f (Pipeline.InContext _) = []
+    f (Pipeline.Sexp sexp) = [sexp]
+
+--------------------------------------------------------------------------------
 -- Contextify
 --------------------------------------------------------------------------------
 
@@ -517,7 +562,7 @@ initContextTrans ::
   Pipeline.CIn -> IO (Pipeline.COut Pipeline.WorkingEnv)
 initContextTrans cin = do
   let wenv = cin ^. languageData
-  let sexps = (wenv ^. currentExp) >>= f |> nonEmpty
+      sexps = (wenv ^. currentExp) >>= f |> nonEmpty
   case sexps of
     Nothing -> Pipeline.Success {_meta = Meta.empty, _result = wenv} |> pure
     Just toProcess -> initContext (wenv ^. context) toProcess
