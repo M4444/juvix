@@ -118,7 +118,7 @@ parseSt ::
   (MonadIO m, Pipeline.HasBackend b) =>
   Text ->
   b ->
-  StateT ([[Char]], AllSteps) m (Result (Context.T Sexp.T Sexp.T Sexp.T))
+  StateT ([[Char]], AllSteps) m (Result Context.T)
 parseSt script backend = do
   mlF <-
     liftIO . Feedback.runFeedbackT $
