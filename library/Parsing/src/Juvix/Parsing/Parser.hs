@@ -379,7 +379,7 @@ matchLogicNamed = do
 
 matchLogicNotNamed :: Parser Types.MatchLogic
 matchLogicNotNamed = do
-  start <- matchLogicStart
+  start <- matchInfixivity
   pure (Types.MatchLogic start Nothing)
 
 matchLogicStart :: Parser Types.MatchLogicStart
@@ -391,6 +391,10 @@ matchLogicStart =
 
 matchConstant :: Parser Types.MatchLogicStart
 matchConstant = Types.MatchConst <$> constant
+
+matchInfixivity :: Parser Types.MatchLogicStart
+matchInfixivity =
+  Expr.makeExprParser (spaceLiner matchLogicStart) tableMatch
 
 matchCon :: Parser Types.MatchLogicStart
 matchCon = do
@@ -951,6 +955,19 @@ prefixCapital = prefixSymbolGen (P.satisfy J.validUpperSymbol)
 --------------------------------------------------------------------------------
 -- Expr Parser
 --------------------------------------------------------------------------------
+
+tableMatch :: [[Expr.Operator Parser Types.MatchLogicStart]]
+tableMatch =
+  [ [ Expr.InfixR
+        ( P.try $ do
+            inf <- spaceLiner infixSymbolDot
+            when (inf == ("->" :| [])) $
+              fail ""
+            pure
+              (\l r -> Types.MatchInfix inf l r)
+        )
+    ]
+  ]
 
 -- For Expressions
 tableExp :: [[Expr.Operator Parser Types.Expression]]

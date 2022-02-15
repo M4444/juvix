@@ -43,6 +43,8 @@ allParserTests =
       vpsDashMiddle,
       reservedInfix,
       letwordFail,
+      caseInfix,
+      matchInfix,
       reservedInfix,
       caseOfWords,
       questionMarktest,
@@ -996,6 +998,63 @@ reservedInfix =
           |> AST.Primitive
           |> AST.Body
           |> AST.Like "+" []
+          |> AST.Func
+          |> AST.Function
+      ]
+
+matchInfix :: T.TestTree
+matchInfix =
+  shouldParseAs
+    "match of infix"
+    Parser.parse
+    "let foo (a :: b) = 3"
+    $ AST.NoHeader
+      [ AST.Body (AST.Constant (AST.Number (AST.Integer' 3)))
+          |> AST.Like
+            "foo"
+            [ Nothing
+                |> AST.MatchLogic
+                  ( AST.MatchInfix
+                      ("::" :| [])
+                      (AST.MatchName "a")
+                      (AST.MatchName "b")
+                  )
+                |> AST.ConcreteA
+            ]
+          |> AST.Func
+          |> AST.Function
+      ]
+
+caseInfix :: T.TestTree
+caseInfix =
+  shouldParseAs
+    "case of infix"
+    Parser.parse
+    "let foo = case x-of (of-x)of | (a :: b) -> y"
+    $ AST.NoHeader
+      [ "y"
+          |> AST.Name
+          |> AST.MatchL
+            ( AST.MatchLogic
+                ( AST.MatchInfix
+                    ("::" :| [])
+                    (AST.MatchName "a")
+                    (AST.MatchName "b")
+                )
+                Nothing
+            )
+          |> (:| [])
+          |> AST.Match''
+            ( "of-x"
+                |> AST.Name
+                |> AST.Parened
+                |> (:| [])
+                |> AST.App (AST.Name "x-of")
+                |> AST.Application
+            )
+          |> AST.Match
+          |> AST.Body
+          |> AST.Like "foo" []
           |> AST.Func
           |> AST.Function
       ]

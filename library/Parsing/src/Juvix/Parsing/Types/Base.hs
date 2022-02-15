@@ -436,6 +436,7 @@ data MatchLogicStart
   | MatchName Symbol
   | MatchConst Constant
   | MatchRecord (NonEmpty (NameSet MatchLogic))
+  | MatchInfix NameSymb MatchLogicStart MatchLogicStart
   deriving (Show, Read, Eq, Generic, NFData)
 
 data NameSet t
