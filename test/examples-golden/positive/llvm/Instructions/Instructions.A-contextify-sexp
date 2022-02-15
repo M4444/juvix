@@ -1,142 +1,96 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "llvm-litint"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int8"
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":primitive" "LLVM.litint" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "int8" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":primitive" "LLVM.litint" ) ) ) } )
             ,
                 ( "test-mul"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( ":infix" "->" "int8" "int8" )
-                            , defTerm =
-                                ( ":lambda-case" ( () ( "Int.mul" 50 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", ( ":infix" "->" "int8" "int8" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () ( "Int.mul" 50 ) ) ) } )
             ,
                 ( "test-int16"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int16"
-                            , defTerm =
-                                ( ":lambda-case" ( () 48 ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "int16" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () 48 ) ) } )
             ,
                 ( "test-sub"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( ":infix" "->" "int8" "int8" )
-                            , defTerm =
-                                ( ":lambda-case" ( () ( "Int.sub" 46 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", ( ":infix" "->" "int8" "int8" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () ( "Int.sub" 46 ) ) ) } )
             ,
                 ( "test-add"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( ":infix" "->" "int8" "int8" )
-                            , defTerm =
-                                ( ":lambda-case" ( () ( "Int.add" 44 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", ( ":infix" "->" "int8" "int8" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () ( "Int.add" 44 ) ) ) } )
             ,
                 ( "hello-again-world"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "string"
-                            , defTerm =
-                                ( ":lambda-case" ( () "Hello again, world!" ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "string" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () "Hello again, world!" ) ) } )
             ,
                 ( "test-int8"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int8"
-                            , defTerm =
-                                ( ":lambda-case" ( () 42 ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "int8" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () 42 ) ) } )
             ,
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int"
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( ()
-                                        ( ":let-match" "ti8"
-                                            ( () "test-int8" )
-                                            ( ":let-match" "ti16"
-                                                ( () "test-int16" )
-                                                ( ":let-match" "tli"
-                                                    ( () "test-litint-add" )
-                                                    ( ":let-match" "ta"
-                                                        ( () ( "test-add" 45 ) )
-                                                        ( ":let-match" "ts"
-                                                            ( ()
-                                                                ( "test-sub" 47 ) )
-                                                            ( ":let-match" "tm"
-                                                                ( ()
-                                                                    ( "test-mul" 51 ) )
-                                                                ( ":let-match" "hw"
-                                                                    ( () "hello-world" )
-                                                                    ( ":let-match" "haw"
-                                                                        ( () "hello-again-world" ) 99 ) ) ) ) ) ) ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "int" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( ":let-match" "ti8"
+                                    ( () "test-int8" )
+                                    ( ":let-match" "ti16"
+                                        ( () "test-int16" )
+                                        ( ":let-match" "tli"
+                                            ( () "test-litint-add" )
+                                            ( ":let-match" "ta"
+                                                ( () ( "test-add" 45 ) )
+                                                ( ":let-match" "ts"
+                                                    ( () ( "test-sub" 47 ) )
+                                                    ( ":let-match" "tm"
+                                                        ( () ( "test-mul" 51 ) )
+                                                        ( ":let-match" "hw"
+                                                            ( () "hello-world" )
+                                                            ( ":let-match" "haw"
+                                                                ( () "hello-again-world" ) 99 ) ) ) ) ) ) ) ) ) ) } )
             ,
                 ( "hello-world"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "string"
-                            , defTerm =
-                                ( ":lambda-case" ( () "Hello, world!" ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "string" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () "Hello, world!" ) ) } )
             ,
                 ( "test-litint-add"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int8"
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( "Int.add" "llvm-litint" 43 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                    { infoTable = fromList
+                        [ ( "type", "int8" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( "Int.add" "llvm-litint" 43 ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

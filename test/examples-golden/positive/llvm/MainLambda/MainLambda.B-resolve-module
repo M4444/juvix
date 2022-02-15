@@ -1,22 +1,19 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int"
-                                    ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int" "TopLevel.Prelude.LLVM.int" ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":lambda" ( "x" "y" ) "y" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                    ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int" "TopLevel.Prelude.LLVM.int" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":lambda" ( "x" "y" ) "y" ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

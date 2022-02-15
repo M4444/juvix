@@ -1,30 +1,27 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
                                     ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
-                                        ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    (
-                                        ( "x" "y" "z" )
+                                        ( "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            (
+                                ( "x" "y" "z" )
+                                ( "TopLevel.Prelude.Circuit.Field.+"
+                                    ( "TopLevel.Prelude.Circuit.Field.^" "x" 2 )
+                                    ( "TopLevel.Prelude.Circuit.Field.+"
+                                        ( "TopLevel.Prelude.Circuit.Field.^" "y" 2 )
                                         ( "TopLevel.Prelude.Circuit.Field.+"
-                                            ( "TopLevel.Prelude.Circuit.Field.^" "x" 2 )
-                                            ( "TopLevel.Prelude.Circuit.Field.+"
-                                                ( "TopLevel.Prelude.Circuit.Field.^" "y" 2 )
-                                                ( "TopLevel.Prelude.Circuit.Field.+"
-                                                    ( "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) 5 ) ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                            ( "TopLevel.Prelude.Circuit.Field.^" "z" 2 ) 5 ) ) ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

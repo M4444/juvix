@@ -1,58 +1,51 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "make-pair"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "TopLevel.Prelude.->"
                                     ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" )
                                     ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Michelson.nat"
                                         ( "TopLevel.Prelude.Michelson.pair"
                                             ( ":paren"
-                                                ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" ) ) "TopLevel.Prelude.Michelson.nat" ) ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":primitive" "Michelson.pair" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                                                ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" ) ) "TopLevel.Prelude.Michelson.nat" ) ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":primitive" "Michelson.pair" ) ) ) } )
             ,
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "TopLevel.Prelude.->"
                                     ( "TopLevel.Prelude.Michelson.pair" "TopLevel.Prelude.Michelson.nat" "TopLevel.Prelude.Michelson.nat" )
                                     ( "TopLevel.Prelude.Michelson.pair"
                                         ( ":paren"
-                                            ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" ) ) "TopLevel.Prelude.Michelson.nat" ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( ()
-                                        ( ":lambda" ( "ps" )
-                                            ( "make-pair" "nil" 10 ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                                            ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" ) ) "TopLevel.Prelude.Michelson.nat" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( ":lambda" ( "ps" )
+                                    ( "make-pair" "nil" 10 ) ) ) ) } )
             ,
                 ( "nil"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":primitive" "Michelson.nil" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
+                                ( "TopLevel.Prelude.Michelson.list" "TopLevel.Prelude.Michelson.operation" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":primitive" "Michelson.nil" ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

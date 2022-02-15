@@ -1,86 +1,69 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "g"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( ":infix" "->" "nat" "nat" )
-                            , defTerm =
-                                ( ":lambda-case" ( ( "_" ) 20 ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", ( ":infix" "->" "nat" "nat" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( ( "_" ) 20 ) ) } )
             ,
                 ( "higher-order"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->"
                                     ( ":paren"
-                                        ( ":infix" "->" "nat" "nat" ) ) "nat" )
-                            , defTerm =
-                                ( ":lambda-case" ( ( "f" ) ( "f" 10 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                                        ( ":infix" "->" "nat" "nat" ) ) "nat" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( ( "f" ) ( "f" 10 ) ) ) } )
             ,
                 ( "make-pair"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->"
                                     ( "list" "operation" )
                                     ( ":infix" "->" "nat"
                                         ( "pair"
                                             ( ":paren"
-                                                ( "list" "operation" ) ) "nat" ) ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":primitive" "Michelson.pair" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                                                ( "list" "operation" ) ) "nat" ) ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":primitive" "Michelson.pair" ) ) ) } )
             ,
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->"
                                     ( "pair" "nat" "nat" )
                                     ( "pair"
                                         ( ":paren"
-                                            ( "list" "operation" ) ) "nat" ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( ()
-                                        ( ":lambda" ( "_" )
-                                            ( "make-pair" "nil"
-                                                ( ":paren"
-                                                    ( "higher-order" "g" ) ) ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                                            ( "list" "operation" ) ) "nat" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( ":lambda" ( "_" )
+                                    ( "make-pair" "nil"
+                                        ( ":paren"
+                                            ( "higher-order" "g" ) ) ) ) ) ) } )
             ,
                 ( "nil"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
-                                ( "list" "operation" )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( () ( ":primitive" "Michelson.nil" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                    { infoTable = fromList
+                        [ ( "type", ( "list" "operation" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( () ( ":primitive" "Michelson.nil" ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

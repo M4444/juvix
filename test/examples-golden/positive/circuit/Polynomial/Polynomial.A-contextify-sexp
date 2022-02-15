@@ -1,25 +1,22 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->" "field"
-                                    ( ":infix" "->" "field" "bool" ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    (
-                                        ( "x" "y" )
-                                        ( ":infix" "^" "x"
-                                            ( ":infix" "==" 3 "y" ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                    ( ":infix" "->" "field" "bool" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            (
+                                ( "x" "y" )
+                                ( ":infix" "^" "x"
+                                    ( ":infix" "==" 3 "y" ) ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

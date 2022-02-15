@@ -1,21 +1,16 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "TopLevel.Prelude.LLVM.int"
-                            , defTerm =
-                                ( ":lambda-case"
-                                    ( ()
-                                        ( "TopLevel.Prelude.LLVM.Int.add" 4 6 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                    { infoTable = fromList
+                        [ ( "type", "TopLevel.Prelude.LLVM.int" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( "TopLevel.Prelude.LLVM.Int.add" 4 6 ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

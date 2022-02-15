@@ -1,30 +1,27 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->" "field"
                                     ( ":infix" "->" "field"
-                                        ( ":infix" "->" "field" "field" ) ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    (
-                                        ( "x" "y" "z" )
-                                        ( ":infix" "^" "x"
+                                        ( ":infix" "->" "field" "field" ) ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            (
+                                ( "x" "y" "z" )
+                                ( ":infix" "^" "x"
+                                    ( ":infix" "+" 2
+                                        ( ":infix" "^" "y"
                                             ( ":infix" "+" 2
-                                                ( ":infix" "^" "y"
-                                                    ( ":infix" "+" 2
-                                                        ( ":infix" "^" "z"
-                                                            ( ":infix" "+" 2 5 ) ) ) ) ) ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                                ( ":infix" "^" "z"
+                                                    ( ":infix" "+" 2 5 ) ) ) ) ) ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

@@ -1,32 +1,25 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just "int"
-                            , defTerm =
-                                ( ":lambda-case" ( () ( "f" 10 20 ) ) )
-                            , defPrecedence = Pred Left 9 } ) } )
+                    { infoTable = fromList
+                        [ ( "type", "int" ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () ( "f" 10 20 ) ) ) } )
             ,
                 ( "f"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "->" "int"
-                                    ( ":infix" "->" "int" "int" ) )
-                            , defTerm =
-                                ( ":lambda-case" ( ( "x" "_" ) "x" ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                    ( ":infix" "->" "int" "int" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( ( "x" "_" ) "x" ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [

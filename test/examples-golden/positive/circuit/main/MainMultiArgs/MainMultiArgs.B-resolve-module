@@ -1,24 +1,21 @@
-ShowRec
+ShowMod
     { contents = T
         { public = fromList
             [
                 ( "main"
                 , Info
-                    { infoTable = fromList []
-                    , infoDef = Def
-                        ( D
-                            { defUsage = Nothing
-                            , defMTy = Just
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
                                 ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field"
-                                    ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) )
-                            , defTerm =
-                                ( ":lambda-case"
-                                    (
-                                        ( "x" "y" )
-                                        ( ":infix" "TopLevel.Prelude.Circuit.Field.+" "x" "y" ) ) )
-                            , defPrecedence = Pred Left 9 } ) } ) ]
+                                    ( ":infix" "TopLevel.Prelude.->" "TopLevel.Prelude.Circuit.field" "TopLevel.Prelude.Circuit.field" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            (
+                                ( "x" "y" )
+                                ( ":infix" "TopLevel.Prelude.Circuit.Field.+" "x" "y" ) ) ) } ) ]
         , private = fromList [] }
-    , mTy = Nothing
     , openList = []
     , qualifiedMap = fromList
         [
