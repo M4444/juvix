@@ -153,13 +153,13 @@ data Error ext primTy primVal
   | -- | implicit arguments are not yet implemented
     ImplicitsUnimplementedA Sexp.T
   | -- | type inference for definitions is not yet implemented
-    SigRequired NameSymbol.T (Ctx.Definition Sexp.T Sexp.T Sexp.T)
+    SigRequired NameSymbol.T Ctx.Definition
   | -- | head of application not an Elim
     NotAnElim Sexp.T
   | -- | pattern matching etc not yet implemented
     ExprUnimplemented Sexp.T
   | -- | local datatypes etc not yet implemented
-    DefUnimplemented (Ctx.Definition Sexp.T Sexp.T Sexp.T)
+    DefUnimplemented Ctx.Definition
   | -- | patterns other than single vars in @let@ not yet implemented
     PatternUnimplemented Sexp.T
   | -- | records not yet implemented
@@ -199,9 +199,9 @@ data Error ext primTy primVal
   | -- | Unknown %Builtin.X
     UnknownBuiltin NameSymbol.T
   | -- | Builtin with usage
-    BuiltinWithUsage (Ctx.Definition Sexp.T Sexp.T Sexp.T)
+    BuiltinWithUsage Ctx.Definition
   | -- | Builtin with type signature
-    BuiltinWithTypeSig (Ctx.Definition Sexp.T Sexp.T Sexp.T)
+    BuiltinWithTypeSig Ctx.Definition
   | -- | Wrong number of arguments for a builtin
     WrongNumberBuiltinArgs Special Int Sexp.T
   | -- | Using SAny as an expression

@@ -9,6 +9,7 @@ where
 
 import Control.Lens (over, set, (^.))
 import qualified Juvix.Context as Context
+import qualified Juvix.Context.InfoHelper as Info
 import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify.ToContext.Types as Type
@@ -72,41 +73,11 @@ defun (Structure.toDefunSigMatch -> Just defn) ctx
           case defn ^. sig of
             Sexp.Nil -> ctx
             -- TODO ∷ add "type" to a proper name not just here
-            signatur -> injectMetaInformation ctx name (Info.signature, signatur)
+            signatur -> Info.injectMetaInformation ctx name (Info.signature, signatur)
         term =
           Structure.LambdaCase (defn ^. args) |> Structure.fromLambdaCase
-    pure $ Type.PS (injectNewTerm ctxWithSigInfo name term) [] []
+    pure $ Type.PS (Info.injectNewTerm ctxWithSigInfo name term) [] []
 defun _ _ctx = error "malformed defun"
-
-injectNewTerm :: Context.T -> Symbol -> Sexp.T -> Context.T
-injectNewTerm ctx name def =
-  let newTerm =
-        case Context.lookup (pure name) ctx of
-          Just info
-            -- If it comes from the outside then it's not the same
-            -- symbol we are adding here, since it's a local name we
-            -- are adding.
-            | (info ^. Context.nameSpace) /= Context.Outside ->
-              set Context.def (Context.Term def) (info ^. Context.term)
-          _ ->
-            Context.Info mempty (Context.Term def)
-   in Context.add (NameSpace.Pub name) newTerm ctx
-
-injectMetaInformation :: Context.T -> Symbol -> (Symbol, Sexp.T) -> Context.T
-injectMetaInformation ctx name (metaName, value) =
-  let newTerm =
-        case Context.lookup (pure name) ctx of
-          Just info
-            -- If it comes from the outside then it's not the same
-            -- symbol we are adding here, since it's a local name we
-            -- are adding.
-            | (info ^. Context.nameSpace) /= Context.Outside ->
-              over Context.table (HashMap.insert metaName value) (info ^. Context.term)
-          _ ->
-            Context.Info
-              (HashMap.singleton metaName value)
-              (Context.Term (Sexp.serialize @Text ":empty"))
-   in Context.add (NameSpace.Pub name) newTerm ctx
 
 -- | @declare@ takes a declaration and tries to add it to the
 -- context. This is a bit tricky, as we could have seen the definition
@@ -130,7 +101,7 @@ declare (Sexp.List [inf, n, i]) ctx
                 | otherwise -> error "malformed declaration"
             (fromIntegral atomNum)
         newCtx =
-          injectMetaInformation ctx atomName (Info.precedence, Sexp.serialize prec)
+          Info.injectMetaInformation ctx atomName (Info.precedence, Sexp.serialize prec)
      in Type.PS newCtx [] [] |> pure
 declare _ _ = error "malformed declare"
 
@@ -144,10 +115,10 @@ type' t@(assocName Sexp.:> _ Sexp.:> dat) ctx
         addSum con ctx =
           Structure.SumCon (pure name)
             |> Structure.fromSumCon
-            |> injectNewTerm ctx con
+            |> Info.injectNewTerm ctx con
         newCtx = foldr addSum ctx constructors
         ctxWithType =
-          injectNewTerm newCtx name (Sexp.Cons (Sexp.atom "type") t)
+          Info.injectNewTerm newCtx name (Sexp.Cons (Sexp.atom "type") t)
      in Type.PS ctxWithType [] [] |> pure
 type' _ _ = error "malformed type"
 

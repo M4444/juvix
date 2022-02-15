@@ -23,6 +23,7 @@ Lens.makeLensesWith Lens.camelCaseFields ''Parsing.PredAns
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.If
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.IfNoElse
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.SumCon
+Lens.makeLensesWith Lens.camelCaseFields ''Transition.SumConFilled
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Case
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.DeconBody
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Arrow

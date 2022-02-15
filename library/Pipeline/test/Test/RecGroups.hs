@@ -27,7 +27,7 @@ top =
     "Rec Groups tests"
     [pipeline, pipelineOpen]
 
-toSexp :: [FilePath] -> IO (Either Pipeline.Error (Context.T Sexp.T Sexp.T Sexp.T))
+toSexp :: [FilePath] -> IO (Either Pipeline.Error Context.T)
 toSexp paths = do
   x <- Parsing.parseFiles paths
   case x of

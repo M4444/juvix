@@ -20,7 +20,8 @@ transformUsage ::
   NameSymbol.Mod ->
   Sexp.T ->
   m Usage.T
-transformUsage _ (Sexp.Atom Sexp.N {atomNum = i}) | i >= 0 = pure $ Usage.SNat $ fromInteger i
+transformUsage _ (Sexp.Atom Sexp.N {atomNum = i})
+  | i >= 0 = pure $ Usage.SNat $ fromInteger i
 transformUsage q e = do
   o <- isSAny q e
   if o then pure Usage.SAny else throwFF $ NotAUsage e

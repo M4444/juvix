@@ -39,7 +39,6 @@ module Juvix.Sexp.Structure.Transition where
 import Juvix.Library hiding (Handler, Type)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
-import Juvix.Sexp.Structure
 import Juvix.Sexp.Structure.Helpers
 import Juvix.Sexp.Structure.Parsing (fromLetOp, fromLetRet, fromNotPunnedGroup, toLetOp, toLetRet, toNotPunnedGroup)
 import qualified Juvix.Sexp.Structure.Parsing as Parsing
@@ -122,6 +121,12 @@ data Handler = Handler
 
 data SumCon = SumCon
   { sumConTypeOf :: NameSymbol.T
+  }
+  deriving (Show)
+
+data SumConFilled = SumConFilled
+  { sumConFilledTypeOf :: NameSymbol.T,
+    sumConFilledDef :: Sexp.T
   }
   deriving (Show)
 
@@ -488,3 +493,34 @@ fromSumCon (SumCon nameSymbol1) =
 instance Sexp.Serialize SumCon where
   deserialize = toSumCon
   serialize = fromSumCon
+
+----------------------------------------
+-- SumConFilled
+----------------------------------------
+
+nameSumConFilled :: NameSymbol.T
+nameSumConFilled = ":sum-con-filled"
+
+isSumConFilled :: Sexp.T -> Bool
+isSumConFilled (Sexp.Cons form _) = Sexp.isAtomNamed form nameSumConFilled
+isSumConFilled _ = False
+
+toSumConFilled :: Sexp.T -> Maybe SumConFilled
+toSumConFilled form
+  | isSumConFilled form =
+    case form of
+      _nameSumConFilled Sexp.:> nameSymbol1 Sexp.:> sexp2 Sexp.:> Sexp.Nil
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+          SumConFilled nameSymbol1 sexp2 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromSumConFilled :: SumConFilled -> Sexp.T
+fromSumConFilled (SumConFilled nameSymbol1 sexp2) =
+  Sexp.list [Sexp.atom nameSumConFilled, fromNameSymbol nameSymbol1, sexp2]
+
+instance Sexp.Serialize SumConFilled where
+  deserialize = toSumConFilled
+  serialize = fromSumConFilled

@@ -3,17 +3,14 @@ module Juvix.Pipeline.ToHR.Env where
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base.Types as Core
-import qualified Juvix.Core.HR as HR
-import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.Parameterisation as P
 import Juvix.Library hiding (show)
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Pipeline.ToHR.Types
-import qualified Juvix.Sexp as Sexp
 
 data FFState ext primTy primVal = FFState
-  { context :: Ctx.T Sexp.T Sexp.T Sexp.T,
+  { context :: Ctx.T,
     param :: P.Parameterisation primTy primVal,
     coreSigs :: CoreSigs ext primTy primVal,
     coreDefs :: CoreDefs ext primTy primVal,
@@ -35,8 +32,8 @@ newtype Env ext primTy primVal a = Env {unEnv :: EnvAlias ext primTy primVal a}
     (HasThrow "fromToHRError" (Error ext primTy primVal))
     via MonadError (EnvAlias ext primTy primVal)
   deriving
-    ( HasSource "context" (Ctx.T Sexp.T Sexp.T Sexp.T),
-      HasReader "context" (Ctx.T Sexp.T Sexp.T Sexp.T)
+    ( HasSource "context" Ctx.T,
+      HasReader "context" Ctx.T
     )
     via ReaderField "context" (EnvAlias ext primTy primVal)
   deriving
@@ -86,7 +83,7 @@ type HasThrowFF ext primTy primVal =
   HasThrow "fromToHRError" (Error ext primTy primVal)
 
 type HasContext =
-  HasReader "context" (Ctx.T Sexp.T Sexp.T Sexp.T)
+  HasReader "context" Ctx.T
 
 type HasParam primTy primVal =
   HasReader "param" (P.Parameterisation primTy primVal)
@@ -116,7 +113,7 @@ type ReduceEff ext primTy primVal m =
   )
 
 execEnv ::
-  Ctx.T Sexp.T Sexp.T Sexp.T ->
+  Ctx.T ->
   P.Parameterisation primTy primVal ->
   Env ext primTy primVal a ->
   Either (Error ext primTy primVal) a
@@ -124,7 +121,7 @@ execEnv ctx param env =
   fst $ runEnv ctx param env
 
 evalEnv ::
-  Ctx.T Sexp.T Sexp.T Sexp.T ->
+  Ctx.T ->
   P.Parameterisation primTy primVal ->
   Env ext primTy primVal a ->
   FFState ext primTy primVal
@@ -132,7 +129,7 @@ evalEnv ctx param env =
   snd $ runEnv ctx param env
 
 evalEnvEither ::
-  Ctx.T Sexp.T Sexp.T Sexp.T ->
+  Ctx.T ->
   P.Parameterisation primTy primVal ->
   Env ext primTy primVal a ->
   Either (Error ext primTy primVal) (FFState ext primTy primVal)
@@ -142,7 +139,7 @@ evalEnvEither ctx param env =
     (Right _, state) -> Right state
 
 runEnv ::
-  Ctx.T Sexp.T Sexp.T Sexp.T ->
+  Ctx.T ->
   P.Parameterisation primTy primVal ->
   Env ext primTy primVal a ->
   (Either (Error ext primTy primVal) a, FFState ext primTy primVal)

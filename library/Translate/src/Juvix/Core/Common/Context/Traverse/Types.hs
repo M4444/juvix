@@ -32,7 +32,7 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 -- | A definition identified by its fully-qualified name.
 data Entry = Entry
   { name :: NameSymbol.T,
-    def :: Definition
+    def :: Info
   }
   deriving (Eq, Show, Generic)
 

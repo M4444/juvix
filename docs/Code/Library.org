@@ -660,6 +660,13 @@ temporary lexical bindings as our code encounters binders.
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
+***** InfoHelper
+- _Relies on_
+  + [[Juvix/Context]]
+  + [[NameSpace]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[Juvix/Sexp]]
 ***** InfoNames
 - _Relies on_
   + [[Library]]
@@ -1395,6 +1402,8 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
+  + [[InfoNames]]
+  + [[NameSpace]]
   + [[Traversal]]
   + [[Core/Base]]
   + [[Traverse]]
@@ -1403,6 +1412,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[IR/Types]]
   + [[Core/Parameterisation]]
   + [[Library]]
+  + [[HashMap]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Usage]]
@@ -1412,36 +1422,33 @@ would be a shame if the `a` was applied to `List a`!
   + [[ToHR/Sig]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
 ****** Def
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
   + [[Core/Base]]
-  + [[Core/Base/Types]]
   + [[HR]]
-  + [[HR]]
-  + [[Library]]
   + [[Library]]
   + [[NameSymbol]]
-  + [[Library/Usage]]
   + [[ToHR/Env]]
   + [[Extract]]
   + [[Term]]
   + [[ToHR/Types]]
   + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
 ****** Env <<ToHR/Env>>
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
   + [[Core/Base/Types]]
-  + [[HR]]
-  + [[Core/IR]]
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
   + [[ToHR/Types]]
-  + [[Juvix/Sexp]]
 ****** Term
 - _Relies on_
   + [[Juvix/Closure]]
@@ -1490,9 +1497,9 @@ would be a shame if the `a` was applied to `List a`!
 ****** Sig <<ToHR/Sig>>
 - _Relies on_
   + [[Juvix/Context]]
+  + [[InfoNames]]
   + [[Core/Base/Types]]
   + [[HR]]
-  + [[Library]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
@@ -1503,6 +1510,8 @@ would be a shame if the `a` was applied to `List a`!
   + [[ToHR/Types]]
   + [[ToHR/Usage]]
   + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
 ******* Extract
 - _Relies on_
   + [[Juvix/Closure]]
@@ -1857,7 +1866,6 @@ _TODO_
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-  + [[Structure]]
   + [[Structure/Helpers]]
   + [[Structure/Parsing]]
   + [[Structure/Parsing]]
@@ -2193,6 +2201,7 @@ serialization works in Test.Contextify.Binders
 ****** Sexp <<ToContext/Sexp>>
 - _Relies on_
   + [[Juvix/Context]]
+  + [[InfoHelper]]
   + [[InfoNames]]
   + [[NameSpace]]
   + [[ToContext/Types]]

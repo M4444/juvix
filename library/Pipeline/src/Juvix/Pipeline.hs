@@ -135,7 +135,7 @@ class HasBackend b where
     stdlibDir <- liftIO getJuvixStdlibs
     toML' ((stdlibDir <>) <$> (prelude : stdlibs b)) b t
 
-  toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
+  toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline Context.T
   toSexp b x = liftIO $ do
     e <- ToSexp.contextify x
     case e of
@@ -145,7 +145,7 @@ class HasBackend b where
   toHR ::
     (Show (Ty b), Show (Val b)) =>
     Param.Parameterisation (Ty b) (Val b) ->
-    Context.T Sexp.T Sexp.T Sexp.T ->
+    Context.T ->
     Pipeline (Core.RawGlobals HR.T (Ty b) (Val b))
   toHR param sexp =
     case ToHR.contextToHR sexp param of
@@ -193,14 +193,14 @@ class HasBackend b where
   -------------
 
   -- | Parse juvix source code passing a set of libraries explicitly to have them in scope
-  parseWithLibs :: [FilePath] -> b -> Text -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
+  parseWithLibs :: [FilePath] -> b -> Text -> Pipeline Context.T
   parseWithLibs libs b code = do
     fp <- liftIO $ createTmpPath code
     toML' (libs ++ [fp]) b code
       >>= toSexp b
 
   -- TODO: parse === toML?
-  parse :: b -> Text -> Pipeline (Context.T Sexp.T Sexp.T Sexp.T)
+  parse :: b -> Text -> Pipeline Context.T
   parse b t = do
     stdlibDir <- liftIO getJuvixStdlibs
     parseWithLibs ((stdlibDir <>) <$> libs) b t
@@ -211,11 +211,11 @@ class HasBackend b where
   -- Typechecking --
   ------------------
 
-  typecheck :: Context.T Sexp.T Sexp.T Sexp.T -> Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
+  typecheck :: Context.T -> Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
 
   typecheck' ::
     Constraints b =>
-    Context.T Sexp.T Sexp.T Sexp.T ->
+    Context.T ->
     Param.Parameterisation (Ty b) (Val b) ->
     Pipeline (ErasedAnn.AnnTermT (Ty b) (Val b))
   typecheck' ctx param = do

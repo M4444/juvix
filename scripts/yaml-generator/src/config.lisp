@@ -426,7 +426,8 @@ common ones to include"
                    *parsing*
                    *core*
                    *translate*
-                   *context*)
+                   *context*
+                   *data-structures*)
    ;; hack name, for sub dirs
    :name "Pipeline"
    :nix-build  (nix-enable-custom) ;; (nix-enable-zlib *nix-curl*)

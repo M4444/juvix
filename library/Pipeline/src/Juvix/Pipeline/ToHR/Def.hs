@@ -6,23 +6,21 @@ module Juvix.Pipeline.ToHR.Def
   )
 where
 
-import Data.HashMap.Strict (HashMap)
+import Control.Lens hiding ((|>))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base as Core
-import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.HR as HR
-import qualified Juvix.Core.HR as IR
 import Juvix.Library
-import Juvix.Library hiding (show)
 import qualified Juvix.Library.NameSymbol as NameSymbol
-import qualified Juvix.Library.Usage as Usage
 import Juvix.Pipeline.ToHR.Env
 import Juvix.Pipeline.ToHR.Sig.Extract
 import Juvix.Pipeline.ToHR.Term (transformTermHR)
 import Juvix.Pipeline.ToHR.Types
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Parsing as Structure
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import Prelude (error)
 
 ---------------------
@@ -38,7 +36,7 @@ transformDef ::
     Show primVal
   ) =>
   NameSymbol.T ->
-  Ctx.Definition Sexp.T Sexp.T Sexp.T ->
+  Ctx.Info ->
   m [CoreDef HR.T primTy primVal]
 transformDef x def = do
   sig <- lookupSig Nothing x
@@ -47,43 +45,44 @@ transformDef x def = do
     _ -> map CoreDef <$> transformNormalDef q x def
   where
     q = NameSymbol.mod x
-    transformNormalDef q x (Ctx.TypeDeclar dec) =
-      transformType x dec
-      where
-        transformCon x ty _def = do
-          -- def <- traverse (transformFunction q (conDefName x)) def
-          pure $
-            Core.RawDataCon
-              { rawConName = x,
-                rawConType = ty,
-                rawConDef = Nothing --def
-              }
+    transformNormalDef q x info =
+      case info ^. Ctx.def of
+        Ctx.Module _________ -> pure []
+        Ctx.CurrentNameSpace -> pure []
+        Ctx.Term t
+          | Structure.isSumCon t -> pure []
+          | Structure.isType t -> transformType x t
+          | Structure.isLambdaCase t -> do
+            f <- transformFunction q x t
+            pure [Core.RawGFunction f]
+          | otherwise ->
+            error ("malformed data type" <> show t)
+    transformCon x ty _def = do
+      -- def <- traverse (transformFunction q (conDefName x)) def
+      pure $
+        Core.RawDataCon
+          { rawConName = x,
+            rawConType = ty,
+            rawConDef = Nothing --def
+          }
 
-        transformType name _ = do
-          (ty, conNames) <- getDataSig q name
-          let getConSig' x = do ty <- getConSig q x; pure (x, ty, def)
-          conSigs <- traverse getConSig' conNames
-          cons <- traverse (uncurry3 transformCon) conSigs
-          (args, ℓ) <- splitDataType name ty
-          let dat' =
-                Core.RawDatatype
-                  { rawDataName = name,
-                    rawDataArgs = args,
-                    rawDataLevel = ℓ,
-                    rawDataCons = cons,
-                    -- TODO ∷ replace
-                    rawDataPos = []
-                  }
-          pure $ Core.RawGDatatype dat' : fmap Core.RawGDataCon cons
-    transformNormalDef _ _ Ctx.CurrentNameSpace = pure []
-    transformNormalDef _ _ Ctx.Information {} = pure []
-    transformNormalDef _ _ (Ctx.Unknown _) = pure []
-    transformNormalDef _ _ (Ctx.Record _) = pure [] -- TODO
-    transformNormalDef _ _ Ctx.SumCon {} = pure []
-    transformNormalDef q x (Ctx.Def def) = do
-      f <- transformFunction q x def
-      pure [Core.RawGFunction f]
-    transformFunction q x (Ctx.D _ _ (_lambdaCase Sexp.:> defs) _)
+    transformType name _ = do
+      (ty, conNames) <- getDataSig q name
+      let getConSig' x = do ty <- getConSig q x; pure (x, ty, def)
+      conSigs <- traverse getConSig' conNames
+      cons <- traverse (uncurry3 transformCon) conSigs
+      (args, ℓ) <- splitDataType name ty
+      let dat' =
+            Core.RawDatatype
+              { rawDataName = name,
+                rawDataArgs = args,
+                rawDataLevel = ℓ,
+                rawDataCons = cons,
+                -- TODO ∷ replace
+                rawDataPos = []
+              }
+      pure $ Core.RawGDatatype dat' : fmap Core.RawGDataCon cons
+    transformFunction q x (_lambdaCase Sexp.:> defs)
       | Just xs <- Sexp.toList defs >>= NonEmpty.nonEmpty = do
         (π, typ) <- getValSig q x
         clauses <- traverse (transformClause q) xs

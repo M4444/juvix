@@ -55,7 +55,7 @@ traverseContext_ f = traverse_ f . recGroups
 traverseContext1 ::
   (Applicative f, Monoid t) =>
   -- | process one definition
-  (NameSymbol.T -> Context.Definition -> f t) ->
+  (NameSymbol.T -> Context.Info -> f t) ->
   Context.T ->
   f t
 traverseContext1 = traverseContext . foldMapA . onEntry
@@ -64,13 +64,13 @@ traverseContext1 = traverseContext . foldMapA . onEntry
 traverseContext1_ ::
   Applicative f =>
   -- | process one definition
-  (NameSymbol.T -> Context.Definition -> f z) ->
+  (NameSymbol.T -> Context.Info -> f z) ->
   Context.T ->
   f ()
 traverseContext1_ = traverseContext_ . traverse_ . onEntry
 
 onEntry ::
-  (NameSymbol.T -> Context.Definition -> t) ->
+  (NameSymbol.T -> Context.Info -> t) ->
   Entry ->
   t
 onEntry f Entry {name, def} = f name def
@@ -93,7 +93,7 @@ groupCons :: Foldable t => t (NonEmpty Entry) -> [Group]
 groupCons = fmap snd . foldr f mempty
   where
     f entry@(a NonEmpty.:| _as) acc
-      | Context.Term (Structure.toSumCon -> Just tm) <- def a,
+      | (Context.Term (Structure.toSumCon -> Just tm)) <- def a ^. Context.def,
         let sumTName = NameSymbol.toSym (tm ^. L.typeOf),
         Just _ <- find (elem sumTName) (fst <$> acc) =
         -- Find if type declar of a data constructor exists
@@ -114,10 +114,19 @@ orderDatatypes (a NonEmpty.:| _as) (b NonEmpty.:| _bs) = case (def a, def b) of
   -- then it'll give the elem call a false ordering....
   --
   -- Thus we use NameSymbol.last and check that against the name
-  (Context.Term (Structure.toSumCon -> Just tm), _)
+  --
+  -- When this code is called we have toSumConFilled, but also could
+  -- be on toSumCon
+  (Context.Info _ (Context.Term (Structure.toSumConFilled -> Just tm)), _)
     | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name b) ->
       GT
-  (_, Context.Term (Structure.toSumCon -> Just tm))
+  (Context.Info _ (Context.Term (Structure.toSumCon -> Just tm)), _)
+    | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name b) ->
+      GT
+  (_, Context.Info _ (Context.Term (Structure.toSumConFilled -> Just tm)))
+    | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name a) ->
+      LT
+  (_, Context.Info _ (Context.Term (Structure.toSumCon -> Just tm)))
     | NameSymbol.toSym (tm ^. L.typeOf) == NonEmpty.last (name a) ->
       LT
   (_, _) -> EQ
@@ -159,7 +168,7 @@ recGroups' injection ns = do
               _ -> pure []
           -- we remove the TopLevel. from fvs as it screws with the
           -- algorithm resolution
-          pure [((term ^. Context.def), qname, fmap Context.removeTopName fvs)]
+          pure [(term, qname, fmap Context.removeTopName fvs)]
   let (g, fromV, _) = Graph.graphFromEdges defs
   let accum1 xs v =
         let (def, name, ys) = fromV v

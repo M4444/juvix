@@ -8,6 +8,7 @@ packages:
 - ../Core
 - ../Translate
 - ../Context
+- ../Test/DataStructures
 
 nix:
   enable: true

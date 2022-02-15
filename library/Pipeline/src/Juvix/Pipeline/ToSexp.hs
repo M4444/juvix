@@ -39,7 +39,7 @@ instance PP.PrettyText Error where
 contextify ::
   -- | List of module names and top level definitions
   [(NameSymbol.T, [Initial.TopLevel])] ->
-  IO (Either Error (Context.T Sexp.T Sexp.T Sexp.T))
+  IO (Either Error Context.T)
 contextify syn =
   case fmap (second (Desugar.op . fmap ToSexp.transTopLevel)) syn of
     [] ->

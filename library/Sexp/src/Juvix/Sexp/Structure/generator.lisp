@@ -374,7 +374,8 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
   (generate-haskell "LetHandler" (repeat 3 "sexp") ":lethandler")
 
   (generate-haskell "Handler" '("sexp" "letRet" "letOp") ":lethandler" :list-star t)
-  (generate-haskell "SumCon" '("nameSymbol") ":sum-con"))
+  (generate-haskell "SumCon" '("nameSymbol") ":sum-con")
+  (generate-haskell "SumConFilled" '("nameSymbol" "sexp") ":sum-con-filled"))
 
 (defun core-named-representation ()
   (generate-haskell "Star" '("integer") ":star")
