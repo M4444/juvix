@@ -516,10 +516,11 @@ transMultiSexpNoContext ::
   Pipeline.CIn ->
   Pipeline.COut Pipeline.WorkingEnv
 transMultiSexpNoContext trans cin =
-  Pipeline.Success Meta.empty newWenv
+  Pipeline.Success meta newWenv
   where
     wenv = cin ^. languageData
     sexps = (wenv ^. currentExp) >>= f
+    meta = cin ^. surroundingData . metaInfo
 
     newSexps = trans sexps >>| Pipeline.Sexp
 
@@ -609,26 +610,28 @@ initContextTrans ::
 initContextTrans cin = do
   let wenv = cin ^. languageData
       sexps = (wenv ^. currentExp) >>= f |> nonEmpty
+      meta = cin ^. surroundingData . metaInfo
   case sexps of
-    Nothing -> Pipeline.Success {_meta = Meta.empty, _result = wenv} |> pure
-    Just toProcess -> initContext (wenv ^. context) toProcess
+    Nothing -> Pipeline.Success {_meta = meta, _result = wenv} |> pure
+    Just toProcess -> initContext meta (wenv ^. context) toProcess
   where
     f (Pipeline.InContext _) = []
     f (Pipeline.Sexp sexp) = [sexp]
 
 initContext ::
+  Meta.T ->
   Context.T Sexp.T Sexp.T Sexp.T ->
   NonEmpty Sexp.T ->
   IO (Pipeline.COut Pipeline.WorkingEnv)
-initContext ctx sexps = do
+initContext meta ctx sexps = do
   context <- fullyContextify ctx moduleSexps
   case context of
     -- TODO: Calls to fullyContextify and below should use MinimialIO so
     -- we get proper Feedback and Tracing
-    Left err -> Pipeline.Failure Meta.empty Nothing |> pure
+    Left err -> Pipeline.Failure meta Nothing |> pure
     Right ctx ->
       Pipeline.WorkingEnv ctxSexps ctx
-        |> Pipeline.Success Meta.empty
+        |> Pipeline.Success meta
         |> pure
   where
     moduleSexps =
