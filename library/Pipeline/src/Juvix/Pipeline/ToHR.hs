@@ -9,6 +9,7 @@ module Juvix.Pipeline.ToHR
   )
 where
 
+import Control.Lens hiding ((|>))
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
@@ -68,14 +69,21 @@ contextToHR ctx param =
               modify @"closure" $ Closure.insertGeneric (NameSymbol.toSymbol sumTName)
               --
               let dataConstructor = Sexp.atom $ NameSymbol.fromSymbol dataCons
-                  typeCons = Sexp.atom $ sumTName
                   -- figure out the type it refers to, and if it's there,
                   -- start injecting information.
                   infoDef = do
+                    looked <- Context.lookup sumTName currentContext
                     t <-
-                      extractTypeDeclar . Context.infoDef . Context.extractValue
-                        =<< Context.lookup sumTName currentContext
+                      looked
+                        |> Context.extractValue
+                        |> Context.infoDef
+                        |> extractTypeDeclar
                     declaration <- Sexp.findKey Sexp.car dataConstructor t
+                    --
+                    let typeCons =
+                          Context.removeTopName (looked ^. Context.qualifedName)
+                            |> Sexp.atom
+                    --
                     tb
                       |> HashMap.insert Info.signature (generateSumConsSexp typeCons declaration)
                       |> HashMap.insert Info.usage (Sexp.serialize Usage.SAny)

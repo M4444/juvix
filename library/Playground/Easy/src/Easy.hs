@@ -398,8 +398,8 @@ coreifyFile juvix options = do
 
 coreify1 :: IO ()
 coreify1 = do
-  x <- coreify "sig foo : int let foo = 3" defMichelson
-  printCoreFunction (snd x) defMichelson "foo"
+  x <- coreify "type verySimpleType = One field" defMichelson
+  printCoreFunction (snd x) defMichelson "One"
 
 coreify2 :: IO ()
 coreify2 = do
