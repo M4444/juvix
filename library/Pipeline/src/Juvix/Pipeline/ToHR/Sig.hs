@@ -5,6 +5,7 @@ module Juvix.Pipeline.ToHR.Sig where
 import Control.Lens hiding ((|>))
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Context.InfoNames as Info
+import qualified Juvix.Context as Context
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.HR as HR
 import Juvix.Library
@@ -71,6 +72,16 @@ transformNormalSig q x info =
     Ctx.Term t
       | Structure.isType t -> transformTypeSig q x t
       | Structure.isSumCon t -> pure [CoreSig $ Core.ConSig {sigConType = Nothing}]
+      | Structure.isSumConFilled t -> do
+        let x' = conDefName x
+            Just (Structure.SumConFilled _name def) = Structure.toSumConFilled t
+            defMTy = Ctx.lookupInfoSexp info Info.signature
+        defSigs <- transformNormalSig q x' (Ctx.Info mempty (Context.Term def))
+        conSigs <- CoreSig . Core.ConSig <$> traverse (transformTermHR q) defMTy
+        pure $
+             conSigs
+              : defSigs
+
       | Structure.isLambdaCase t ->
         Ctx.lookupInfoSexp info Info.signature
           |> transformValSig q x (info ^. Ctx.def) (Ctx.lookupInfo @Usage.T info Info.usage)

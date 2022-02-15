@@ -51,6 +51,7 @@ transformDef x def = do
         Ctx.CurrentNameSpace -> pure []
         Ctx.Term t
           | Structure.isSumCon t -> pure []
+          | Structure.isSumConFilled t -> pure []
           | Structure.isType t -> transformType x t
           | Structure.isLambdaCase t -> do
             f <- transformFunction q x t
