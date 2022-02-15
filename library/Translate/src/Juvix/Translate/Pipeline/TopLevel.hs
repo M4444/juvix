@@ -253,6 +253,8 @@ transMatchLogic (Types.MatchLogic content Nothing) =
   transMatchStart content
 
 transMatchStart :: Types.MatchLogicStart -> Sexp.T
+transMatchStart (Types.MatchInfix op l r) =
+  Sexp.list [Sexp.atom ":infix", Sexp.atom op, transMatchStart l, transMatchStart r]
 transMatchStart (Types.MatchName sym) = Sexp.atom (NameSymbol.fromSymbol sym)
 transMatchStart (Types.MatchConst c) = transConstant c
 transMatchStart (Types.MatchCon conName logics) =
