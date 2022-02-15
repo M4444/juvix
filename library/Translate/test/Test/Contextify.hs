@@ -44,6 +44,22 @@ moduleResolution =
                 "(:lambda-case \
                 \  (() (case TopLevel.A.a ((Cons a (Cons x y)) (add a x y)))))"
         Just expected T.@=? unwrapLookup "fi" t,
+      T.testCase "infix declaration works with declaration" $ do
+        Right t <-
+          contextualizeFoo
+            "type foo = (::) declare infixl (::) 20 let fi = a * 3 :: 10"
+        let Right expected =
+              Sexp.parse
+                "(:lambda-case (() (* a (:: 3 10))))"
+        Just expected T.@=? unwrapLookup "fi" t,
+
+      T.testCase "infix declaration works with declaration" $ do
+        Right t <-
+          contextualizeFoo
+            "type foo = (::) declare infixl (::) 1 let fi = a * 3 :: 10"
+        let Right expected =
+              Sexp.parse "(:lambda-case (() (:: (* a 3) 10)))"
+        Just expected T.@=? unwrapLookup "fi" t,
       --
       T.testCase "defining an imported function just shadows" $ do
         Right t <- contextualizeFoo "open A let fi = x let x = 2"

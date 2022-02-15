@@ -3,9 +3,9 @@
 module Juvix.Pipeline.ToHR.Sig where
 
 import Control.Lens hiding ((|>))
+import qualified Juvix.Context as Context
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Context.InfoNames as Info
-import qualified Juvix.Context as Context
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.HR as HR
 import Juvix.Library
@@ -79,9 +79,8 @@ transformNormalSig q x info =
         defSigs <- transformNormalSig q x' (Ctx.Info mempty (Context.Term def))
         conSigs <- CoreSig . Core.ConSig <$> traverse (transformTermHR q) defMTy
         pure $
-             conSigs
-              : defSigs
-
+          conSigs :
+          defSigs
       | Structure.isLambdaCase t ->
         Ctx.lookupInfoSexp info Info.signature
           |> transformValSig q x (info ^. Ctx.def) (Ctx.lookupInfo @Usage.T info Info.usage)
