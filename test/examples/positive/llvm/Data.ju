@@ -1,0 +1,19 @@
+mod Data where
+
+open Prelude
+open LLVM
+
+type bar : ty =
+  | P    int int
+  | (::) int int
+
+declare infixl (::) 10
+
+sig pattern-match : bar -> int
+let pattern-match (P x y)  = x Int.+ y
+let pattern-match (x :: y) = x Int.+ y
+
+sig main : int
+let main =
+  let pm = pattern-match (1 :: 2) in
+  3
