@@ -37,6 +37,7 @@
 -- | and it appears above and horizontally-aligned with the code it explains.
 module Juvix.Witch.CPSTranslation.Transform where
 
+import Control.Lens hiding ((|>))
 import qualified Data.Unique as Uni
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
@@ -57,13 +58,13 @@ type Stack = [Sexp.T]
 type Stacked m a = m (Stack, a)
 
 -- TODO make a Context capability
-type ContextifiedProgram m ty sumRep = m (Context.T Sexp.T ty sumRep, [Sexp.T])
+type ContextifiedProgram m ty sumRep = m (Context.T, [Sexp.T])
 
-type ContextifiedSexp m ty sumRep = m (Context.T Sexp.T ty sumRep, Sexp.T)
+type ContextifiedSexp m ty sumRep = m (Context.T, Sexp.T)
 
-type ContextifiedStack m ty sumRep = m (Context.T Sexp.T ty sumRep, Stack)
+type ContextifiedStack m ty sumRep = m (Context.T, Stack)
 
-type CPSTrans m ty sumRep = m (Context.T Sexp.T ty sumRep, [Sexp.T], Stack)
+type CPSTrans m ty sumRep = m (Context.T, [Sexp.T], Stack)
 
 -- initial return continuation
 retId :: IO Sexp.T
@@ -87,11 +88,7 @@ initStk = do
 
 -- make CPSTrans datatype
 mkTrans ::
-  ExpressionIO m =>
-  Context.T Sexp.T ty sumRep ->
-  [Sexp.T] ->
-  Stack ->
-  CPSTrans m ty sumRep
+  ExpressionIO m => Context.T -> [Sexp.T] -> Stack -> CPSTrans m ty sumRep
 mkTrans ctx sexp stk = pure (ctx, sexp, stk)
 
 -- make Staked datatype
@@ -99,10 +96,7 @@ mkStkd :: ExpressionIO m => Stack -> a -> Stacked m a
 mkStkd stack a = pure (stack, a)
 
 mkContextProg ::
-  ExpressionIO m =>
-  Context.T Sexp.T ty sumRep ->
-  [Sexp.T] ->
-  ContextifiedProgram m ty sumRep
+  ExpressionIO m => Context.T -> [Sexp.T] -> ContextifiedProgram m ty sumRep
 mkContextProg ctx sexp = pure (ctx, sexp)
 
 -- reify stacks
@@ -163,10 +157,7 @@ convertVias cpstrans = do
 
 -- look for all handlers in form, and add them to context
 addHandlersToContext ::
-  ExpressionIO m =>
-  Context.T Sexp.T ty sumRep ->
-  [Sexp.T] ->
-  ContextifiedProgram m ty sumRep
+  ExpressionIO m => Context.T -> [Sexp.T] -> ContextifiedProgram m ty sumRep
 addHandlersToContext context form =
   let stk = collectHandlers form
       context' = foldr addToContext context stk
@@ -188,8 +179,8 @@ mkNameSpaceFrom name
   | otherwise = NameSpace.Pub $ NameSymbol.toSym (NameSymbol.fromText "")
 
 -- make Context.Definition
-mkDef :: Sexp.T -> Context.Definition Sexp.T b c
-mkDef form = Context.Def (Context.D Nothing Nothing form Pred.default')
+mkDef :: Sexp.T -> Context.Definition
+mkDef form = (Context.Term form)
 
 -- delete Stack from Staked
 deleteStack :: Stacked IO [Sexp.T] -> IO [Sexp.T]
@@ -206,17 +197,15 @@ removeHandlers = foldr rmvHand []
       | otherwise = form : acc
 
 -- lookup name within context
-construct :: Sexp.T -> Context.T Sexp.T ty sumRep -> Maybe Sexp.T
+construct :: Sexp.T -> Context.T -> Maybe Sexp.T
 construct sexp ctx
   | Just var <- Core.toVar sexp =
-    extractValue <$> Context.lookupCurrent (Core.varName var) ctx
+    let lookup = _Just . Context.term . Context.def
+     in case Context.lookupCurrent (Core.varName var) ctx ^? lookup of
+          Just (Context.Term tm) ->
+            tm |> pure
+          _ -> Sexp.empty |> pure
   | otherwise = Just sexp
-  where
-    extractValue (NameSpace.Pub (Context.Info _ (Context.Def Context.D {..}))) =
-      defTerm
-    extractValue (NameSpace.Priv (Context.Info _ (Context.Def Context.D {..}))) =
-      defTerm
-    extractValue _ = Sexp.empty
 
 -- `convert` takes care of the actual translation
 convert :: ExpressionIO m => Sexp.T -> CPSTrans m ty sumRep -> CPSTrans m ty sumRep
@@ -262,10 +251,7 @@ convert sexp form = do
 
 -- Similar to `convertDo`
 convertLet ::
-  ExpressionIO m =>
-  Core.Let ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
-  m (Stack, Sexp.T)
+  ExpressionIO m => Core.Let -> Stacked m Context.T -> m (Stack, Sexp.T)
 convertLet (Core.Let {Core.letBinder = Core.Binder {..}, Core.letBody = letBody}) form = do
   (k : ks, ctx) <- form
   ks' <- liftIO unique
@@ -279,7 +265,7 @@ convertLet (Core.Let {Core.letBinder = Core.Binder {..}, Core.letBody = letBody}
 convertApp ::
   ExpressionIO m =>
   Core.App ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
+  Stacked m Context.T ->
   m (Stack, Sexp.T)
 convertApp (Core.App {..}) stkd = do
   (stk, context) <- stkd
@@ -289,10 +275,7 @@ convertApp (Core.App {..}) stkd = do
 
 -- Transforms lambdas to take a stack of continuations
 convertLam ::
-  ExpressionIO m =>
-  Core.Lam ->
-  Context.T Sexp.T ty sumRep ->
-  m (Stack, Sexp.T)
+  ExpressionIO m => Core.Lam -> Context.T -> m (Stack, Sexp.T)
 convertLam (Core.Lam {..}) context = do
   ks <- liftIO $ unique
   (_, sexp : _, st) <- convert lamBody $ mkTrans context [] (reflect ks)
@@ -303,15 +286,12 @@ convertLam (Core.Lam {..}) context = do
 convertDo ::
   ExpressionIO m =>
   Str.Do ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
+  Stacked m Context.T ->
   CPSTrans m ty sumRep
 convertDo do'@(Str.Do {..}) form = convertDoBodyFull do_ form
   where
     convertDoBodyFull ::
-      ExpressionIO m =>
-      Str.DoBodyFull ->
-      Stacked m (Context.T Sexp.T ty sumRep) ->
-      CPSTrans m ty sumRep
+      ExpressionIO m => Str.DoBodyFull -> Stacked m Context.T -> CPSTrans m ty sumRep
     convertDoBodyFull (Str.WithBinder {..}) form = do
       (k : ks, ctx) <- form
       ks' <- liftIO unique
@@ -334,10 +314,7 @@ convertDo do'@(Str.Do {..}) form = convertDoBodyFull do_ form
 
 -- <prog> via <handler> ==> λκs. convert prog (convert handler [])
 convertVia ::
-  ExpressionIO m =>
-  Str.Via ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
-  Stacked m Sexp.T
+  ExpressionIO m => Str.Via -> Stacked m Context.T -> Stacked m Sexp.T
 convertVia (Str.Via {..}) form = do
   (ks, ctx) <- form
   Just handler <- pure (construct viaHandler ctx)
@@ -349,7 +326,7 @@ convertVia (Str.Via {..}) form = do
   pure (stk', sexp)
 
 -- just triggers translation of return and operations
-convertHandler :: ExpressionIO m => Sexp.T -> Stacked m (Context.T Sexp.T ty sumRep) -> m Stack
+convertHandler :: ExpressionIO m => Sexp.T -> Stacked m Context.T -> m Stack
 convertHandler sexp acc
   | Just hand <- Str.toHandler sexp = do
     convertHandler' hand acc
@@ -358,10 +335,7 @@ convertHandler sexp acc
     pure stack
   where
     convertHandler' ::
-      ExpressionIO m =>
-      Str.Handler ->
-      Stacked m (Context.T Sexp.T ty sumRep) ->
-      m Stack
+      ExpressionIO m => Str.Handler -> Stacked m Context.T -> m Stack
     convertHandler' (Str.Handler {..}) acc = do
       (_, ctx) <- acc
       ret <- convertHandRet handlerRet ctx
@@ -369,7 +343,7 @@ convertHandler sexp acc
       pure [ret, ops]
 
 -- for (pure x -> N) ==> λx ks.let (h :: ks') = ks in (convert N) (reflect ks')
-convertHandRet :: ExpressionIO m => Str.LetRet -> Context.T Sexp.T ty sumRep -> m Sexp.T
+convertHandRet :: ExpressionIO m => Str.LetRet -> Context.T -> m Sexp.T
 convertHandRet (Str.LetRet {..}) ctx = do
   ks_ <- liftIO $ unique
   Just program <- pure (construct letRetBody ctx)
@@ -379,7 +353,7 @@ convertHandRet (Str.LetRet {..}) ctx = do
   pure $ Sexp.lam' [Sexp.unlist letRetArg, ks_] (Sexp.app ks_ sexp)
 
 -- for each (op args k -> N) ==> λz ks.case z {op〈p, s〉-> let r = reversion s in (convert N) reflect ks)
-convertHandOp :: MonadIO m => [Str.LetOp] -> Context.T Sexp.T ty sumRep -> m Sexp.T
+convertHandOp :: MonadIO m => [Str.LetOp] -> Context.T -> m Sexp.T
 convertHandOp handlerOps ctx = do
   z <- liftIO $ unique
   ks_ <- liftIO $ unique
@@ -390,7 +364,7 @@ convertHandOp handlerOps ctx = do
         Sexp.empty
   where
     -- converts operation into an match-argument for let-match
-    matchCases :: Stack -> Context.T Sexp.T ty sumRep -> Str.LetOp -> IO Str.ArgBody
+    matchCases :: Stack -> Context.T -> Str.LetOp -> IO Str.ArgBody
     matchCases stk ctx (Str.LetOp {..}) = do
       k_ <- liftIO $ unique
       Just program <- pure (construct letOpBody ctx)
@@ -427,10 +401,7 @@ convertHandOp handlerOps ctx = do
 
 -- pure <value> ==>  λκ:κs. κ (convert value) (reify κs)
 convertDoPure ::
-  ExpressionIO m =>
-  Str.DoPure ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
-  Stacked m Sexp.T
+  ExpressionIO m => Str.DoPure -> Stacked m Context.T -> Stacked m Sexp.T
 convertDoPure ((Str.DoPure {..})) form = do
   (k : ks, ctx) <- form
   Just program <- pure (construct doPureArg ctx)
@@ -439,10 +410,7 @@ convertDoPure ((Str.DoPure {..})) form = do
 
 -- <op> <value> ==> λκ:η:κs. η (〈op convert value, η :: κ :: []〉) (reify κs)
 convertDoOp ::
-  ExpressionIO m =>
-  Str.DoOp ->
-  Stacked m (Context.T Sexp.T ty sumRep) ->
-  Stacked m Sexp.T
+  ExpressionIO m => Str.DoOp -> Stacked m Context.T -> Stacked m Sexp.T
 convertDoOp ((Str.DoOp {..})) form = do
   (k : n : ks, ctx) <- form
   Just program <- pure (construct doOpArgs ctx)

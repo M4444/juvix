@@ -7,7 +7,7 @@ import Juvix.Witch.CPSTranslation.Transform
 
 op ::
   (ExpressionIO m) =>
-  Context.T Sexp.T ty sumRep ->
+  Context.T ->
   [Sexp.T] ->
   ContextifiedProgram m ty sumRep
 op context sexp = do

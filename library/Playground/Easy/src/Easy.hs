@@ -275,7 +275,7 @@ contextifyFileGen f file def = do
 contextifyNoResolve ::
   ByteString ->
   Options primTy primVal ->
-  IO (Contextify.PathError (ContextifyT.ContextSexp, [ResolveOpen.PreQualified]))
+  IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextifyNoResolve = contextifyGen Contextify.contextify
 
 -- | We do @contextifyNoResolve@ but on a file instead
@@ -283,7 +283,7 @@ contextifyNoResolve = contextifyGen Contextify.contextify
 contextifyNoResolveFile ::
   FilePath ->
   Options primTy primVal ->
-  IO (Contextify.PathError (ContextifyT.ContextSexp, [ResolveOpen.PreQualified]))
+  IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextifyNoResolveFile = contextifyFileGen Contextify.contextify
 
 ----------------------------------------
@@ -291,7 +291,7 @@ contextifyNoResolveFile = contextifyFileGen Contextify.contextify
 ----------------------------------------
 
 contextifyNoResolve1 ::
-  IO (Contextify.PathError (ContextifyT.ContextSexp, [ResolveOpen.PreQualified]))
+  IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextifyNoResolve1 =
   contextifyNoResolve
     "let fi = \
@@ -318,17 +318,13 @@ contextifyNoResolve1Pretty = do
 --
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified
 contextify ::
-  ByteString ->
-  Options primTy primVal ->
-  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  ByteString -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
 contextify = contextifyGen Contextify.fullyContextify
 
 -- | we do @contextify@ but on a file instead
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified
 contextifyFile ::
-  FilePath ->
-  Options primTy primVal ->
-  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  FilePath -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
 contextifyFile = contextifyFileGen Contextify.fullyContextify
 
 --------------------------------------------------------------------------------
@@ -341,7 +337,7 @@ contextifyFile = contextifyFileGen Contextify.fullyContextify
 contextifyDesugar ::
   ByteString ->
   Options primTy primVal ->
-  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  IO (Either Contextify.ResolveErr Context.T)
 contextifyDesugar = contextifyGen Contextify.op
 
 -- | we do @contextifyDesugar@ but on a file instead
@@ -349,7 +345,7 @@ contextifyDesugar = contextifyGen Contextify.op
 contextifyDesugarFile ::
   FilePath ->
   Options primTy primVal ->
-  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  IO (Either Contextify.ResolveErr Context.T)
 contextifyDesugarFile = contextifyFileGen Contextify.op
 
 ----------------------------------------
@@ -530,8 +526,7 @@ pShowCompact =
     )
 
 -- | @printModule@ prints the module given to it
-printModule ::
-  (MonadIO m, Show ty, Show term, Show sum) => NameSymb.T -> Context.T term ty sum -> m ()
+printModule :: MonadIO m => NameSymb.T -> Context.T -> m ()
 printModule name ctx =
   case Context.inNameSpace name ctx of
     Just ctx ->
@@ -623,10 +618,7 @@ printTimeLapseFile file option = do
   pShowCompact erased
 
 printDefModule ::
-  (MonadIO m, Show ty, Show term, Show sum) =>
-  Options primTy primVal ->
-  Context.T term ty sum ->
-  m ()
+  MonadIO m => Options primTy primVal -> Context.T -> m ()
 printDefModule = printModule . currentContextName
 
 ignoreHeader :: Either a (Parsing.Header topLevel) -> [topLevel]
@@ -634,14 +626,13 @@ ignoreHeader (Right (Parsing.NoHeader xs)) = xs
 ignoreHeader _ = error "not no header"
 
 definedFunctionsInModule ::
-  Options primTy primVal -> Context.T term ty sumRep -> [Symbol]
+  Options primTy primVal -> Context.T -> [Symbol]
 definedFunctionsInModule option context =
   case Context.inNameSpace (currentContextName option) context of
     Just ctx ->
       ctx
         |> Context.currentNameSpace
-        |> (^. Context.record)
-        |> Context.recordContents
+        |> (^. Context.record . Context.contents)
         |> NameSpace.toList1
         |> fmap fst
     Nothing -> []
