@@ -1,0 +1,196 @@
+Ann
+    { usage = SAny
+    , type' = PrimTy
+        ( Return
+            { retType = PrimType
+                { getPrimType = STAR :| [] }
+            , retTerm = PrimTy
+                ( IntegerType
+                    { typeBits = 8 }
+                )
+            }
+        )
+    , term = AppM
+        ( Ann
+            { usage = SAny
+            , type' = Pi SAny
+                ( PrimTy
+                    ( Return
+                        { retType = PrimType
+                            { getPrimType = STAR :| [] }
+                        , retTerm = PrimTy
+                            ( IntegerType
+                                { typeBits = 8 }
+                            )
+                        }
+                    )
+                )
+                ( PrimTy
+                    ( Return
+                        { retType = PrimType
+                            { getPrimType = STAR :| [] }
+                        , retTerm = PrimTy
+                            ( IntegerType
+                                { typeBits = 8 }
+                            )
+                        }
+                    )
+                )
+            , term = LamM
+                { capture = []
+                , arguments =
+                    [ "0" :| [] ]
+                , body = Ann
+                    { usage = SAny
+                    , type' = PrimTy
+                        ( Return
+                            { retType = PrimType
+                                { getPrimType = STAR :| [] }
+                            , retTerm = PrimTy
+                                ( IntegerType
+                                    { typeBits = 8 }
+                                )
+                            }
+                        )
+                    , term = Prim
+                        ( Return
+                            { retType = PrimType
+                                { getPrimType = PrimTy
+                                    ( IntegerType
+                                        { typeBits = 8 }
+                                    ) :| []
+                                }
+                            , retTerm = LitInt 3
+                            }
+                        )
+                    }
+                }
+            }
+        )
+        [ Ann
+            { usage = SAny
+            , type' = PrimTy
+                ( Return
+                    { retType = PrimType
+                        { getPrimType = STAR :| [] }
+                    , retTerm = PrimTy
+                        ( IntegerType
+                            { typeBits = 8 }
+                        )
+                    }
+                )
+            , term = AppM
+                ( Ann
+                    { usage = SAny
+                    , type' = Pi SAny
+                        ( SymT
+                            ( "Data" :| [ "bar" ] )
+                        )
+                        ( PrimTy
+                            ( Return
+                                { retType = PrimType
+                                    { getPrimType = STAR :| [] }
+                                , retTerm = PrimTy
+                                    ( IntegerType
+                                        { typeBits = 8 }
+                                    )
+                                }
+                            )
+                        )
+                    , term = Var
+                        ( "Data" :| [ "pattern-match" ] )
+                    }
+                )
+                [ Ann
+                    { usage = SAny
+                    , type' = SymT
+                        ( "Data" :| [ "bar" ] )
+                    , term = AppM
+                        ( Ann
+                            { usage = SAny
+                            , type' = Pi SAny
+                                ( PrimTy
+                                    ( Return
+                                        { retType = PrimType
+                                            { getPrimType = STAR :| [] }
+                                        , retTerm = PrimTy
+                                            ( IntegerType
+                                                { typeBits = 8 }
+                                            )
+                                        }
+                                    )
+                                )
+                                ( Pi SAny
+                                    ( PrimTy
+                                        ( Return
+                                            { retType = PrimType
+                                                { getPrimType = STAR :| [] }
+                                            , retTerm = PrimTy
+                                                ( IntegerType
+                                                    { typeBits = 8 }
+                                                )
+                                            }
+                                        )
+                                    )
+                                    ( SymT
+                                        ( "Data" :| [ "bar" ] )
+                                    )
+                                )
+                            , term = Var
+                                ( "Data" :| [ "::" ] )
+                            }
+                        )
+                        [ Ann
+                            { usage = SAny
+                            , type' = PrimTy
+                                ( Return
+                                    { retType = PrimType
+                                        { getPrimType = STAR :| [] }
+                                    , retTerm = PrimTy
+                                        ( IntegerType
+                                            { typeBits = 8 }
+                                        )
+                                    }
+                                )
+                            , term = Prim
+                                ( Return
+                                    { retType = PrimType
+                                        { getPrimType = PrimTy
+                                            ( IntegerType
+                                                { typeBits = 8 }
+                                            ) :| []
+                                        }
+                                    , retTerm = LitInt 1
+                                    }
+                                )
+                            }
+                        , Ann
+                            { usage = SAny
+                            , type' = PrimTy
+                                ( Return
+                                    { retType = PrimType
+                                        { getPrimType = STAR :| [] }
+                                    , retTerm = PrimTy
+                                        ( IntegerType
+                                            { typeBits = 8 }
+                                        )
+                                    }
+                                )
+                            , term = Prim
+                                ( Return
+                                    { retType = PrimType
+                                        { getPrimType = PrimTy
+                                            ( IntegerType
+                                                { typeBits = 8 }
+                                            ) :| []
+                                        }
+                                    , retTerm = LitInt 2
+                                    }
+                                )
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }

@@ -1,0 +1,188 @@
+Right
+    ( Header
+        ( "Data" :| [] )
+        [ ModuleOpen
+            ( Open
+                ( "Prelude" :| [] )
+            )
+        , ModuleOpen
+            ( Open
+                ( "LLVM" :| [] )
+            )
+        , Type
+            ( Typ
+                { typeUsage = Nothing
+                , typeName' = "bar"
+                , typeArgs = []
+                , typeForm = Arrowed
+                    { dataArrow = Name
+                        ( "ty" :| [] )
+                    , dataAdt' = Sum
+                        ( S
+                            { sumConstructor = "P"
+                            , sumValue = Just
+                                ( ADTLike
+                                    [ Name
+                                        ( "int" :| [] )
+                                    , Name
+                                        ( "int" :| [] )
+                                    ]
+                                )
+                            } :|
+                            [ S
+                                { sumConstructor = "::"
+                                , sumValue = Just
+                                    ( ADTLike
+                                        [ Name
+                                            ( "int" :| [] )
+                                        , Name
+                                            ( "int" :| [] )
+                                        ]
+                                    )
+                                }
+                            ]
+                        )
+                    }
+                }
+            )
+        , Declaration
+            ( Infixivity
+                ( AssocL "::" 10 )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "pattern-match"
+                , signatureUsage = Nothing
+                , signatureArrowType = Infix
+                    ( Inf
+                        { infixLeft = Name
+                            ( "bar" :| [] )
+                        , infixOp = "->" :| []
+                        , infixRight = Name
+                            ( "int" :| [] )
+                        }
+                    )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "pattern-match"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchCon
+                                    ( "P" :| [] )
+                                    [ MatchLogic
+                                        { matchLogicContents = MatchName "x"
+                                        , matchLogicNamed = Nothing
+                                        }
+                                    , MatchLogic
+                                        { matchLogicContents = MatchName "y"
+                                        , matchLogicNamed = Nothing
+                                        }
+                                    ]
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Infix
+                            ( Inf
+                                { infixLeft = Name
+                                    ( "x" :| [] )
+                                , infixOp = "Int" :| [ "+" ]
+                                , infixRight = Name
+                                    ( "y" :| [] )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "pattern-match"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchInfix
+                                    ( "::" :| [] )
+                                    ( MatchName "x" )
+                                    ( MatchName "y" )
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Infix
+                            ( Inf
+                                { infixLeft = Name
+                                    ( "x" :| [] )
+                                , infixOp = "Int" :| [ "+" ]
+                                , infixRight = Name
+                                    ( "y" :| [] )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "main"
+                , signatureUsage = Nothing
+                , signatureArrowType = Name
+                    ( "int" :| [] )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "main"
+                    , functionLikeArgs = []
+                    , functionLikeBody = Body
+                        ( Let
+                            ( Let'
+                                { letBindings = Like
+                                    { functionLikedName = "pm"
+                                    , functionLikeArgs = []
+                                    , functionLikeBody = Body
+                                        ( Application
+                                            ( App
+                                                { applicationName = Name
+                                                    ( "pattern-match" :| [] )
+                                                , applicationArgs = Parened
+                                                    ( Infix
+                                                        ( Inf
+                                                            { infixLeft = Constant
+                                                                ( Number
+                                                                    ( Integer' 1 )
+                                                                )
+                                                            , infixOp = "::" :| []
+                                                            , infixRight = Constant
+                                                                ( Number
+                                                                    ( Integer' 2 )
+                                                                )
+                                                            }
+                                                        )
+                                                    ) :| []
+                                                }
+                                            )
+                                        )
+                                    }
+                                , letBody = Constant
+                                    ( Number
+                                        ( Integer' 3 )
+                                    )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        ]
+    )

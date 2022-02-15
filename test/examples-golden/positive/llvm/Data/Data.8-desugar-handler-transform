@@ -1,0 +1,23 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( "type"
+        ( "bar" ":type" "ty" ) ()
+        ( "P" "int" "int" )
+        ( "::" "int" "int" ) )
+,
+    ( "declare" "infixl" "::" 10 )
+,
+    ( ":defsig-match" "pattern-match"
+        ( ":infix" "->" "bar" "int" )
+        ( ( ( "P" "x" "y" ) ) ( ":infix" "Int.+" "x" "y" ) )
+        ( ( ( ":infix" "::" "x" "y" ) ) ( ":infix" "Int.+" "x" "y" ) ) )
+,
+    ( ":defsig-match" "main" "int"
+        ( ()
+            ( ":let-match" "pm"
+                ( ()
+                    ( "pattern-match"
+                        ( ":paren" ( ":infix" "::" 1 2 ) ) ) ) 3 ) ) ) ]
