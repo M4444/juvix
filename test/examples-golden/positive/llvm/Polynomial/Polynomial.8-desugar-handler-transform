@@ -1,0 +1,8 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( ":defsig-match" "main"
+        ( ":infix" "->" "int" ( ":infix" "->" "int" "bool" ) )
+        ( ( "x" "y" ) ( ":infix" "Int.^" "x" ( ":infix" "==" 3 "y" ) ) ) ) ]

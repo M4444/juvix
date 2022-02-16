@@ -210,58 +210,6 @@ fromList
     ,
         ( "Prelude" :|
             [ "LLVM"
-            , "add"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "add"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :| [ "ty" ] )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "x" :| [] )
-                            ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( "" :| [] )
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "x" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PatternX
-                            ( "_" :| [] )
-                        ]
-                    , rawClauseBody = Prim Add ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
             , "Int"
             , "mul"
             ]
@@ -363,58 +311,6 @@ fromList
                 , rawFunClauses = RawFunClause
                     { rawClauseTel = []
                     , rawClausePats = []
-                    , rawClauseBody = Prim Sub ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "sub"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "sub"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :| [ "ty" ] )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "x" :| [] )
-                            ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( "" :| [] )
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "x" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PatternX
-                            ( "_" :| [] )
-                        ]
                     , rawClauseBody = Prim Sub ()
                     , rawClauseCatchall = False
                     } :| []
@@ -446,58 +342,6 @@ fromList
                                 { typeBits = 16 }
                             )
                         ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "mul"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "mul"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :| [ "ty" ] )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "x" :| [] )
-                            ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( Elim
-                                ( ElimX
-                                    ( "x" :| [] )
-                                ) ()
-                            )
-                            ( "" :| [] )
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "x" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PatternX
-                            ( "_" :| [] )
-                        ]
-                    , rawClauseBody = Prim Mul ()
                     , rawClauseCatchall = False
                     } :| []
                 }

@@ -1,0 +1,20 @@
+mod MatchGlobalPrim where
+
+open Prelude
+open LLVM
+open Int
+
+type functionTypeInConstructor :
+  ty = FTIC_Left int | FTIC_Right int -> int
+
+sig fticTestFunc : int -> int
+let fticTestFunc x = x
+
+sig fticTestTerm : functionTypeInConstructor
+let fticTestTerm = FTIC_Right fticTestFunc
+
+sig x : int
+let x = 1
+
+sig main : int
+let main = let ftict = fticTestTerm in 0

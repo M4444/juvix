@@ -11,8 +11,7 @@ packages:
 - ./library/Backends/Michelson
 - ./library/Playground/Easy
 - ./library/Playground/HTTP
-- ./library/Backends/Plonk
-- ./library/Backends/llvm
+- ./library/Backends/LLVM
 - ./library/Witch
 - ./library/Context
 - ./library/Sexp

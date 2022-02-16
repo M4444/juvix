@@ -24,11 +24,6 @@
   (make-dependency-git :name   "https://github.com/serokell/galois-field.git"
                        :commit "576ba98ec947370835a1f308895037c7aa7f8b71"))
 
-(defparameter *galois-field-plonk*
-  (make-dependency-github :name "adjoint-io/galois-field"
-                          :commit "3b13705fe26ea1dc03e1a6d7dac4089085c5362d")
-  "Plonk uses a special version of this library")
-
 (defparameter *elliptic-curve*
   (make-dependency-git :name   "https://github.com/serokell/elliptic-curve.git"
                        :commit "b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8"))
@@ -177,20 +172,12 @@
 ;; Tezos ∧ Arithmetic Circuit dependcy Groups
 ;; --------------------------------------
 
-
 (defparameter *morley-arithmetic-circuit-deps*
   (make-groups :comment "Shared Deps Between Arithmetic Circuits and Morley"
                :deps (list
                       *elliptic-curve*
                       *pairing*
                       *galois-field*)))
-
-(defparameter *morley-arithmetic-circuit-deps-plonk*
-  (make-groups :comment "Shared Deps Between Arithmetic Circuits and Morley For Plonk"
-               :deps (list
-                      *elliptic-curve*
-                      *pairing*
-                      *galois-field-plonk*)))
 
 (defparameter *sub-morley-arithmetic-circuit-deps*
   (make-groups
@@ -290,7 +277,7 @@
 (defun make-general-dependencies (&rest deps)
   (make-groups :comment "General Dependencies" :deps deps))
 
-(defun big-dep-list (&key (plonk nil))
+(defun big-dep-list ()
   "For the packages with lots of dependecies, these tend to be the
 common ones to include"
   (list (make-general-dependencies *capability*
@@ -307,10 +294,7 @@ common ones to include"
         ;; Context Dependencies
         *stm-container-group*
         *interaction-net-extra-deps*
-        ;; no morley plonk given as plonk wants a different one
-        (if plonk
-            *morley-arithmetic-circuit-deps-plonk*
-            *morley-arithmetic-circuit-deps*)
+        *morley-arithmetic-circuit-deps*
         *sub-morley-arithmetic-circuit-deps*))
 
 ;;; ----------------------------------------------------------------------
@@ -436,7 +420,7 @@ common ones to include"
 
 (defparameter *llvm*
   (make-stack-yaml
-   :name "Backends/llvm"
+   :name "Backends/LLVM"
    :path-to-other "../../"
    :packages (list *standard-library* *core* *context* *pipeline* *parsing* *sexp* *translate* *data-structures*)
    :extra-deps (list (make-general-dependencies *capability* *extensible* *prettiest*)
@@ -482,21 +466,6 @@ common ones to include"
                         *standard-library-extra-deps*)
    :extra "allow-newer: true"))
 
-(defparameter *plonk*
-  (make-stack-yaml
-   :name "Backends/Plonk"
-   :path-to-other "../../"
-   :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
-   :packages (list *standard-library*
-                   *translate*
-                   *parsing*
-                   *core*
-                   *context*
-                   *pipeline*
-                   *sexp*)
-   :extra-deps (big-dep-list :plonk t)
-   :extra "allow-newer: true"))
-
 (defparameter *easy*
   (make-stack-yaml
    :path-to-other "../../"
@@ -509,7 +478,6 @@ common ones to include"
                    *llvm*
                    *pipeline*
                    *context*
-                   *plonk*
                    *sexp*
                    *data-structures*)
    ;; hack name, for sub dirs
@@ -538,7 +506,6 @@ common ones to include"
                    *pipeline*
                    *michelson*
                    *context*
-                   *plonk*
                    *llvm*
                    *sexp*
                    *data-structures*)
@@ -557,7 +524,6 @@ common ones to include"
                      *context*
                      *sexp*
                      *pipeline*
-                     *plonk*
                      *data-structures*
                      *michelson*)
    :nix-build  (nix-enable-custom) ;; (nix-enable-zlib)
@@ -576,7 +542,6 @@ common ones to include"
                    *michelson*
                    *easy*
                    *http*
-                   *plonk*
                    *llvm*
                    *witch*
                    *context*

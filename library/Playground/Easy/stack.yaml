@@ -7,10 +7,9 @@ packages:
 - ../../Core
 - ../../Translate
 - ../../Backends/Michelson
-- ../../Backends/llvm
+- ../../Backends/LLVM
 - ../../Pipeline
 - ../../Context
-- ../../Backends/Plonk
 - ../../Sexp
 - ../../Test/DataStructures
 

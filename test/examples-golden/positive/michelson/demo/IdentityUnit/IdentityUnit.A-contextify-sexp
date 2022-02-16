@@ -207,10 +207,6 @@ ShowMod
                 , mod = "TopLevel" :|
                     [ "Prelude", "Michelson" ] } )
         ,
-            ( "Circuit"
-            , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
-        ,
             ( "LLVM"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )

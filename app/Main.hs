@@ -5,7 +5,6 @@ module Main (main) where
 import qualified Data.ByteString as BS
 import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
-import qualified Juvix.Backends.Plonk as Plonk
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import Juvix.Library.Fetch
@@ -30,7 +29,6 @@ run' _ (Options cmd _) = do
     Typecheck fin backend -> case backend of
       LLVM b -> g b
       Michelson b -> g b
-      Plonk b -> g b
       where
         g ::
           forall b.
@@ -47,7 +45,6 @@ run' _ (Options cmd _) = do
       case backend of
         LLVM b -> g b
         Michelson b -> g b
-        Plonk b -> g b
       where
         g ::
           forall b.
@@ -80,7 +77,6 @@ runCmd ::
 runCmd fin backend f = case backend of
   LLVM b -> runCmd' fin b f
   Michelson b -> runCmd' fin b f
-  Plonk b -> runCmd' fin b f
 
 runCmd' ::
   forall a b.

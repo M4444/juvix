@@ -32,7 +32,6 @@ dependencies:
   - michelson
   - pipeline
   - context
-  - plonk
   - llvm
   ###########################
   # To make life easier
@@ -48,11 +47,6 @@ dependencies:
   # Pretty printer
   ###########################
   - pretty-simple
-
-  ###########################
-  # For Plonk depnencies
-  ###########################
-  - galois-field
 
 default-extensions:
   - NoImplicitPrelude

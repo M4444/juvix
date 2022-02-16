@@ -11,9 +11,7 @@ where
 
 import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
-import qualified Juvix.Backends.Plonk as Plonk
 import Juvix.Library hiding (option)
-import Juvix.Library.BLS12381 (Fr)
 import Options.Applicative
 
 ------------------------------------------------------------------------------
@@ -24,8 +22,7 @@ data Context = Context
   }
 
 data Backend
-  = Plonk (Plonk.BPlonk Fr)
-  | Michelson Michelson.BMichelson
+  = Michelson Michelson.BMichelson
   | LLVM LLVM.BLLVM
   deriving (Eq, Show)
 
@@ -105,7 +102,6 @@ backendOptions =
   option
     ( maybeReader
         ( \case
-            "plonk" -> pure $ Plonk Plonk.BPlonk
             "michelson" -> pure $ Michelson Michelson.BMichelson
             "llvm" -> pure $ LLVM LLVM.BLLVM
             _ -> Nothing

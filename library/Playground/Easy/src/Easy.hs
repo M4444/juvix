@@ -22,14 +22,12 @@ module Easy where
 
 import Control.Lens ((^.))
 import qualified Data.ByteString as BS
-import qualified Data.Field.Galois as Field
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Backends.LLVM.Parameterization as LLVM.Param
 import qualified Juvix.Backends.LLVM.Pipeline as LLVM
 import qualified Juvix.Backends.LLVM.Primitive as LLVM.Prim
 import qualified Juvix.Backends.Michelson.Parameterisation as Michelson.Param
 import qualified Juvix.Backends.Michelson.Pipeline as Michelson
-import qualified Juvix.Backends.Plonk as Plonk
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify as Contextify
@@ -45,7 +43,6 @@ import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Types as Types
 import qualified Juvix.Desugar as Desugar
 import Juvix.Library
-import Juvix.Library.BLS12381 (Fr)
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymb
@@ -121,25 +118,6 @@ defLLVM =
       param = LLVM.Param.llvm,
       typeAgainst = LLVM.Prim.Set
     }
-
--- @defCircuit@ gives us the circuit prelude
--- defCircuit :: Options
-defCircuitGeneric ::
-  Field.GaloisField f =>
-  Options (Plonk.PrimTy f) (Plonk.PrimVal f)
-defCircuitGeneric =
-  def
-    { prelude =
-        [ "../../../stdlib/Prelude.ju",
-          "../../../stdlib/Circuit.ju",
-          "../../../stdlib/Circuit/Field.ju"
-        ],
-      param = Plonk.param,
-      typeAgainst = Plonk.PField
-    }
-
-defCircuit :: Options (Plonk.PrimTy Fr) (Plonk.PrimVal Fr)
-defCircuit = defCircuitGeneric
 
 -- These functions help us stop at various part of the pipeline
 

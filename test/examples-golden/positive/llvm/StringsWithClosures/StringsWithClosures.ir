@@ -338,49 +338,6 @@
     ,
         ( "Prelude" :|
             [ "LLVM"
-            , "add"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "add"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( Free
-                            ( Global
-                                ( "Prelude" :| [ "ty" ] )
-                            ) ()
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( Bound 0 () ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( Bound 1 () ) ()
-                            )
-                            ( Elim
-                                ( Bound 2 () ) ()
-                            ) ()
-                        ) ()
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PVar 0 () ]
-                    , rawClauseBody = Prim Add ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
             , "Int"
             , "mul"
             ]
@@ -490,49 +447,6 @@
                 , rawFunClauses = RawFunClause
                     { rawClauseTel = []
                     , rawClausePats = []
-                    , rawClauseBody = Prim Sub ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "sub"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "sub"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( Free
-                            ( Global
-                                ( "Prelude" :| [ "ty" ] )
-                            ) ()
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( Bound 0 () ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( Bound 1 () ) ()
-                            )
-                            ( Elim
-                                ( Bound 2 () ) ()
-                            ) ()
-                        ) ()
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PVar 0 () ]
                     , rawClauseBody = Prim Sub ()
                     , rawClauseCatchall = False
                     } :| []
@@ -566,49 +480,6 @@
                                 { typeBits = 16 }
                             )
                         ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "mul"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "mul"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( Free
-                            ( Global
-                                ( "Prelude" :| [ "ty" ] )
-                            ) ()
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( Bound 0 () ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( Bound 1 () ) ()
-                            )
-                            ( Elim
-                                ( Bound 2 () ) ()
-                            ) ()
-                        ) ()
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PVar 0 () ]
-                    , rawClauseBody = Prim Mul ()
                     , rawClauseCatchall = False
                     } :| []
                 }

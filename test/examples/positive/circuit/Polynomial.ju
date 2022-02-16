@@ -1,8 +1,0 @@
-mod Polynomial where
-
-open Prelude
-open Circuit
-open Circuit.Field
-
-sig main : field -> field -> bool
-let main x y = x ^ 3 == y 

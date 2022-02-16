@@ -28,7 +28,6 @@ dependencies:
   - translate
   - witch
   - michelson
-  - plonk
   - easy
   - llvm
 

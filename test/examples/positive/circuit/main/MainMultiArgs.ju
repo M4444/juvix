@@ -1,8 +1,0 @@
-mod MainMultArgs where
-
-open Prelude
-open Circuit
-open Circuit.Field 
-
-sig main : field -> field -> field
-let main x y = x + y

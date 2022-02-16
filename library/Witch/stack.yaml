@@ -9,7 +9,6 @@ packages:
 - ../Context
 - ../Sexp
 - ../Pipeline
-- ../Backends/Plonk
 - ../Test/DataStructures
 - ../Backends/Michelson
 

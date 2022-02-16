@@ -1,0 +1,30 @@
+; ModuleID = 'juvix-module'
+
+
+ 
+
+
+%closure = type <{i8*, i8**}>
+
+
+declare external fastcc  i8* @malloc(i32)    
+
+
+declare external fastcc  void @free(i8*)    
+
+
+declare external fastcc  void @abort()    
+
+
+define external fastcc  i8 @lambda(i8**  %juvix_environmentArray, i8  %"0", i8  %"1")    {
+lambda1:
+  %0 = add nuw nsw i8 %"0", %"1" 
+  ret i8 %0 
+}
+
+
+define external fastcc  i8 @main(i8  %arg1, i8  %arg2)    {
+main:
+  %0 =  call fastcc  i8  @lambda(i8  %arg1, i8  %arg2)  
+  ret i8 %0 
+}

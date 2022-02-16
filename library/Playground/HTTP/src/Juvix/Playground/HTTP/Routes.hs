@@ -16,7 +16,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
-import qualified Juvix.Backends.Plonk as Plonk
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Base as Base
 import qualified Juvix.Core.Base as Core
@@ -27,7 +26,6 @@ import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.IR.Typechecker.Types as Typechecker
 import qualified Juvix.Core.Parameterisation as Parameterisation
 import Juvix.Library hiding (All)
-import Juvix.Library.BLS12381 (Fr)
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Parsing.Types as Parsing
@@ -39,14 +37,12 @@ import Text.Pretty.Simple (pShowNoColor)
 type Result a = Feedback.Feedback [] [Char] a
 
 data Backend
-  = Plonk (Plonk.BPlonk Fr)
-  | LLVM LLVM.BLLVM
+  = LLVM LLVM.BLLVM
   | Michelson Michelson.BMichelson
   deriving (Eq, Show, Generic, A.ToJSON)
 
 instance A.FromJSON Backend where
   parseJSON (A.String "LLVM") = pure (LLVM LLVM.BLLVM)
-  parseJSON (A.String "Plonk") = pure (Plonk Plonk.BPlonk)
   parseJSON (A.String "Michelson") = pure (Michelson Michelson.BMichelson)
 
 data Req = Req {code :: Text, backend :: Backend}
@@ -179,17 +175,14 @@ compileSt script backend = do
 
 parse :: Server Parse
 parse (Req script (LLVM b)) = flip execStateT ([], emptyAllSteps) $ parseSt script b
-parse (Req script (Plonk b)) = flip execStateT ([], emptyAllSteps) $ parseSt script b
 parse (Req script (Michelson b)) = flip execStateT ([], emptyAllSteps) $ parseSt script b
 
 typecheck :: Server Parse
 typecheck (Req script (LLVM b)) = flip execStateT ([], emptyAllSteps) $ typecheckSt script b
-typecheck (Req script (Plonk b)) = flip execStateT ([], emptyAllSteps) $ typecheckSt script b
 typecheck (Req script (Michelson b)) = flip execStateT ([], emptyAllSteps) $ typecheckSt script b
 
 compile :: Server Compile
 compile (Req script (LLVM b)) = flip execStateT ([], emptyAllSteps) $ compileSt script b
-compile (Req script (Plonk b)) = flip execStateT ([], emptyAllSteps) $ compileSt script b
 compile (Req script (Michelson b)) = flip execStateT ([], emptyAllSteps) $ compileSt script b
 
 proxy :: Proxy Pipeline

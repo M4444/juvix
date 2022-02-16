@@ -1,0 +1,8 @@
+mod Nested where
+
+open Prelude
+open LLVM
+open LLVM.Int
+
+sig main : int -> int -> int -> int
+let main x y z = x * 2 + y * 2 + z * 2 + 5

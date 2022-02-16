@@ -38,7 +38,6 @@
         michelson = ./michelson.nix;
         easy = ./easy.nix;
         http = ./http.nix;
-        plonk = ./plonk.nix;
         llvm = ./llvm.nix;
         witch = ./witch.nix;
         context = ./context.nix;

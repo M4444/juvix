@@ -214,26 +214,6 @@ steps:
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
     BACKEND_OPERATION_TIMEOUT: 8m
   image: meltwater/drone-cache:latest
-  name: restore-cache-plonk
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
-    mount: [library/Backends/Plonk/.stack-work]
-    override: false
-    rebuild: false
-    region: eu-west-1
-    restore: true
-  when:
-    status: [success, failure]
-- depends_on: [check-scripts-integrity]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
   name: restore-cache-michelson
   pull: never
   settings:
@@ -460,8 +440,8 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
-    mount: [library/Backends/llvm/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Backends/LLVM/stack.yaml" }}
+    mount: [library/Backends/LLVM/.stack-work]
     override: false
     rebuild: false
     region: eu-west-1
@@ -471,8 +451,8 @@ steps:
 - commands: [./scripts/build-and-publish-docs.sh]
   depends_on: [restore-cache-stack, restore-cache-context, restore-cache-core, restore-cache-data-structure,
     restore-cache-easy, restore-cache-parsing, restore-cache-http, restore-cache-llvm,
-    restore-cache-michelson, restore-cache-plonk, restore-cache-sexp, restore-cache-standard-library,
-    restore-cache-translate, restore-cache-witch]
+    restore-cache-michelson, restore-cache-sexp, restore-cache-standard-library, restore-cache-translate,
+    restore-cache-witch]
   environment:
     GITHUB_TOKEN: {from_secret: github_token}
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
@@ -498,26 +478,6 @@ steps:
     restore: false
   when:
     status: [success]
-- depends_on: [build-docs]
-  environment:
-    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
-    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
-  image: meltwater/drone-cache:latest
-  name: rebuild-cache-plonk
-  pull: never
-  settings:
-    archive_format: gzip
-    backend: s3
-    bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/Plonk/stack.yaml" }}
-    mount: [library/Backends/Plonk/.stack-work]
-    override: false
-    rebuild: true
-    region: eu-west-1
-    restore: false
-  when:
-    status: [success, failure]
 - depends_on: [build-docs]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
@@ -750,8 +710,8 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
-    mount: [library/Backends/llvm/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Backends/LLVM/stack.yaml" }}
+    mount: [library/Backends/LLVM/.stack-work]
     override: false
     rebuild: true
     region: eu-west-1
@@ -797,6 +757,6 @@ type: docker
 workspace: {path: /drone/workspace}
 ---
 kind: signature
-hmac: 7f787bbe0b5f9f4c180e4131b9b9372a67d7c8bdee8850f242df231a3b2718b1
+hmac: 74476e387257c16b9d9c6a81aebee6c5d7a763d4f1d7f009ea0ccf1ed7ea0a79
 
 ...

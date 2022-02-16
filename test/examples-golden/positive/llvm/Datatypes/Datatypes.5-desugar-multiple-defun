@@ -1,0 +1,82 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( "open" "Int" )
+,
+    ( "type" "verySimpleType" () ( "One" "int" ) )
+,
+    ( ":defsig" "verySimpleTerm" "verySimpleType" )
+,
+    ( ":defun-match" "verySimpleTerm" ( () ( "One" 0 ) ) )
+,
+    ( "type"
+        ( "bar" ":type" "ty" ) ()
+        ( "P" "int" "int" )
+        ( "Q" "int" "int" "int" ) )
+,
+    ( ":defsig" "patternMatch" ( ":infix" "->" "bar" "int" ) )
+,
+    ( ":defun-match" "patternMatch"
+        (
+            ( ( "P" "x" "y" ) )
+            ( ":infix" "^" "x" ( ":infix" "+" 2 ( ":infix" "^" "y" 2 ) ) ) )
+        (
+            ( ( "Q" "x" "y" "z" ) )
+            ( ":infix" "^" "x"
+                ( ":infix" "+" 2
+                    ( ":infix" "^" "y"
+                        ( ":infix" "+" 2 ( ":infix" "^" "z" 2 ) ) ) ) ) ) )
+,
+    ( "type"
+        ( "functionTypeInConstructor" ":type" "ty" ) ()
+        ( "FTIC_Left" "int" )
+        ( "FTIC_Right" ( ":infix" "->" "int" "int" ) ) )
+,
+    ( ":defsig" "fticTestFunc" ( ":infix" "->" "int" "int" ) )
+,
+    ( ":defun-match" "fticTestFunc" ( ( "x" ) "x" ) )
+,
+    ( ":defsig" "fticTestTerm" "functionTypeInConstructor" )
+,
+    ( ":defun-match" "fticTestTerm" ( () ( "FTIC_Right" "fticTestFunc" ) ) )
+,
+    ( "type" "sExpField" ()
+        ( "Atom" "int" )
+        ( "SPair" "sExpField" "sExpField" ) )
+,
+    ( ":defsig" "s1" "sExpField" )
+,
+    ( ":defun-match" "s1"
+        ( ()
+            ( "SPair"
+                ( ":paren" ( "Atom" 1 ) )
+                ( ":paren"
+                    ( "SPair"
+                        ( ":paren"
+                            ( "SPair"
+                                ( ":paren" ( "Atom" 2 ) )
+                                ( ":paren" ( "Atom" 3 ) ) ) )
+                        ( ":paren" ( "Atom" 4 ) ) ) ) ) ) )
+,
+    ( ":defsig" "ssize" ( ":infix" "->" "sExpField" "int" ) )
+,
+    ( ":defun-match" "ssize"
+        ( ( ( "Atom" "x" ) ) 1 )
+        (
+            ( ( "SPair" "x" "y" ) )
+            ( ":infix" "+" ( "ssize" "x" ) ( "ssize" "y" ) ) ) )
+,
+    ( ":defsig" "main" "int" )
+,
+    ( ":defun-match" "main"
+        ( ()
+            ( ":let-match" "vst"
+                ( () "verySimpleTerm" )
+                ( ":let-match" "pm"
+                    ( () ( "patternMatch" ( ":paren" ( "Q" 0 1 2 ) ) ) )
+                    ( ":let-match" "ftict"
+                        ( () "fticTestTerm" )
+                        ( ":let-match" "sexpTest"
+                            ( () ( "ssize" "s1" ) ) 3 ) ) ) ) ) ) ]

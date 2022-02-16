@@ -1,8 +1,0 @@
-[
-    ( "open" "Prelude" )
-,
-    ( "open" "Circuit" )
-,
-    ( ":defsig" "main" "field" )
-,
-    ( ":defun" "main" () 3 ) ]

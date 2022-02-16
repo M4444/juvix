@@ -9,8 +9,7 @@ packages:
 - ../../Pipeline
 - ../../Backends/Michelson
 - ../../Context
-- ../../Backends/Plonk
-- ../../Backends/llvm
+- ../../Backends/LLVM
 - ../../Sexp
 - ../../Test/DataStructures
 

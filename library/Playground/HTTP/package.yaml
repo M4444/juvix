@@ -21,7 +21,6 @@ dependencies:
   - pipeline
   - context
   - llvm
-  - plonk
 
   # Data Structures
   - unordered-containers

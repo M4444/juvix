@@ -1,0 +1,10 @@
+-- TODO: Need to implement ^ and == in LLVM
+
+mod Polynomial where
+
+open Prelude
+open LLVM
+open Int
+
+sig main : int -> int -> bool
+let main x y = x ^ 3 == y 

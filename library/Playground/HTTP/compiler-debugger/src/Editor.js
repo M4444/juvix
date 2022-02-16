@@ -121,7 +121,6 @@ let main = 5
                       onChange={this.handleBackendChange}
                       value={this.state.backend}>
                      <option value="LLVM">LLVM</option>
-                     <option value="Plonk">Circuit</option>
                      <option value="Michelson">Michelson</option>
                   </select>
                   </div>

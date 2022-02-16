@@ -15,11 +15,11 @@ let string = %LLVM.string
 sig int : ty
 let int = int8
 
-sig add : (x : ty) -> x -> x -> x
-let add _ = %LLVM.add
+-- sig add : (x : ty) -> x -> x -> x
+-- let add _ = %LLVM.add
 
-sig sub : (x : ty) -> x -> x -> x
-let sub _ = %LLVM.sub
+-- sig sub : (x : ty) -> x -> x -> x
+-- let sub _ = %LLVM.sub
 
-sig mul : (x : ty) -> x -> x -> x
-let mul _ = %LLVM.mul
+-- sig mul : (x : ty) -> x -> x -> x
+-- let mul _ = %LLVM.mul
