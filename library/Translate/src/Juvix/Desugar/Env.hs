@@ -128,7 +128,7 @@ Right secondSexp = Sexp.parse "(defun foo (x) (+ x 1))"
 
 startingEnv :: IO Pipeline.WorkingEnv
 startingEnv =
-  (Context.empty "JU-USER" :: IO (Context.T Sexp.T Sexp.T Sexp.T))
+  Context.empty "JU-USER"
     >>| Pipeline.WorkingEnv [Pipeline.Sexp sexp, Pipeline.Sexp secondSexp]
 
 exampleMeta :: IO Meta.T
@@ -657,7 +657,7 @@ fullyContextify ctx ts = do
 contextify ::
   Context.T Sexp.T Sexp.T Sexp.T ->
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  IO (Contextify.PathError (Contextify.ContextSexp, [ResolveOpen.PreQualified]))
+  IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextify ctx t = do
   runM $
     foldM Contextify.resolveOpens (ctx, []) (addTop <$> t)

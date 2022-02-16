@@ -2,7 +2,6 @@
 - _Relies on_
   + [[LLVM]]
   + [[Michelson]]
-  + [[Plonk]]
   + [[Library]]
   + [[Feedback]]
   + [[Fetch]]
@@ -11,9 +10,7 @@
 - _Relies on_
   + [[LLVM]]
   + [[Michelson]]
-  + [[Plonk]]
   + [[Library]]
-  + [[BLS12381]]
 * Version
 - _Relies on_
   + [[Library]]
