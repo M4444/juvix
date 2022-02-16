@@ -4,7 +4,7 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Env
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as Contextify
-import Juvix.Library (Either (Left, Right), Maybe (Just), ($))
+import Juvix.Library
 import qualified Juvix.Sexp as Sexp
 import Test.Sexp.Helpers
 import qualified Test.Tasty as T
@@ -103,5 +103,8 @@ lookupResolution =
       T.testCase "looking up multiple fields works" $ do
         Right t <- contextualizeFoo "let bar = let y = 3 in { zzzz = 3 } let foo = bar.zzzz.a"
         let Right expected = Sexp.parse "(:lambda-case (() (:lookup bar zzzz a)))"
-        Just expected T.@=? unwrapLookup "foo" t
+        Just expected T.@=? unwrapLookup "foo" t,
+      T.testCase "records don't have constructors added as sum con" $ do
+        Right t <- contextualizeFoo "type foo = {x : int, y : int}"
+        Nothing T.@=? unwrapLookup ":record-d" t
     ]

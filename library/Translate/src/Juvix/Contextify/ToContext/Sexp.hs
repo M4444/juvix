@@ -19,6 +19,7 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
 import Juvix.Sexp.Structure.Lens
 import qualified Juvix.Sexp.Structure.Transition as Structure
+import qualified Juvix.Sexp.Structure.Parsing as Structure
 import Prelude (error)
 
 -- the name symbols are the modules we are opening
@@ -152,6 +153,7 @@ collectConstructors dat
 --------------------------------------------------------------------------------
 eleToSymbol :: Sexp.T -> Maybe Symbol
 eleToSymbol x
-  | Just Sexp.A {atomName} <- Sexp.atomFromT x =
+  | Just Sexp.A {atomName} <- Sexp.atomFromT x,
+    atomName /= Structure.nameRecordDec =
     Just (NameSymbol.toSymbol atomName)
   | otherwise = Nothing
