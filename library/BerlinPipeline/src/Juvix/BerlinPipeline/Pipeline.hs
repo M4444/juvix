@@ -100,7 +100,7 @@ data Job
   | -- | UpdateJob@ indicates that we have changed the context, so thus
     -- we should commit to back to get a new context.
     UpdateJob
-      { newContext :: Context.T Sexp.T Sexp.T Sexp.T,
+      { newContext :: Context.T,
         process :: ProcessJob
       }
   deriving (Show)
@@ -113,7 +113,7 @@ data Job
 -- the current expression and the context into a single function
 data PassArgument = PassArgument
   { _current :: EnvOrSexp,
-    _context :: Context.T Sexp.T Sexp.T Sexp.T
+    _context :: Context.T
   }
   deriving (Show)
 
@@ -122,7 +122,7 @@ data PassArgument = PassArgument
 -- sexp comes from.
 data SimplifiedPassArgument = SimplifiedArgument
   { _current :: Sexp.T,
-    _context :: Context.T Sexp.T Sexp.T Sexp.T
+    _context :: Context.T
   }
   deriving (Show)
 

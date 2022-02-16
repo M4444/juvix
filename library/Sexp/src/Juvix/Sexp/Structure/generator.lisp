@@ -383,6 +383,9 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "InPackage" '("nameSymbol") ":in-package"))
 
+(defun berlin-types ()
+  (generate-haskell "Relocated" '("nameSymbol") ":relocated"))
+
 (defun core-named-representation ()
   (generate-haskell "Star" '("integer") ":star")
 

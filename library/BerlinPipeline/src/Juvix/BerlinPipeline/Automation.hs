@@ -28,6 +28,8 @@ import qualified Juvix.Context as Context
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Berlin as Structure
+import Juvix.Sexp.Structure.Lens hiding (fst, snd)
 
 --------------------------------------------------------------------------------
 -- Type Declarations
@@ -143,69 +145,76 @@ simplify ::
 simplify f PassArgument {_current = current, _context = context} =
   case current of
     Pipeline.Sexp sexp ->
-      f (simplified context sexp)
+      f SimplifiedArgument {_current = sexp, _context = context}
     Pipeline.InContext name -> do
-      -- Wrappers over updating the consturctor (lenses by hand)
-      let formDeclaration [s] = Context.TypeDeclar s
-          formUnknown u [mTy] = u {Context.definitionMTy = Just mTy}
-          formRecord r [maTy] = r {Context.recordMTy = Just maTy} |> Context.Record
-          formSumCon s newDef = s {Context.sumTDef = Just newDef} |> Context.SumCon
       case context Context.!? name of
-        Just def -> do
-          -- Abstract this out, improve the interface to the
-          -- Context... why is it this complicated?
-          let (ourDef, resolvedName) = Context.resolveName context (def, name)
-              --
-              updateInfo value = set Context.def value ourDef
-              --
-              updateSimplifiedCurrentContext f args =
-                updateTerms name f context jobViaSimplified args
-          case ourDef ^. Context.def of
-            Context.Def d ->
-              updateDef d resolvedName (updateInfo . Context.Def)
-            Context.SumCon s@Context.Sum {sumTDef = Just d} ->
-              updateDef d resolvedName (updateInfo . formSumCon s)
-            Context.TypeDeclar typ ->
-              updateSimplifiedCurrentContext (updateInfo . formDeclaration) [typ]
-            Context.Record r@Context.Rec {recordMTy = Just recordMTy} ->
-              updateSimplifiedCurrentContext (updateInfo . formRecord r) [recordMTy]
-            u@Context.Unknown {definitionMTy = Just definitionMTy} -> do
-              updateSimplifiedCurrentContext (updateInfo . formUnknown u) [definitionMTy]
-            _ -> noOpJob context current |> pure
         Nothing ->
-          throw @"error" $
-            Sexp.string
-              "Could not find definition when \
-              \ it was promised to be in the environment"
-  where
-    simplified context sexp = SimplifiedArgument {_current = sexp, _context = context}
+          Sexp.string
+            "Could not find definition when \
+            \ it was promised to be in the environment"
+            |> throw @"error"
+        Just from -> do
+          let combineF (ctx, newForms) sexp = do
+                job <- f SimplifiedArgument {_context = ctx, _current = sexp}
+                let (current, newCtx, newForms') = extractFromJobEnv ctx job
+                    toPutBack =
+                      case current of
+                        Pipeline.Sexp sexp ->
+                          sexp
+                        Pipeline.InContext name ->
+                          Structure.Relocated name |> Sexp.serialize
+                --
+                pure ((newCtx, newForms <> newForms'), toPutBack)
 
-    jobViaSimplified context sexp = simplified context sexp |> f
-
-    updateDef d@Context.D {defTerm, defMTy} name constructor =
-      let formDefn [defTerm] =
-            constructor d {Context.defTerm = defTerm}
-          formDefn [defTerm, defMTy] =
-            constructor d {Context.defTerm = defTerm, Context.defMTy = Just defMTy}
-          arguments =
-            maybe [defTerm] (\mty -> [defTerm, mty]) defMTy
-       in updateTerms name formDefn context jobViaSimplified arguments
+              updateInformationTable =
+                -- TODO ∷ Filter out Protected fields, so we don't run
+                -- on those.
+                traverseAccumM combineF (context, []) (info ^. Context.table)
+              --
+              info = Context.fromTerm from
+              --
+              setInfo infoTable = set Context.table infoTable
+              setTerm termonolo = set Context.def termonolo
+          case from ^. Context.term . Context.def of
+            Context.Term tm -> do
+              ((ctx, newForms), infoTable) <- updateInformationTable
+              --
+              job <- f SimplifiedArgument {_context = ctx, _current = tm}
+              --
+              (term, newCtx, newForms') <- extractFromJob ctx job
+              --
+              let newTerm :: Context.Info
+                  newTerm = info |> setInfo infoTable |> setTerm (Context.Term term)
+              --
+              UpdateJob
+                { newContext = Context.addGlobal name newTerm newCtx,
+                  process =
+                    Pipeline.Process {_current = current, _newForms = newForms <> newForms'}
+                }
+                |> pure
+            Context.Module _mod -> do
+              ((ctx, newForms), infoTable) <- updateInformationTable
+              UpdateJob
+                { newContext =
+                    Context.addGlobal name (setInfo infoTable info) ctx,
+                  process = Pipeline.Process {_current = current, _newForms = newForms}
+                }
+                |> pure
+            Context.CurrentNameSpace ->
+              noOpJob context current |> pure
 
 -- | @noOpJob@ is a Job that does nothing to the passed context and current form.
-noOpJob ::
-  Context.T Sexp.T Sexp.T Sexp.T -> Pipeline.EnvOrSexp -> Job
-noOpJob context current = UpdateJob context Process {_current = current, _newForms = []}
+noOpJob :: Context.T -> Pipeline.EnvOrSexp -> Job
+noOpJob context current =
+  UpdateJob context Process {_current = current, _newForms = []}
 
 -- | @extractFromJob@ extracts the @EnvOrSexp@ that a Job processed,
 -- the context after the Job was run and any new forms that the Job
 -- introduced.
 extractFromJobEnv ::
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   Job ->
-  ( Pipeline.EnvOrSexp,
-    Context.T Sexp.T Sexp.T Sexp.T,
-    [(Stage, Pipeline.EnvOrSexp)]
-  )
+  (Pipeline.EnvOrSexp, Context.T, [(Stage, Pipeline.EnvOrSexp)])
 extractFromJobEnv context job =
   case job of
     ProcessJob process ->
@@ -219,13 +228,9 @@ extractFromJobEnv context job =
 -- introduced.
 extractFromJob ::
   HasThrow "error" Sexp.T f =>
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   Job ->
-  f
-    ( Sexp.T,
-      Context.T Sexp.T Sexp.T Sexp.T,
-      [(Stage, Pipeline.EnvOrSexp)]
-    )
+  f (Sexp.T, Context.T, [(Stage, Pipeline.EnvOrSexp)])
 extractFromJob context job =
   let contents = extractFromJobEnv context job
    in case contents of
@@ -235,39 +240,6 @@ extractFromJob context job =
           ("Attempting to redefine term already in env" <> NameSymbol.toText name)
             |> Sexp.string
             |> throw @"error"
-
--- | @updateTerms@ Processes a list of sexps in order and repackages
--- the resulting sexps into a Context.Definition.
-updateTerms ::
-  HasThrow "error" Sexp.T f =>
-  -- | The name of the symbol being updated
-  NameSymbol.T ->
-  -- | A function to repackage the processed sexps back into a Definition
-  ([Sexp.T] -> Context.Info Sexp.T Sexp.T Sexp.T) ->
-  -- | The starting context
-  Context.T Sexp.T Sexp.T Sexp.T ->
-  -- | A function to process an sexp
-  (Context.T Sexp.T Sexp.T Sexp.T -> Sexp.T -> f Job) ->
-  -- | The list of Sexps to process
-  [Sexp.T] ->
-  f Job
-updateTerms name rePackageTerm context toJob sexpsToProcess = do
-  (context, sexps, newForms) <- foldM f (context, [], []) sexpsToProcess
-
-  UpdateJob
-    { newContext = Context.addGlobal name (rePackageTerm sexps) context,
-      process =
-        Process
-          { _current = Pipeline.InContext name,
-            _newForms = newForms
-          }
-    }
-    |> pure
-  where
-    f (context, sexps, oldNewForms) sexpToUpdate = do
-      job <- toJob context sexpToUpdate
-      (sexp, context, newForms) <- extractFromJob context job
-      pure (context, sexps <> [sexp], oldNewForms <> newForms)
 
 -- | @extractProcessJob@ Will extract the promoted ProcessJob that
 -- talks about the environment, even if the job is a @ProcessJob@ by

@@ -32,6 +32,7 @@ module Juvix.Library
     (>>|),
     (|>),
     (...),
+    traverseAccumM,
     foldMapA,
     traverseM,
     Symbol (..),
@@ -129,6 +130,18 @@ infixl 1 |>
 undefined :: HasCallStack => a
 undefined =
   Prelude.error $ "undefined\n" ++ prettyCallStack callStack
+
+--------------------------------------------------------------------------------
+-- Generic Traversal Function
+--------------------------------------------------------------------------------
+
+traverseAccumM ::
+  (Monad m, Traversable t) => (a -> b -> m (a, c)) -> a -> t b -> m (a, t c)
+traverseAccumM f init trav =
+  runStateT (traverse (StateT . newF) trav) init
+    >>| swap
+  where
+    newF b a = f a b >>| swap
 
 traverseM ::
   (Monad m, Traversable m, Applicative f) =>
