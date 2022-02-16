@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | @Juvix.Sexp.Serialize@ serves as the automatic serialization of
 -- Haskell Data-structures. One can derive a default instance by
@@ -354,20 +355,53 @@ instance Serialize () where
   deserialize Nil = Just ()
   deserialize _ = Nothing
 
+
+instance DefaultOptions (a, b)
+
+commaRename :: forall a b. Proxy (a, b) -> Options
+commaRename _ =
+  changeName (defaultOptions @((a,b))) (Map.fromList [(":(,)", ":pair")])
+
+-- | A pair @(0, 1)@ is represented as @(:pair 0 1)@.
 instance (Serialize a, Serialize b) => Serialize (a, b) where
-  serialize (x, y) =
-    List [Atom $ A ":pair" Nothing, serialize x, serialize y]
+  serialize   = serializeOpt (commaRename Proxy)
+  deserialize = deserializeOpt (commaRename Proxy)
 
-  deserialize (List [Atom (A ":pair" _), x, y]) =
-    (,) <$> deserialize x <*> deserialize y
-  deserialize _ = Nothing
 
+-- | Pattern for conveniently deserializing subterms. For example,
+-- the following two snippets are equivalent:
+--
+-- @
+-- foo (Serial x) = ...
+--
+-- foo x' | Just x <- 'deserialize' x = ...
+-- @
+--
+-- In an expression, 'Serial' is just equivalent to 'serialize'.
+pattern Serial :: Serialize a => a -> T
+pattern Serial x <- (deserialize -> Just x)
+  where Serial x =  serialize x
+
+pattern MapHead :: T
+pattern MapHead <- Atom (A ":map" _)
+  where MapHead =  Atom (A ":map" Nothing)
+
+pattern MapPair :: (Serialize a, Serialize b) => a -> b -> T
+pattern MapPair a b = List [Serial a, Serial b]
+
+-- | A map like @'HashMap.fromList' [(1, \"a\"), (2, \"b\")]@ is represented
+-- like @(:map (1 \"a\") (2 \"b\"))@.
 instance
     (Hashable k, Eq k, Serialize k, Serialize v) =>
     Serialize (HashMap k v)
   where
-    serialize   = serialize . HashMap.toList
-    deserialize = fmap HashMap.fromList . deserialize
+    serialize m = List $ MapHead : map (uncurry MapPair) (HashMap.toList m)
+
+    deserialize (List (MapHead : pairs)) =
+        HashMap.fromList <$> traverse fromPair pairs
+      where fromPair (MapPair k v) = pure (k, v)
+            fromPair _             = Nothing
+    deserialize _ = Nothing
 
 ----------------------------------------
 -- Sexp helper functions
