@@ -235,8 +235,7 @@ addPathWithValue sym def t = do
     f (Final Nothing) = pure (UpdateNow def)
     f (Final (Just _)) = pure Abort
     f (Continue Nothing) =
-      atomically STM.new
-        >>| GoOn . InfoRecord mempty . Mod NameSpace.empty []
+      emptyModule >>| GoOn . InfoRecord mempty
     f (Continue (Just info@Info {infoDef = Module {}})) =
       GoOn (infoToInfoRecordErr info) |> pure
     f (Continue _) =
@@ -383,6 +382,10 @@ instance MapSym PrivNameSpace where
 modifySpace :: (Stage (Maybe Info) -> Return) -> NameSymbol.T -> T -> Maybe T
 modifySpace f symbol t = runIdentity (modifySpaceImp (Identity . f) symbol t)
 
+-- This has to change, as when we go to module a pointer, we have to
+-- do the modification up until this point, then switch where we
+-- modify.
+
 -- This function dispatches to recurseImp, and serves to deal with
 -- giving recurseImp the proper map to run on. this is either the
 -- private local, public local, or global
@@ -466,7 +469,7 @@ lookupGen canGlobalLookup nameSymb t =
               recursivelyLookup symb (HashMap.lookup x table)
           Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
           Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
-          ___________________ -> Nothing
+          Global _____ ____ -> Nothing
    in From nameSpace fullyQualifiedName <$> form
   where
     -- In the code below since @determineTableForFirstLookup@ ensure
@@ -481,10 +484,70 @@ lookupGen canGlobalLookup nameSymb t =
       | otherwise = mterm
     recursivelyLookup (x : xs) maybeterm =
       let lookupNext table =
-            recursivelyLookup xs (NameSpace.lookup x table)
+            lookupModulePub t x table
+              >>| nameSpaceFromTableErr >>= NameSpace.lookup x
+              |> recursivelyLookup xs
        in case maybeterm ^? _Just . def of
-            Just (Module module') -> lookupNext (module' ^. contents)
+            Just (Module module') -> lookupNext module'
             _____________________ -> Nothing
+
+--------------------------------------------------------------------------------
+-- Lookup Rules That determine resolution -- MOVE TO TOP OF FILE
+--
+-- NOTE: lookupModulePub IS RECURSIVE ON lookup
+--------------------------------------------------------------------------------
+
+------------------------------------------------------------
+-- NOTE: RULES FOR OPEN ARE NOΤ HERE
+-- PASSES CURRENTLY HAVE TO RESOLVE THE OPENS THEMSELVES!!!!
+-- PLEASE CHANGE THIS IN THE FUTURE
+------------------------------------------------------------
+
+-- | @lookupModulePub@ looks up the symbol from the current
+-- Module. The rule for lookup is as follows.
+--
+-- 1. Lookup in the local table. If it's there we return
+--
+-- 2. Lookup in the include table, if that module has the symbol,
+-- return Relocated
+--
+-- 3. If it's Not in either return Nothing.
+--
+-- Note :: A much simpler implementation would be having a cached
+-- table of symbols. Since we don't, we have to lookup each include
+-- and can't even do ambiguity checking due to this poor design.
+lookupModulePub :: T -> Symbol -> Module -> Maybe Table
+lookupModulePub t symbol mod =
+  case NameSpace.lookup symbol (mod ^. contents) of
+    Just __ -> Local Public (mod ^. contents) |> Just
+    Nothing -> asum (mod ^. includeList >>| looked)
+      where
+        looked nameSymb = do
+          from <- lookup nameSymb t
+          mod <- case from ^. term . def of
+            Module mod -> Just mod
+            __________ -> Nothing
+          let foundLocally = do
+                void (NameSpace.lookup symbol (mod ^. contents))
+                Relocated Public (from ^. qualifedName) (mod ^. contents)
+                  |> pure
+          --
+          foundLocally <|> includeCheck mod
+        includeCheck mod =
+          -- lazyness of asum saves us here, in terms of overhead
+          ( mod ^. includeList
+              >>| getMod
+              >>| (>>= lookupModulePub t symbol)
+          )
+            |> asum @_ @Maybe
+        getMod nameSymb = do
+          from <- lookup nameSymb t
+          case from ^. term . def of
+            Module mod -> Just mod
+            __________ -> Nothing
+
+-- Set the module Data
+modifyModulePub t symbol mod f = undefined
 
 -- | @determineTableForFirstLookup@ handles the logic for determining
 -- which table should be looked at first. Further resolution is given
@@ -510,14 +573,17 @@ determineTableForFirstLookup t nameSymb =
       -------------------------
       name@(firstSymbol :| _) = removeTopName nameSymb
       lookupPriv = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
+      -- update to use update on (t ^. currentRecord) :: Module
       lookupPubi = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
       prefixLook = NameSymbol.takePrefixOf (t ^. _currentName) name
+      lookupRelo = lookupModulePub t firstSymbol (t ^. currentRecord)
       -- relevant map information
       ---------------------------
       nameSpace
         | NameSymbol.hd nameSymb == topLevelName && isNothing prefixLook = Outside
         | isJust lookupPriv = Private
         | isJust lookupPubi = Public
+        | isJust lookupRelo = Public
         | otherwise =
           case prefixLook of
             -- currentName : Foo.Bar, symbol: Foo.Bar.baz,
@@ -529,7 +595,11 @@ determineTableForFirstLookup t nameSymb =
         case nameSpace of
           Outside -> Global nameSpace (t ^. _topLevelMap)
           Private -> Local nameSpace (t ^. currentRecordContents)
-          Public -> Local nameSpace (t ^. currentRecordContents)
+          Public ->
+            case lookupRelo of
+              Just rel@Relocated {} ->
+                rel
+              ____ -> Local nameSpace (t ^. currentRecordContents)
    in (table, nameWithoutCurrentPath)
 
 -- | @determineTableForFirstModification@ handles logic for determine
@@ -577,17 +647,50 @@ data Table
     Global NameSpace (HashMap.T Symbol Info)
   | -- namespace can not be Outside in the Local Case
     Local NameSpace (NameSpace.T Info)
+  | -- @Relocated@ represents the module to look at first
+    Relocated NameSpace NameSymbol.T (NameSpace.T Info)
   deriving (Show)
 
 nameFromTable :: Table -> NameSpace
-nameFromTable (Global name _) = name
-nameFromTable (Local name _) = name
+nameFromTable (Global name ______) = name
+nameFromTable (Local name _______) = name
+nameFromTable (Relocated name _ _) = name
+
+nameSpaceFromTableErr :: Table -> NameSpace.T Info
+nameSpaceFromTableErr (Local _______ ns) = ns
+nameSpaceFromTableErr (Relocated _ _ ns) = ns
+nameSpaceFromTableErr (Global _ _______) = error "called nameSpaceFromTableErr on Global"
 
 currentRecordContents ::
   Functor f => (NameSpace.T Info -> f (NameSpace.T Info)) -> T -> f T
 currentRecordContents = _currentNameSpace . record . contents
 
+currentRecord = _currentNameSpace . record
+
+-- | @qualifySymbol@ returns the qualified name of the symbol. It does
+-- not return the TRUENAME of the module. Thus
+--
+-- λ> qualifySymbol Ctx@{current = Foo.Bar} (Relocated ... Baz.Chaz ...) "x"
+-- > TopLevel.Foo.Bar.x
+--
+-- The Truename of x is
+-- Toplevel.Baz.Chaz.x
+--
+-- Thus we get TopLevel.Foo.Bar.x and not Toplevel.Baz.Chaz.x
 qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbol _ Outside = addTopName
 qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
 qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
+
+-- | @truenameSymbol@ returns the True name of the symbol. It does
+-- not return the QUALIFIED of the module. Thus
+--
+-- λ> truenameSymbol Ctx@{current = Foo.Bar} "x" -- where "x" is relocated in Baz.Chaz
+-- > Toplevel.Baz.Chaz.x
+--
+-- The Qualified name of x is
+-- TopLevel.Foo.Bar.x
+--
+-- Thus we get Toplevel.Baz.Chaz.x and not TopLevel.Foo.Bar.x
+truenameSymbol :: T -> NameSymbol.T -> NameSymbol.T
+truenameSymbol = notImplemented

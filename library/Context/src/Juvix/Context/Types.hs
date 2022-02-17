@@ -79,6 +79,10 @@ data NameSpace
 -- info conversion functions
 --------------------------------------------------------------------------------
 
+emptyModule :: IO Module
+emptyModule =
+  atomically STM.new >>| Mod NameSpace.empty [] []
+
 infoToInfoRecordErr :: Info -> InfoRecord
 infoToInfoRecordErr Info {infoTable, infoDef} =
   case infoDef of
