@@ -1,7 +1,6 @@
 module Juvix.Desugar.Env where
 
 import Control.Lens hiding ((|>))
-import Data.List.NonEmpty (nonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
@@ -13,19 +12,15 @@ import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
-import qualified Juvix.Context.NameSpace as NameSpace
+import qualified Juvix.Context.Traversal as Context
 import qualified Juvix.Contextify as Contextify
-import qualified Juvix.Contextify.Environment as Env
-import Juvix.Contextify.Passes (notFoundSymbolToLookup)
 import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
-import qualified Juvix.Contextify.ToContext.Types as Contextify
 import qualified Juvix.Desugar.Passes as Desugar.Passes
 import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
-import qualified Juvix.Sexp.Structure.CoreNamed as CoreNamed
 import Juvix.Sexp.Structure.Lens
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
@@ -347,7 +342,7 @@ resolveModuleTransform ::
     HasClosure m,
     MonadIO m
   ) =>
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   Sexp.T ->
   m Sexp.T
 resolveModuleTransform ctx =
@@ -368,7 +363,7 @@ infixConversionTransform ::
     HasClosure m,
     MonadIO m
   ) =>
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   Sexp.T ->
   m Sexp.T
 infixConversionTransform ctx =
@@ -389,7 +384,7 @@ unknownSymbolLookupTransform ::
     HasClosure m,
     MonadIO m
   ) =>
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   Sexp.T ->
   m Sexp.T
 unknownSymbolLookupTransform ctx =
@@ -402,7 +397,7 @@ unknownSymbolLookupTransform ctx =
 mkTrans ::
   NameSymbol.T ->
   -- | The name of the transform to be traced
-  ( Context.T Sexp.T Sexp.T Sexp.T ->
+  ( Context.T ->
     Sexp.T ->
     MinimalMIO Sexp.T
   ) ->
@@ -459,16 +454,13 @@ recordDeclaration pa =
   case pa ^. current of
     Pipeline.InContext name ->
       case ctx Context.!? name of
-        Just def -> do
-          let (resolvedDef, resolvedName) = Context.resolveName ctx (def, name)
-          case resolvedDef ^. Context.def of
-            Context.TypeDeclar typ -> do
-              let (Env.PassChange transType) = Passes.figureRecord
-              mdef <- transType ctx typ s
-              case mdef of
-                Just (_, newDef) -> updateJob resolvedName newDef |> pure
-                Nothing -> noOpJob |> pure
-            _ -> noOpJob |> pure
+        Just from -> do
+          let qualifiedName = from ^. Context.qualifedName
+          newRecord <-
+            from ^. Context.term
+              |> Passes.figureRecord
+              >>| Context.formPutBack
+          updateJob qualifiedName newRecord |> pure
         Nothing ->
           Juvix.Library.throw @"error" $
             Sexp.string
@@ -478,18 +470,15 @@ recordDeclaration pa =
   where
     ctx = pa ^. context
     noOpJob = Automation.noOpJob ctx (pa ^. current)
-    updateJob name def =
+    updateJob name info =
       Pipeline.UpdateJob
-        { newContext = Context.addGlobal name def ctx,
+        { newContext = Context.addGlobal name info ctx,
           process =
             Pipeline.Process
               { _current = Pipeline.InContext name,
                 _newForms = []
               }
         }
-    -- TODO: `s` is required as an argument to `Passes.figureRecord`.
-    -- Remove this when refactoring these functions into Context.Passes.
-    s = NameSpace.Pub "unused"
 
 --------------------------------------------------------------------------------
 -- Multiple Defun
@@ -620,7 +609,7 @@ initContextTrans cin = do
 
 initContext ::
   Meta.T ->
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   NonEmpty Sexp.T ->
   IO (Pipeline.COut Pipeline.WorkingEnv)
 initContext meta ctx sexps = do
@@ -640,9 +629,9 @@ initContext meta ctx sexps = do
     ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
 
 fullyContextify ::
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
-  IO (Either Contextify.ResolveErr (Context.T Sexp.T Sexp.T Sexp.T))
+  IO (Either Contextify.ResolveErr Context.T)
 fullyContextify ctx ts = do
   cont <- contextify ctx ts
   case cont of
@@ -655,7 +644,7 @@ fullyContextify ctx ts = do
           pure $ Right x
 
 contextify ::
-  Context.T Sexp.T Sexp.T Sexp.T ->
+  Context.T ->
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
   IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextify ctx t = do

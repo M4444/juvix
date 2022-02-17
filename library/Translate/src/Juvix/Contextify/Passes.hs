@@ -205,7 +205,7 @@ convertShunt (Shunt.App s app1 app2) =
 recordDeclaration ::
   ExpressionIO m => Context.T -> m Context.T
 recordDeclaration context =
-  Context.traverseContext context figureRecord
+  Context.traverseContext context (\Context.Input {info} -> figureRecord info)
 
 -- - input form
 --   1. (type name₁ (arg₁ … argₙ)
@@ -222,8 +222,8 @@ recordDeclaration context =
 --                               (fieldₙ usageₙ typeₙ))))
 --      }
 figureRecord ::
-  ExpressionIO m => Context.Input Context.Info -> m (Context.Additional Context.Info)
-figureRecord Context.Input {info} =
+  ExpressionIO m => Context.Info -> m (Context.Additional Context.Info)
+figureRecord info =
   case info ^. Context.def of
     Context.Term (Structure.toType -> Just type')
       | -- make sure it's a record only declaration
