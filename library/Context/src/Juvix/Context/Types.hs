@@ -38,6 +38,7 @@ data Definition
 data Module = Mod
   { moduleContents :: NameSpace.T Info,
     moduleOpenList :: [Open.TName NameSymbol.T],
+    moduleIncludeList :: [NameSymbol.T],
     moduleQualifiedMap :: SymbolMap
   }
   deriving (Show, Read, Generic, Eq, NFData)
@@ -53,29 +54,6 @@ data InfoRecord = InfoRecord
     infoRecordRecord :: Module
   }
   deriving (Show, Read, Generic, Eq, NFData)
-
-infoToInfoRecordErr :: Info -> InfoRecord
-infoToInfoRecordErr Info {infoTable, infoDef} =
-  case infoDef of
-    Module record ->
-      InfoRecord {infoRecordTable = infoTable, infoRecordRecord = record}
-    _ ->
-      Prelude.error "non record sent into coercsion in infoToInfoRecordErr"
-
-infoRecordToInfo :: InfoRecord -> Info
-infoRecordToInfo InfoRecord {infoRecordTable, infoRecordRecord} =
-  Info {infoTable = infoRecordTable, infoDef = Module infoRecordRecord}
-
-instance NFData (STM.Map k v) where rnf x = seq x ()
-
---------------------------------------------------------------------------------
--- Error data types
---------------------------------------------------------------------------------
-
-newtype PathError
-  = VariableShared NameSymbol.T
-  deriving (Show, Read, Eq, Generic)
-  deriving newtype (A.ToJSON, A.FromJSON)
 
 --------------------------------------------------------------------------------
 -- Insertion and Lookup Data Types
@@ -96,6 +74,32 @@ data NameSpace
   | Private
   | Outside
   deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- info conversion functions
+--------------------------------------------------------------------------------
+
+infoToInfoRecordErr :: Info -> InfoRecord
+infoToInfoRecordErr Info {infoTable, infoDef} =
+  case infoDef of
+    Module record ->
+      InfoRecord {infoRecordTable = infoTable, infoRecordRecord = record}
+    _ ->
+      Prelude.error "non record sent into coercsion in infoToInfoRecordErr"
+
+infoRecordToInfo :: InfoRecord -> Info
+infoRecordToInfo InfoRecord {infoRecordTable, infoRecordRecord} =
+  Info {infoTable = infoRecordTable, infoDef = Module infoRecordRecord}
+
+instance NFData (STM.Map k v) where rnf x = seq x ()
+--------------------------------------------------------------------------------
+-- Error data types
+--------------------------------------------------------------------------------
+
+newtype PathError
+  = VariableShared NameSymbol.T
+  deriving (Show, Read, Eq, Generic)
+  deriving newtype (A.ToJSON, A.FromJSON)
 
 --------------------------------------------------------------------------------
 -- Symbol Location Types
