@@ -50,3 +50,4 @@ tmp/
 *.toc
 
 .vscode/*
+.direnv

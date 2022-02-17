@@ -9,6 +9,7 @@ packages:
 nix:
   enable: true
   shell-file: ../../stack.nix
+  nix-shell-options: [--keep, NIX_SSL_CERT_FILE, --keep, STACK_ROOT]
 
 extra-deps:
 

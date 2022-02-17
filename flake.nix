@@ -101,12 +101,15 @@
         apps = flake.apps //
         # Add paths in apps for the cross packages
         mkAppsCross project flake.apps // {
-          update-materialized = {
-            type = "app";
-            program = ''
-              ${project.stack-nix.passthru.calculateMaterializedSha} | tee "$'' + ''{1-nix/stack-sha256}"
-              ${project.stack-nix.passthru.generateMaterialized} "$'' + ''{2-nix/materialized}"
-            '';
+          update-materialized = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellApplication {
+              name = "update-materialized";
+              text = ''
+                set -x
+                ${project.stack-nix.passthru.calculateMaterializedSha} | tee "$'' + ''{1-nix/stack-sha256}"
+                ${project.stack-nix.passthru.generateMaterialized} "$'' + ''{2-nix/materialized}"
+              '';
+            };
           };
         };
 
@@ -117,13 +120,13 @@
               name = "stack-nix-shell";
               category = "haskell";
               command = ''exec nix develop .#stack-nix-shell --option sandbox relaxed "$@"'';
-              help = "Faster shell to execute Nix-enabled Stack commands in.";
+              help = "For use with 'stack'. Shell where you can use 'stack' to build with system dependencies provided via Nix.";
             }
             {
               name = "haskell-nix-shell";
               category = "haskell";
               command = ''exec nix develop .#haskell-nix-shell "$@"'';
-              help = "haskell.nix dev shell";
+              help = "Default haskell.nix project shell. Includes GHC with all non-local dependencies (packages) installed. (Build via Nix).";
             }
             {
               name = "hoogle-server";

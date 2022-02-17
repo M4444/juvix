@@ -322,6 +322,7 @@ common ones to include"
 
 (defun nix-enable-custom ()
   (make-nix :enabled t
+            :shell-options (list "--keep" "NIX_SSL_CERT_FILE" "--keep" "STACK_ROOT")
             :shell-file "stack.nix"
             :pure t))
 
