@@ -25,6 +25,7 @@ module Juvix.BerlinPipeline.Feedback
 
     -- ** No Effectful versions of Effectful functions
     addMessageNoEff,
+    getErrors,
   )
 where
 
@@ -131,3 +132,13 @@ findMessageAt idx = find ((== idx) . identifier) . messages
 -- contents out of it.
 findContentsAt :: Integer -> T -> Maybe Sexp.T
 findContentsAt idx = fmap contents . findMessageAt idx
+
+--------------------------------------------------------------------------------
+-- Filtering Functions
+--------------------------------------------------------------------------------
+
+messagesByLevel :: Level -> T -> [Message]
+messagesByLevel l f = filter (\m -> level m == l) (messages f)
+
+getErrors :: T -> [Message]
+getErrors = messagesByLevel Error

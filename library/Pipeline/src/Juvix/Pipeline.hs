@@ -9,6 +9,7 @@ where
 
 ------------------------------------------------------------------------------
 import Control.Arrow (left)
+import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.IntMap.Strict as PM
@@ -16,6 +17,10 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as T
 import Debug.Pretty.Simple
 import Debug.Pretty.Simple (pTraceShowM)
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
+import qualified Juvix.BerlinPipeline.Meta as Meta
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Application as CoreApp
 import qualified Juvix.Core.Base as Core
@@ -32,10 +37,12 @@ import Juvix.Core.Parameterisation
 import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Translate as Translate
 import qualified Juvix.Core.Types as Core
+import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Parser (ParserError)
+import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Parsing as Parsing
 import qualified Juvix.Parsing.Types as Types
@@ -45,6 +52,7 @@ import qualified Juvix.Pipeline.ToIR as ToIR
 import qualified Juvix.Pipeline.ToSexp as ToSexp
 import Juvix.Pipeline.Types
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import System.Directory (getHomeDirectory)
 import qualified System.IO.Temp as Temp
 import qualified Text.Megaparsec as P
@@ -137,10 +145,29 @@ class HasBackend b where
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline Context.T
   toSexp b x = liftIO $ do
-    e <- ToSexp.contextify x
-    case e of
-      Left err -> Feedback.fail . toS . pShowNoColor $ err
-      Right x -> pure x
+    let workingEnv =
+          x >>= mergeTopLevel
+            >>| Pipeline.Sexp
+            |> Pipeline.WorkingEnv
+        defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
+        startingEnv =
+          (Context.empty defaultNs :: IO Context.T)
+            >>| workingEnv
+
+    Pipeline.CIn languageData surrounding <-
+      startingEnv
+        >>= Pipeline.Env.run Desugar.Env.eval
+          . Pipeline.emptyInput
+
+    let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
+        errors = BerlinPipeline.Feedback.getErrors feedback
+
+    case errors of
+      [] -> languageData ^. Pipeline.context |> pure
+      es -> Feedback.fail . toS . pShowNoColor $ es
+    where
+      inPackage name = Structure.InPackage name |> Sexp.serialize
+      mergeTopLevel (name, exps) = [inPackage name] <> fmap ToSexp.transTopLevel exps
 
   toHR ::
     (Show (Ty b), Show (Val b)) =>
