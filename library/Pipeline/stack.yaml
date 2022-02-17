@@ -7,8 +7,8 @@ packages:
 - ../Parsing
 - ../Core
 - ../Translate
-- ../BerlinPipeline
 - ../Context
+- ../BerlinPipeline
 - ../Test/DataStructures
 
 nix:
