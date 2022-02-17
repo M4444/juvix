@@ -1,4 +1,231 @@
 * Backends
+** LLVM
+*** Setup <<LLVM/Setup>>
+*** src
+**** Juvix
+***** Backends
+****** LLVM
+- _Relies on_
+  + [[LLVM/Compilation]]
+  + [[LLVM/Parameterization]]
+  + [[LLVM/Pipeline]]
+  + [[Primitive]]
+******* Compilation <<LLVM/Compilation>>
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Closure]]
+  + [[Record]]
+  + [[Codegen/Sum]]
+  + [[Codegen/Types]]
+  + [[CString]]
+  + [[Pass/Conversion]]
+  + [[Pass/Types]]
+  + [[Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Feedback]]
+  + [[NameSymbol]]
+******* Parameterization <<LLVM/Parameterization>>
+Parameterization and application of the LLVM backend primitives.
+- _Relies on_
+  + [[Codegen/Types]]
+  + [[Primitive]]
+  + [[Core/Base/Types]]
+  + [[Evaluator]]
+  + [[Core/Parameterisation]]
+  + [[Library]]
+******* Pipeline <<LLVM/Pipeline>>
+The basic connection between the backend and the Juvix pipeline.
+- _Relies on_
+  + [[LLVM/Compilation]]
+  + [[LLVM/Parameterization]]
+  + [[Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Juvix/Pipeline]]
+******* Primitive
+Representation of LLVM primitives in Juvix.
+- _Relies on_
+  + [[Application]]
+  + [[Core/Parameterisation]]
+  + [[Library]]
+******* Codegen
+******** Block
+- Has the code necessary to generate LLVM Code, and gives a small
+  DSL in order to effectively do so.
+An example of using the library to define an llvm function from
+haskell may look like
+@
+  defineLink :: (Define m, Debug m) => m Operand.Operand
+  defineLink = Block.defineFunction Type.void "link" args $
+    do
+      aux1 <- auxiliary1
+      aux2 <- auxiliary2
+      node1 <- Block.externf "node_1"
+      node2 <- Block.externf "node_1"
+      Types.debugLevelOne $ do
+        _ <- Block.printCString "Executing Link rule \n" []
+        _ <- Block.printCString "Calling Link on \n" []
+        Debug.printNodePort node1 aux1
+        Debug.printNodePort node2 aux2
+      Ops.setPort ("node_1", "port_1") ("node_2", "port_2")
+      Types.debugLevelOne $ do
+        _ <- Block.printCString "Calling Link on \n" []
+        Debug.printNodePort node1 aux2
+        Debug.printNodePort node2 aux1
+      Ops.setPort ("node_2", "port_2") ("node_1", "port_1")
+      Block.retNull
+    where
+      args =
+        [ (nodePointer, "node_1"),
+          (numPortsPointer, "port_1"),
+          (nodePointer, "node_2"),
+          (numPortsPointer, "port_2")
+        ]
+@
+Here we define a function called "link" that takes 4 arguments, and
+generates code that will link two nodes together. Since we are
+writing an llvm function, we have to `Block.externf` the given
+arguments to be able to refer to them in the LLVM code.
+Using the code to compile IR terms coming from some abstract
+machine looks a bit different, we can see it in this example here
+@
+  compileLam ty captures arguments body
+   | length captures == 0 = do
+      (llvmArgty, llvmRetty) <- functionTypeLLVM ty
+      let llvmArgNames =
+            fmap (Block.internName . NameSymbol.toSymbol) arguments
+          llvmArguments =
+            zip llvmArgty llvmArgNames
+      -- time to generate unique names
+      lamName <- Block.generateUniqueSymbol "lambda"
+      Block.defineFunction llvmRetty lamName llvmArguments $
+        do
+          bod <- compileTerm body
+          Block.ret bod
+   | otherwise =
+      throw @"err" (Types.UnsupportedOperation "closures are not supported")
+@
+In this example instead of having to `Block.externf` the given
+arguments, we can rely on resolution to properly handle
+that. However, we can see effective use of the library with the
+`Block.generateUniqueSymbol` function and the
+`Block.defineFunction` function. The first gives us an unique to
+compile again, while the latter setups up the environment to
+compile a new top level declaration.
+- _Relies on_
+  + [[Codegen/Types]]
+  + [[CString]]
+  + [[CString]]
+  + [[Library]]
+  + [[HashMap]]
+******** Closure <<Codegen/Closure>>
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Library]]
+******** Constants
+Module for predefined constants
+- _Relies on_
+  + [[Library]]
+******** Record
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Pass/Types]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
+******** Sum <<Codegen/Sum>>
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Closure]]
+  + [[Codegen/Types]]
+  + [[Shared]]
+  + [[Pass/Types]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
+******** Types <<Codegen/Types>>
+- _Relies on_
+  + [[CString]]
+  + [[CString]]
+  + [[Shared]]
+  + [[Types/Sum]]
+  + [[Library]]
+  + [[HashMap]]
+********* CString
+Defines a type for \00 terminated strings
+- _Relies on_
+  + [[Library]]
+  + [[Library]]
+********* Shared
+Shared between Types and Sum
+- _Relies on_
+  + [[CString]]
+  + [[Library]]
+  + [[HashMap]]
+********* Sum <<Types/Sum>>
+Provides a mechanism for defining Sum types
+- Has the code to encode a sum type via what is defined by the user or
+  what is defined to create the interaction net system.
+- _Relies on_
+  + [[Constants]]
+  + [[Shared]]
+  + [[Library]]
+  + [[HashMap]]
+******* Pass
+******** Conversion <<Pass/Conversion>>
+- _Relies on_
+  + [[Pass/Types]]
+  + [[Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[HashMap]]
+  + [[NameSymbol]]
+******** Types <<Pass/Types>>
+- _Relies on_
+  + [[Primitive]]
+  + [[Core/Base/Types]]
+  + [[Ann]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Library/Usage]]
+*** test
+**** Main <<LLVM/test/Main>>
+- _Relies on_
+  + [[Library]]
+  + [[Fetch]]
+**** Test
+***** Codegen
+- _Relies on_
+  + [[Block]]
+  + [[Codegen/Types]]
+  + [[Types/Sum]]
+  + [[LLVM/Compilation]]
+  + [[Pass/Types]]
+  + [[Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Library/Usage]]
+***** Golden <<LLVM/test/Test/Golden>>
+- _Relies on_
+  + [[LLVM]]
+  + [[Core/Base/Types]]
+  + [[Ann]]
+  + [[HR/Types]]
+  + [[Library]]
+  + [[Feedback]]
+  + [[Library/Test/Golden]]
+  + [[Juvix/Pipeline]]
+  + [[Juvix/Pipeline]]
+***** Parameterization <<Test/Parameterization>>
+- _Relies on_
+  + [[LLVM/Compilation]]
+  + [[LLVM/Parameterization]]
+  + [[LLVM/Pipeline]]
+  + [[Primitive]]
+  + [[Core/Parameterisation]]
 ** Michelson
 *** Setup <<Michelson/Setup>>
 *** src
@@ -204,7 +431,7 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Michelson/Compilation]]
   + [[Core/Base]]
   + [[Ann]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[IR/Typechecker]]
   + [[Core/Types]]
   + [[Library]]
@@ -216,370 +443,6 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Untyped]]
   + [[Library]]
   + [[Library/Usage]]
-** Plonk
-*** Setup <<Plonk/Setup>>
-*** src
-**** Juvix
-***** Backends
-****** Plonk
-- _Relies on_
-  + [[Builder]]
-  + [[Circuit]]
-  + [[Assignment]]
-  + [[Plonk/Compiler]]
-  + [[Dot]]
-  + [[Plonk/IR]]
-  + [[Lang]]
-  + [[Plonk/Parameterization]]
-  + [[Plonk/Pipeline]]
-  + [[Plonk/Types]]
-******* Builder
-- _Relies on_
-  + [[Circuit]]
-  + [[Plonk/IR]]
-  + [[Library]]
-******* Compiler <<Plonk/Compiler>>
-- _Relies on_
-  + [[Builder]]
-  + [[Circuit]]
-  + [[Plonk/IR]]
-  + [[Plonk/Types]]
-  + [[Ann/Types]]
-  + [[Library]]
-  + [[NameSymbol]]
-******* Dot
-Visualise circuits using Graphviz
-- _Relies on_
-  + [[Circuit]]
-  + [[Library]]
-******* IR <<Plonk/IR>>
-- _Relies on_
-  + [[Circuit]]
-  + [[Library]]
-******* Lang
-Surface language
-- _Relies on_
-  + [[Builder]]
-  + [[Circuit]]
-  + [[Plonk/IR]]
-  + [[Library]]
-******* Parameterization <<Plonk/Parameterization>>
-- _Relies on_
-  + [[Plonk/Types]]
-  + [[Application]]
-  + [[Core/Base/Types]]
-  + [[Ann/Conversion]]
-  + [[Prim]]
-  + [[Ann/Types]]
-  + [[Evaluator]]
-  + [[Core/Parameterisation]]
-  + [[Core/Types]]
-  + [[Library]]
-  + [[HashMap]]
-  + [[NameSymbol]]
-  + [[Library/Usage]]
-******* Pipeline <<Plonk/Pipeline>>
-- _Relies on_
-  + [[Builder]]
-  + [[Circuit]]
-  + [[Plonk/Compiler]]
-  + [[Dot]]
-  + [[Plonk/Parameterization]]
-  + [[Plonk/Types]]
-  + [[OnlyExts]]
-  + [[Ann]]
-  + [[Core/IR]]
-  + [[Typechecker/Types]]
-  + [[Core/Parameterisation]]
-  + [[Core/Parameterisation]]
-  + [[Library]]
-  + [[Juvix/Pipeline]]
-******* Types <<Plonk/Types>>
-- _Relies on_
-  + [[Application]]
-  + [[Ann]]
-  + [[IR/Types]]
-  + [[Core/Parameterisation]]
-  + [[Library]]
-******* Circuit
-- _Relies on_
-  + [[Library]]
-******** Assignment
-- _Relies on_
-  + [[Circuit]]
-  + [[Library]]
-*** test
-**** Main <<Plonk/test/Main>>
-- _Relies on_
-  + [[Library]]
-  + [[Fetch]]
-**** Test
-***** AnnTerm
-- _Relies on_
-  + [[Plonk]]
-  + [[Plonk]]
-  + [[Ann]]
-  + [[Library]]
-  + [[BLS12381]]
-  + [[NameSymbol]]
-  + [[Library/Usage]]
-***** Compiler <<Test/Compiler>>
-- _Relies on_
-  + [[Plonk]]
-  + [[Plonk]]
-  + [[Ann]]
-  + [[Library]]
-  + [[BLS12381]]
-  + [[Feedback]]
-  + [[Juvix/Pipeline]]
-***** Golden <<Plonk/test/Test/Golden>>
-- _Relies on_
-  + [[Plonk]]
-  + [[Ann]]
-  + [[HR]]
-  + [[Core/IR]]
-  + [[Library]]
-  + [[BLS12381]]
-  + [[Feedback]]
-  + [[Library/Test/Golden]]
-  + [[Juvix/Pipeline]]
-  + [[Juvix/Pipeline]]
-***** Example
-****** Polynomial
-- _Relies on_
-  + [[Plonk]]
-  + [[Plonk]]
-  + [[Ann]]
-  + [[Library]]
-  + [[BLS12381]]
-  + [[Library/Usage]]
-** llvm
-*** Setup <<llvm/Setup>>
-*** src
-**** Juvix
-***** Backends
-****** LLVM
-- _Relies on_
-  + [[LLVM/Compilation]]
-  + [[LLVM/Parameterization]]
-  + [[LLVM/Pipeline]]
-  + [[Primitive]]
-******* Compilation <<LLVM/Compilation>>
-- _Relies on_
-  + [[Block]]
-  + [[Codegen/Closure]]
-  + [[Record]]
-  + [[Codegen/Sum]]
-  + [[Codegen/Types]]
-  + [[CString]]
-  + [[Pass/Conversion]]
-  + [[Pass/Types]]
-  + [[Primitive]]
-  + [[Ann]]
-  + [[Library]]
-  + [[Feedback]]
-  + [[NameSymbol]]
-******* Parameterization <<LLVM/Parameterization>>
-Parameterization and application of the LLVM backend primitives.
-- _Relies on_
-  + [[Codegen/Types]]
-  + [[Primitive]]
-  + [[Core/Base/Types]]
-  + [[Evaluator]]
-  + [[Core/Parameterisation]]
-  + [[Library]]
-******* Pipeline <<LLVM/Pipeline>>
-The basic connection between the backend and the Juvix pipeline.
-- _Relies on_
-  + [[LLVM/Compilation]]
-  + [[LLVM/Parameterization]]
-  + [[Primitive]]
-  + [[Ann]]
-  + [[Library]]
-  + [[Juvix/Pipeline]]
-******* Primitive
-Representation of LLVM primitives in Juvix.
-- _Relies on_
-  + [[Application]]
-  + [[Core/Parameterisation]]
-  + [[Library]]
-******* Codegen
-******** Block
-- Has the code necessary to generate LLVM Code, and gives a small
-  DSL in order to effectively do so.
-An example of using the library to define an llvm function from
-haskell may look like
-@
-  defineLink :: (Define m, Debug m) => m Operand.Operand
-  defineLink = Block.defineFunction Type.void "link" args $
-    do
-      aux1 <- auxiliary1
-      aux2 <- auxiliary2
-      node1 <- Block.externf "node_1"
-      node2 <- Block.externf "node_1"
-      Types.debugLevelOne $ do
-        _ <- Block.printCString "Executing Link rule \n" []
-        _ <- Block.printCString "Calling Link on \n" []
-        Debug.printNodePort node1 aux1
-        Debug.printNodePort node2 aux2
-      Ops.setPort ("node_1", "port_1") ("node_2", "port_2")
-      Types.debugLevelOne $ do
-        _ <- Block.printCString "Calling Link on \n" []
-        Debug.printNodePort node1 aux2
-        Debug.printNodePort node2 aux1
-      Ops.setPort ("node_2", "port_2") ("node_1", "port_1")
-      Block.retNull
-    where
-      args =
-        [ (nodePointer, "node_1"),
-          (numPortsPointer, "port_1"),
-          (nodePointer, "node_2"),
-          (numPortsPointer, "port_2")
-        ]
-@
-Here we define a function called "link" that takes 4 arguments, and
-generates code that will link two nodes together. Since we are
-writing an llvm function, we have to `Block.externf` the given
-arguments to be able to refer to them in the LLVM code.
-Using the code to compile IR terms coming from some abstract
-machine looks a bit different, we can see it in this example here
-@
-  compileLam ty captures arguments body
-   | length captures == 0 = do
-      (llvmArgty, llvmRetty) <- functionTypeLLVM ty
-      let llvmArgNames =
-            fmap (Block.internName . NameSymbol.toSymbol) arguments
-          llvmArguments =
-            zip llvmArgty llvmArgNames
-      -- time to generate unique names
-      lamName <- Block.generateUniqueSymbol "lambda"
-      Block.defineFunction llvmRetty lamName llvmArguments $
-        do
-          bod <- compileTerm body
-          Block.ret bod
-   | otherwise =
-      throw @"err" (Types.UnsupportedOperation "closures are not supported")
-@
-In this example instead of having to `Block.externf` the given
-arguments, we can rely on resolution to properly handle
-that. However, we can see effective use of the library with the
-`Block.generateUniqueSymbol` function and the
-`Block.defineFunction` function. The first gives us an unique to
-compile again, while the latter setups up the environment to
-compile a new top level declaration.
-- _Relies on_
-  + [[Codegen/Types]]
-  + [[CString]]
-  + [[CString]]
-  + [[Library]]
-  + [[HashMap]]
-******** Closure <<Codegen/Closure>>
-- _Relies on_
-  + [[Block]]
-  + [[Codegen/Types]]
-  + [[Library]]
-******** Constants
-Module for predefined constants
-- _Relies on_
-  + [[Library]]
-******** Record
-- _Relies on_
-  + [[Block]]
-  + [[Codegen/Types]]
-  + [[Pass/Types]]
-  + [[Library]]
-  + [[HashMap]]
-  + [[NameSymbol]]
-******** Sum <<Codegen/Sum>>
-- _Relies on_
-  + [[Block]]
-  + [[Codegen/Closure]]
-  + [[Codegen/Types]]
-  + [[Shared]]
-  + [[Pass/Types]]
-  + [[Library]]
-  + [[HashMap]]
-  + [[NameSymbol]]
-******** Types <<Codegen/Types>>
-- _Relies on_
-  + [[CString]]
-  + [[CString]]
-  + [[Shared]]
-  + [[Types/Sum]]
-  + [[Library]]
-  + [[HashMap]]
-********* CString
-Defines a type for \00 terminated strings
-- _Relies on_
-  + [[Library]]
-  + [[Library]]
-********* Shared
-Shared between Types and Sum
-- _Relies on_
-  + [[CString]]
-  + [[Library]]
-  + [[HashMap]]
-********* Sum <<Types/Sum>>
-Provides a mechanism for defining Sum types
-- Has the code to encode a sum type via what is defined by the user or
-  what is defined to create the interaction net system.
-- _Relies on_
-  + [[Constants]]
-  + [[Shared]]
-  + [[Library]]
-  + [[HashMap]]
-******* Pass
-******** Conversion <<Pass/Conversion>>
-- _Relies on_
-  + [[Pass/Types]]
-  + [[Primitive]]
-  + [[Ann]]
-  + [[Library]]
-  + [[HashMap]]
-  + [[NameSymbol]]
-******** Types <<Pass/Types>>
-- _Relies on_
-  + [[Primitive]]
-  + [[Core/Base/Types]]
-  + [[Ann]]
-  + [[Library]]
-  + [[NameSymbol]]
-  + [[Library/Usage]]
-*** test
-**** Main <<llvm/test/Main>>
-- _Relies on_
-  + [[Library]]
-  + [[Fetch]]
-**** Test
-***** Codegen
-- _Relies on_
-  + [[Block]]
-  + [[Codegen/Types]]
-  + [[Types/Sum]]
-  + [[LLVM/Compilation]]
-  + [[Pass/Types]]
-  + [[Primitive]]
-  + [[Ann]]
-  + [[Library]]
-  + [[Library/Usage]]
-***** Golden <<llvm/test/Test/Golden>>
-- _Relies on_
-  + [[LLVM]]
-  + [[Core/Base/Types]]
-  + [[Ann]]
-  + [[HR/Types]]
-  + [[Library]]
-  + [[Feedback]]
-  + [[Library/Test/Golden]]
-  + [[Juvix/Pipeline]]
-  + [[Juvix/Pipeline]]
-***** Parameterization <<Test/Parameterization>>
-- _Relies on_
-  + [[LLVM/Compilation]]
-  + [[LLVM/Parameterization]]
-  + [[LLVM/Pipeline]]
-  + [[Primitive]]
-  + [[Core/Parameterisation]]
 * BerlinPipeline
 ** Setup <<BerlinPipeline/Setup>>
 ** src
@@ -837,7 +700,7 @@ keeps the extensions.
 - _Relies on_
   + [[Core/Base/Types]]
   + [[Algorithm/Types]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Typechecker/Types]]
   + [[Library]]
   + [[NameSymbol]]
@@ -852,7 +715,7 @@ keeps the extensions.
   + [[Erased/Types]]
   + [[Core/HR/Pretty]]
   + [[HR/Types]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Typechecker/Types]]
   + [[Core/Parameterisation]]
   + [[Core/Translate]]
@@ -877,7 +740,7 @@ keeps the extensions.
   + [[Prim]]
   + [[Ann/Types]]
   + [[Ann/Types]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Evaluator]]
   + [[IR/Typechecker]]
   + [[IR/Typechecker]]
@@ -953,7 +816,7 @@ keeps the extensions.
   + [[Extend]]
   + [[Library]]
   + [[NameSymbol]]
-***** IR <<Core/IR>>
+***** IR
 - _Relies on_
   + [[CheckTerm]]
   + [[Evaluator]]
@@ -1136,7 +999,7 @@ Typechecked declarations are added to the signature.
 - _Relies on_
   + [[Core/Base/Types]]
   + [[HR]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Core/Translate]]
   + [[Core/Translate]]
   + [[Library]]
@@ -1145,7 +1008,7 @@ Typechecked declarations are added to the signature.
 - _Relies on_
   + [[Core/Base]]
   + [[HR]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Core/Translate]]
   + [[Library]]
 *** Erasure <<test/Erasure>>
@@ -1154,7 +1017,7 @@ Typechecked declarations are added to the signature.
   + [[Core/Base]]
   + [[Erased]]
   + [[Algorithm]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[IR/Typechecker]]
   + [[Core/Parameterisation]]
   + [[Unit]]
@@ -1172,7 +1035,7 @@ Tests for the type checker and evaluator in Core/IR/Typechecker.hs
   + [[Core/Base]]
   + [[Core/Base]]
   + [[OnlyExts]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[CheckTerm]]
   + [[Evaluator]]
   + [[IR/Typechecker]]
@@ -1343,7 +1206,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[OnlyExts]]
   + [[Ann]]
   + [[HR/Types]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Typechecker/Types]]
   + [[Core/Parameterisation]]
   + [[Core/Parameterisation]]
@@ -1366,7 +1229,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Application]]
   + [[Core/Base]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[Feedback]]
@@ -1394,7 +1257,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Algorithm/Types]]
   + [[Ann/Types]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Typechecker/Types]]
   + [[Core/Types]]
   + [[Library]]
@@ -1408,15 +1271,11 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/Base]]
   + [[Traverse]]
   + [[HR]]
-  + [[Core/IR]]
-  + [[IR/Types]]
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
-  + [[Library/Parser]]
   + [[Library/Usage]]
-  + [[Juvix/Parsing]]
   + [[Def]]
   + [[ToHR/Env]]
   + [[ToHR/Sig]]
@@ -1497,6 +1356,7 @@ would be a shame if the `a` was applied to `List a`!
 ****** Sig <<ToHR/Sig>>
 - _Relies on_
   + [[Juvix/Context]]
+  + [[Juvix/Context]]
   + [[InfoNames]]
   + [[Core/Base/Types]]
   + [[HR]]
@@ -1575,7 +1435,6 @@ with any stage of the compiler while modifying the source code.
   + [[Primitive]]
   + [[Michelson/Parameterisation]]
   + [[Michelson/Pipeline]]
-  + [[Plonk]]
   + [[Juvix/Context]]
   + [[NameSpace]]
   + [[Juvix/Contextify]]
@@ -1586,12 +1445,11 @@ with any stage of the compiler while modifying the source code.
   + [[OnlyExts]]
   + [[Traverse]]
   + [[Ann]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Core/Parameterisation]]
   + [[Core/Types]]
   + [[Desugar]]
   + [[Library]]
-  + [[BLS12381]]
   + [[Feedback]]
   + [[HashMap]]
   + [[NameSymbol]]
@@ -1635,18 +1493,16 @@ with any stage of the compiler while modifying the source code.
 - _Relies on_
   + [[LLVM]]
   + [[Backends/Michelson]]
-  + [[Plonk]]
   + [[Juvix/Context]]
   + [[Core/Base]]
   + [[Core/Base]]
   + [[OnlyExts]]
   + [[Ann]]
   + [[HR]]
-  + [[Core/IR]]
+  + [[IR]]
   + [[Typechecker/Types]]
   + [[Core/Parameterisation]]
   + [[Library]]
-  + [[BLS12381]]
   + [[Feedback]]
   + [[NameSymbol]]
   + [[Parsing/Types]]
@@ -1912,9 +1768,6 @@ _TODO_
   + _Changes_
     * The Capability library is imported and replaces the standard =MTL=
       constructs in =Protolude=
-***** BLS12381
-- _Relies on_
-  + [[Library]]
 ***** Feedback
 - _Relies on_
   + [[Library]]
@@ -2211,6 +2064,7 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Sexp]]
   + [[Lens]]
   + [[Transition]]
+  + [[Structure/Parsing]]
 ****** Types <<ToContext/Types>>
 - _Relies on_
   + [[Juvix/Context]]
