@@ -36,6 +36,263 @@ nameSymbolFromSymbol :: Symbol -> NameSymbol.T
 nameSymbolFromSymbol = NameSymbol.fromSymbol
 
 --------------------------------------------------------------------------------
+-- Functions Related to Resolution Logic
+--
+-- NOTE: lookupModulePub IS RECURSIVE ON lookup
+--------------------------------------------------------------------------------
+
+------------------------------------------------------------
+-- NOTE: RULES FOR OPEN ARE NOΤ HERE
+-- PASSES CURRENTLY HAVE TO RESOLVE THE OPENS THEMSELVES!!!!
+-- PLEASE CHANGE THIS IN THE FUTURE
+------------------------------------------------------------
+
+-- | @determineTableForFirstLookup@ handles the logic for determining
+-- which table should be looked at first. Further resolution is given
+-- to make sure that the path does not contain the
+-- @CurrentNameSpace@. Lastly the function returns the namesymbol
+-- handed with the toplevelname removed if there is one. The
+-- following rules are applied:
+--
+-- 1. if nameSymbol.head ∈ prviate namespace space current name, then
+--    the Private Table is given back
+--
+-- 2. if nameSymbol.head ∈ public namespace space current name, then
+--    the Public Table is given back
+--
+-- 3. if currentName = Foo.Bar ∧ nameSymb: Foo.Bar.baz, and 1 and 2 do
+--    not hold, then we will look in the public map of the current
+--    module, with the newNameSymb being baz in this example
+--
+-- 4. if none of the above hold, then we give back the global module.
+determineTableForFirstLookup :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
+determineTableForFirstLookup t nameSymb =
+  let -- Starting Lookup checks
+      -------------------------
+      name@(firstSymbol :| _) = removeTopName nameSymb
+      lookupPriv = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
+      -- update to use update on (t ^. currentRecord) :: Module
+      lookupPubi = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
+      prefixLook = NameSymbol.takePrefixOf (t ^. _currentName) name
+      lookupRelo = lookupModulePub t firstSymbol (t ^. currentRecord)
+      -- relevant map information
+      ---------------------------
+      nameSpace
+        | NameSymbol.hd nameSymb == topLevelName && isNothing prefixLook = Outside
+        | isJust lookupPriv = Private
+        | isJust lookupPubi = Public
+        | isJust lookupRelo = Public
+        | otherwise =
+          case prefixLook of
+            -- currentName : Foo.Bar, symbol: Foo.Bar.baz,
+            Just __ -> Public
+            Nothing -> Outside
+      nameWithoutCurrentPath =
+        fromMaybe name prefixLook
+      table =
+        case nameSpace of
+          Outside -> Global nameSpace (t ^. _topLevelMap)
+          Private -> Local nameSpace (t ^. currentRecordContents)
+          Public ->
+            case lookupRelo of
+              Just rel@Relocated {} ->
+                rel
+              ____ -> Local nameSpace (t ^. currentRecordContents)
+   in (table, nameWithoutCurrentPath)
+
+-- | @determineTableForFirstModification@ handles logic for determine
+-- which table should be modified first. The function works just like
+-- @determineTableForFirstLookup@ however, the extra rules are as
+-- follows
+--
+-- 1. if the symbol is something like @"Foo"@, then the local map is
+-- given and not the global one, IFF the toplevel does not have
+-- @"Foo"@
+--
+-- Note that there is one degenerative case as follows.
+--
+-- in-module Foo.Bar
+-- make-new-module Foo.Bar.Baz
+--
+-- @
+-- cont <- Juvix.Context.empty "Foo.Bar"
+-- Juvix.Library.Right cont' <- switchNameSpace "Foo.Bar.Baz" cont
+-- λ> currentName cont'
+-- "Foo" :| ["Bar","Baz"]
+-- @
+--
+-- Instead of giving the module Foo.Bar.Foo.Bar.Baz, it will give back
+-- Foo.Bar.Baz, this means that a function like in-module should check
+-- if the @topLevelName@ is in the name, and if not, then insert the
+-- currentname with it.
+--
+-- It is debatable what is better behavior, it might be good to always
+-- be local unless toplevel is given, or if we find it in the toplevel
+-- map at first, this can be tweaked by the code that calls the
+-- context, rather than the context itself. - Mariari
+determineTableForFirstModification :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
+determineTableForFirstModification t nameSymb =
+  let (table, nameSymbol@(x :| symb)) = determineTableForFirstLookup t nameSymb
+   in case (table, symb) of
+        (Global _ table, [])
+          -- Rule 1. in the docs above
+          | not (isJust (HashMap.lookup x table)) && NameSymbol.hd nameSymb /= topLevelName ->
+            (Local Public (t ^. currentRecordContents), nameSymbol)
+        _ -> (table, nameSymbol)
+
+-- | @lookupModulePub@ looks up the symbol from the current
+-- Module. The rule for lookup is as follows.
+--
+-- 1. Lookup in the local table. If it's there we return
+--
+-- 2. Lookup in the include table, if that module has the symbol,
+-- return Relocated
+--
+-- 3. If it's Not in either return Nothing.
+--
+-- Note :: A much simpler implementation would be having a cached
+-- table of symbols. Since we don't, we have to lookup each include
+-- and can't even do ambiguity checking due to this poor design.
+lookupModulePub :: T -> Symbol -> Module -> Maybe Table
+lookupModulePub t symbol mod =
+  case NameSpace.lookup symbol (mod ^. contents) of
+    Just __ -> Local Public (mod ^. contents) |> Just
+    Nothing -> asum (mod ^. includeList >>| looked)
+      where
+        looked nameSymb = do
+          from <- lookup nameSymb t
+          mod <- case from ^. term . def of
+            Module mod -> Just mod
+            __________ -> Nothing
+          let foundLocally = do
+                void (NameSpace.lookup symbol (mod ^. contents))
+                Relocated Public (from ^. qualifedName) (mod ^. contents)
+                  |> pure
+          --
+          foundLocally <|> includeCheck mod
+        includeCheck mod =
+          -- lazyness of asum saves us here, in terms of overhead
+          ( mod ^. includeList
+              >>| getMod
+              >>| (>>= lookupModulePub t symbol)
+          )
+            |> asum @_ @Maybe
+        getMod nameSymb = do
+          from <- lookup nameSymb t
+          case from ^. term . def of
+            Module mod -> Just mod
+            __________ -> Nothing
+
+-- Set the module Data
+modifyModulePub t symbol mod f = undefined
+
+-- couldn't figure out how to fold lenses
+-- once we figure out how to do a fold like
+-- foldr (\x y -> x . contents . T  . y) identity brokenKey
+-- replace the recursive function with that
+
+-- TODO ∷ add something like
+-- checkGlobal
+--   | NameSymbol.subsetOf currentName nameSymb
+
+lookupGen :: Bool -> NameSymbol.T -> T -> Maybe From
+lookupGen canGlobalLookup nameSymb t =
+  let (table, newNameSymb@(x :| symb)) = determineTableForFirstLookup t nameSymb
+      -- From Instantiation
+      ---------------------
+      nameSpace = nameFromTable table
+      fullyQualifiedName = qualifySymbol t nameSpace newNameSymb
+      form =
+        case table of
+          Global _ table
+            | canGlobalLookup ->
+              recursivelyLookup symb (HashMap.lookup x table)
+          Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
+          Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
+          Global _____ ____ -> Nothing
+   in From nameSpace fullyQualifiedName <$> form
+  where
+    -- In the code below since @determineTableForFirstLookup@ ensure
+    -- the path does not have @CurrentNameSpace@, we ignore that
+    -- possibility entirely,
+    --
+    -- except when empty as if it's precisely the same then it will
+    -- have it - Mariari
+    recursivelyLookup [] mterm
+      | mterm ^? _Just . def == Just CurrentNameSpace =
+        Just (infoRecordToInfo (t ^. _currentNameSpace))
+      | otherwise = mterm
+    recursivelyLookup (x : xs) maybeterm =
+      let lookupNext table =
+            lookupModulePub t x table
+              >>| nameSpaceFromTableErr >>= NameSpace.lookup x
+              |> recursivelyLookup xs
+       in case maybeterm ^? _Just . def of
+            Just (Module module') -> lookupNext module'
+            _____________________ -> Nothing
+
+-- This has to change, as when we go to module a pointer, we have to
+-- do the modification up until this point, then switch where we
+-- modify.
+
+-- This function dispatches to recurseImp, and serves to deal with
+-- giving recurseImp the proper map to run on. this is either the
+-- private local, public local, or global
+modifySpaceImp ::
+  Monad m => (Stage (Maybe Info) -> m Return) -> NameSymbol.T -> T -> m (Maybe T)
+modifySpaceImp f symbol t = do
+  let (table, newSymb) = determineTableForFirstModification t symbol
+  case table of
+    Local Private _ ->
+      applyAndSetCurrent (fmap (fmap unPriv) . recurseImp f newSymb . Priv)
+    Local Public _ ->
+      applyAndSetCurrent (recurseImp f newSymb)
+    Local Outside _ -> error "impossible"
+    Global _ _ ->
+      applyAndSetTop (recurseImp f newSymb)
+  where
+    applyAndSetTop f =
+      t |> overMaybe f _topLevelMap
+    applyAndSetCurrent f =
+      t |> overMaybe f currentRecordContents
+
+recurseImp ::
+  (MapSym map, Monad m) =>
+  (Stage (Maybe Info) -> m Return) ->
+  NameSymbol.T ->
+  map Info ->
+  m (Maybe (map Info))
+recurseImp f (x :| y : xs) cont = do
+  ret <- f (Continue (lookup' x cont))
+  case ret of
+    GoOn goRecord -> do
+      recursed <- recurseImp f (y :| xs) (goRecord ^. record . contents)
+      let g newRecord =
+            insert' x (goRecord |> set (record . contents) newRecord |> infoRecordToInfo) cont
+       in pure (g <$> recursed)
+    Abort ->
+      pure Nothing
+    RemoveNow ->
+      pure (Just (remove' x cont))
+    UpdateNow newRecord ->
+      pure (Just (insert' x newRecord cont))
+recurseImp f (x :| []) cont = do
+  ret <- f (Final (lookup' x cont))
+  case ret of
+    UpdateNow return ->
+      pure (Just (insert' x return cont))
+    RemoveNow ->
+      pure (Just (remove' x cont))
+    -- GoOn makes no sense here, so act as an Abort
+    GoOn {} -> pure Nothing
+    Abort -> pure Nothing
+
+--------------------------------------------------------------------------------
+-- Lookup Rules That determine resolution -- MOVE TO TOP OF FILE
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
 -- Body
 --------------------------------------------------------------------------------
 
@@ -382,266 +639,6 @@ instance MapSym PrivNameSpace where
 modifySpace :: (Stage (Maybe Info) -> Return) -> NameSymbol.T -> T -> Maybe T
 modifySpace f symbol t = runIdentity (modifySpaceImp (Identity . f) symbol t)
 
--- This has to change, as when we go to module a pointer, we have to
--- do the modification up until this point, then switch where we
--- modify.
-
--- This function dispatches to recurseImp, and serves to deal with
--- giving recurseImp the proper map to run on. this is either the
--- private local, public local, or global
-modifySpaceImp ::
-  Monad m => (Stage (Maybe Info) -> m Return) -> NameSymbol.T -> T -> m (Maybe T)
-modifySpaceImp f symbol t = do
-  let (table, newSymb) = determineTableForFirstModification t symbol
-  case table of
-    Local Private _ ->
-      applyAndSetCurrent (fmap (fmap unPriv) . recurseImp f newSymb . Priv)
-    Local Public _ ->
-      applyAndSetCurrent (recurseImp f newSymb)
-    Local Outside _ -> error "impossible"
-    Global _ _ ->
-      applyAndSetTop (recurseImp f newSymb)
-  where
-    applyAndSetTop f =
-      t |> overMaybe f _topLevelMap
-    applyAndSetCurrent f =
-      t |> overMaybe f currentRecordContents
-
--- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
--- function may return a maybe instead of the value, and if that's the
--- case, then the value is not set.
-overMaybe ::
-  Monad m => (b -> m (Maybe b)) -> Lens s s b b -> s -> m (Maybe s)
-overMaybe f field t =
-  f (t ^. field) >>| fmap (\ret -> set field ret t)
-
-recurseImp ::
-  (MapSym map, Monad m) =>
-  (Stage (Maybe Info) -> m Return) ->
-  NameSymbol.T ->
-  map Info ->
-  m (Maybe (map Info))
-recurseImp f (x :| y : xs) cont = do
-  ret <- f (Continue (lookup' x cont))
-  case ret of
-    GoOn goRecord -> do
-      recursed <- recurseImp f (y :| xs) (goRecord ^. record . contents)
-      let g newRecord =
-            insert' x (goRecord |> set (record . contents) newRecord |> infoRecordToInfo) cont
-       in pure (g <$> recursed)
-    Abort ->
-      pure Nothing
-    RemoveNow ->
-      pure (Just (remove' x cont))
-    UpdateNow newRecord ->
-      pure (Just (insert' x newRecord cont))
-recurseImp f (x :| []) cont = do
-  ret <- f (Final (lookup' x cont))
-  case ret of
-    UpdateNow return ->
-      pure (Just (insert' x return cont))
-    RemoveNow ->
-      pure (Just (remove' x cont))
-    -- GoOn makes no sense here, so act as an Abort
-    GoOn {} -> pure Nothing
-    Abort -> pure Nothing
-
--- couldn't figure out how to fold lenses
--- once we figure out how to do a fold like
--- foldr (\x y -> x . contents . T  . y) identity brokenKey
--- replace the recursive function with that
-
--- TODO ∷ add something like
--- checkGlobal
---   | NameSymbol.subsetOf currentName nameSymb
-
-lookupGen :: Bool -> NameSymbol.T -> T -> Maybe From
-lookupGen canGlobalLookup nameSymb t =
-  let (table, newNameSymb@(x :| symb)) = determineTableForFirstLookup t nameSymb
-      -- From Instantiation
-      ---------------------
-      nameSpace = nameFromTable table
-      fullyQualifiedName = qualifySymbol t nameSpace newNameSymb
-      form =
-        case table of
-          Global _ table
-            | canGlobalLookup ->
-              recursivelyLookup symb (HashMap.lookup x table)
-          Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
-          Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
-          Global _____ ____ -> Nothing
-   in From nameSpace fullyQualifiedName <$> form
-  where
-    -- In the code below since @determineTableForFirstLookup@ ensure
-    -- the path does not have @CurrentNameSpace@, we ignore that
-    -- possibility entirely,
-    --
-    -- except when empty as if it's precisely the same then it will
-    -- have it - Mariari
-    recursivelyLookup [] mterm
-      | mterm ^? _Just . def == Just CurrentNameSpace =
-        Just (infoRecordToInfo (t ^. _currentNameSpace))
-      | otherwise = mterm
-    recursivelyLookup (x : xs) maybeterm =
-      let lookupNext table =
-            lookupModulePub t x table
-              >>| nameSpaceFromTableErr >>= NameSpace.lookup x
-              |> recursivelyLookup xs
-       in case maybeterm ^? _Just . def of
-            Just (Module module') -> lookupNext module'
-            _____________________ -> Nothing
-
---------------------------------------------------------------------------------
--- Lookup Rules That determine resolution -- MOVE TO TOP OF FILE
---
--- NOTE: lookupModulePub IS RECURSIVE ON lookup
---------------------------------------------------------------------------------
-
-------------------------------------------------------------
--- NOTE: RULES FOR OPEN ARE NOΤ HERE
--- PASSES CURRENTLY HAVE TO RESOLVE THE OPENS THEMSELVES!!!!
--- PLEASE CHANGE THIS IN THE FUTURE
-------------------------------------------------------------
-
--- | @lookupModulePub@ looks up the symbol from the current
--- Module. The rule for lookup is as follows.
---
--- 1. Lookup in the local table. If it's there we return
---
--- 2. Lookup in the include table, if that module has the symbol,
--- return Relocated
---
--- 3. If it's Not in either return Nothing.
---
--- Note :: A much simpler implementation would be having a cached
--- table of symbols. Since we don't, we have to lookup each include
--- and can't even do ambiguity checking due to this poor design.
-lookupModulePub :: T -> Symbol -> Module -> Maybe Table
-lookupModulePub t symbol mod =
-  case NameSpace.lookup symbol (mod ^. contents) of
-    Just __ -> Local Public (mod ^. contents) |> Just
-    Nothing -> asum (mod ^. includeList >>| looked)
-      where
-        looked nameSymb = do
-          from <- lookup nameSymb t
-          mod <- case from ^. term . def of
-            Module mod -> Just mod
-            __________ -> Nothing
-          let foundLocally = do
-                void (NameSpace.lookup symbol (mod ^. contents))
-                Relocated Public (from ^. qualifedName) (mod ^. contents)
-                  |> pure
-          --
-          foundLocally <|> includeCheck mod
-        includeCheck mod =
-          -- lazyness of asum saves us here, in terms of overhead
-          ( mod ^. includeList
-              >>| getMod
-              >>| (>>= lookupModulePub t symbol)
-          )
-            |> asum @_ @Maybe
-        getMod nameSymb = do
-          from <- lookup nameSymb t
-          case from ^. term . def of
-            Module mod -> Just mod
-            __________ -> Nothing
-
--- Set the module Data
-modifyModulePub t symbol mod f = undefined
-
--- | @determineTableForFirstLookup@ handles the logic for determining
--- which table should be looked at first. Further resolution is given
--- to make sure that the path does not contain the
--- @CurrentNameSpace@. Lastly the function returns the namesymbol
--- handed with the toplevelname removed if there is one. The
--- following rules are applied:
---
--- 1. if nameSymbol.head ∈ prviate namespace space current name, then
---    the Private Table is given back
---
--- 2. if nameSymbol.head ∈ public namespace space current name, then
---    the Public Table is given back
---
--- 3. if currentName = Foo.Bar ∧ nameSymb: Foo.Bar.baz, and 1 and 2 do
---    not hold, then we will look in the public map of the current
---    module, with the newNameSymb being baz in this example
---
--- 4. if none of the above hold, then we give back the global module.
-determineTableForFirstLookup :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
-determineTableForFirstLookup t nameSymb =
-  let -- Starting Lookup checks
-      -------------------------
-      name@(firstSymbol :| _) = removeTopName nameSymb
-      lookupPriv = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
-      -- update to use update on (t ^. currentRecord) :: Module
-      lookupPubi = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
-      prefixLook = NameSymbol.takePrefixOf (t ^. _currentName) name
-      lookupRelo = lookupModulePub t firstSymbol (t ^. currentRecord)
-      -- relevant map information
-      ---------------------------
-      nameSpace
-        | NameSymbol.hd nameSymb == topLevelName && isNothing prefixLook = Outside
-        | isJust lookupPriv = Private
-        | isJust lookupPubi = Public
-        | isJust lookupRelo = Public
-        | otherwise =
-          case prefixLook of
-            -- currentName : Foo.Bar, symbol: Foo.Bar.baz,
-            Just __ -> Public
-            Nothing -> Outside
-      nameWithoutCurrentPath =
-        fromMaybe name prefixLook
-      table =
-        case nameSpace of
-          Outside -> Global nameSpace (t ^. _topLevelMap)
-          Private -> Local nameSpace (t ^. currentRecordContents)
-          Public ->
-            case lookupRelo of
-              Just rel@Relocated {} ->
-                rel
-              ____ -> Local nameSpace (t ^. currentRecordContents)
-   in (table, nameWithoutCurrentPath)
-
--- | @determineTableForFirstModification@ handles logic for determine
--- which table should be modified first. The function works just like
--- @determineTableForFirstLookup@ however, the extra rules are as
--- follows
---
--- 1. if the symbol is something like @"Foo"@, then the local map is
--- given and not the global one, IFF the toplevel does not have
--- @"Foo"@
---
--- Note that there is one degenerative case as follows.
---
--- in-module Foo.Bar
--- make-new-module Foo.Bar.Baz
---
--- @
--- cont <- Juvix.Context.empty "Foo.Bar"
--- Juvix.Library.Right cont' <- switchNameSpace "Foo.Bar.Baz" cont
--- λ> currentName cont'
--- "Foo" :| ["Bar","Baz"]
--- @
---
--- Instead of giving the module Foo.Bar.Foo.Bar.Baz, it will give back
--- Foo.Bar.Baz, this means that a function like in-module should check
--- if the @topLevelName@ is in the name, and if not, then insert the
--- currentname with it.
---
--- It is debatable what is better behavior, it might be good to always
--- be local unless toplevel is given, or if we find it in the toplevel
--- map at first, this can be tweaked by the code that calls the
--- context, rather than the context itself. - Mariari
-determineTableForFirstModification :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
-determineTableForFirstModification t nameSymb =
-  let (table, nameSymbol@(x :| symb)) = determineTableForFirstLookup t nameSymb
-   in case (table, symb) of
-        (Global _ table, [])
-          -- Rule 1. in the docs above
-          | not (isJust (HashMap.lookup x table)) && NameSymbol.hd nameSymb /= topLevelName ->
-            (Local Public (t ^. currentRecordContents), nameSymbol)
-        _ -> (table, nameSymbol)
-
 data Table
   = -- namespace has to be Outisde in the Global Case
     Global NameSpace (HashMap.T Symbol Info)
@@ -694,3 +691,11 @@ qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
 -- Thus we get Toplevel.Baz.Chaz.x and not TopLevel.Foo.Bar.x
 truenameSymbol :: T -> NameSymbol.T -> NameSymbol.T
 truenameSymbol = notImplemented
+
+-- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
+-- function may return a maybe instead of the value, and if that's the
+-- case, then the value is not set.
+overMaybe ::
+  Monad m => (b -> m (Maybe b)) -> Lens s s b b -> s -> m (Maybe s)
+overMaybe f field t =
+  f (t ^. field) >>| fmap (\ret -> set field ret t)
