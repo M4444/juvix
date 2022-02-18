@@ -12,6 +12,7 @@ module Juvix.Context
 where
 
 import Control.Lens hiding ((|>))
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Context.Precedence
@@ -160,9 +161,9 @@ lookupModulePub :: T -> Symbol -> Module -> Maybe Table
 lookupModulePub t symbol mod =
   case NameSpace.lookup symbol (mod ^. contents) of
     Just __ -> Local Public (mod ^. contents) |> Just
-    Nothing -> asum (mod ^. includeList >>| looked)
+    Nothing -> asum (mod ^. includeList >>| findSymbolInInclude)
       where
-        looked nameSymb = do
+        findSymbolInInclude nameSymb = do
           from <- lookup nameSymb t
           mod <- case from ^. term . def of
             Module mod -> Just mod
@@ -176,18 +177,9 @@ lookupModulePub t symbol mod =
         includeCheck mod =
           -- lazyness of asum saves us here, in terms of overhead
           ( mod ^. includeList
-              >>| getMod
-              >>| (>>= lookupModulePub t symbol)
+              >>| (findSymbolInInclude)
           )
             |> asum @_ @Maybe
-        getMod nameSymb = do
-          from <- lookup nameSymb t
-          case from ^. term . def of
-            Module mod -> Just mod
-            __________ -> Nothing
-
--- Set the module Data
-modifyModulePub t symbol mod f = undefined
 
 -- couldn't figure out how to fold lenses
 -- once we figure out how to do a fold like
@@ -198,23 +190,46 @@ modifyModulePub t symbol mod f = undefined
 -- checkGlobal
 --   | NameSymbol.subsetOf currentName nameSymb
 
-lookupGen :: Bool -> NameSymbol.T -> T -> Maybe From
-lookupGen canGlobalLookup nameSymb t =
-  let (table, newNameSymb@(x :| symb)) = determineTableForFirstLookup t nameSymb
+data CantResolve = Cant
+  { symbolsLeft :: Maybe NameSymbol.T,
+    pathUntilNoResolve :: NameSymbol.T
+  }
+  deriving (Show)
+
+-- | @tryPathLookup@ tries to grab the path and value of the given
+-- @NameSymbol.T@. The first argument determines if the lookup ought
+-- to be used for modification (additions), or for querying (lookup,
+-- removal), thus one should pass @determineTableForFirstModification@
+-- for the first task, and @determineTableForFirstLookup@ for the
+-- latter.
+tryPathLookup ::
+  (T -> NameSymbol.T -> (Table, NameSymbol.T)) ->
+  Bool ->
+  NameSymbol.T ->
+  T ->
+  Either CantResolve From
+tryPathLookup determineTableForFirstTask canGlobalLookup nameSymb t = do
+  let (table, newNameSymb@(x :| symb)) = determineTableForFirstTask t nameSymb
       -- From Instantiation
       ---------------------
       nameSpace = nameFromTable table
+      currName = t ^. _currentName
       fullyQualifiedName = qualifySymbol t nameSpace newNameSymb
       form =
         case table of
           Global _ table
             | canGlobalLookup ->
-              recursivelyLookup symb (HashMap.lookup x table)
-          Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
-          Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
-          Relocated _ _ tbl -> recursivelyLookup symb (NameSpace.lookup x tbl)
-          _________________ -> Nothing
-   in From nameSpace fullyQualifiedName <$> form
+              recursivelyLookup symb (HashMap.lookup x table) topLevelName x
+          Local Private tbl ->
+            recursivelyLookup symb (NameSpace.lookupPrivate x tbl) (addTopName currName) x
+          Local Public tabl ->
+            recursivelyLookup symb (NameSpace.lookup x tabl) (addTopName currName) x
+          Relocated _ nm tbl ->
+            recursivelyLookup symb (NameSpace.lookup x tbl) (addTopName nm) x
+          _________________ ->
+            Lib.Left Cant {symbolsLeft = Nothing, pathUntilNoResolve = newNameSymb}
+  (infoTerm, trueName) <- form
+  pure (From nameSpace fullyQualifiedName trueName infoTerm)
   where
     -- In the code below since @determineTableForFirstLookup@ ensure
     -- the path does not have @CurrentNameSpace@, we ignore that
@@ -222,75 +237,101 @@ lookupGen canGlobalLookup nameSymb t =
     --
     -- except when empty as if it's precisely the same then it will
     -- have it - Mariari
-    recursivelyLookup [] mterm
+    recursivelyLookup [] mterm currentPath currentLookupName
       | mterm ^? _Just . def == Just CurrentNameSpace =
-        Just (infoRecordToInfo (t ^. _currentNameSpace))
-      | otherwise = mterm
-    recursivelyLookup (x : xs) maybeterm =
-      let lookupNext table =
-            lookupModulePub t x table
-              >>| nameSpaceFromTableErr >>= NameSpace.lookup x
-              |> recursivelyLookup xs
+        Lib.Right (infoRecordToInfo (t ^. _currentNameSpace)
+                  -- DON'T USΕ (t ^. _currentName) as in the case of
+                  -- switching, the fact that
+                  --
+                  -- currentPath <> pure currentLookupName == (t ^. _currentName)
+                  --
+                  -- does not hold
+                  , currentPath <> pure currentLookupName)
+      | otherwise =
+        case mterm of
+          Nothing ->
+            Lib.Left
+              Cant
+                { symbolsLeft = Just (currentLookupName :| []),
+                  pathUntilNoResolve = currentPath
+                }
+          Just term ->
+            Lib.Right (term, currentPath <> pure currentLookupName)
+    recursivelyLookup (x : xs) maybeterm currentPath currentLookupName =
+      let cantResolveErr =
+            Lib.Left
+              Cant
+                { symbolsLeft = Just (currentLookupName :| x : xs),
+                  pathUntilNoResolve = currentPath
+                }
+          currentPathWithCurrent = currentPath <> pure currentLookupName
+          lookupCurrent table = NameSpace.lookup x table
+          lookupNext table =
+            case lookupModulePub t x table of
+              Just (Local _ ns) ->
+                recursivelyLookup xs (lookupCurrent ns) currentPathWithCurrent x
+              Just (Relocated _ nm tbl) ->
+                recursivelyLookup xs (lookupCurrent tbl) (nm <> pure currentLookupName) x
+              _ ->
+                recursivelyLookup xs Nothing currentPathWithCurrent x
        in case maybeterm ^? _Just . def of
             Just (Module module') -> lookupNext module'
-            _____________________ -> Nothing
+            _____________________ -> cantResolveErr
 
--- This has to change, as when we go to module a pointer, we have to
--- do the modification up until this point, then switch where we
--- modify.
+tryLookupGen :: Bool -> NameSymbol.T -> T -> Either CantResolve From
+tryLookupGen = tryPathLookup determineTableForFirstLookup
 
--- This function dispatches to recurseImp, and serves to deal with
--- giving recurseImp the proper map to run on. this is either the
--- private local, public local, or global
-modifySpaceImp ::
-  Monad m => (Stage (Maybe Info) -> m Return) -> NameSymbol.T -> T -> m (Maybe T)
-modifySpaceImp f symbol t = do
-  let (table, newSymb) = determineTableForFirstModification t symbol
-  case table of
-    Local Private _ ->
-      applyAndSetCurrent (fmap (fmap unPriv) . recurseImp f newSymb . Priv)
-    Local Public _ ->
-      applyAndSetCurrent (recurseImp f newSymb)
-    Local Outside _ -> error "impossible"
-    Global _ _ ->
-      applyAndSetTop (recurseImp f newSymb)
+tryModifyPath :: NameSymbol.T -> T -> Either CantResolve From
+tryModifyPath = tryPathLookup determineTableForFirstModification True
+
+-- | @modifyWithPath@ modifies the given path in the context. The
+-- given name is expected to be a path indexed from the TopLevel to
+-- avoid ambiguities. If the name is TopLevel by itself, the function
+-- does not run.
+modifyWithPath :: NameSymbol.T -> T -> (Info -> Info) -> T
+modifyWithPath nameSymbPath t modification = do
+  let newNameSymb = removeTopName nameSymbPath
+  case NameSymbol.takePrefixOfInternal (t ^. _currentName) newNameSymb of
+    Just pathIntenral ->
+      t |> over _currentNameSpace (moduleToFunction (recurse pathIntenral))
+    Nothing ->
+      t |> over _topLevelMap (topSet newNameSymb)
   where
-    applyAndSetTop f =
-      t |> overMaybe f _topLevelMap
-    applyAndSetCurrent f =
-      t |> overMaybe f currentRecordContents
+    -- topSet will not run on TopLevel due to how it's formulated.
+    topSet (x :| tl) top =
+      case lookup' x top of
+        Just info ->
+          insert' x (recurse tl info) top
+        Nothing -> top
 
-recurseImp ::
-  (MapSym map, Monad m) =>
-  (Stage (Maybe Info) -> m Return) ->
-  NameSymbol.T ->
-  map Info ->
-  m (Maybe (map Info))
-recurseImp f (x :| y : xs) cont = do
-  ret <- f (Continue (lookup' x cont))
-  case ret of
-    GoOn goRecord -> do
-      recursed <- recurseImp f (y :| xs) (goRecord ^. record . contents)
-      let g newRecord =
-            insert' x (goRecord |> set (record . contents) newRecord |> infoRecordToInfo) cont
-       in pure (g <$> recursed)
-    Abort ->
-      pure Nothing
-    RemoveNow ->
-      pure (Just (remove' x cont))
-    UpdateNow newRecord ->
-      pure (Just (insert' x newRecord cont))
-recurseImp f (x :| []) cont = do
-  ret <- f (Final (lookup' x cont))
-  case ret of
-    UpdateNow return ->
-      pure (Just (insert' x return cont))
-    RemoveNow ->
-      pure (Just (remove' x cont))
-    -- GoOn makes no sense here, so act as an Abort
-    GoOn {} -> pure Nothing
-    Abort -> pure Nothing
+    moduleToFunction func mod =
+      case func (infoRecordToInfo mod) of
+        i@(Info {infoDef = Module _}) -> infoToInfoRecordErr i
+        _____________________________ -> mod
+    recurse [] table =
+      modification table
+    recurse (x : xs) info =
+      info |> over def (onTableContentsLookup x (insert' x . recurse xs))
 
+onTableContentsLookup ::
+  Symbol -> (Info -> NameSpace.T Info -> NameSpace.T Info) -> Definition -> Definition
+onTableContentsLookup at func (Module table) =
+  case lookup' at (moduleContents table) of
+    Just look ->
+      table
+        |> over contents (func look)
+        |> Module
+    -- these cases down, just abort, we can't update
+    Nothing -> Module table
+onTableContentsLookup _ _ otherCases = otherCases
+
+onTableContents ::
+  Symbol -> (NameSpace.T Info -> NameSpace.T Info) -> Definition -> Definition
+onTableContents at func (Module table) =
+  table
+    |> over contents func
+    |> Module
+onTableContents _ _ otherCases = otherCases
 --------------------------------------------------------------------------------
 -- Lookup Rules That determine resolution -- MOVE TO TOP OF FILE
 
@@ -305,7 +346,7 @@ empty :: NameSymbol.T -> IO T
 empty sym = do
   empty <- atomically fullyEmpty
   res <-
-    addPathWithValue (pure topLevelName <> sym') (Info mempty CurrentNameSpace) empty
+    addPathWithValue (addTopName sym) (Info mempty CurrentNameSpace) empty
   case res of
     Lib.Left _ -> error "impossible"
     Lib.Right x -> pure x
@@ -315,11 +356,10 @@ empty sym = do
       pure $
         T
           { currentNameSpace = InfoRecord mempty currentNameSpace,
-            currentName = sym',
+            currentName = removeTopName sym,
             topLevelMap = HashMap.empty,
             reverseLookup = HashMap.empty
           }
-    sym' = removeTopName sym
 
 qualifyName :: NameSymbol.T -> T -> NameSymbol.T
 qualifyName sym T {currentName} = currentName <> sym
@@ -331,6 +371,7 @@ emptyRecord = do
     Mod
       { moduleContents = NameSpace.empty,
         moduleOpenList = [],
+        moduleIncludeList = [],
         moduleQualifiedMap = emptyQualificationMap
       }
 
@@ -375,7 +416,7 @@ persistDefinition T {reverseLookup} moduleName name =
 --------------------------------------------------------------------------------
 
 lookupCurrent :: NameSymbol.T -> T -> Maybe From
-lookupCurrent = lookupGen False
+lookupCurrent tm = rightToMaybe . tryLookupGen False tm
 
 -- TODO ∷ Maybe change
 -- By default add adds it to the public map by default!
@@ -454,70 +495,93 @@ switchNameSpace newNameSpace t@T {currentName}
       Nothing -> Lib.Left (VariableShared newNameSpace)
       Just ct -> Lib.Right ct
 
+tryLookup :: NameSymbol.T -> T -> Either CantResolve From
+tryLookup = tryLookupGen True
+
 lookup :: NameSymbol.T -> T -> Maybe From
-lookup = lookupGen True
+lookup nm = rightToMaybe . tryLookup nm
 
 (!?) :: T -> NameSymbol.T -> Maybe From
 (!?) = flip lookup
 
-modifyGlobal :: NameSymbol.T -> (Maybe Info -> Info) -> T -> T
-modifyGlobal sym g t =
-  case modifySpace f sym t of
-    Just tt -> tt
-    Nothing -> t
-  where
-    f (Final x) =
-      UpdateNow (g x)
-    f (Continue (Just info@Info {infoDef = Module {}})) =
-      GoOn (infoToInfoRecordErr info)
-    f (Continue _) =
-      Abort
-
 addGlobal :: NameSymbol.T -> Info -> T -> T
-addGlobal sym def t =
-  case modifySpace f sym t of
-    Just tt -> tt
-    Nothing -> t
+addGlobal name info t =
+  case tryModifyPath name t of
+    Lib.Right from ->
+      let fullTrue = from ^. trueName
+          symbolAtPoint = NameSymbol.base fullTrue
+      in case NameSymbol.mod fullTrue of
+          (tm : term) -> addingAtPoint (tm :| term) symbolAtPoint
+          [] -> t
+    Lib.Left cantResolve ->
+      case symbolsLeft cantResolve of
+        Just (lastPartOfName :| []) ->
+          addingAtPoint (pathUntilNoResolve cantResolve) lastPartOfName
+        _ ->
+          t
   where
-    f (Final _) =
-      UpdateNow def
-    f (Continue (Just info@Info {infoDef = Module {}})) =
-      GoOn (infoToInfoRecordErr info)
-    f (Continue _) =
-      Abort
+    addingAtPoint path symbolToAdd =
+      case path of
+        (top :| [])
+          | top == topLevelName ->
+            over _topLevelMap (insert' symbolToAdd info) t
+        mod ->
+          modifyWithPath mod t (insertPoint symbolToAdd)
+    insertPoint onPoint =
+      over def (onTableContents onPoint (insert' onPoint info))
+
+removeGlobal :: NameSymbol.T -> T -> T
+removeGlobal name t =
+  case tryModifyPath name t of
+    Lib.Right from -> do
+      let fullTrue = from ^. trueName
+          symbolAtPoint = NameSymbol.base fullTrue
+      case NameSymbol.mod fullTrue of
+        (tm : term) -> addingAtPoint (tm :| term) symbolAtPoint
+        [] -> t
+    Lib.Left _ -> t
+  where
+    addingAtPoint path symbolToRemove =
+      case path of
+        (top :| [])
+          | top == topLevelName ->
+            removeTop symbolToRemove t
+        mod ->
+          modifyWithPath mod t (removePoint symbolToRemove)
+    removePoint onPoint =
+      over def (onTableContents onPoint (remove' onPoint))
 
 addPathWithValue :: NameSymbol.T -> Info -> T -> IO (Either PathError T)
-addPathWithValue sym def t = do
-  ret <- modifySpaceImp f sym t
-  case ret of
-    Just tt -> pure (Lib.Right tt)
-    Nothing -> pure (Lib.Left (VariableShared sym))
+addPathWithValue name info t =
+  case tryModifyPath name t of
+    Lib.Right _value ->
+        pure (Lib.Left (VariableShared name))
+    Lib.Left cantResolve
+      | pathUntilNoResolve cantResolve == topLevelName,
+        Just left <- symbolsLeft cantResolve -> do
+        --
+        body cantResolve left
+      | Just tm <- t !? pathUntilNoResolve cantResolve,
+        Just left <- symbolsLeft cantResolve,
+        isModule (tm ^. term . def) -> do
+        --
+        body cantResolve left
+      | otherwise ->
+        pure (Lib.Left (VariableShared name))
   where
-    f (Final Nothing) = pure (UpdateNow def)
-    f (Final (Just _)) = pure Abort
-    f (Continue Nothing) =
-      emptyModule >>| GoOn . InfoRecord mempty
-    f (Continue (Just info@Info {infoDef = Module {}})) =
-      GoOn (infoToInfoRecordErr info) |> pure
-    f (Continue _) =
-      pure Abort
+    body cantResolve (termToInsert :| rest) = do
+      nestedTerm <- foldM createPathing info (reverse rest)
 
-removeNameSpace :: NameSymbol -> T -> T
-removeNameSpace sym t =
-  case modifySpace f sym t of
-    Just tt -> tt
-    Nothing -> t
-  where
-    f (Final (Just _)) =
-      RemoveNow
-    f (Final Nothing) =
-      Abort
-    f (Continue (Just info@Info {infoDef = Module {}})) =
-      GoOn (infoToInfoRecordErr info)
-    f (Continue Nothing) =
-      Abort
-    f (Continue (Just _)) =
-      Abort
+      pure (Lib.Right (addGlobal (pathUntilNoResolve cantResolve <> pure termToInsert) nestedTerm t))
+    createPathing buildUp nameOfNextModuleNesting = do
+      nextMod <- emptyModule
+      nextMod
+        |> over contents (insert' nameOfNextModuleNesting buildUp)
+        |> Module
+        |> Info mempty
+        |> pure
+    isModule (Module _) = True
+    isModule __________ = False
 
 removeTop :: Symbol -> T -> T
 removeTop sym t@T {topLevelMap} =
@@ -640,9 +704,6 @@ instance MapSym PrivNameSpace where
   remove' sym = Priv . NameSpace.removePrivate sym . unPriv
   insert' sym def = Priv . NameSpace.insert (NameSpace.Priv sym) def . unPriv
 
-modifySpace :: (Stage (Maybe Info) -> Return) -> NameSymbol.T -> T -> Maybe T
-modifySpace f symbol t = runIdentity (modifySpaceImp (Identity . f) symbol t)
-
 data Table
   = -- namespace has to be Outisde in the Global Case
     Global NameSpace (HashMap.T Symbol Info)
@@ -682,19 +743,6 @@ qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbol _ Outside = addTopName
 qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
 qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
-
--- | @truenameSymbol@ returns the True name of the symbol. It does
--- not return the QUALIFIED of the module. Thus
---
--- λ> truenameSymbol Ctx@{current = Foo.Bar} "x" -- where "x" is relocated in Baz.Chaz
--- > Toplevel.Baz.Chaz.x
---
--- The Qualified name of x is
--- TopLevel.Foo.Bar.x
---
--- Thus we get Toplevel.Baz.Chaz.x and not TopLevel.Foo.Bar.x
-truenameSymbol :: T -> NameSymbol.T -> NameSymbol.T
-truenameSymbol = notImplemented
 
 -- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
 -- function may return a maybe instead of the value, and if that's the

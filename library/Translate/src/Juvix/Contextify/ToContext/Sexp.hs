@@ -18,8 +18,8 @@ import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
 import Juvix.Sexp.Structure.Lens
-import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified Juvix.Sexp.Structure.Parsing as Structure
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import Prelude (error)
 
 -- the name symbols are the modules we are opening

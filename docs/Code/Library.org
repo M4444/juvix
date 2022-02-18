@@ -2063,8 +2063,8 @@ serialization works in Test.Contextify.Binders
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
   + [[Lens]]
-  + [[Transition]]
   + [[Structure/Parsing]]
+  + [[Transition]]
 ****** Types <<ToContext/Types>>
 - _Relies on_
   + [[Juvix/Context]]

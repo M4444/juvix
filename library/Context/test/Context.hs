@@ -1,14 +1,12 @@
 module Context where
 
 import Control.Lens (over, (^.), (^?), _Just)
-import qualified Data.Text as Text
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
-import qualified StmContainers.Map as STM
 import qualified System.IO.Unsafe as Unsafe
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
@@ -32,7 +30,8 @@ top =
       localBeatsGlobal,
       nonRelatedModuleStillPersists,
       emptyWorksAsExpectedSingle,
-      topLevelDoesNotMessWithInnerRes
+      topLevelDoesNotMessWithInnerRes,
+      addRemoveDoesNotAdd
     ]
 
 makeTm :: Sexp.Serialize a => a -> Context.Definition
@@ -217,6 +216,20 @@ localBeatsGlobal =
         |> Just
         |> ((looked ^? _Just . Context.term) T.@=?)
         |> T.testCase "public beats global"
+
+addRemoveDoesNotAdd :: T.TestTree
+addRemoveDoesNotAdd =
+  let empt :: Context.T
+      empt = unsafeEmpty ("GKar" :| ["Narn"])
+      --
+      added =
+        Context.addGlobal "zazz" (Context.Info mempty (Context.Term (Sexp.List []))) empt
+      removed =
+        Context.removeGlobal "zazz" added
+      looked = removed Context.!? pure "zazz"
+   in T.testCase "adding then removal removes" (Nothing T.@=? looked)
+
+
 
 nonRelatedModuleStillPersists :: T.TestTree
 nonRelatedModuleStillPersists =

@@ -52,7 +52,6 @@ moduleResolution =
               Sexp.parse
                 "(:lambda-case (() (* a (:: 3 10))))"
         Just expected T.@=? unwrapLookup "fi" t,
-
       T.testCase "infix declaration works with declaration" $ do
         Right t <-
           contextualizeFoo

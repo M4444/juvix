@@ -65,6 +65,7 @@ data InfoRecord = InfoRecord
 data From = From
   { fromNameSpace :: NameSpace,
     fromQualifedName :: NameSymbol.T,
+    fromTrueName :: NameSymbol.T,
     fromTerm :: Info
   }
   deriving (Show, Eq)
@@ -96,6 +97,7 @@ infoRecordToInfo InfoRecord {infoRecordTable, infoRecordRecord} =
   Info {infoTable = infoRecordTable, infoDef = Module infoRecordRecord}
 
 instance NFData (STM.Map k v) where rnf x = seq x ()
+
 --------------------------------------------------------------------------------
 -- Error data types
 --------------------------------------------------------------------------------
