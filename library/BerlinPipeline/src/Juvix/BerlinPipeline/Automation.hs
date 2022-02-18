@@ -157,14 +157,16 @@ simplify f PassArgument {_current = current, _context = context} =
           let combineF (ctx, newForms) sexp = do
                 job <- f SimplifiedArgument {_context = ctx, _current = sexp}
                 let (current, newCtx, newForms') = extractFromJobEnv ctx job
-                    toPutBack =
+                    (toPutBack, relocated) =
                       case current of
                         Pipeline.Sexp sexp ->
-                          sexp
+                          (sexp, [])
                         Pipeline.InContext name ->
-                          Structure.Relocated name |> Sexp.serialize
+                          ( Structure.Relocated name |> Sexp.serialize,
+                            [(Pipeline.Current, current)]
+                          )
                 --
-                pure ((newCtx, newForms <> newForms'), toPutBack)
+                pure ((newCtx, newForms <> relocated <> newForms'), toPutBack)
 
               updateInformationTable =
                 -- TODO ∷ Filter out Protected fields, so we don't run
