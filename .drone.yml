@@ -1,22 +1,19 @@
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-pr
 node: {project: juvix}
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "3316642c7c435c6d2000e9cd2896c1413e456e9290cffebece8c588cac96e638  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
+- commands: ['aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip', cd
+      scripts/ci && unzip juvix.zip]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: download-scripts
   pull: never
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -92,26 +89,23 @@ steps:
 trigger:
   event: [pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-build-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "3316642c7c435c6d2000e9cd2896c1413e456e9290cffebece8c588cac96e638  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
+- commands: ['aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip', cd
+      scripts/ci && unzip juvix.zip]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: download-scripts
   pull: never
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -169,30 +163,27 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/docs/.stack}
 kind: pipeline
 name: juvix-ci-docs-pr-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "3316642c7c435c6d2000e9cd2896c1413e456e9290cffebece8c588cac96e638  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
-  pull: never
-- depends_on: [check-scripts-integrity]
+- commands: ['aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip', cd
+      scripts/ci && unzip juvix.zip]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: download-scripts
+  pull: never
+- depends_on: [download-scripts]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    BACKEND_OPERATION_TIMEOUT: 10m
   image: meltwater/drone-cache:latest
   name: restore-cache-stack
   pull: never
@@ -208,7 +199,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -228,7 +219,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -248,7 +239,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -268,7 +259,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -288,7 +279,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -308,7 +299,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -328,7 +319,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -348,7 +339,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -368,7 +359,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -388,7 +379,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -408,7 +399,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -428,7 +419,7 @@ steps:
     restore: true
   when:
     status: [success, failure]
-- depends_on: [check-scripts-integrity]
+- depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -440,8 +431,8 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/LLVM/stack.yaml" }}
-    mount: [library/Backends/LLVM/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
+    mount: [library/Backends/llvm/.stack-work]
     override: false
     rebuild: false
     region: eu-west-1
@@ -462,7 +453,7 @@ steps:
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
-    BACKEND_OPERATION_TIMEOUT: 8m
+    BACKEND_OPERATION_TIMEOUT: 10m
   image: meltwater/drone-cache:latest
   name: rebuild-cache-stack
   pull: never
@@ -710,8 +701,8 @@ steps:
     archive_format: gzip
     backend: s3
     bucket: heliax-drone-cache-v2
-    cache_key: juvix/docs/{{ checksum "library/Backends/LLVM/stack.yaml" }}
-    mount: [library/Backends/LLVM/.stack-work]
+    cache_key: juvix/docs/{{ checksum "library/Backends/llvm/stack.yaml" }}
+    mount: [library/Backends/llvm/.stack-work]
     override: false
     rebuild: true
     region: eu-west-1
@@ -722,28 +713,25 @@ trigger:
   branch: [develop]
   event: [push, pull_request]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/docs}
 ---
-environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /drone/workspace/.stack}
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/workspace/.stack}
 kind: pipeline
 name: juvix-ci-update-artifacts-push-develop
 node: {project: juvix}
 steps:
-- commands: [echo "49db3ec988197ca77f7384b1b1ae2e45266943d7ff54e0dcd21fb515d298461d  Makefile"
-      | sha256sum -c -, echo "3316642c7c435c6d2000e9cd2896c1413e456e9290cffebece8c588cac96e638  scripts/push-changes.sh"
-      | sha256sum -c -, echo "d04e32c725b9316805e85d2e8d26d9aaa7010f00e98cd933e4a16c64c0533a6f  scripts/format-and-org-gen.sh"
-      | sha256sum -c -, echo "b6ad65e92d1f6f47516586281d55b27794f3bc368d06473781925397f27e7932  scripts/check-formatting.sh"
-      | sha256sum -c -, echo "bc61d2cdaf46935ff2ebb2e85cbfdc106629b5d8c8589dfb5dbdc171c2ecfe92  scripts/check-org-gen.sh"
-      | sha256sum -c -, echo "59e7ec32dc65c1668ca90cb0b825f4d86215cd2b1382babeabaedde8d6d61347  scripts/pre-run.sh"
-      | sha256sum -c -, echo "9a6e36300c3620e23f0bb3faf488b87aca323d9730302b6f0f4bdc3b672bf036  scripts/build-and-publish-docs.sh"
-      | sha256sum -c -, echo "c0ca1a8cc30da0759ed2baf0ce6e596c27b01be51ac1beeaa6754e95c6725093  scripts/generate-checksums.py"
-      | sha256sum -c -, sh scripts/pre-run.sh]
-  image: alpine/git:v2.30.1
-  name: check-scripts-integrity
+- commands: ['aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip', cd
+      scripts/ci && unzip juvix.zip]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: download-scripts
   pull: never
 - commands: ['aws s3 sync stdlib s3://heliax-juvix-artifacts-v1 --acl public-read
       --exclude "*" --include "*.json" --include "*/*.ju" --include "*.ju"']
-  depends_on: [check-scripts-integrity]
+  depends_on: [download-scripts]
   environment:
     AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
     AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
@@ -754,9 +742,89 @@ trigger:
   branch: [develop]
   event: [push]
 type: docker
-workspace: {path: /drone/workspace}
+workspace: {path: /juvix/workspace}
+---
+environment: {GIT_LFS_SKIP_SMUDGE: '1', STACK_ROOT: /juvix/web/.stack}
+kind: pipeline
+name: juvix-ci-deploy-website
+node: {project: juvix}
+steps:
+- commands: ['aws s3 cp s3://$S3_BUCKET_SCRIPTS/juvix.zip scripts/ci/juvix.zip', cd
+      scripts/ci && unzip juvix.zip]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+    S3_BUCKET_SCRIPTS: drone-ci-scripts
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: download-scripts
+  pull: never
+- depends_on: [download-scripts]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: meltwater/drone-cache:latest
+  name: restore-cache-frontend
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
+    region: eu-west-1
+    restore: true
+- commands: [cd library/Playground/HTTP/compiler-debugger && npm install && CI=false
+      npm run build]
+  depends_on: [restore-cache-frontend]
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/node:14.18.2-stretch
+  name: build-frontend
+  pull: never
+- commands: [sh scripts/deploy-webserver.sh]
+  depends_on: [download-scripts]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: build-backend
+  pull: never
+- commands: ['aws s3 sync library/Playground/HTTP/compiler-debugger/build s3://juvix.heliax.dev
+      --delete --region eu-west-1', aws cloudfront create-invalidation --distribution-id
+      E2JJLE9WAN786S --paths "/" --region eu-west-1]
+  depends_on: [build-frontend]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
+  name: deploy-frontend
+  pull: never
+- depends_on: [deploy-frontend]
+  environment:
+    AWS_ACCESS_KEY_ID: {from_secret: aws_access_key_id}
+    AWS_SECRET_ACCESS_KEY: {from_secret: aws_secret_access_key}
+  image: meltwater/drone-cache:latest
+  name: rebuild-cache-frontend
+  pull: never
+  settings:
+    archive_format: gzip
+    backend: s3
+    bucket: heliax-drone-cache-v2
+    cache_key: juvix/frontend/{{ checksum "library/Playground/HTTP/compiler-debugger/package-lock.json"
+      }}
+    mount: [./library/Playground/HTTP/compiler-debugger/node_modules]
+    override: false
+    rebuild: true
+    region: eu-west-1
+    restore: false
+  when:
+    status: [success, failure]
+trigger:
+  branch: [develop]
+  event: [push]
+type: docker
+workspace: {path: /juvix/web}
 ---
 kind: signature
-hmac: 74476e387257c16b9d9c6a81aebee6c5d7a763d4f1d7f009ea0ccf1ed7ea0a79
+hmac: f20e31d096bf588684a68e5877dae39ea6ec2e60ae72477228ffb647ccc9917b
 
 ...
