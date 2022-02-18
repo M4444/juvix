@@ -70,7 +70,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   pull: never
   commands:
-  - sh ./scripts/format-and-org-gen.sh
+  - sh ./scripts/ci/format-and-org-gen.sh
   depends_on:
   - test-typecheck
   - test-compile
@@ -79,7 +79,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
   pull: never
   commands:
-  - python3 scripts/generate-checksums.py
+  - python3 scripts/ci/generate-checksums.py
   environment:
     GITHUB_TOKEN:
       from_secret: github_token
@@ -91,7 +91,7 @@ steps:
   image: openanalytics/alpine-git-lfs-client
   pull: never
   commands:
-  - sh ./scripts/push-changes.sh
+  - sh ./scripts/ci/push-changes.sh
   environment:
     GITHUB_TOKEN:
       from_secret: github_token
@@ -600,7 +600,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/juvix:latest
   pull: never
   commands:
-  - ./scripts/build-and-publish-docs.sh
+  - ./scripts/ci/build-and-publish-docs.sh
   environment:
     GITHUB_TOKEN:
       from_secret: github_token
@@ -1109,6 +1109,6 @@ environment:
   STACK_ROOT: /juvix/web/.stack
 ---
 kind: signature
-hmac: 6361e514dcbba64bab0a4f8467024c13f1fbec75d666da806997699491640f5d
+hmac: 4ee429f0e6cc2162a0a2aa47105d3746918ac1e54b2ed851db2fefbf233be2dd
 
 ...
