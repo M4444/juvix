@@ -1,5 +1,4 @@
 import os
-from hashlib import sha256
 from pathlib import Path
 from typing import Dict
 
@@ -14,26 +13,6 @@ import boto3
 DRONE_FILE: str = ".drone"
 DRONE_FILE_SUFFIX: str = ".yml"
 REPOSITORY: str = "anoma/juvix"
-
-STEP_NAME = 'check-scripts-integrity'
-
-files_to_check = [
-    'Makefile',
-    'scripts/push-changes.sh',
-    'scripts/format-and-org-gen.sh',
-    'scripts/check-formatting.sh',
-    'scripts/check-org-gen.sh',
-    'scripts/pre-run.sh',
-    'scripts/build-and-publish-docs.sh',
-    'scripts/generate-checksums.py'
-]
-
-scripts_to_run = [
-    'scripts/pre-run.sh'
-]
-
-check_command_template = 'echo "{}  {}" | sha256sum -c -'
-run_command_template = 'sh {}'
 
 boto_config = Config(
     region_name='eu-west-1',
@@ -64,18 +43,6 @@ def join_path(path: Path, filename: str) -> Path:
     return Path(path, filename)
 
 
-def compute_hashes() -> Dict:
-    hashes = {}
-
-    project_root = get_project_root()
-    for file_path in files_to_check:
-        path = join_path(project_root, file_path)
-        file_content = path.open(mode="r").read().encode("utf-8")
-        hashes[file_path] = sha256(file_content).hexdigest()
-
-    return hashes
-
-
 def get_drone_token() -> str:
     try:
         return client.get_parameter(
@@ -100,26 +67,6 @@ def sign_drone_config():
 def main():
     drone_config_path = get_drone_conf_path()
     drone_config = read_drone_config(drone_config_path)
-    hashes = compute_hashes()
-
-    new_configs = []
-
-    for config in drone_config:
-        if 'steps' in config:
-            config_steps = config['steps'][0]
-            if config_steps and config_steps['name'] == STEP_NAME:
-                commands = []
-                for file in files_to_check:
-                    new_command = check_command_template.format(hashes[file], file)
-                    commands.append(new_command)
-                for file in scripts_to_run:
-                    new_command = run_command_template.format(file)
-                    commands.append(new_command)
-                config_steps['commands'] = commands
-            new_configs.append(config)
-
-    yaml = YAML(typ='safe')
-    yaml.dump_all(new_configs, drone_config_path)
 
     sign_drone_config()
 
