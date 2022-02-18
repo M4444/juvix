@@ -60,11 +60,14 @@ nameSymbolFromSymbol = NameSymbol.fromSymbol
 -- 2. if nameSymbol.head ∈ public namespace space current name, then
 --    the Public Table is given back
 --
--- 3. if currentName = Foo.Bar ∧ nameSymb: Foo.Bar.baz, and 1 and 2 do
+-- 3. if nameSymbol.head ∈ Included modules, then the relocated Table
+--    is given back.
+--
+-- 4. if currentName = Foo.Bar ∧ nameSymb: Foo.Bar.baz, and 1 and 2 do
 --    not hold, then we will look in the public map of the current
 --    module, with the newNameSymb being baz in this example
 --
--- 4. if none of the above hold, then we give back the global module.
+-- 5. if none of the above hold, then we give back the global module.
 determineTableForFirstLookup :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
 determineTableForFirstLookup t nameSymb =
   let -- Starting Lookup checks
@@ -209,7 +212,8 @@ lookupGen canGlobalLookup nameSymb t =
               recursivelyLookup symb (HashMap.lookup x table)
           Local Private tbl -> recursivelyLookup symb (NameSpace.lookupPrivate x tbl)
           Local Public tabl -> recursivelyLookup symb (NameSpace.lookup x tabl)
-          Global _____ ____ -> Nothing
+          Relocated _ _ tbl -> recursivelyLookup symb (NameSpace.lookup x tbl)
+          _________________ -> Nothing
    in From nameSpace fullyQualifiedName <$> form
   where
     -- In the code below since @determineTableForFirstLookup@ ensure
