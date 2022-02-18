@@ -24,7 +24,7 @@ nix:
 
 extra-deps:
 
-###################
+####################
 # For HTTP server #
 ###################
 - servant-static-th-1.0.0.0
