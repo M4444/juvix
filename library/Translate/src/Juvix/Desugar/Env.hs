@@ -117,9 +117,9 @@ instance Pipeline.HasExtract MinimalMIO where
 
 Right sexp =
   Sexp.parse
-    "(defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
+    "(:defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
 
-Right secondSexp = Sexp.parse "(defun foo (x) (+ x 1))"
+Right secondSexp = Sexp.parse "(:defun foo (x) (+ x 1))"
 
 startingEnv :: IO Pipeline.WorkingEnv
 startingEnv =
@@ -162,6 +162,7 @@ desugarPasses =
     modulePass,
     condPass,
     ifPass,
+    letPass,
     multipleDefunPass,
     combineSigPass,
     removePunnedRecordsPass,
@@ -229,6 +230,9 @@ moduleLetPass = desugarPass Desugar.Passes.moduleLetTransform "moduleLet"
 
 ifPass :: Step.Named
 ifPass = desugarPass Desugar.Passes.ifTransform "if"
+
+letPass :: Step.Named
+letPass = desugarPass Desugar.Passes.multipleTransLet "let"
 
 removePunnedRecordsPass :: Step.Named
 removePunnedRecordsPass =
