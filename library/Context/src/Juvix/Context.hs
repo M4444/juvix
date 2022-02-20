@@ -276,7 +276,8 @@ tryPathLookup determineTableForFirstTask canGlobalLookup nameSymb t = do
               Just (Local _ ns) ->
                 recursivelyLookup xs (lookupCurrent ns) currentPathWithCurrent x
               Just (Relocated _ nm tbl) ->
-                recursivelyLookup xs (lookupCurrent tbl) (nm <> pure currentLookupName) x
+                -- do not add current lookupname, as the @nm@ has already have it!
+                recursivelyLookup xs (lookupCurrent tbl) nm x
               _ ->
                 recursivelyLookup xs Nothing currentPathWithCurrent x
        in case maybeterm ^? _Just . def of

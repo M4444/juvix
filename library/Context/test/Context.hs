@@ -175,6 +175,22 @@ includeResolvesCorrectly =
         ( do
             ctx <- runCrazy
             True T.@=? isJust (ctx Context.!? "Z'ha'dum.Z'ha'dum.Z'ha'dum.mr-morden")
+        ),
+      T.testCase
+        "adding Across the opens"
+        ( do
+            ctx <- runCrazy
+            let global =
+                  Context.addGlobal
+                    "Z'ha'dum.Z'ha'dum.Z'ha'dum.vir"
+                    ( makeTm @Text
+                        "You have always served me well, old friend. \
+                        \ And sometimes I think I do not thank you as \
+                        \ much as I should. .. Goodbye."
+                        |> Context.Info mempty
+                    )
+                    ctx
+            True T.@=? isJust (global Context.!? "vir")
         )
     ]
   where
@@ -190,6 +206,7 @@ includeResolvesCorrectly =
       let included = Context.includeMod (Context.addTopName "Shadows") swap
       --
       pure included
+
     runCrazy = do
       created <- Context.empty (pure "Shadows")
       --
