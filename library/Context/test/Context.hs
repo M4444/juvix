@@ -31,7 +31,8 @@ top =
       nonRelatedModuleStillPersists,
       emptyWorksAsExpectedSingle,
       topLevelDoesNotMessWithInnerRes,
-      addRemoveDoesNotAdd
+      addRemoveDoesNotAdd,
+      includeResolvesCorrectly
     ]
 
 makeTm :: Sexp.Serialize a => a -> Context.Definition
@@ -131,6 +132,48 @@ checkCorrectResolution =
           Just current = switchBack Context.!? ("Gkar" :| ["londo"])
       pure (outside, current)
 
+-- this test checks that the local variable is added and the global
+includeResolvesCorrectly :: T.TestTree
+includeResolvesCorrectly =
+  T.testGroup
+    "Includes resolve as they ought to"
+    [ T.testCase
+        "basic include works"
+        ( do
+            ctx <- runBasic
+            True T.@=? isJust (ctx Context.!? "mr-morden")
+        ),
+      T.testCase
+        "included value gives the current module+name as the qualified name"
+        ( do
+            ctx <- runBasic
+            let Just from = (ctx Context.!? "mr-morden")
+            "TopLevel.Londo.Mollari.Centauri.mr-morden"
+              T.@=? from ^. Context.qualifedName
+        ),
+      T.testCase
+        "included value gives the included name as the True name"
+        ( do
+            ctx <- runBasic
+            let Just from = (ctx Context.!? "mr-morden")
+            "TopLevel.Shadows.mr-morden" T.@=? from ^. Context.trueName
+        )
+
+    ]
+  where
+    runBasic = do
+      created <- Context.empty (pure "Shadows")
+      --
+      let added =
+            Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
+      --
+      Right swap <-
+        Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) added
+      --
+      let included = Context.includeMod (Context.addTopName "Shadows") swap
+      --
+      pure included
+
 privateFromAbove :: T.TestTree
 privateFromAbove =
   T.testCase
@@ -228,8 +271,6 @@ addRemoveDoesNotAdd =
         Context.removeGlobal "zazz" added
       looked = removed Context.!? pure "zazz"
    in T.testCase "adding then removal removes" (Nothing T.@=? looked)
-
-
 
 nonRelatedModuleStillPersists :: T.TestTree
 nonRelatedModuleStillPersists =

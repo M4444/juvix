@@ -326,16 +326,12 @@ onTableContentsLookup at func (Module table) =
 onTableContentsLookup _ _ otherCases = otherCases
 
 onTableContents ::
-  Symbol -> (NameSpace.T Info -> NameSpace.T Info) -> Definition -> Definition
-onTableContents at func (Module table) =
+  (NameSpace.T Info -> NameSpace.T Info) -> Definition -> Definition
+onTableContents func (Module table) =
   table
     |> over contents func
     |> Module
-onTableContents _ _ otherCases = otherCases
---------------------------------------------------------------------------------
--- Lookup Rules That determine resolution -- MOVE TO TOP OF FILE
-
---------------------------------------------------------------------------------
+onTableContents _ otherCases = otherCases
 
 --------------------------------------------------------------------------------
 -- Body
@@ -445,6 +441,10 @@ toList t = NameSpace.toList (t ^. currentRecordContents)
 topList :: T -> [(Symbol, Info)]
 topList T {topLevelMap} = HashMap.toList topLevelMap
 
+includeMod :: NameSymbol.T -> T -> T
+includeMod nameSymbol =
+  over (_currentNameSpace . record . includeList) (nameSymbol :)
+
 --------------------------------------------------------------------------------
 -- Global Functions
 --------------------------------------------------------------------------------
@@ -528,7 +528,7 @@ addGlobal name info t =
         mod ->
           modifyWithPath mod t (insertPoint symbolToAdd)
     insertPoint onPoint =
-      over def (onTableContents onPoint (insert' onPoint info))
+      over def (onTableContents (insert' onPoint info))
 
 removeGlobal :: NameSymbol.T -> T -> T
 removeGlobal name t =
@@ -549,7 +549,7 @@ removeGlobal name t =
         mod ->
           modifyWithPath mod t (removePoint symbolToRemove)
     removePoint onPoint =
-      over def (onTableContents onPoint (remove' onPoint))
+      over def (onTableContents (remove' onPoint))
 
 addPathWithValue :: NameSymbol.T -> Info -> T -> IO (Either PathError T)
 addPathWithValue name info t =
