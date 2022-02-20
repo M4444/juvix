@@ -232,21 +232,26 @@ tryPathLookup determineTableForFirstTask canGlobalLookup nameSymb t = do
   pure (From nameSpace fullyQualifiedName trueName infoTerm)
   where
     -- In the code below since @determineTableForFirstLookup@ ensure
-    -- the path does not have @CurrentNameSpace@, we ignore that
-    -- possibility entirely,
+    -- the path does not have @CurrentNameSpace@, except with the
+    -- following exceptions
     --
-    -- except when empty as if it's precisely the same then it will
-    -- have it - Mariari
+    -- 1.  except when empty as if it's precisely the same then it
+    -- will have it - Mariari
+    --
+    -- 2. except when a module includes its parent, then it can loop
+    -- around to being current
     recursivelyLookup [] mterm currentPath currentLookupName
       | mterm ^? _Just . def == Just CurrentNameSpace =
-        Lib.Right (infoRecordToInfo (t ^. _currentNameSpace)
-                  -- DON'T USΕ (t ^. _currentName) as in the case of
-                  -- switching, the fact that
-                  --
-                  -- currentPath <> pure currentLookupName == (t ^. _currentName)
-                  --
-                  -- does not hold
-                  , currentPath <> pure currentLookupName)
+        Lib.Right
+          ( infoRecordToInfo (t ^. _currentNameSpace),
+            -- DON'T USΕ (t ^. _currentName) as in the case of
+            -- switching, the fact that
+            --
+            -- currentPath <> pure currentLookupName == (t ^. _currentName)
+            --
+            -- does not hold
+            currentPath <> pure currentLookupName
+          )
       | otherwise =
         case mterm of
           Nothing ->
@@ -276,6 +281,9 @@ tryPathLookup determineTableForFirstTask canGlobalLookup nameSymb t = do
                 recursivelyLookup xs Nothing currentPathWithCurrent x
        in case maybeterm ^? _Just . def of
             Just (Module module') -> lookupNext module'
+            -- This can only happen when a module opened its parent,
+            -- and we are pathing back in
+            Just CurrentNameSpace -> lookupNext (t ^. _currentNameSpace . record)
             _____________________ -> cantResolveErr
 
 tryLookupGen :: Bool -> NameSymbol.T -> T -> Either CantResolve From
@@ -510,9 +518,9 @@ addGlobal name info t =
     Lib.Right from ->
       let fullTrue = from ^. trueName
           symbolAtPoint = NameSymbol.base fullTrue
-      in case NameSymbol.mod fullTrue of
-          (tm : term) -> addingAtPoint (tm :| term) symbolAtPoint
-          [] -> t
+       in case NameSymbol.mod fullTrue of
+            (tm : term) -> addingAtPoint (tm :| term) symbolAtPoint
+            [] -> t
     Lib.Left cantResolve ->
       case symbolsLeft cantResolve of
         Just (lastPartOfName :| []) ->
@@ -555,7 +563,7 @@ addPathWithValue :: NameSymbol.T -> Info -> T -> IO (Either PathError T)
 addPathWithValue name info t =
   case tryModifyPath name t of
     Lib.Right _value ->
-        pure (Lib.Left (VariableShared name))
+      pure (Lib.Left (VariableShared name))
     Lib.Left cantResolve
       | pathUntilNoResolve cantResolve == topLevelName,
         Just left <- symbolsLeft cantResolve -> do

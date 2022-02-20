@@ -157,8 +157,25 @@ includeResolvesCorrectly =
             ctx <- runBasic
             let Just from = (ctx Context.!? "mr-morden")
             "TopLevel.Shadows.mr-morden" T.@=? from ^. Context.trueName
+        ),
+      T.testCase
+        "including our parent lets us reference oureslves"
+        ( do
+            ctx <- runCrazy
+            True T.@=? isJust (ctx Context.!? "Z'ha'dum")
+        ),
+      T.testCase
+        "including our parent lets us reference our original includes"
+        ( do
+            ctx <- runCrazy
+            True T.@=? isJust (ctx Context.!? "Z'ha'dum.mr-morden")
+        ),
+      T.testCase
+        "including our parent lets us reference our includes lets us reference... "
+        ( do
+            ctx <- runCrazy
+            True T.@=? isJust (ctx Context.!? "Z'ha'dum.Z'ha'dum.Z'ha'dum.mr-morden")
         )
-
     ]
   where
     runBasic = do
@@ -172,6 +189,18 @@ includeResolvesCorrectly =
       --
       let included = Context.includeMod (Context.addTopName "Shadows") swap
       --
+      pure included
+    runCrazy = do
+      created <- Context.empty (pure "Shadows")
+      --
+      let added =
+            Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
+      --
+      Right swap <-
+        Context.switchNameSpace (Context.addTopName "Shadows.Z'ha'dum") added
+      --
+      let included = Context.includeMod (Context.addTopName "Shadows") swap
+      -- let us include our parent!!!
       pure included
 
 privateFromAbove :: T.TestTree
