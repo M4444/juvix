@@ -1047,6 +1047,7 @@ steps:
 trigger:
   event:
   - push
+  - pull_request
   branch:
   - develop
 type: docker
@@ -1057,6 +1058,6 @@ environment:
   STACK_ROOT: /juvix/web/.stack
 ---
 kind: signature
-hmac: 54fe1c5b3851861a17b5e5fe9d83eba67698d06bac43f6ea28e58571c00114d6
+hmac: 75f87f0f190ecc3e0dc72073a4203a54ccc852c4e9a85725e80457f21b691945
 
 ...
