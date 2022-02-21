@@ -59,6 +59,7 @@ updateTopLevel full@(name Sexp.:> body) ctx
   | named "declare" = declare body ctx
   | named "type" = type' body ctx
   | named "open" = open body ctx
+  | Structure.isInclude full = include full ctx
   where
     named = Sexp.isAtomNamed name
 updateTopLevel _ ctx = pure $ Type.PS ctx [] []
@@ -105,6 +106,12 @@ declare (Sexp.List [inf, n, i]) ctx
           Info.injectMetaInformation ctx atomName (Info.precedence, Sexp.serialize prec)
      in Type.PS newCtx [] [] |> pure
 declare _ _ = error "malformed declare"
+
+include :: Sexp.T -> Context.T -> IO Type.PassSexp
+include (Structure.toInclude -> Just (Structure.Include ns)) context =
+  let newCtx = Context.includeMod ns context
+   in Type.PS newCtx [] [] |> pure
+include _ _ = error "malformed include"
 
 -- | @type'@ will take its type and add it into the context. Note that
 -- since we store information with the type, we will keep the name in
