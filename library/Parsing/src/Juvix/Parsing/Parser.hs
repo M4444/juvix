@@ -290,7 +290,6 @@ include = do
   nameToInclude <- prefixSymbolDotSN
   pure $ Types.Inc nameToInclude
 
-
 alias :: Parser Types.Alias
 alias = do
   reserved "alias"

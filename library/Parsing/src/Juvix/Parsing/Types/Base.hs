@@ -59,12 +59,12 @@ data InfixDeclar
 -- Module Includes/Alias
 --------------------------------------------------------------------------------
 
-newtype Include =
-  Inc NameSymb
+newtype Include
+  = Inc NameSymb
   deriving (Show, Read, Eq, Generic, NFData)
 
-data Alias =
-  Ali NameSymb NameSymb
+data Alias
+  = Ali NameSymb NameSymb
   deriving (Show, Read, Eq, Generic, NFData)
 
 --------------------------------------------------------------------------------

@@ -1761,7 +1761,6 @@ _TODO_
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-  + [[Structure]]
   + [[Structure/Helpers]]
 ****** Transition
 Hardening S-expressions into a more readable form. Here we use a

@@ -60,17 +60,17 @@ contextualizeInclude =
         parseDesugarSexp
           "let x = 2 "
       )
-        :| [("Foo",
-             parseDesugarSexp
-               "include TopLevel.A"
-            ),
-            ("Bar",
-             parseDesugarSexp
-               "include TopLevel.Foo \
-               \ let fi = x"
-            )]
+        :| [ ( "Foo",
+               parseDesugarSexp
+                 "include TopLevel.A"
+             ),
+             ( "Bar",
+               parseDesugarSexp
+                 "include TopLevel.Foo \
+                 \ let fi = x"
+             )
+           ]
     )
-
 
 contextualizeFooAmbi ::
   ByteString -> IO Context.T
