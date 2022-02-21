@@ -18,6 +18,8 @@ Lens.makeLensesWith Lens.camelCaseFields ''Transition.DefunSigMatch
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.RecordNoPunned
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Defun
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Let
+Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Alias
+Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Include
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.LetMatch
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Cond
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.PredAns

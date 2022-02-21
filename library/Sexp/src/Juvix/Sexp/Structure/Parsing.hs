@@ -50,6 +50,17 @@ data Defun = Defun
   }
   deriving (Show)
 
+data Include = Include
+  { includeName :: NameSymbol.T
+  }
+  deriving (Show)
+
+data Alias = Alias
+  { aliasName :: NameSymbol.T,
+    aliasModuleOf :: NameSymbol.T
+  }
+  deriving (Show)
+
 -- | @Type@ is the type declaration structure
 data Type = Type
   { -- TODO ∷ we should really have a field the signature currently we
@@ -412,6 +423,69 @@ fromLetType (LetType sexp1 sexp2 sexp3 sexp4) =
 instance Sexp.Serialize LetType where
   deserialize = toLetType
   serialize = fromLetType
+
+----------------------------------------
+-- Include
+----------------------------------------
+
+nameInclude :: NameSymbol.T
+nameInclude = ":include"
+
+isInclude :: Sexp.T -> Bool
+isInclude (Sexp.Cons form _) = Sexp.isAtomNamed form nameInclude
+isInclude _ = False
+
+toInclude :: Sexp.T -> Maybe Include
+toInclude form
+  | isInclude form =
+    case form of
+      _nameInclude Sexp.:> nameSymbol1 Sexp.:> Sexp.Nil
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+          Include nameSymbol1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromInclude :: Include -> Sexp.T
+fromInclude (Include nameSymbol1) =
+  Sexp.list [Sexp.atom nameInclude, fromNameSymbol nameSymbol1]
+
+instance Sexp.Serialize Include where
+  deserialize = toInclude
+  serialize = fromInclude
+
+----------------------------------------
+-- Alias
+----------------------------------------
+
+nameAlias :: NameSymbol.T
+nameAlias = ":alias"
+
+isAlias :: Sexp.T -> Bool
+isAlias (Sexp.Cons form _) = Sexp.isAtomNamed form nameAlias
+isAlias _ = False
+
+toAlias :: Sexp.T -> Maybe Alias
+toAlias form
+  | isAlias form =
+    case form of
+      _nameAlias Sexp.:> nameSymbol1 Sexp.:> nameSymbol2 Sexp.:> Sexp.Nil
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1,
+          Just nameSymbol2 <- toNameSymbol nameSymbol2 ->
+          Alias nameSymbol1 nameSymbol2 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromAlias :: Alias -> Sexp.T
+fromAlias (Alias nameSymbol1 nameSymbol2) =
+  Sexp.list [Sexp.atom nameAlias, fromNameSymbol nameSymbol1, fromNameSymbol nameSymbol2]
+
+instance Sexp.Serialize Alias where
+  deserialize = toAlias
+  serialize = fromAlias
 
 ----------------------------------------
 -- Defun

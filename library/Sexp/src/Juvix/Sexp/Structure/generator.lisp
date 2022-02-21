@@ -284,6 +284,10 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
 
   (generate-haskell "LetType" (repeat 4 "sexp") ":let-type")
 
+  (generate-haskell "Include" '("nameSymbol") ":include")
+
+  (generate-haskell "Alias" '("nameSymbol" "nameSymbol") ":alias")
+
   (generate-haskell "Defun" '("sexp" "sexp" "sexp") ":defun")
 
   (generate-haskell "Signature" '("sexp" "sexp") ":defsig")

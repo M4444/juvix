@@ -4,6 +4,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Parsing.Types.Base as Types
+import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 
@@ -19,6 +20,8 @@ transTopLevel (Types.Module m) = transModule m
 transTopLevel Types.TypeClass = Sexp.atom ":type-class"
 transTopLevel (Types.Type t) = transType t
 transTopLevel (Types.Handler h) = transHand h
+transTopLevel (Types.Alias a) = transAlias a
+transTopLevel (Types.Include i) = transInclude i
 
 transHeader :: Types.Header Types.TopLevel -> [Sexp.T]
 transHeader (Types.NoHeader xs) = fmap transTopLevel xs
@@ -139,6 +142,18 @@ transNamedType (Types.NamedType' _name exp) = transExpr exp
 transTypeRefine :: Types.TypeRefine -> Sexp.T
 transTypeRefine (Types.TypeRefine name refine) =
   Sexp.list [Sexp.atom ":refinement", transExpr name, transExpr refine]
+
+--------------------------------------------------------------------------------
+-- Module Includes Aliases
+--------------------------------------------------------------------------------
+
+transInclude :: Types.Include -> Sexp.T
+transInclude (Types.Inc name) =
+  Structure.Include name |> Sexp.serialize
+
+transAlias :: Types.Alias -> Sexp.T
+transAlias (Types.Ali name mod) =
+  Structure.Alias name mod |> Sexp.serialize
 
 --------------------------------------------------------------------------------
 -- Function definition expansions
