@@ -12,7 +12,7 @@ module Juvix.Context
 where
 
 import Control.Lens hiding ((|>))
-import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.HashSet as Set
 import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Context.NameSpace as NameSpace
 import Juvix.Context.Precedence
@@ -162,24 +162,29 @@ lookupModulePub :: T -> Symbol -> Module -> Maybe Table
 lookupModulePub t symbol mod =
   case NameSpace.lookup symbol (mod ^. contents) of
     Just __ -> Local Public (mod ^. contents) |> Just
-    Nothing -> asum (mod ^. includeList >>| findSymbolInInclude)
+    Nothing ->
+      mod ^. includeList
+        >>| findSymbolInInclude (Set.singleton (t ^. _currentName))
+        |> asum
       where
-        findSymbolInInclude nameSymb = do
-          from <- lookup nameSymb t
-          mod <- case from ^. term . def of
-            Module mod -> Just mod
-            __________ -> Nothing
-          let foundLocally = do
-                void (NameSpace.lookup symbol (mod ^. contents))
-                Relocated Public (from ^. qualifedName) (mod ^. contents)
-                  |> pure
-          --
-          foundLocally <|> includeCheck mod
-        includeCheck mod =
+        findSymbolInInclude excludeSet nameSymb
+          | not (nameSymb `Set.member` excludeSet) = do
+            from <- lookup nameSymb t
+            mod <- case from ^. term . def of
+              Module mod -> Just mod
+              __________ -> Nothing
+            let foundLocally = do
+                  void (NameSpace.lookup symbol (mod ^. contents))
+                  Relocated Public (from ^. qualifedName) (mod ^. contents)
+                    |> pure
+            --
+            foundLocally <|> includeCheck (Set.insert nameSymb excludeSet) mod
+          | otherwise =
+            Nothing
+        includeCheck set mod =
           -- lazyness of asum saves us here, in terms of overhead
-          ( mod ^. includeList
-              >>| (findSymbolInInclude)
-          )
+          mod ^. includeList
+            >>| findSymbolInInclude set
             |> asum @_ @Maybe
 
 -- couldn't figure out how to fold lenses
@@ -737,6 +742,7 @@ currentRecordContents ::
   Functor f => (NameSpace.T Info -> f (NameSpace.T Info)) -> T -> f T
 currentRecordContents = _currentNameSpace . record . contents
 
+currentRecord :: Functor f => (Module -> f Module) -> T -> f T
 currentRecord = _currentNameSpace . record
 
 -- | @qualifySymbol@ returns the qualified name of the symbol. It does

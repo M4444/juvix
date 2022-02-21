@@ -235,21 +235,49 @@ includeResolvesCorrectly =
             True
               T.@=? isJust
                 (ctx Context.!? "Shadows.Z'ha'dum.Z'ha'dum.Z'ha'dum.mr-morden")
+        ),
+      T.testCase
+        "Including self does not loop forever"
+        ( do
+            ctx <- runBasic
+            let includeSelf =
+                  Context.includeMod (Context.addTopName ("Londo" :| ["Mollari", "Centauri"])) ctx
+            True
+              T.@=? isNothing
+                (includeSelf Context.!? "foo")
+        ),
+      T.testCase
+        "A includes B, B includes A, does not loop forever"
+        ( do
+            ctx <- runBasic
+            let includeShadows =
+                  Context.includeMod (Context.addTopName "Shadows") ctx
+            Right swap <-
+              Context.switchNameSpace "Shadows" includeShadows
+            let includeLondo =
+                  Context.includeMod (Context.addTopName "Londo.Mollari.Centauri") swap
+            -- Centauri includes Shadows. And Shadows include Centauri
+            -- thus when we look for the next symbols, we should be
+            -- bouncing between both of them, a check terminates this
+            True
+              T.@=? isNothing
+                (includeLondo Context.!? "foo")
         )
     ]
-  where
-    runBasic = do
-      created <- Context.empty (pure "Shadows")
-      --
-      let added =
-            Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
-      --
-      Right swap <-
-        Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) added
-      --
-      let included = Context.includeMod (Context.addTopName "Shadows") swap
-      --
-      pure included
+
+runBasic :: IO Context.T
+runBasic = do
+  created <- Context.empty (pure "Shadows")
+  --
+  let added =
+        Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
+  --
+  Right swap <-
+    Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) added
+  --
+  let included = Context.includeMod (Context.addTopName "Shadows") swap
+  --
+  pure included
 
 runCrazy :: IO Context.T
 runCrazy = do
