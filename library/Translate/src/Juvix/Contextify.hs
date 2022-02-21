@@ -78,7 +78,7 @@ contextify t@((sym, _) :| _) = do
 resolveOpens ::
   (MonadIO m, HasThrow "left" Context.PathError m) =>
   (Context.T, [ResolveOpen.PreQualified]) ->
-  (Context.NameSymbol, [Sexp.T]) ->
+  (NameSymbol.T, [Sexp.T]) ->
   m (Context.T, [ResolveOpen.PreQualified])
 resolveOpens (ctx', openList) (sym, xs) = do
   ctx <- ContextSexp.run ctx' (sym, xs)

@@ -56,10 +56,10 @@ data PreQualified = Pre
 data Error
   = UnknownModule NameSymbol.T
   | CantResolveModules [NameSymbol.T]
-  | OpenNonModule (Set.HashSet Context.NameSymbol)
+  | OpenNonModule (Set.HashSet NameSymbol.T)
   | AmbiguousSymbol Symbol
   | ModuleConflict Symbol [NameSymbol.T]
-  | IllegalModuleSwitch Context.NameSymbol
+  | IllegalModuleSwitch NameSymbol.T
   deriving (Show, Eq)
 
 data Resolve = Res
@@ -185,20 +185,20 @@ hashMaptoSTMMap pureMap stmMap =
 grabInScopeNames ::
   HasThrow "left" Error m => Context.T -> NameSymbol.T -> m (NameSpace.T Context.Info)
 grabInScopeNames ctx name =
-  case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Info _ (Context.Module rec')) ->
+  case Context.extractValue <$> Context.tryLookup name ctx of
+    Right (Context.Info _ (Context.Module rec')) ->
       pure (rec' ^. Context.contents)
-    val ->
-      throw @"left" (UnknownModule (Context.qualifyName name ctx))
+    Left cantResolve ->
+      throw @"left" (UnknownModule (Context.pathUntilNoResolve cantResolve))
 
 grabQualifiedMap ::
   HasThrow "left" Error m => Context.T -> NameSymbol.T -> m Context.SymbolMap
 grabQualifiedMap ctx name =
-  case Context.extractValue <$> Context.lookup name ctx of
-    Just (Context.Info _ (Context.Module rec')) ->
+  case Context.extractValue <$> Context.tryLookup name ctx of
+    Right (Context.Info _ (Context.Module rec')) ->
       pure (rec' ^. Context.qualifiedMap)
-    _ ->
-      throw @"left" (UnknownModule (Context.qualifyName name ctx))
+    Left cantResolve ->
+      throw @"left" (UnknownModule (Context.pathUntilNoResolve cantResolve))
 
 -- | @removeRedundantQualifieds@ takes a qualified and removes any
 -- redundant imports it may contain

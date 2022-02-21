@@ -28,7 +28,7 @@ run,
   contextify ::
     MonadIO m =>
     Context.T ->
-    (Context.NameSymbol, [Sexp.T]) ->
+    (NameSymbol.T, [Sexp.T]) ->
     m (Either Context.PathError Type.PassSexp)
 contextify cont (nameSymb, xs) = do
   newNamespace <- liftIO $ Context.switchNameSpace nameSymb cont

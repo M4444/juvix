@@ -6,8 +6,61 @@
 module Juvix.Context
   ( module Juvix.Context.Types,
     module Juvix.Context.Precedence,
-    -- leave the entire module for now, so lenses can be exported
-    module Juvix.Context,
+
+    -- * Creation
+    Juvix.Context.empty,
+    emptyRecord,
+
+    -- * Lookup
+    lookup,
+    tryLookup,
+    (!?),
+    CantResolve(..),
+
+    -- * Functions on Info
+    lookupInfoSexp,
+    lookupInfo,
+    precedenceOf,
+
+    -- * Local Function
+
+    -- ** Core API
+    add,
+    lookupCurrent,
+    remove,
+    includeMod,
+
+    -- ** Additional Functions
+    markPrivate,
+    publicNames,
+
+    -- * Glocal Functions
+
+    -- ** Core API
+    inNameSpace,
+    switchNameSpace,
+    addGlobal,
+    removeGlobal,
+    addPathWithValue,
+
+    -- ** Extra API
+    persistDefinition,
+    AmbiguousDef(..),
+
+    -- * Dealing with Top Level Naming
+    addTopName,
+    removeTopName,
+    qualifySymbol,
+
+    -- * Table Operations
+    Table(..),
+    nameFromTable,
+    nameSpaceFromTableErr,
+    currentRecordContents,
+
+    -- * Operations on From
+    extractValue,
+    -- * NameSymbol Operations
   )
 where
 
@@ -24,17 +77,6 @@ import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 import Prelude (error)
-
---------------------------------------------------------------------------------
--- In lieu of not being able to export namespaces
---------------------------------------------------------------------------------
-type NameSymbol = NameSymbol.T
-
-nameSymbolToSymbol :: NameSymbol.T -> Symbol
-nameSymbolToSymbol = NameSymbol.toSymbol
-
-nameSymbolFromSymbol :: Symbol -> NameSymbol.T
-nameSymbolFromSymbol = NameSymbol.fromSymbol
 
 --------------------------------------------------------------------------------
 -- Functions Related to Resolution Logic
@@ -352,7 +394,8 @@ onTableContents _ otherCases = otherCases
 -- Body
 --------------------------------------------------------------------------------
 
--- |
+-- | @empty@ creates a starting context with the @NameSymbol.T@ being
+-- the starting module.
 empty :: NameSymbol.T -> IO T
 empty sym = do
   empty <- atomically fullyEmpty
@@ -371,9 +414,6 @@ empty sym = do
             topLevelMap = HashMap.empty,
             reverseLookup = HashMap.empty
           }
-
-qualifyName :: NameSymbol.T -> T -> NameSymbol.T
-qualifyName sym T {currentName} = currentName <> sym
 
 emptyRecord :: STM Module
 emptyRecord = do
@@ -426,6 +466,7 @@ persistDefinition T {reverseLookup} moduleName name =
 -- Functions on the Current NameSpace
 --------------------------------------------------------------------------------
 
+-- | @lookupCurrent@ Looks up a name in the current module only.
 lookupCurrent :: NameSymbol.T -> T -> Maybe From
 lookupCurrent tm = rightToMaybe . tryLookupGen False tm
 
@@ -434,28 +475,27 @@ lookupCurrent tm = rightToMaybe . tryLookupGen False tm
 add :: NameSpace.From Symbol -> Info -> T -> T
 add sy term = over currentRecordContents (NameSpace.insert sy term)
 
-addNoMeta :: NameSpace.From Symbol -> Definition -> T -> T
-addNoMeta sy = add sy . Info mempty
-
+-- | @remove@ removes the supplied name from the Context.
 remove ::
   NameSpace.From Symbol -> T -> T
 remove sy = over currentRecordContents (NameSpace.remove sy)
 
+-- | @markPrivate@ marks the given @Symbol@ as Private.
 markPrivate ::
   Symbol -> T -> T
 markPrivate sy = over currentRecordContents (NameSpace.markPrivate sy)
 
+-- | @publicNames@ lists the public names of the current module
 publicNames :: T -> [Symbol]
 publicNames t =
   let NameSpace.List {publicL} = toList t
    in fst <$> publicL
 
+-- | @publicNames@ lists all the names of the current module
 toList :: T -> NameSpace.List Info
 toList t = NameSpace.toList (t ^. currentRecordContents)
 
-topList :: T -> [(Symbol, Info)]
-topList T {topLevelMap} = HashMap.toList topLevelMap
-
+-- | @includeMod@ Includes the given module to the current namespace
 includeMod :: NameSymbol.T -> T -> T
 includeMod nameSymbol =
   over (_currentNameSpace . record . includeList) (nameSymbol :)
@@ -510,15 +550,26 @@ switchNameSpace newNameSpace t@T {currentName}
       Nothing -> Lib.Left (VariableShared newNameSpace)
       Just ct -> Lib.Right ct
 
+-- | @tryLookup@ Tries to lookup the given @NameSymbol.T@ from the
+-- Context. If the lookup fails, the last known module is dumped along
+-- with what symbol path could not be resolved.
 tryLookup :: NameSymbol.T -> T -> Either CantResolve From
 tryLookup = tryLookupGen True
 
+-- | @lookup@ acts like @tryLookup@ but does not dump any path
+-- information
 lookup :: NameSymbol.T -> T -> Maybe From
 lookup nm = rightToMaybe . tryLookup nm
 
+-- | @!?@ is just an alias for lookup
 (!?) :: T -> NameSymbol.T -> Maybe From
 (!?) = flip lookup
 
+-- | @addGlobal@ Adds the given @Info@ to the path supplied by
+-- @NameSymbol.T@. @addGlobal@ will try to figure out the best place
+-- to add the definition given the rules of scoping. Note that this
+-- module does not create nested pathing, so if the module does not
+-- exist, this function acts as the identity.
 addGlobal :: NameSymbol.T -> Info -> T -> T
 addGlobal name info t =
   case tryModifyPath name t of
@@ -545,6 +596,9 @@ addGlobal name info t =
     insertPoint onPoint =
       over def (onTableContents (insert' onPoint info))
 
+-- | @removeGlobal@ removes the given @NameSymbol.T@ from the
+-- Context. This should remove the symbol found via !?. If nothing is
+-- removed the original context is given back.
 removeGlobal :: NameSymbol.T -> T -> T
 removeGlobal name t =
   case tryModifyPath name t of
@@ -566,6 +620,10 @@ removeGlobal name t =
     removePoint onPoint =
       over def (onTableContents (remove' onPoint))
 
+-- | @addPathWithValue@ acts like @addGlobal@ however, instead of just
+-- acting like the identify when the module above the term is found,
+-- it will add the path. This may result in a failure if the path is
+-- already used by another module and or term.
 addPathWithValue :: NameSymbol.T -> Info -> T -> IO (Either PathError T)
 addPathWithValue name info t =
   case tryModifyPath name t of
@@ -667,32 +725,6 @@ precedenceOf info = lookupInfo info Info.precedence
 -------------------------------------------------------------------------------
 
 ----------------------------------------
--- Types for Generalized Helpers
-----------------------------------------
-
-data Stage b
-  = -- | 'Final' signifies the last symbol that we
-    -- pursue in updating a structure
-    Final b
-  | -- | 'Continue' signifies that there are parts of
-    -- the namespace that we can still continue down
-    Continue b
-
-data Return
-  = -- | 'GoOn' signifies that we should continue
-    -- going down records
-    GoOn InfoRecord
-  | -- | 'Abort' signifies that we should cancel
-    -- the changes on the map and
-    Abort
-  | -- | 'UpdateNow' signifies that we should
-    -- update the context with the current value
-    UpdateNow Info
-  | -- | 'RemoveNow' signifies that we show remove
-    -- the definition at this level
-    RemoveNow
-
-----------------------------------------
 -- Type Class for Genralized Helpers
 ----------------------------------------
 
@@ -759,11 +791,3 @@ qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbol _ Outside = addTopName
 qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
 qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
-
--- | @overMaybe@ acts like @over@/@traverseOf@ in lenses, however the
--- function may return a maybe instead of the value, and if that's the
--- case, then the value is not set.
-overMaybe ::
-  Monad m => (b -> m (Maybe b)) -> Lens s s b b -> s -> m (Maybe s)
-overMaybe f field t =
-  f (t ^. field) >>| fmap (\ret -> set field ret t)
