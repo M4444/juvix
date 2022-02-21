@@ -28,6 +28,10 @@ import qualified Juvix.Backends.LLVM.Pipeline as LLVM
 import qualified Juvix.Backends.LLVM.Primitive as LLVM.Prim
 import qualified Juvix.Backends.Michelson.Parameterisation as Michelson.Param
 import qualified Juvix.Backends.Michelson.Pipeline as Michelson
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
+import qualified Juvix.BerlinPipeline.Meta as Meta
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Contextify as Contextify
@@ -42,6 +46,7 @@ import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Types as Types
 import qualified Juvix.Desugar as Desugar
+import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.HashMap as Map
@@ -180,36 +185,57 @@ sexp2 =
 -- DESUGAR PHASE
 --------------------------------------------------------------------------------
 
+-- | This is like Desugar but our pipeline looks like
+-- LISP AST ⟶ De-sugared LISP
+desugarLisp :: [Sexp.T] -> IO [Sexp.T]
+desugarLisp xs = do
+  let workingEnv = xs >>| Pipeline.Sexp |> Pipeline.WorkingEnv
+      startingEnv = (Context.empty "JU-USER" :: IO Context.T) >>| workingEnv
+
+  Pipeline.CIn languageData surrounding <-
+    startingEnv
+      >>= Pipeline.Env.run pipeline
+        . Pipeline.emptyInput
+
+  let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
+      errors = BerlinPipeline.Feedback.getErrors feedback
+
+  case errors of
+    [] -> languageData ^. Pipeline.currentExp |> sexps |> pure
+    es -> Feedback.fail . toS . Pretty.pShowNoColor $ es
+  where
+    sexps xs = [s | (Pipeline.Sexp s) <- xs]
+    pipeline = Pipeline.Env.stopAt "Context.initContext" >> Desugar.Env.eval
+
 -- | Here is our second stop of the compiler, we now run the desugar passes
 -- you may want to stop here if you want to see the syntax before we
 -- get dirtier output from everything being in the context
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP
-desugar :: ByteString -> [Sexp.T]
-desugar = Desugar.op . sexp
-
--- | This is like Desugar but our pipeline looks like
--- LISP AST ⟶ De-sugared LISP
-desugarLisp :: [Sexp.T] -> [Sexp.T]
-desugarLisp = Desugar.op
+desugar :: ByteString -> IO [Sexp.T]
+desugar = desugarLisp . sexp
 
 -- | Here we extend the idea of desugar but we run it on the file we
 -- care about.
 -- File ⟶ … ⟶ De-sugared LISP
 desugarFile :: FilePath -> IO [Sexp.T]
-desugarFile = fmap desugarLisp . sexpFile
+desugarFile = (desugarLisp =<<) . sexpFile
 
 -- | @desugarLibrary@ is run on the library to get the s-expression
 -- Prelude ⟶ … ⟶ De-sugared LISP
 desugarLibrary :: Options primTy primVal -> IO [(NameSymb.T, [Sexp.T])]
 desugarLibrary def = do
   lib <- sexpLibrary def
-  pure (second desugarLisp <$> lib)
+  traverse f lib
+  where
+    f (name, sexps) = do
+      desugared <- desugarLisp sexps
+      pure (name, desugared)
 
 ----------------------------------------
 -- DESUGAR Examples
 ----------------------------------------
 
-desugar1, desugar2 :: [Sexp.T]
+desugar1, desugar2 :: IO [Sexp.T]
 desugar1 = desugarLisp sexp2
 desugar2 =
   desugar
@@ -231,7 +257,7 @@ contextifyGen ::
   (NonEmpty (NameSymb.T, [Sexp.T]) -> IO b) -> ByteString -> Options primTy primVal -> IO b
 contextifyGen f text def = do
   lib <- desugarLibrary def
-  let dusugared = desugar text
+  dusugared <- desugar text
   f ((currentContextName def, dusugared) :| lib)
 
 -- | @contextifyFileGen@ is like @contextifyGen@ but for the file variants
@@ -544,7 +570,7 @@ printTimeLapse byteString option = do
   let sexpd = sexp byteString
   pShowCompact sexpd
   --
-  let desugared = desugar byteString
+  desugared <- desugar byteString
   pShowCompact desugared
   --
   Right context <- contextifyDesugar byteString option
