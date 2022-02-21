@@ -995,7 +995,7 @@ steps:
   image: 965844283396.dkr.ecr.eu-west-1.amazonaws.com/git:latest
   pull: never
   commands:
-  - sh scripts/deploy-webserver.sh
+  - sh scripts/ci/deploy-webserver.sh
   environment:
     AWS_ACCESS_KEY_ID:
       from_secret: aws_access_key_id
@@ -1047,7 +1047,6 @@ steps:
 trigger:
   event:
   - push
-  - pull_request
   branch:
   - develop
 type: docker
@@ -1058,6 +1057,6 @@ environment:
   STACK_ROOT: /juvix/web/.stack
 ---
 kind: signature
-hmac: 127af81ea3fe56e33249fa7dcf6286232ac65c0a2671d9a7e1f3af2232b34ecb
+hmac: 54fe1c5b3851861a17b5e5fe9d83eba67698d06bac43f6ea28e58571c00114d6
 
 ...
