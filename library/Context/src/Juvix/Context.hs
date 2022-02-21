@@ -73,12 +73,15 @@ determineTableForFirstLookup :: T -> NonEmpty Symbol -> (Table, NameSymbol.T)
 determineTableForFirstLookup t nameSymb =
   let -- Starting Lookup checks
       -------------------------
-      name@(firstSymbol :| _) = removeTopName nameSymb
-      lookupPriv = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
-      -- update to use update on (t ^. currentRecord) :: Module
-      lookupPubi = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
+      name = removeTopName nameSymb
       prefixLook = NameSymbol.takePrefixOf (t ^. _currentName) name
+      --
+      nameWithoutCurrentPath@(firstSymbol :| _) = fromMaybe name prefixLook
+      --
+      lookupPriv = NameSpace.lookupPrivate firstSymbol (t ^. currentRecordContents)
+      lookupPubi = NameSpace.lookup firstSymbol (t ^. currentRecordContents)
       lookupRelo = lookupModulePub t firstSymbol (t ^. currentRecord)
+
       -- relevant map information
       ---------------------------
       nameSpace
@@ -91,8 +94,6 @@ determineTableForFirstLookup t nameSymb =
             -- currentName : Foo.Bar, symbol: Foo.Bar.baz,
             Just __ -> Public
             Nothing -> Outside
-      nameWithoutCurrentPath =
-        fromMaybe name prefixLook
       table =
         case nameSpace of
           Outside -> Global nameSpace (t ^. _topLevelMap)

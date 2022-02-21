@@ -191,6 +191,50 @@ includeResolvesCorrectly =
                     )
                     ctx
             True T.@=? isJust (global Context.!? "vir")
+        ),
+      T.testCase
+        "adding to another module from current works"
+        ( do
+            ctx <- runCrazy
+            let addThis =
+                  Context.addGlobal
+                    "Z'ha'dum.kosh"
+                    ( makeTm @Text
+                        "Mollari: How will this end?\
+                        \ Kosh: In fire."
+                        |> Context.Info mempty
+                    )
+                    ctx
+
+            True
+              T.@=? isJust (addThis Context.!? "Z'ha'dum.kosh")
+              && isJust (addThis Context.!? "Shadows.Z'ha'dum.kosh")
+        ),
+      T.testCase
+        "adding to another module current module indirectly works"
+        ( do
+            ctx <- runCrazy
+            let addThis =
+                  Context.addGlobal
+                    (ctx ^. Context._currentName <> "Z'ha'dum.kosh")
+                    ( makeTm @Text
+                        "Mollari: How will this end?\
+                        \ Kosh: In fire."
+                        |> Context.Info mempty
+                    )
+                    ctx
+
+            True
+              T.@=? isJust (addThis Context.!? "Z'ha'dum.kosh")
+              && isJust (addThis Context.!? "Shadows.Z'ha'dum.kosh")
+        ),
+      T.testCase
+        "indexing to foreign includes properly works"
+        ( do
+            ctx <- runCrazy
+            True
+              T.@=? isJust
+                (ctx Context.!? "Shadows.Z'ha'dum.Z'ha'dum.Z'ha'dum.mr-morden")
         )
     ]
   where
@@ -207,18 +251,27 @@ includeResolvesCorrectly =
       --
       pure included
 
-    runCrazy = do
-      created <- Context.empty (pure "Shadows")
-      --
-      let added =
-            Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
-      --
-      Right swap <-
-        Context.switchNameSpace (Context.addTopName "Shadows.Z'ha'dum") added
-      --
-      let included = Context.includeMod (Context.addTopName "Shadows") swap
-      -- let us include our parent!!!
-      pure included
+runCrazy :: IO Context.T
+runCrazy = do
+  created <- Context.empty (pure "Shadows")
+  --
+  let added =
+        Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
+  --
+  Right swap <-
+    Context.switchNameSpace (Context.addTopName "Shadows.Z'ha'dum") added
+  --
+  let included = Context.includeMod (Context.addTopName "Shadows") swap
+  -- let us include our parent!!!
+  pure included
+
+runCraizer :: IO Context.T
+runCraizer = do
+  preFilled <- runCrazy
+  Right swap <-
+    Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) preFilled
+  let included = Context.includeMod (Context.addTopName "Shadows") swap
+  pure included
 
 privateFromAbove :: T.TestTree
 privateFromAbove =
