@@ -196,6 +196,8 @@ topLevel =
     <|> P.try (Types.Declaration <$> declaration)
     <|> P.try (Types.Effect <$> effParser)
     <|> P.try (Types.Handler <$> handlerParser)
+    <|> P.try (Types.Include <$> include)
+    <|> P.try (Types.Alias <$> alias)
 
 expressionGen' ::
   Parser Types.Expression -> Parser Types.Expression
@@ -281,6 +283,21 @@ infixDeclar = do
 --------------------------------------------------------------------------------
 -- Modules/ Function Gen
 --------------------------------------------------------------------------------
+
+include :: Parser Types.Include
+include = do
+  reserved "include"
+  nameToInclude <- prefixSymbolDotSN
+  pure $ Types.Inc nameToInclude
+
+
+alias :: Parser Types.Alias
+alias = do
+  reserved "alias"
+  aliasName <- prefixSymbolDotSN
+  J.skipLiner J.equals
+  nameToBeAliased <- prefixSymbolDotSN
+  pure $ Types.Ali aliasName nameToBeAliased
 
 functionModStartReserved ::
   ByteString -> (Symbol -> [Types.Arg] -> Parser a) -> Parser a

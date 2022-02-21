@@ -37,6 +37,8 @@ data TopLevel
   | Declaration Declaration
   | TypeClass
   | TypeClassInstance
+  | Include Include
+  | Alias Alias
   deriving (Show, Read, Eq, Generic, NFData)
 
 --------------------------------------------------------------------------------
@@ -51,6 +53,18 @@ data InfixDeclar
   = NonAssoc Symbol Natural
   | AssocL Symbol Natural
   | AssocR Symbol Natural
+  deriving (Show, Read, Eq, Generic, NFData)
+
+--------------------------------------------------------------------------------
+-- Module Includes/Alias
+--------------------------------------------------------------------------------
+
+newtype Include =
+  Inc NameSymb
+  deriving (Show, Read, Eq, Generic, NFData)
+
+data Alias =
+  Ali NameSymb NameSymb
   deriving (Show, Read, Eq, Generic, NFData)
 
 --------------------------------------------------------------------------------
@@ -936,6 +950,38 @@ instance (A.ToJSON a) => A.ToJSON (GuardBody a) where
       )
 
 instance (A.FromJSON a) => A.FromJSON (GuardBody a) where
+  parseJSON =
+    A.genericParseJSON
+      ( A.defaultOptions
+          { A.sumEncoding = A.ObjectWithSingleField
+          }
+      )
+
+instance A.ToJSON Include where
+  toJSON =
+    A.genericToJSON
+      ( A.defaultOptions
+          { A.sumEncoding = A.ObjectWithSingleField
+          }
+      )
+
+instance A.FromJSON Include where
+  parseJSON =
+    A.genericParseJSON
+      ( A.defaultOptions
+          { A.sumEncoding = A.ObjectWithSingleField
+          }
+      )
+
+instance A.ToJSON Alias where
+  toJSON =
+    A.genericToJSON
+      ( A.defaultOptions
+          { A.sumEncoding = A.ObjectWithSingleField
+          }
+      )
+
+instance A.FromJSON Alias where
   parseJSON =
     A.genericParseJSON
       ( A.defaultOptions
