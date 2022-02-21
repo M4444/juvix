@@ -262,6 +262,15 @@ includeResolvesCorrectly =
             True
               T.@=? isNothing
                 (includeLondo Context.!? "foo")
+        ),
+      T.testCase
+        "include multiple modules gives access to names from both modules"
+        ( do
+            ctx <- runMultiple
+            let Just from1 = (ctx Context.!? "mr-morden")
+            "TopLevel.Shadows.mr-morden" T.@=? from1 ^. Context.trueName
+            let Just from2 = (ctx Context.!? "new-mr-morden")
+            "TopLevel.London.new-mr-morden" T.@=? from2 ^. Context.trueName
         )
     ]
 
@@ -464,3 +473,24 @@ topLevelDoesNotMessWithInnerRes =
           |> (\x -> Context.T emptyNameSpace ("Shadows" :| ["Mr-Morden"]) x HashMap.empty)
           |> pure
       inner == Right empt && inner == inner2 T.@=? True
+
+runMultiple :: IO Context.T
+runMultiple = do
+  created <- Context.empty (pure "Shadows")
+  --
+  let added1 =
+        Context.addGlobal "mr-morden" (makeTm @Integer 3 |> Context.Info mempty) created
+  --
+  Right swap1 <-
+    Context.switchNameSpace (Context.addTopName ("London" :| [])) added1
+  --
+  let added2 =
+        Context.addGlobal "new-mr-morden" (makeTm @Integer 3 |> Context.Info mempty) swap1
+  --
+  Right swap2 <-
+    Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) added2
+
+  let included1 = Context.includeMod (Context.addTopName "Shadows") swap2
+  let included2 = Context.includeMod (Context.addTopName "London") included1
+  --
+  pure included2
