@@ -20,7 +20,7 @@
 -- with any stage of the compiler while modifying the source code.
 module Easy where
 
-import Control.Lens ((^.))
+import Control.Lens (view, (^.))
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Backends.LLVM.Parameterization as LLVM.Param
@@ -51,6 +51,7 @@ import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Library.NameSymbol as NameSymb
+import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Parsing as Parsing
 import qualified Juvix.Parsing.Parser as Parser
@@ -188,24 +189,12 @@ sexp2 =
 -- | This is like Desugar but our pipeline looks like
 -- LISP AST ⟶ De-sugared LISP
 desugarLisp :: [Sexp.T] -> IO [Sexp.T]
-desugarLisp xs = do
-  let workingEnv = xs >>| Pipeline.Sexp |> Pipeline.WorkingEnv
-      startingEnv = (Context.empty "JU-USER" :: IO Context.T) >>| workingEnv
-
-  Pipeline.CIn languageData surrounding <-
-    startingEnv
-      >>= Pipeline.Env.run pipeline
-        . Pipeline.emptyInput
-
-  let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
-      errors = BerlinPipeline.Feedback.getErrors feedback
-
-  case errors of
-    [] -> languageData ^. Pipeline.currentExp |> sexps |> pure
-    es -> Feedback.fail . toS . Pretty.pShowNoColor $ es
+desugarLisp xs =
+  runPipelineToStep "Context.initContext" [("JU-USER", xs)]
+    >>| view Pipeline.currentExp
+    >>| sexps
   where
     sexps xs = [s | (Pipeline.Sexp s) <- xs]
-    pipeline = Pipeline.Env.stopAt "Context.initContext" >> Desugar.Env.eval
 
 -- | Here is our second stop of the compiler, we now run the desugar passes
 -- you may want to stop here if you want to see the syntax before we
@@ -640,3 +629,11 @@ definedFunctionsInModule option context =
         |> NameSpace.toList1
         |> fmap fst
     Nothing -> []
+
+runPipelineToStep ::
+  NameSymbol.T ->
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.WorkingEnv
+runPipelineToStep step = Pipeline.runSexpPipeline pipeline
+  where
+    pipeline = Pipeline.Env.stopAt step >> Desugar.Env.eval

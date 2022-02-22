@@ -144,30 +144,12 @@ class HasBackend b where
     toML' ((stdlibDir <>) <$> (prelude : stdlibs b)) b t
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline Context.T
-  toSexp b x = liftIO $ do
-    let workingEnv =
-          x >>= mergeTopLevel
-            >>| Pipeline.Sexp
-            |> Pipeline.WorkingEnv
-        defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
-        startingEnv =
-          (Context.empty defaultNs :: IO Context.T)
-            >>| workingEnv
-
-    Pipeline.CIn languageData surrounding <-
-      startingEnv
-        >>= Pipeline.Env.run Desugar.Env.eval
-          . Pipeline.emptyInput
-
-    let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
-        errors = BerlinPipeline.Feedback.getErrors feedback
-
-    case errors of
-      [] -> languageData ^. Pipeline.context |> pure
-      es -> Feedback.fail . toS . pShowNoColor $ es
+  toSexp _ x =
+    runSexpPipeline Desugar.Env.eval sexps
+      >>| view Pipeline.context
+      |> liftIO
     where
-      inPackage name = Structure.InPackage name |> Sexp.serialize
-      mergeTopLevel (name, exps) = [inPackage name] <> fmap ToSexp.transTopLevel exps
+      sexps = second (fmap ToSexp.transTopLevel) <$> x
 
   toHR ::
     (Show (Ty b), Show (Val b)) =>
@@ -261,3 +243,38 @@ class HasBackend b where
 -- | Write the output code to a given file.
 writeout :: FilePath -> Text -> Pipeline ()
 writeout fout code = liftIO $ T.writeFile fout code
+
+------------------
+-- Helpers --
+------------------
+
+-- | @runSexpPipeline@ Runs a pipeline definition against a list of module Sexps
+-- and evaluates to the resulting WorkingEnv
+runSexpPipeline ::
+  Pipeline.Env.EnvS () ->
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.WorkingEnv
+runSexpPipeline pipeline x = liftIO $ do
+  let workingEnv =
+        x >>= mergeTopLevel
+          >>| Pipeline.Sexp
+          |> Pipeline.WorkingEnv
+      defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
+      startingEnv =
+        (Context.empty defaultNs :: IO Context.T)
+          >>| workingEnv
+
+  Pipeline.CIn languageData surrounding <-
+    startingEnv
+      >>= Pipeline.Env.run pipeline
+        . Pipeline.emptyInput
+
+  let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
+      errors = BerlinPipeline.Feedback.getErrors feedback
+
+  case errors of
+    [] -> languageData |> pure
+    es -> Feedback.fail . toS . pShowNoColor $ es
+  where
+    inPackage name = Structure.InPackage name |> Sexp.serialize
+    mergeTopLevel (name, exps) = [inPackage name] <> exps
