@@ -10,6 +10,5 @@ import qualified Test.Tasty as T
 main :: IO ()
 main = do
   loadStdLibs
-  goldenTests <- Golden.top
   T.defaultMain $
-    T.testGroup "LLVM tests" [goldenTests, Parameterization.top, Codegen.top]
+    T.testGroup "LLVM tests" [Golden.top, Parameterization.top, Codegen.top]

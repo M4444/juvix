@@ -1,0 +1,14 @@
+ShowMod
+    { contents = T
+        { public = fromList
+            [
+                ( "si"
+                , Info
+                    { infoTable = fromList
+                        [ ( "type", 3 ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () 3 ) ) } ) ]
+        , private = fromList [] }
+    , openList = []
+    , qualifiedMap = fromList
+        [ ( "fi", SymInfo { used = NotUsed, mod = "TopLevel" :| [ "B" ] } ) ] }

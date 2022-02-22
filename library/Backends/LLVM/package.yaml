@@ -76,9 +76,10 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - bytestring
+    - data-structures 
+    - filepath
     - llvm
     - tasty
     - tasty-hunit
     - unordered-containers
-    - data-structures
 

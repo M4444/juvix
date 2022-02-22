@@ -1,0 +1,12 @@
+[
+    ( "open" "A" )
+,
+    ( "open" "B" )
+,
+    ( ":defsig" "fi" 3 )
+,
+    ( ":defun-match" "fi" ( () 3 ) )
+,
+    ( ":defsig" "main" 3 )
+,
+    ( ":defun-match" "main" ( () "fi" ) ) ]

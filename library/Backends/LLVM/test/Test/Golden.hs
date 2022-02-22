@@ -17,21 +17,27 @@ import Juvix.Pipeline (Pipeline)
 import qualified Juvix.Pipeline as Pipeline
 import Test.Tasty
 import Prelude (String)
+import System.FilePath ((</>))
 
 --------------------------------------------------------------------------------
 -- Parse contracts (Golden tests)
 --------------------------------------------------------------------------------
 
 juvixRootPath :: FilePath
-juvixRootPath = "../../../"
+juvixRootPath = "../../.."
 
 withJuvixRootPath :: FilePath -> FilePath
-withJuvixRootPath p = juvixRootPath <> p
+withJuvixRootPath p = juvixRootPath </> p
 
-top :: IO TestTree
+testFilesPos :: FilePath
+testFilesPos = "test/examples/positive/llvm"
+
+testFilesNeg :: FilePath
+testFilesNeg = "test/examples/negative/llvm"
+
+top :: TestTree
 top =
   testGroup "LLVM golden tests"
-    <$> sequence
       [ typecheckTests,
         compileTests,
         hrTests,
@@ -39,28 +45,26 @@ top =
         erasedTests
       ]
 
-compileTests :: IO TestTree
+compileTests :: TestTree
 compileTests =
   testGroup "LLVM compile"
-    <$> sequence
-      [ compileTestPos "test/examples/positive/llvm",
-        compileTestNeg "test/examples/negative/llvm/compile"
+      [ compileTestPos testFilesPos,
+        compileTestNeg $ testFilesNeg </> "compile"
       ]
   where
-    compileTestPos = llvmGoldenTests ".llvm" (expectSuccess' pShowText . compile)
-    compileTestNeg = llvmGoldenTests ".llvm" (expectFailure . compile)
+    compileTestPos = llvmGoldenTestsPos ".llvm" (expectSuccess' pShowText . compile)
+    compileTestNeg = llvmGoldenTestsNeg [] ".llvm" (expectFailure . compile)
     compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheckFile file
 
-typecheckTests :: IO TestTree
+typecheckTests :: TestTree
 typecheckTests =
   testGroup "LLVM typecheck"
-    <$> sequence
-      [ typecheckTestPos "test/examples/positive/llvm",
-        typecheckTestNeg "test/examples/negative/llvm/typecheck"
+      [ typecheckTestPos testFilesPos,
+        typecheckTestNeg $ testFilesNeg </> "typecheck"
       ]
   where
-    typecheckTestPos = llvmGoldenTests ".typecheck" (expectSuccess' pShowDefault . typecheckFile)
-    typecheckTestNeg = llvmGoldenTests ".typecheck" (expectFailure . typecheckFile)
+    typecheckTestPos = llvmGoldenTestsPos ".typecheck" (expectSuccess' pShowDefault . typecheckFile)
+    typecheckTestNeg = llvmGoldenTestsNeg fileNamesTypecheckNeg ".typecheck" (expectFailure . typecheckFile)
 
 typecheckFile ::
   FilePath ->
@@ -70,16 +74,15 @@ typecheckFile file = do
   context <- Pipeline.parse LLVM.BLLVM contract
   Pipeline.typecheck @LLVM.BLLVM context
 
-hrTests :: IO TestTree
+hrTests :: TestTree
 hrTests =
   testGroup "LLVM HR"
-    <$> sequence
-      [ hrTestsPos "test/examples/positive/llvm",
-        hrTestsNeg "test/examples/negative/llvm/hr"
+      [ hrTestsPos testFilesPos,
+        hrTestsNeg $ testFilesNeg </> "hr"
       ]
   where
-    hrTestsPos = llvmGoldenTests ".hr" (expectSuccess' pShowDefault . pipelineToHR)
-    hrTestsNeg = llvmGoldenTests ".hr" (expectFailure . pipelineToHR)
+    hrTestsPos = llvmGoldenTestsPos ".hr" (expectSuccess' pShowDefault . pipelineToHR)
+    hrTestsNeg = llvmGoldenTestsNeg [] ".hr" (expectFailure . pipelineToHR)
 
 pipelineToHR file =
   do
@@ -90,27 +93,25 @@ pipelineToHR file =
 
 pipelineToIR file = pipelineToHR file >>= Pipeline.toIR
 
-irTests :: IO TestTree
+irTests :: TestTree
 irTests =
   testGroup "LLVM IR"
-    <$> sequence
-      [ hrTestsPos "test/examples/positive/llvm",
-        hrTestsNeg "test/examples/negative/llvm/ir"
+      [ hrTestsPos testFilesPos,
+        hrTestsNeg $ testFilesNeg </> "ir"
       ]
   where
-    hrTestsPos = llvmGoldenTests ".ir" (expectSuccess' pShowDefault . pipelineToIR)
-    hrTestsNeg = llvmGoldenTests ".ir" (expectFailure . pipelineToIR)
+    hrTestsPos = llvmGoldenTestsPos ".ir" (expectSuccess' pShowDefault . pipelineToIR)
+    hrTestsNeg = llvmGoldenTestsNeg [] ".ir" (expectFailure . pipelineToIR)
 
-erasedTests :: IO TestTree
+erasedTests :: TestTree
 erasedTests =
   testGroup "LLVM Erased"
-    <$> sequence
-      [ hrTestsPos "test/examples/positive/llvm",
-        hrTestsNeg "test/examples/negative/llvm/erased"
+      [ hrTestsPos testFilesPos,
+        hrTestsNeg $ testFilesNeg </> "erased"
       ]
   where
-    hrTestsPos = llvmGoldenTests ".erased" (expectSuccess' pShowDefault . toErased)
-    hrTestsNeg = llvmGoldenTests ".erased" (expectFailure . toErased)
+    hrTestsPos = llvmGoldenTestsPos ".erased" (expectSuccess' pShowDefault . toErased)
+    hrTestsNeg = llvmGoldenTestsNeg [] ".erased" (expectFailure . toErased)
     toErased file =
       do
         liftIO (readFile file)
@@ -120,12 +121,49 @@ erasedTests =
         >>= Pipeline.toIR
         >>= Pipeline.toErased LLVM.llvm
 
-llvmGoldenTests ::
+fileNamesPos :: [FilePath]
+fileNamesPos =
+  [ "Dependencies/D.ju"
+  , "main/MainConst.ju"
+  , "main/MainMultiArgs.ju"
+  , "Const.ju"
+  , "ConstAddPrim.ju"
+  , "HelloWorld.ju"
+  , "Instructions.ju"
+  , "MainApply.ju"
+  , "MainLambda.ju"
+  , "Nested.ju"
+  , "StringsWithClosures.ju"
+  ]
+
+fileNamesTypecheckNeg :: [FilePath]
+fileNamesTypecheckNeg = 
+  [ "typecheck/Datatypes/TooManyArguments.ju"
+  ]
+
+llvmGoldenTestsPos ::
   [Char] ->
   (FilePath -> IO NoQuotesText) ->
   FilePath ->
-  IO TestTree
-llvmGoldenTests ext action (withJuvixRootPath -> p) = discoverAndRunGoldenTests identity ext getGolden action p
+  TestTree
+llvmGoldenTestsPos = llvmGoldenTests fileNamesPos
+
+llvmGoldenTestsNeg ::
+  [FilePath] ->
+  [Char] ->
+  (FilePath -> IO NoQuotesText) ->
+  FilePath ->
+  TestTree
+llvmGoldenTestsNeg = llvmGoldenTests
+
+llvmGoldenTests ::
+  [FilePath] ->
+  [Char] ->
+  (FilePath -> IO NoQuotesText) ->
+  FilePath ->
+  TestTree
+llvmGoldenTests fileNames ext action (withJuvixRootPath -> llvmRootPath) = 
+  runGoldenTests identity ext getGolden action llvmRootPath fileNames
 
 compile :: FilePath -> Feedback.FeedbackT [] String IO Text
 compile file = LLVM.compileProgram . ErasedAnn.toRaw =<< typecheckFile file

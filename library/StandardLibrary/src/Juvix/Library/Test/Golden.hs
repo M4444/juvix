@@ -62,6 +62,7 @@ import qualified Test.Tasty.Silver.Advanced as T
 import qualified Text.Pretty.Simple as Pretty
 import Text.Read (Read (..))
 import qualified Prelude (error, show)
+import Debug.Pretty.Simple (pTrace)
 
 type FileExtension = String
 
@@ -126,8 +127,6 @@ runGoldenTests ::
   (Show a, Eq a) =>
   -- | pretty show function for output code
   (a -> NoQuotesText) ->
-  -- | the input file extensions
-  FileExtension ->
   -- | the output file extension
   FileExtension ->
   -- | get golden
@@ -139,8 +138,8 @@ runGoldenTests ::
   -- | the names of the files to test
   [FilePath] ->
   TestTree
-runGoldenTests prettyShow exts_in ext_out getGolden action path filenames =
-  testGroup path $ map (mkGoldenTest prettyShow getGolden action ext_out) ((<> exts_in) <$> filenames)
+runGoldenTests prettyShow ext_out getGolden action path filenames =
+  testGroup path $ map (mkGoldenTest prettyShow getGolden action ext_out)  ((path FP.</>) <$> filenames)
 
 -- | Discover files from an extension and a path and run golden tests
 discoverAndRunGoldenTests ::
@@ -176,8 +175,8 @@ mkGoldenTest ::
   -- | the file path of the input file
   FilePath ->
   TestTree
-mkGoldenTest prettyShow getGolden action ext pathToFile =
-  T.goldenTest1
+mkGoldenTest prettyShow getGolden action ext pathToFile = 
+  pTrace pathToFile $ T.goldenTest1
     outFilename
     (getGolden outfile)
     (action pathToFile)

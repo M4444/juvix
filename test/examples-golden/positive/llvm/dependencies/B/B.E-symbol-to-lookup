@@ -1,0 +1,13 @@
+ShowMod
+    { contents = T
+        { public = fromList
+            [
+                ( "fi"
+                , Info
+                    { infoTable = fromList
+                        [ ( "type", 5 ) ]
+                    , infoDef = Term
+                        ( ":lambda-case" ( () 5 ) ) } ) ]
+        , private = fromList [] }
+    , openList = []
+    , qualifiedMap = fromList [] }
