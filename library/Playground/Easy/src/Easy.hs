@@ -190,7 +190,7 @@ sexp2 =
 -- LISP AST ⟶ De-sugared LISP
 desugarLisp :: [Sexp.T] -> IO [Sexp.T]
 desugarLisp xs =
-  runPipelineToStep "Context.initContext" [("JU-USER", xs)]
+  runPipelineToStep "Context.initContext" [("Juvix-User", xs)]
     >>| view Pipeline.currentExp
     >>| sexps
   where
@@ -269,7 +269,9 @@ contextifyNoResolve ::
   ByteString ->
   Options primTy primVal ->
   IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
-contextifyNoResolve = contextifyGen Contextify.contextify
+contextifyNoResolve bs def = do
+  ctx <- Context.empty "Juvix-User"
+  contextifyGen (Desugar.Env.contextify ctx) bs def
 
 -- | We do @contextifyNoResolve@ but on a file instead
 -- File ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP, Resolves
@@ -277,7 +279,9 @@ contextifyNoResolveFile ::
   FilePath ->
   Options primTy primVal ->
   IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
-contextifyNoResolveFile = contextifyFileGen Contextify.contextify
+contextifyNoResolveFile bs def = do
+  ctx <- Context.empty "Juvix-User"
+  contextifyFileGen (Desugar.Env.contextify ctx) bs def
 
 ----------------------------------------
 -- CONTEXTIFY Examples
@@ -312,13 +316,17 @@ contextifyNoResolve1Pretty = do
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified
 contextify ::
   ByteString -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
-contextify = contextifyGen Contextify.fullyContextify
+contextify bs def = do
+  ctx <- Context.empty "Juvix-User"
+  contextifyGen (Desugar.Env.fullyContextify ctx) bs def
 
 -- | we do @contextify@ but on a file instead
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified
 contextifyFile ::
   FilePath -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
-contextifyFile = contextifyFileGen Contextify.fullyContextify
+contextifyFile bs def = do
+  ctx <- Context.empty "Juvix-User"
+  contextifyFileGen (Desugar.Env.fullyContextify ctx) bs def
 
 --------------------------------------------------------------------------------
 -- Context Resolve Phase
@@ -327,26 +335,40 @@ contextifyFile = contextifyFileGen Contextify.fullyContextify
 -- | Here is where we want to stop when we want to see what the context
 -- passes have done, and the final form before we run CotnexttoParsing
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified ⟶ Context Desugar
+
 contextifyDesugar ::
   ByteString ->
   Options primTy primVal ->
-  IO (Either Contextify.ResolveErr Context.T)
-contextifyDesugar = contextifyGen Contextify.op
+  IO Context.T
+contextifyDesugar bs = contextifyDesugarSexps (sexp bs)
 
 -- | we do @contextifyDesugar@ but on a file instead
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified ⟶ Context Desugar
 contextifyDesugarFile ::
   FilePath ->
   Options primTy primVal ->
-  IO (Either Contextify.ResolveErr Context.T)
-contextifyDesugarFile = contextifyFileGen Contextify.op
+  IO Context.T
+contextifyDesugarFile fp def = do
+  s <- sexpFile fp
+  contextifyDesugarSexps s def
+
+contextifyDesugarSexps ::
+  [Sexp.T] ->
+  Options primTy primVal ->
+  IO Context.T
+contextifyDesugarSexps xs def = do
+  lib <- sexpLibrary def
+  ([("Juvix-User", xs)] <> lib)
+    |> runFullPipeline
+    >>| view Pipeline.context
+
 
 ----------------------------------------
 -- CONTEXTIFY Examples
 ----------------------------------------
 contexify1 :: IO ()
 contexify1 = do
-  Right ctx <- contextifyDesugar "let foo = 3" defMichelson
+  ctx <- contextifyDesugar "let foo = 3" defMichelson
   printDefModule defMichelson ctx
 
 --------------------------------------------------------------------------------
@@ -361,7 +383,7 @@ coreify ::
   Options primTy primVal ->
   IO (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T primTy primVal)
 coreify juvix options = do
-  Right ctx <- contextifyDesugar juvix options
+  ctx <- contextifyDesugar juvix options
   case ToHR.contextToHR ctx (param options) of
     Left err -> do
       pShowCompact err
@@ -377,7 +399,7 @@ coreifyFile ::
   Options primTy primVal ->
   IO (Core.PatternMap Core.GlobalName, Core.RawGlobals IR.T primTy primVal)
 coreifyFile juvix options = do
-  Right ctx <- contextifyDesugarFile juvix options
+  ctx <- contextifyDesugarFile juvix options
   case ToHR.contextToHR ctx (param options) of
     Left err -> do
       pShowCompact err
@@ -562,7 +584,7 @@ printTimeLapse byteString option = do
   desugared <- desugar byteString
   pShowCompact desugared
   --
-  Right context <- contextifyDesugar byteString option
+  context <- contextifyDesugar byteString option
   printDefModule option context
   --
   let currentDefinedItems = definedFunctionsInModule option context
@@ -594,7 +616,7 @@ printTimeLapseFile file option = do
   desugared <- desugarFile file
   pShowCompact desugared
   --
-  Right context <- contextifyDesugarFile file option
+  context <- contextifyDesugarFile file option
   printDefModule option context
   --
   let currentDefinedItems = definedFunctionsInModule option context
@@ -637,3 +659,8 @@ runPipelineToStep ::
 runPipelineToStep step = Pipeline.runSexpPipeline pipeline
   where
     pipeline = Pipeline.Env.stopAt step >> Desugar.Env.eval
+
+runFullPipeline ::
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.WorkingEnv
+runFullPipeline = Pipeline.runSexpPipeline Desugar.Env.eval
