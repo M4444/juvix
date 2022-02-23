@@ -128,10 +128,10 @@ box = annotate' AValCon "⌷"
 
 -- | Print a @NameSymbol.‌'NameSymbol.T'@ in dotted format and highlighted
 -- as a name.
-name :: NameSymbol.T -> Doc
-name = annotate' AName . string . unintern . NameSymbol.toSymbol
+name :: PrettyText sym => sym -> Doc
+name = annotate' AName . noAnn . prettyT
 
-pname :: Applicative f => NameSymbol.T -> f Doc
+pname :: (Applicative f, PrettyText sym) => sym -> f Doc
 pname = pure . name
 
 -- TODO: Instead of * better if we use "υ"
@@ -175,7 +175,7 @@ data Bind = PI | SIG
 data Binder tm = Binder
   { bBinder :: Bind,
     bUsage :: Usage.T,
-    bName :: NameSymbol.T,
+    bName :: Symbol,
     bType :: tm
   }
 
@@ -229,8 +229,8 @@ ppUsage = fmap (annotate' AValCon . noAnn) . pretty'
 --     blah
 -- @
 ppLams ::
-  (PrettySyntax tm, Ann tm ~ PPAnn, PrecReader m) =>
-  ([NameSymbol.T], tm) ->
+  (PrettyText sym, PrettySyntax tm, Ann tm ~ PPAnn, PrecReader m) =>
+  ([sym], tm) ->
   m Doc
 ppLams (names, body) =
   hangA (2 * indentWidth) (pure header) (ppOuter body)
@@ -281,13 +281,14 @@ ppPairs =
 -- @
 ppLet ::
   ( PrettySyntax a,
+    PrettyText sym,
     Ann a ~ PPAnn,
     PrettySyntax b,
     Ann b ~ PPAnn,
     PrecReader m
   ) =>
   Usage.T ->
-  NameSymbol.T ->
+  sym ->
   a ->
   b ->
   m Doc

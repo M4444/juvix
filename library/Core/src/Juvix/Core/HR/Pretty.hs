@@ -71,7 +71,7 @@ instance
     PDot s -> hsepA [pure dot, withPrec FunArg $ pretty' s]
     PPrim p -> fmap toPPAnn <$> pretty' p
 
-getLams :: Term primTy primVal -> ([NameSymbol.T], Term primTy primVal)
+getLams :: Term primTy primVal -> ([Symbol], Term primTy primVal)
 getLams = go []
   where
     go acc (Lam x t) = go (x : acc) t

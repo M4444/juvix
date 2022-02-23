@@ -330,3 +330,10 @@ type instance Ann Void = ()
 instance PrettySyntax Void
 
 instance PrettyText Void where prettyT = absurd
+
+
+type instance Ann Symbol = ()
+
+instance PrettySyntax Symbol
+
+instance PrettyText Symbol where prettyT = text . textify

@@ -22,6 +22,9 @@ Core.extendNeutral "Neutral" [] [t|T|] $ \_ _ -> Core.defaultExtNeutral
 
 Core.extendPattern "Pattern" [] [t|T|] $ \_ _ -> Core.defaultExtPattern
 
+type TypeField primTy primVal = Core.TypeField T primTy primVal
+type ValueField primTy primVal = Core.ValField T primTy primVal
+
 usageToGlobal :: Usage.T -> Maybe Core.GlobalUsage
 usageToGlobal Usage.SAny = Just Core.GSAny
 usageToGlobal (Usage.SNat 0) = Just Core.GZero

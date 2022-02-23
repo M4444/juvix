@@ -49,14 +49,14 @@ data Pi = Pi
   deriving (Show)
 
 data Binder = Binder
-  { binderName :: NameSymbol.T,
+  { binderName :: Symbol,
     binderUsage :: Sexp.T,
     binderTerm :: Sexp.T
   }
   deriving (Show)
 
 data Lam = Lam
-  { lamName :: NameSymbol.T,
+  { lamName :: Symbol,
     lamBody :: Sexp.T
   }
   deriving (Show)
@@ -162,15 +162,37 @@ data RawFunClause = RawFunClause
   }
   deriving (Show)
 
-data Field = Field
-  { fieldName :: NameSymbol.T,
-    fieldUsage :: Sexp.T,
-    fieldTy :: Sexp.T
+-- Records
+
+data TyField = TyField
+  { tyFieldName :: Symbol,
+    tyFieldUsage :: Sexp.T,
+    tyFieldTy :: Sexp.T
   }
   deriving (Show)
 
 newtype RecordTy = RecordTy
-  { recordTyFields :: [Field]
+  { recordTyFields :: [TyField]
+  }
+  deriving (Show)
+
+data ValField = ValField
+  { valFieldName :: Symbol,
+    valFieldVal :: Sexp.T
+  }
+  deriving (Show)
+
+newtype Record = Record
+  { recordFields :: [ValField]
+  }
+  deriving (Show)
+
+data RecElim = RecElim
+  { recElimNames   :: [Symbol],
+    recElimSubj    :: Sexp.T,
+    recElimRetName :: Symbol,
+    recElimRetType :: Sexp.T,
+    recElimBody    :: Sexp.T
   }
   deriving (Show)
 
@@ -312,15 +334,15 @@ instance Sexp.Serialize Pi where
 toBinder :: Sexp.T -> Maybe Binder
 toBinder form =
   case form of
-    nameSymbol1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil
-      | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
-        Binder nameSymbol1 sexp2 sexp3 |> Just
+    sym Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil
+      | Just sym <- toSymbol sym ->
+        Binder sym sexp2 sexp3 |> Just
     _ ->
       Nothing
 
 fromBinder :: Binder -> Sexp.T
-fromBinder (Binder nameSymbol1 sexp2 sexp3) =
-  Sexp.list [fromNameSymbol nameSymbol1, sexp2, sexp3]
+fromBinder (Binder sym sexp2 sexp3) =
+  Sexp.list [fromSymbol sym, sexp2, sexp3]
 
 instance Sexp.Serialize Binder where
   deserialize = toBinder
@@ -341,17 +363,17 @@ toLam :: Sexp.T -> Maybe Lam
 toLam form
   | isLam form =
     case form of
-      _nameLam Sexp.:> nameSymbol1 Sexp.:> sexp2 Sexp.:> Sexp.Nil
-        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
-          Lam nameSymbol1 sexp2 |> Just
+      _nameLam Sexp.:> sym Sexp.:> sexp2 Sexp.:> Sexp.Nil
+        | Just sym <- toSymbol sym ->
+          Lam sym sexp2 |> Just
       _ ->
         Nothing
   | otherwise =
     Nothing
 
 fromLam :: Lam -> Sexp.T
-fromLam (Lam nameSymbol1 sexp2) =
-  Sexp.list [Sexp.atom nameLam, fromNameSymbol nameSymbol1, sexp2]
+fromLam (Lam sym sexp2) =
+  Sexp.list [Sexp.atom nameLam, fromSymbol sym, sexp2]
 
 instance Sexp.Serialize Lam where
   deserialize = toLam
@@ -542,25 +564,25 @@ instance Sexp.Serialize Meta where
   serialize = fromMeta
 
 ----------------------------------------
--- Field
+-- TyField
 ----------------------------------------
 
-toField :: Sexp.T -> Maybe Field
-toField form =
+toTyField :: Sexp.T -> Maybe TyField
+toTyField form =
   case form of
-    nameSymbol1 Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil
-      | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
-        Field nameSymbol1 sexp2 sexp3 |> Just
+    sym Sexp.:> sexp2 Sexp.:> sexp3 Sexp.:> Sexp.Nil
+      | Just sym <- toSymbol sym ->
+        TyField sym sexp2 sexp3 |> Just
     _ ->
       Nothing
 
-fromField :: Field -> Sexp.T
-fromField (Field nameSymbol1 sexp2 sexp3) =
-  Sexp.list [fromNameSymbol nameSymbol1, sexp2, sexp3]
+fromTyField :: TyField -> Sexp.T
+fromTyField (TyField sym sexp2 sexp3) =
+  Sexp.list [fromSymbol sym, sexp2, sexp3]
 
-instance Sexp.Serialize Field where
-  deserialize = toField
-  serialize = fromField
+instance Sexp.Serialize TyField where
+  deserialize = toTyField
+  serialize = fromTyField
 
 ----------------------------------------
 -- RecordTy
@@ -578,7 +600,7 @@ toRecordTy form
   | isRecordTy form =
     case form of
       _nameRecordTy Sexp.:> field1
-        | Just field1 <- toField `fromStarList` field1 ->
+        | Just field1 <- toTyField `fromStarList` field1 ->
           RecordTy field1 |> Just
       _ ->
         Nothing
@@ -587,11 +609,92 @@ toRecordTy form
 
 fromRecordTy :: RecordTy -> Sexp.T
 fromRecordTy (RecordTy field1) =
-  Sexp.listStar [Sexp.atom nameRecordTy, fromField `toStarList` field1]
+  Sexp.listStar [Sexp.atom nameRecordTy, fromTyField `toStarList` field1]
 
 instance Sexp.Serialize RecordTy where
   deserialize = toRecordTy
   serialize = fromRecordTy
+
+----------------------------------------
+-- RecElim
+----------------------------------------
+
+nameRecElim :: NameSymbol.T
+nameRecElim = ":rec-elim"
+
+isRecElim :: Sexp.T -> Bool
+isRecElim (Sexp.Cons form _) = Sexp.isAtomNamed form nameRecElim
+isRecElim _ = False
+
+toRecElim :: Sexp.T -> Maybe RecElim
+toRecElim form@(Sexp.List [_, names, subj, retName, retTy, body]) 
+  | isRecElim form = do
+      names <- fromStarList toSymbol names
+      retName <- toSymbol retName
+      pure $ RecElim names subj retName retTy body
+toRecElim _ = Nothing
+
+fromRecElim :: RecElim -> Sexp.T
+fromRecElim (RecElim names' subj retName' retTy body) =
+  Sexp.List [names, subj, retName, retTy, body]
+  where names = toStarList fromSymbol names'
+        retName = fromSymbol retName'
+
+instance Sexp.Serialize RecElim where
+  deserialize = toRecElim
+  serialize = fromRecElim
+
+----------------------------------------
+-- Record
+----------------------------------------
+
+nameRecord :: NameSymbol.T
+nameRecord = ":record"
+
+isRecord :: Sexp.T -> Bool
+isRecord (Sexp.Cons form _) = Sexp.isAtomNamed form nameRecord
+isRecord _ = False
+
+toRecord :: Sexp.T -> Maybe Record
+toRecord form
+  | isRecord form =
+    case form of
+      _nameRecord Sexp.:> field1
+        | Just field1 <- toValField `fromStarList` field1 ->
+          Record field1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromRecord :: Record -> Sexp.T
+fromRecord (Record field1) =
+  Sexp.listStar [Sexp.atom nameRecord, fromValField `toStarList` field1]
+
+instance Sexp.Serialize Record where
+  deserialize = toRecord
+  serialize = fromRecord
+
+----------------------------------------
+-- ValField
+----------------------------------------
+
+toValField :: Sexp.T -> Maybe ValField
+toValField form =
+  case form of
+    sym Sexp.:> sexp2 Sexp.:> Sexp.Nil
+      | Just sym <- toSymbol sym ->
+        ValField sym sexp2 |> Just
+    _ ->
+      Nothing
+
+fromValField :: ValField -> Sexp.T
+fromValField (ValField sym sexp2) =
+  Sexp.list [fromSymbol sym, sexp2]
+
+instance Sexp.Serialize ValField where
+  deserialize = toValField
+  serialize = fromValField
 
 ----------------------------------------
 -- Lookup

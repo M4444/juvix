@@ -22,11 +22,12 @@ module Juvix.Core.Utility
     -- * Operations
 
     -- ** Symbols
+    withNames,
     withName,
     lookupName,
     lookupIndex,
     withFresh,
-    nextFresh,
+    nextFreshN,
     withNextPatVar,
     nextPatVar,
 
@@ -52,12 +53,12 @@ import qualified Data.IntMap.Strict as PM
 import qualified Data.IntSet as PS
 import Data.List (elemIndex, (!!))
 import Juvix.Core.Base.Types (PatternMap, PatternSet, PatternVar)
-import Juvix.Library hiding (filter, take)
+import Juvix.Library hiding (filter, take, splitAt)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 
 type HasNameStack = HasReader "nameStack" [NameSymbol.T]
 
-type HasNameSupply = HasState "nameSupply" (Stream NameSymbol.T)
+type HasNameSupply = HasState "nameSupply" (Stream Symbol)
 
 type HasNames m = (HasNameStack m, HasNameSupply m)
 
@@ -67,26 +68,34 @@ type HasSymToPat = HasState "symToPat" (HashMap NameSymbol.T PatternVar)
 
 type HasPatToSym = HasState "patToSym" (PatternMap NameSymbol.T)
 
+-- | @withNames@ pushes a sequence of names on the stack for the duration of
+-- given computation. The outermost binding is first in the list.
+withNames :: HasNameStack m => [NameSymbol.T] -> m a -> m a
+withNames names = local @"nameStack" (reverse names ++)
+
 -- | @withName@ pushes a name on the stack for the duration of given
 -- computation
 withName :: HasNameStack m => NameSymbol.T -> m a -> m a
-withName name = local @"nameStack" (name :)
+withName name = withNames [name]
 
--- | @
 lookupName :: HasNameStack m => NameSymbol.T -> m (Maybe Int)
 lookupName name = elemIndex name <$> ask @"nameStack"
 
 lookupIndex :: HasNameStack m => Int -> m NameSymbol.T
 lookupIndex ind = asks @"nameStack" (!! ind)
 
-withFresh :: HasNames m => (NameSymbol.T -> m a) -> m a
-withFresh act = do
-  sym <- nextFresh
-  local @"nameStack" (sym :) $ act sym
+withFreshN :: HasNames m => Natural -> ([Symbol] -> m a) -> m a
+withFreshN n act = do
+  syms <- nextFreshN n
+  let nsyms = map NameSymbol.fromSymbol syms
+  local @"nameStack" (nsyms ++) $ act syms
+
+withFresh :: HasNames m => (Symbol -> m a) -> m a
+withFresh act = withFreshN 1 \[n] -> act n
 
 -- | @nextFresh@ increments the name supply
-nextFresh :: HasNameSupply m => m NameSymbol.T
-nextFresh = state @"nameSupply" \(x :> xs) -> (x, xs)
+nextFreshN :: HasNameSupply m => Natural -> m [Symbol]
+nextFreshN n = state @"nameSupply" $ splitAt n
 
 getSymToPat :: HasSymToPat m => NameSymbol.T -> m (Maybe PatternVar)
 getSymToPat k = gets @"symToPat" $ HM.lookup k
@@ -117,19 +126,23 @@ app l s = foldr (:>) s l
 filter :: (a -> Bool) -> Stream a -> Stream a
 filter p (x :> xs) = if p x then x :> xs' else xs' where xs' = filter p xs
 
--- | @take@ @n@ @stream@ takes @n@ elements from the given @stream@
+-- | extracts the first n elements of a stream
+splitAt :: Natural -> Stream a -> ([a], Stream a)
+splitAt 0 xs        = ([], xs)
+splitAt n (x :> xs) = first (x :) $ splitAt (n - 1) xs
+
+-- | same as 'splitAt' but discarding the rest of the stream
 take :: Natural -> Stream a -> [a]
-take 0 _ = []
-take n (x :> xs) = x : take (n - 1) xs
+take n = fst . splitAt n
 
 -- | Infinite stream of names @a, b, ..., z, a1, ..., z1, a2, ...@
-names :: Stream NameSymbol.T
+names :: Stream Symbol
 names = map (\c -> makeNS [c]) az `app` go (1 :: Natural)
   where
     az = ['a' .. 'z']
     go i =
       map (\a -> makeNS (a : show i)) az `app` go (succ i)
-    makeNS x = NameSymbol.fromString x
+    makeNS x = intern x
 
 -- | @patVarsExcept@ generates a stream of @PatternVar@s that are not
 -- in the given @PatternSet@

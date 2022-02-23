@@ -243,15 +243,15 @@ figureRecord Context.Input {info} =
 ------------------------------------------------------------
 
 recordToFields ::
-  (HasThrow "error" Env.ErrorS m) => Structure.RecordDec -> m [CoreNamed.Field]
+  (HasThrow "error" Env.ErrorS m) => Structure.RecordDec -> m [CoreNamed.TyField]
 recordToFields record =
   traverse notPunnedToField (record ^. value)
 
 notPunnedToField ::
-  (HasThrow "error" Env.ErrorS m) => Structure.NameUsage -> m CoreNamed.Field
+  (HasThrow "error" Env.ErrorS m) => Structure.NameUsage -> m CoreNamed.TyField
 notPunnedToField notPunned = do
   name <- sexpToNameSymbolErr (notPunned ^. name)
-  pure $ CoreNamed.Field name (notPunned ^. usage) (notPunned ^. value)
+  pure $ CoreNamed.TyField name (notPunned ^. usage) (notPunned ^. value)
 
 sexpToNameSymbolErr ::
   HasThrow "error" Env.ErrorS m => Sexp.T -> m NameSymbol.T

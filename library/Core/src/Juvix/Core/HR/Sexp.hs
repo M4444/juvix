@@ -1,7 +1,7 @@
 module Juvix.Core.HR.Sexp where
 
 import Control.Lens ((^.))
-import qualified Juvix.Core.Base.Types.Base as Base
+import qualified Juvix.Core.Base.Types as Base
 import qualified Juvix.Core.HR.Types as HR
 import Juvix.Library hiding (from, fst, snd, to)
 import qualified Juvix.Library.Usage as Usage
@@ -70,6 +70,10 @@ serialize term =
       serialize c5
         |> Named.CatCoproductElim (serialize c1) (serialize c2) (serialize c3) (serialize c4)
         |> Structure.from
+    HR.RecordTy flds ->
+      Structure.from $ Named.RecordTy $ map serializeTyField flds
+    HR.Record flds ->
+      Structure.from $ Named.Record $ map serializeValField flds
 
 serializeElim ::
   (Serialize primTy, Serialize primVal) => HR.Elim primTy primVal -> Sexp.T
@@ -77,6 +81,8 @@ serializeElim elim =
   case elim of
     HR.Var name -> Sexp.atom name
     HR.App fu x -> Structure.from (Named.App (serializeElim fu) (serialize x))
+    HR.RecElim ns e x a t -> Structure.from $
+      Named.RecElim ns (serializeElim e) x (serialize a) (serialize t)
     HR.Ann t ty ->
       Structure.from (Named.Ann (serialize t) (serialize ty))
 
@@ -88,6 +94,20 @@ deserializeUsage :: Sexp.T -> Maybe Usage.Usage
 deserializeUsage (Sexp.Atom (Sexp.N num ______)) = Just (Usage.SNat (fromIntegral num))
 deserializeUsage (Sexp.Atom (Sexp.A ":omega" _)) = Just Usage.SAny
 deserializeUsage _______________________________ = Nothing
+
+
+serializeTyField ::
+  (Serialize primTy, Serialize primVal) =>
+  HR.TypeField primTy primVal -> Named.TyField
+serializeTyField (Base.TF π x t) =
+  Named.TyField x (serializeUsage π) (serialize t)
+
+serializeValField ::
+  (Serialize primTy, Serialize primVal) =>
+  HR.ValueField primTy primVal -> Named.ValField
+serializeValField (Base.VF x t) =
+  Named.ValField x (serialize t)
+
 
 deserialize ::
   (Serialize primTy, Serialize primVal) => Sexp.T -> Maybe (HR.Term primTy primVal)
@@ -165,6 +185,12 @@ deserialize expr
       <*> deserialize c3
       <*> deserialize c4
       <*> deserialize c5
+  | Named.isRecordTy expr = do
+    Named.RecordTy flds <- Named.toRecordTy expr
+    HR.RecordTy <$> traverse deserializeTyField flds
+  | Named.isRecord expr = do
+    Named.Record flds <- Named.toRecord expr
+    HR.Record <$> traverse deserializeValField flds
   | otherwise = HR.Elim <$> deserializeElim expr
 
 deserializeElim ::
@@ -173,6 +199,13 @@ deserializeElim expr
   | Named.isAnn expr = do
     ann <- Named.toAnn expr
     HR.Ann <$> deserialize (ann ^. term) <*> deserialize (ann ^. ty)
+  | Named.isRecElim expr = do
+    Named.RecElim ns e x a t <- Named.toRecElim expr
+    HR.RecElim ns
+      <$> deserializeElim e
+      <*> pure x
+      <*> deserialize a
+      <*> deserialize t
   | otherwise = do
     case expr of
       Sexp.List _ -> do
@@ -182,3 +215,17 @@ deserializeElim expr
         Just (HR.Var name)
       _ ->
         Nothing
+
+deserializeTyField ::
+  (Serialize primTy, Serialize primVal) =>
+  Named.TyField -> Maybe (HR.TypeField primTy primVal)
+deserializeTyField (Named.TyField x π ty) = do
+  Base.TF <$> deserializeUsage π
+          <*> pure x
+          <*> deserialize ty
+
+deserializeValField ::
+  (Serialize primTy, Serialize primVal) =>
+  Named.ValField -> Maybe (HR.ValueField primTy primVal)
+deserializeValField (Named.ValField x val) = do
+  Base.VF x <$> deserialize val

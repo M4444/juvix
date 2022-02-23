@@ -12,13 +12,13 @@ extTerm :: p1 -> p2 -> Core.ExtTerm
 extTerm _primTy _primVal =
   Core.defaultExtTerm
     { Core.nameLam = "Lam0",
-      Core.typeLam = Just [[t|NameSymbol.T|]],
+      Core.typeLam = Just [[t|Symbol|]],
       Core.namePi = "Pi0",
-      Core.typePi = Just [[t|NameSymbol.T|]],
+      Core.typePi = Just [[t|Symbol|]],
       Core.nameSig = "Sig0",
-      Core.typeSig = Just [[t|NameSymbol.T|]],
+      Core.typeSig = Just [[t|Symbol|]],
       Core.nameLet = "Let0",
-      Core.typeLet = Just [[t|NameSymbol.T|]]
+      Core.typeLet = Just [[t|Symbol|]]
     }
 
 -- | Extend with extra constructor Var that was not existing before
@@ -27,6 +27,8 @@ extElim _primTy _primVal =
   Core.defaultExtElim
     { Core.typeBound = Nothing,
       Core.typeFree = Nothing,
+      Core.nameRecElim = "RecElim0",
+      Core.typeRecElim = Just [[t|Symbol|]],
       Core.typeElimX = [("Var", [[t|NameSymbol.T|]])]
     }
 

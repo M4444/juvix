@@ -22,6 +22,7 @@ where
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Data.HashSet (HashSet)
+import qualified Data.HashSet as HashSet
 import qualified Data.IntMap.Strict as PM
 import qualified Juvix.Core.Base.Types as Core
 import qualified Juvix.Core.HR.Types as HR
@@ -69,14 +70,14 @@ hrToIR' = \case
   HR.Prim p -> pure (IR.Prim p)
   HR.Pi u n a b -> do
     a <- hrToIR' a
-    b <- withName n $ hrToIR' b
+    b <- withName (pure n) $ hrToIR' b
     pure (IR.Pi u a b)
   HR.Lam n b -> do
-    b <- withName n $ hrToIR' b
+    b <- withName (pure n) $ hrToIR' b
     pure (IR.Lam b)
   HR.Sig π n a b -> do
     a <- hrToIR' a
-    b <- withName n $ hrToIR' b
+    b <- withName (pure n) $ hrToIR' b
     pure (IR.Sig π a b)
   HR.Pair s t -> do
     IR.Pair <$> hrToIR' s <*> hrToIR' t
@@ -102,9 +103,11 @@ hrToIR' = \case
     IR.CatCoproductElim <$> hrToIR' a <*> hrToIR' b <*> hrToIR' cp <*> hrToIR' s <*> hrToIR' t
   HR.UnitTy -> pure IR.UnitTy
   HR.Unit -> pure IR.Unit
+  HR.RecordTy flds -> IR.RecordTy <$> hrToIRTele flds
+  HR.Record flds -> IR.Record <$> traverse (traverse hrToIR') flds
   HR.Let π n l b -> do
     l <- hrElimToIR' l
-    b <- withName n $ hrToIR' b
+    b <- withName (pure n) $ hrToIR' b
     pure (IR.Let π l b)
   HR.Elim e -> IR.Elim |<< hrElimToIR' e
 
@@ -131,10 +134,27 @@ hrElimToIR' = \case
     f <- hrElimToIR' f
     x <- hrToIR' x
     pure (IR.App f x)
+  HR.RecElim ns e x a t -> do
+    e <- hrElimToIR' e
+    a <- withName (pure x) $ hrToIR' a
+    t <- withNames (pure <$> ns) $ hrToIR' t
+    pure $ IR.RecElim ns e a t
   HR.Ann t x -> do
     t <- hrToIR' t
     x <- hrToIR' x
     pure (IR.Ann t x)
+
+hrToIRTele ::
+  (HasNameStack m, HasSymToPat m,
+   Show primTy, Show primVal) =>
+  [HR.TypeField primTy primVal] ->
+  m [IR.TypeField primTy primVal]
+hrToIRTele [] = pure []
+hrToIRTele (f:fs) = do
+  ty' <- hrToIR' $ Core.tfType f
+  fs' <- withName (pure $ Core.tfName f) $ hrToIRTele fs
+  pure $ f {Core.tfType = ty'} : fs'
+
 
 -- | @irToHR@ runs @irToHR'@ with an empty stack, see that function for
 -- more documentation
@@ -200,6 +220,8 @@ irToHR' = \case
     HR.CatCoproductElim <$> irToHR' a <*> irToHR' b <*> irToHR' cp <*> irToHR' s <*> irToHR' t
   IR.UnitTy -> pure HR.UnitTy
   IR.Unit -> pure HR.Unit
+  IR.RecordTy flds -> HR.RecordTy <$> irToHRTele flds
+  IR.Record flds -> HR.Record <$> traverse (traverse irToHR') flds
   IR.Let π l b -> do
     l <- irElimToHR' l
     withFresh \n -> do
@@ -229,10 +251,26 @@ irElimToHR' = \case
     f <- irElimToHR' f
     x <- irToHR' x
     pure (HR.App f x)
+  IR.RecElim ns e a t -> do
+    e <- irElimToHR' e
+    (x, a) <- withFresh \x -> (x,) <$> irToHR' a
+    t <- withNames (pure <$> toList ns) $ irToHR' t
+    pure $ HR.RecElim ns e x a t
   IR.Ann t x -> do
     t <- irToHR' t
     x <- irToHR' x
     pure (HR.Ann t x)
+
+irToHRTele ::
+  (HasNames m, HasPatToSym m) =>
+  [IR.TypeField primTy primVal] ->
+  m [HR.TypeField primTy primVal]
+irToHRTele [] = pure []
+irToHRTele (f:fs) = do
+  ty <- irToHR' $ Core.tfType f
+  fs <- withName (pure $ Core.tfName f) $ irToHRTele fs
+  pure $ f {Core.tfType = ty} : fs
+
 
 -- | @hrPatternsToIR@ works like @hrPatternToIR@ but for a list of variables
 hrPatternsToIR ::
@@ -292,7 +330,7 @@ irPatternToHR' = \case
   IR.PCon k ps -> HR.PCon k <$> traverse irPatternToHR' ps
   IR.PPair p q -> HR.PPair <$> irPatternToHR' p <*> irPatternToHR' q
   IR.PUnit -> pure HR.PUnit
-  IR.PVar i -> withFresh \x -> HR.PVar x <$ setPatToSym i x
+  IR.PVar i -> withFresh \x -> HR.PVar (pure x) <$ setPatToSym i (pure x)
   IR.PDot e -> HR.PDot <$> irToHR' e
   IR.PPrim p -> pure $ HR.PPrim p
 
@@ -316,6 +354,8 @@ varsTerm = \case
   IR.Let _ e t -> varsElim e <> varsTerm t
   IR.UnitTy -> mempty
   IR.Unit -> mempty
+  IR.RecordTy flds -> foldMap (varsTerm . Core.tfType) flds
+  IR.Record flds -> foldMap (varsTerm . Core.vfVal) flds
   IR.Elim e -> varsElim e
 
 varsElim :: IR.Elim primTy primVal -> HashSet NameSymbol.T
@@ -324,6 +364,7 @@ varsElim = \case
   IR.Free (Core.Global x) -> [x]
   IR.Free (Core.Pattern _) -> mempty
   IR.App f s -> varsElim f <> varsTerm s
+  IR.RecElim _ns e a t -> varsElim e <> varsTerm a <> varsTerm t
   IR.Ann t a -> varsTerm t <> varsTerm a
 
 varsPattern :: IR.Pattern primTy primVal -> HashSet NameSymbol.T
@@ -344,7 +385,7 @@ exec ::
   HashSet NameSymbol.T ->
   M a ->
   (a, Env)
-exec pats avoid (M env) =
+exec pats avoid' (M env) =
   runState env $
     Env
       { nameSupply = filter (`notElem` avoid) names,
@@ -356,6 +397,10 @@ exec pats avoid (M env) =
         patToSym = pats,
         symToPat = PM.toList pats |> map swap |> HM.fromList
       }
+  where
+    avoid = HashSet.fromList $ mapMaybe isSingle $ toList avoid'
+    isSingle [x] = Just x
+    isSingle _   = Nothing
 
 -- | @execSymToPat@ works like exec but takes the symtoPat map instead of the patToSym map
 execSymToPat ::
@@ -364,7 +409,7 @@ execSymToPat pats = exec (HM.toList pats |> map swap |> PM.fromList)
 
 -- TODO separate states for h→i and i→h maybe??
 data Env = Env
-  { nameSupply :: Stream NameSymbol.T,
+  { nameSupply :: Stream Symbol,
     nameStack :: [NameSymbol.T],
     nextPatVar :: Core.PatternVar,
     symToPat :: HashMap NameSymbol.T Core.PatternVar,
@@ -375,9 +420,9 @@ data Env = Env
 newtype M a = M (State Env a)
   deriving newtype (Functor, Applicative, Monad)
   deriving
-    ( HasSource "nameSupply" (Stream NameSymbol.T),
-      HasSink "nameSupply" (Stream NameSymbol.T),
-      HasState "nameSupply" (Stream NameSymbol.T)
+    ( HasSource "nameSupply" (Stream Symbol),
+      HasSink "nameSupply" (Stream Symbol),
+      HasState "nameSupply" (Stream Symbol)
     )
     via StateField "nameSupply" (State Env)
   deriving
