@@ -1,13 +1,14 @@
 # Do Notation
 
-Actions in any monad can be sequenced with `do`-notation:
+Actions in any monad can be sequenced implicitly:
 
 ```
-func : m Int
-func = do
-  one <- funcOne
-  two <- funcTwo one
+sig func : m Int.t
+let func =
+  one <- func-one
+  two <- func-two one
   return (two + 3)
 ```
 
-`do`-notation desugars into `bind` (`>>=`) and `return` as defined by the monad instance.
+`do`-notation desugars into `bind` (`>>=`) and `return` as defined by
+the monad instance.

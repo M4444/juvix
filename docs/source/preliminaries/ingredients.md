@@ -88,14 +88,6 @@ rather than any specific one, drawn from multiple inspirations including [GRIN](
 including compile-time evaluation, inlining, fusion, case simplification, common sub-expression elimination,
 various dead code elimination checks, and rewriting provably equivalent terms.
 
-### Interaction net evaluation
-
-For certain backends, Juvix can evaluate lambda calculus terms using the abstract model
-of interaction nets, as outlined by [Lamping, Asperti, and Guerrini](https://www.cambridge.org/vi/academic/subjects/computer-science/programming-languages-and-applied-logic/optimal-implementation-functional-programming-languages?format=HB) and inspired by [prior work](https://medium.com/@maiavictor/solving-the-mystery-behind-abstract-algorithms-magical-optimizations-144225164b07).
-Interaction nets minimise the number of beta reductions by sharing evaluations, perform runtime fusion, support automatic parallelism, and handle
-large closures efficiently. They come with some overhead, but this can be mitigated with [bespoke encoding](https://github.com/cryptiumlabs/juvix/issues/85)
-— generating custom rewrite rules at compile-time — for small, performance-critical functions.
-
 ### Linear dependent types obviate garbage collection and ensure type erasure
 
 The core type theory of Juvix combines linear & dependent types, extending prior research into the combination of the two paradigms with additional linear connectives & pragmatic essentials and instantiating usage quantisation over the natural numbers to provide maximally precise accounting. Dependent types enable the language to verify properties of its own terms in succinct proofs and open up a wide arena of compiler optimisations. Linear types obviate the need for garbage collection in both the optimal reduction & alternative direct subterm compilation paths, facilitate aggressive imperative optimisation transformations, and ensure that dependent types used to enforce properties but not needed at runtime are always erased by the compiler.
@@ -111,21 +103,6 @@ The dependent type system of Juvix Core enables it to express arbitrary properti
 ### Programmer-directed optimisations
 
 Primitives are provided to allow developers to bypass the usual compilation pipeline and construct hand-optimised rewrite rules specialised to the underlying machine, optionally proving equivalence of their hand-optimised rewrite rules to the compiler-generated ones using a formalised interpreter for the machine model.
-
-## Resource verification
-
-Leveraging the dependent typechecker already in place, Juvix uses techniques from
-[a 2008 POPL paper](http://www.cse.chalmers.se/~nad/publications/danielsson-popl2008.pdf) to check computational resource consumption
-of terms without executing them by encapsulating computations in a cost monad, where
-costs can depend on terms in the usual dependent fashion. This requires some annotations
-by the developer, but tooling can be improved over time, and cost bounds can be added
-in a progressive fashion just like proofs of properties. In the future, if ledgers elect
-to integrate a limited version of the typechecker directly into their state machines, this
-resource verification mechanism can be used to eliminate runtime gas metering entirely:
-each contract would have a cost function, computable depending on arguments to the call,
-and the gas (exactly computable) could be deducted at the beginning of the function prior
-to execution. This resource verification model can also easily incorporate different denominations
-of resources (compute, storage, etc.) by tracking several costs at once.
 
 ## Backend parameterisation
 

@@ -1,6 +1,6 @@
-# S-expression transformation
+# BNF Syntax
 
-Here we do a very straightforward algorithm, of when we see a particular Juvix ML ADT form, we then transform it to the equivalent Lisp expression following the BNF syntax below.
+The bnf diagram below, is the BNF of the Juvix Programming Language
 
 ## BNF Syntax
 

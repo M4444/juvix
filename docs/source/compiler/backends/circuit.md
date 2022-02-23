@@ -106,7 +106,7 @@ Datatype encoding
 pattern matching
 
 ```
-  \x . \w . 
+  \x . \w .
     case x of (xfst, xsnd) =>
       case w of (wfst, wnd) =>
         xfst == wsnd && xsnd == wfst

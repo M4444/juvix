@@ -9,7 +9,7 @@ This page is subject to change with the syntax redesign.
 This document is heavily inspired by the [Idris syntax guide](http://docs.idris-lang.org/en/latest/reference/syntax-guide.html).
 
 ## File Organization
-A file contains zero or more [top level declarations](#top-level-declarations). 
+A file contains zero or more [top level declarations](#top-level-declarations).
 
 For example:
 ```haskell
@@ -163,7 +163,7 @@ From here a declaration can take a few forms.
 
   -- this is the same type, but GADT style arrow syntax
   -- is given to the constructor
-  type list a : a -> list a
+  type list a : (a : set) -> set
   -- Curly braces can be used here to name the arguments
     = Cons { car : a,
              cdr : list a }
@@ -363,6 +363,12 @@ written after the definition.
     Bar.foo + Bar.bat
 ```
 #### Signatures
+```haskell
+let foo =
+  sig foo : int -> int in
+  let foo x = x + 3 in
+  foo 3
+```
 #### Types
 ```haskell
   let foo =

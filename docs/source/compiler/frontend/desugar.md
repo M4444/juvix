@@ -41,7 +41,7 @@ The order of some these passes is relatively arbitrary.
 ### Example
 
 We'll use the example of the pass `let -> defun` to illustrate this transformation.
-This code can be found in the [Structure](https://github.com/heliaxdev/juvix/blob/develop/library/Sexp/src/Juvix/Sexp/Structure) module. 
+This code can be found in the [Structure](https://github.com/heliaxdev/juvix/blob/develop/library/Sexp/src/Juvix/Sexp/Structure) module.
 
 ```lisp
   ;; From S-expression Syntax
@@ -70,7 +70,7 @@ In [Structure/Frontend.hs](https://github.com/heliaxdev/juvix/blob/develop/libra
 Notice how we say nothing about the head being the `cadr` of the structure, and the arguments the `caddr`, and the body of course the `caddr`. Instead, we just lay out the logical structures in a record, divorced from any representation.
 ```
 
-We provide an API to deal with the actual representation. 
+We provide an API to deal with the actual representation.
 
 ```haskell
   ----------------------------------------
@@ -103,7 +103,7 @@ We provide an API to deal with the actual representation.
 All records in that file have a corresponding interface
 of `name<structure>`, `is<structure>`, `to<strcuture>`, and
 `from<structure>`. These deal with the small details of `cars` and
-`cdrs`. 
+`cdrs`.
 
 This transformation can be tested by opening the [Easy file](https://github.com/heliaxdev/juvix/blob/develop/library/Playground/Easy/src/Easy.hs) in the Juvix
 REPL and running
@@ -122,7 +122,7 @@ decouples our concerns so we can worry about the abstraction meaning
 of the syntax in the passes while worrying about the details here.
 
 [The lisp haskell generator](https://github.com/anomanetwork/juvix/blob/develop/library/Sexp/src/Juvix/Sexp/Structure/generator.lisp#L266) was
-created to reduce the amount of boilerplate. 
+created to reduce the amount of boilerplate.
 
 Here are some choice snippets that cover every case of the generator
 

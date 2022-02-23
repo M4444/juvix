@@ -15,7 +15,7 @@ help:
 
 .PHONY: help Makefile
 
-html:
+serve:
 	@$(SPHINXAUTOBUILD) "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 

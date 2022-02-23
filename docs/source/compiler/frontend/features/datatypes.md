@@ -1,22 +1,29 @@
 # Datatypes
 
-Similary to Idris & Agda, datatypes are defined with inductive family `data` declarations:
+Similary to Idris & Agda, datatypes are defined with inductive family
+`data` declarations:
 
 ```
-data D Δ : Γ → ∗_i where
-  c_1 : Θ_1 → D Δ t_1
-  c_n : Θ_n → D Δ t_n
+type d a₁ … aₙ =
+  | C1 ty₁₁ … ty₁ₙ
+  | C2 { name : ty₂₁, …, nameₙ : ty₂ₙ }
+  ...
+  | Cn : name : tyₙ₁ -> … -> d a₁ … aₙ
 ```
 
-- `D` is the datatype family.
-- `c_1` through `c_n` are the constructors, with given types.
-- `t_1` through `t_n` (vectors) are the indices for the constructor return types.
-- `Δ` are the parameters, scoped over the types of the constructors, which must be constant in their targets.
-- `Γ` are the indices, which can vary over the type of the constructor targets.
+- `d` is the datatype family
+- `C1` through `Cn` are the sum type constructors with the given type.
+  + `C1` shows Haskell style constructor
+  + `C2` shows a record style constructor
+  + `Cn` shows a GADT/Agda style constructor
+- `a₁` through `aₙ` are the paramaters, scoped over the types of the sum
+  constructors, which must be constant in their targets.
 
-In general, constructor types can reference `D` inductively.
-Different parameterisations of core may represent datatypes in different ways, and might impose
-restrictions such as positivity (`D` can only occur to the left of an even number of arrows in the constructor type)
-or strict positivity (`D` cannot occur to the left of an arrow anywhere in the constructor type).
+In general, constructor types can reference `d` inductively.
+
+restrictions such as positivity (`d` can only occur to the left of an
+even number of arrows in the constructor type) or strict positivity
+(`d` cannot occur to the left of an arrow anywhere in the constructor
+type).
 
 Mutually inductive-recursive definitions will be supported at a later date.
