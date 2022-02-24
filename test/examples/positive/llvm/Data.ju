@@ -15,5 +15,4 @@ let pattern-match (x :: y) = x Int.+ y
 
 sig main : int
 let main =
-  let pm = pattern-match (1 :: 2) in
   3

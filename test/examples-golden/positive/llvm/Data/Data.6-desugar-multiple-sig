@@ -15,9 +15,4 @@
         ( ( ( "P" "x" "y" ) ) ( ":infix" "Int.+" "x" "y" ) )
         ( ( ( ":infix" "::" "x" "y" ) ) ( ":infix" "Int.+" "x" "y" ) ) )
 ,
-    ( ":defsig-match" "main" "int"
-        ( ()
-            ( ":let-match" "pm"
-                ( ()
-                    ( "pattern-match"
-                        ( ":paren" ( ":infix" "::" 1 2 ) ) ) ) 3 ) ) ) ]
+    ( ":defsig-match" "main" "int" ( () 3 ) ) ]

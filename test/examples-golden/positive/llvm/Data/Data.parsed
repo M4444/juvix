@@ -145,40 +145,9 @@ Right
                     { functionLikedName = "main"
                     , functionLikeArgs = []
                     , functionLikeBody = Body
-                        ( Let
-                            ( Let'
-                                { letBindings = Like
-                                    { functionLikedName = "pm"
-                                    , functionLikeArgs = []
-                                    , functionLikeBody = Body
-                                        ( Application
-                                            ( App
-                                                { applicationName = Name
-                                                    ( "pattern-match" :| [] )
-                                                , applicationArgs = Parened
-                                                    ( Infix
-                                                        ( Inf
-                                                            { infixLeft = Constant
-                                                                ( Number
-                                                                    ( Integer' 1 )
-                                                                )
-                                                            , infixOp = "::" :| []
-                                                            , infixRight = Constant
-                                                                ( Number
-                                                                    ( Integer' 2 )
-                                                                )
-                                                            }
-                                                        )
-                                                    ) :| []
-                                                }
-                                            )
-                                        )
-                                    }
-                                , letBody = Constant
-                                    ( Number
-                                        ( Integer' 3 )
-                                    )
-                                }
+                        ( Constant
+                            ( Number
+                                ( Integer' 3 )
                             )
                         )
                     }

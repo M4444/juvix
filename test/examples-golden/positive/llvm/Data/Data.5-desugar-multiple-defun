@@ -18,9 +18,4 @@
 ,
     ( ":defsig" "main" "int" )
 ,
-    ( ":defun-match" "main"
-        ( ()
-            ( ":let-match" "pm"
-                ( ()
-                    ( "pattern-match"
-                        ( ":paren" ( ":infix" "::" 1 2 ) ) ) ) 3 ) ) ) ]
+    ( ":defun-match" "main" ( () 3 ) ) ]
