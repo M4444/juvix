@@ -26,6 +26,11 @@ cradle:
     - path: ./library/Backends/LLVM/test
       component: "llvm:test:llvm-test"
 
+    - path: ./library/Backends/Interpreter/src
+      component: "interpreter"
+    - path: ./library/Backends/Interpreter/test
+      component: "interpreter:test:interpreter-test"
+
     - path: ./library/Context/src
       component: "context"
     - path: ./library/Context/test

@@ -29,6 +29,7 @@ dependencies:
   - witch
   - michelson
   - easy
+  - interpreter
   - llvm
 
 default-extensions:

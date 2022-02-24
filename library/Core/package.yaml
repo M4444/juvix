@@ -19,12 +19,25 @@ dependencies:
 - aeson
 - base >= 4.11 && < 5
 - standard-library
+- transformers
 - extensible-data
 - containers
+- distributive
 - unordered-containers
 - mtl
 - lens
 - sexp
+- data-structures
+- deepseq
+- recursion-schemes
+- data-fix
+- kan-extensions
+- functors
+- functor-utils
+- adjunctions
+- semigroupoids
+- template-haskell
+- text
 
 default-extensions:
   - NoImplicitPrelude

@@ -30,6 +30,7 @@ dependencies:
   - sexp
   - parsing
   - core
+  - transformers
   - translate
   - context
   - data-structures

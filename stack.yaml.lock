@@ -262,6 +262,20 @@ packages:
   original:
     url: https://github.com/cryptiumlabs/jsonschema-gen/archive/0639cd166ec59a04d07a3a7d49bdf343e567000e.tar.gz
 - completed:
+    hackage: functors-0.1@sha256:5a7e63d1a25057b3e82ab5fd060a951e0593fd588f8286fbc9f90c7f1d65c3f3,1990
+    pantry-tree:
+      size: 215
+      sha256: d8b3e5128df39fca281850386a2c2ca65766986e269469ff55652d0e29fb2b99
+  original:
+    hackage: functors-0.1@sha256:5a7e63d1a25057b3e82ab5fd060a951e0593fd588f8286fbc9f90c7f1d65c3f3,1990
+- completed:
+    hackage: functor-utils-1.17.2@sha256:828cf87f085430f02f1815dd7c760e19b8053f45f340f32f02a3675f73dff486,1739
+    pantry-tree:
+      size: 178
+      sha256: fa6e2f87c133eed1531436f318d12d82be8face00e268937bbb8ead85ca62ae1
+  original:
+    hackage: functor-utils-1.17.2@sha256:828cf87f085430f02f1815dd7c760e19b8053f45f340f32f02a3675f73dff486,1739
+- completed:
     name: elliptic-curve
     version: 0.3.1
     git: https://github.com/serokell/elliptic-curve.git

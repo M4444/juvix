@@ -20,20 +20,32 @@ extra-source-files:
 description:         LLVM backend for the Juvix programming language.
 
 dependencies:
+  - adjunctions
   - aeson
   - base >= 4.7 && < 5
   - Cabal
   - bytestring
+  - containers
   - core
+  - data-fix
   - data-structures
+  - deepseq
+  - distributive
+  - functors
+  - functor-utils
   - hashable
+  - kan-extensions
   - llvm-hs
   - llvm-hs-pretty
   - llvm-hs-pure >= 9.0 && < 9.1
   - pipeline
   - berlin-pipeline
+  - recursion-schemes
   - safe
+  - semigroupoids
+  - sexp
   - standard-library
+  - template-haskell
   - text
   - unordered-containers >= 0.2.13
 

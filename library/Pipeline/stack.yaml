@@ -90,6 +90,16 @@ extra-deps:
 - github: cryptiumlabs/jsonschema-gen
   commit: 0639cd166ec59a04d07a3a7d49bdf343e567000e
 
+############################################################
+# Functor definitions for category-theoretic constructions #
+############################################################
+- functors-0.1@sha256:5a7e63d1a25057b3e82ab5fd060a951e0593fd588f8286fbc9f90c7f1d65c3f3,1990
+
+##########################################################
+# Functor utilities for category-theoretic constructions #
+##########################################################
+- functor-utils-1.17.2@sha256:828cf87f085430f02f1815dd7c760e19b8053f45f340f32f02a3675f73dff486,1739
+
 ######################################################
 # Shared Deps Between Arithmetic Circuits and Morley #
 ######################################################

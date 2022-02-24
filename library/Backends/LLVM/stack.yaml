@@ -85,6 +85,16 @@ extra-deps:
 - stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
 - stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
 
+############################################################
+# Functor definitions for category-theoretic constructions #
+############################################################
+- functors-0.1@sha256:5a7e63d1a25057b3e82ab5fd060a951e0593fd588f8286fbc9f90c7f1d65c3f3,1990
+
+##########################################################
+# Functor utilities for category-theoretic constructions #
+##########################################################
+- functor-utils-1.17.2@sha256:828cf87f085430f02f1815dd7c760e19b8053f45f340f32f02a3675f73dff486,1739
+
 #####################################
 # Standard Library Extra Dependency #
 #####################################
