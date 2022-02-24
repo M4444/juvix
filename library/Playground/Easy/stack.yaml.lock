@@ -309,12 +309,12 @@ packages:
   original:
     hackage: llvm-hs-pure-9.0.0
 - completed:
-    hackage: llvm-hs-9.0.0@sha256:b036b8d3a78607310382f82b7c5303ffc31afb9735875bb64521501144cc5728,8700
+    hackage: llvm-hs-9.0.1@sha256:ee6ec2eb8cba4daf2a43586388a87dbfd6a2ec6d81d1f9965896ac187acad286,8700
     pantry-tree:
       size: 13599
-      sha256: d572dd639dd315c94eccdfd9b10a3c266163cf945778141087a003c1ed836a91
+      sha256: 537616dec1351bd9f7905182f82f132359cf3058ebbb059c03b4edcef04b2689
   original:
-    hackage: llvm-hs-9.0.0
+    hackage: llvm-hs-9.0.1
 - completed:
     hackage: llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
     pantry-tree:
@@ -324,7 +324,7 @@ packages:
     hackage: llvm-hs-pretty-0.9.0.0
 snapshots:
 - completed:
-    size: 586286
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/16.yaml
-    sha256: cdead65fca0323144b346c94286186f4969bf85594d649c49c7557295675d8a5
-  original: lts-18.16
+    size: 590102
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/26.yaml
+    sha256: e76d109964d9335abb412e22139c5bce3078be290ac6d90b8ecea6cc009bb198
+  original: lts-18.26
