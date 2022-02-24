@@ -413,7 +413,7 @@ mkTrans name trans simplify =
       >>| (`Automation.ProcessNoEnv` [])
       >>| Automation.ProcessJob
   where
-    scopeName = "Context." <> name <> "trans"
+    scopeName = "Context" <> name <> "trans"
 
 mkPass ::
   NameSymbol.T ->
@@ -433,8 +433,8 @@ mkPass name trans =
     |> Step.namePass passName
   where
     simplifiedTrans = Automation.simplify trans
-    runnerName = passName <> "-runner"
-    passName = "Context." <> name
+    runnerName = passName <> "runner"
+    passName = "Context" <> name
 
 --------------------------------------------------------------------------------
 -- Record Recognition Transformation
