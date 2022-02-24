@@ -131,6 +131,7 @@ orderDatatypes (a NonEmpty.:| _as) (b NonEmpty.:| _bs) = case (def a, def b) of
       LT
   (_, _) -> EQ
 
+injectTopLevel :: Symbol -> Symbol
 injectTopLevel = NameSymbol.toSymbol . Context.addTopName . NameSymbol.fromSymbol
 
 recGroups' ::
