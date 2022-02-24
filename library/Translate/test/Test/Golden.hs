@@ -8,6 +8,8 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Environment
 import qualified Juvix.Contextify.Passes as Contextify
+import qualified Juvix.Desugar.Env as Desugar
+import qualified Juvix.Desugar.Env as Desugar.Env
 import qualified Juvix.Desugar.Passes as Pass
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
@@ -249,6 +251,13 @@ fullDesugar = desugarHandlerTransform
 -- Context Passes
 ----------------------------------------------------------------------
 
+fullyContextify ::
+  NonEmpty (NameSymbol.T, [Sexp.T]) ->
+  IO (Either Contextify.ResolveErr Environment.T)
+fullyContextify xs = do
+  ctx <- Context.empty "JU-USER"
+  Desugar.Env.fullyContextify ctx xs
+
 -- contextifySexp ::
 --   NonEmpty (NameSymbol.T, [Sexp.T]) -> IO Environment.SexpContext
 contextifySexp ::
@@ -256,7 +265,7 @@ contextifySexp ::
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
   m Context.T
 contextifySexp names = do
-  context <- liftIO (Contextify.fullyContextify names)
+  context <- liftIO (fullyContextify names)
   case context of
     Left _err -> Feedback.fail "Not all modules included, please include more modules"
     Right ctx -> pure ctx

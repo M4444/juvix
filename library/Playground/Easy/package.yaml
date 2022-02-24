@@ -33,6 +33,7 @@ dependencies:
   - pipeline
   - context
   - llvm
+  - berlin-pipeline
   ###########################
   # To make life easier
   ###########################

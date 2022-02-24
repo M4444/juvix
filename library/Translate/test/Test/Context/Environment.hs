@@ -3,13 +3,15 @@ module Test.Context.Environment (top) where
 import qualified Data.HashSet as Set
 import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Closure as Closure
+import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Binders as Bind
 import qualified Juvix.Contextify.Environment as Env
+import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Sexp as Sexp
-import Test.Context.Helpers (contextualizeFoo, parseDesugarSexp)
+import Test.Context.Helpers (contextualizeFoo, emptyContextify, parseDesugarSexp)
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 
@@ -62,7 +64,7 @@ runCtx :: Context a -> Capture -> (Either Sexp.T a, Capture)
 runCtx (Ctx c) = runState (runExceptT c)
 
 emptyClosure :: Capture
-emptyClosure = Cap (Closure.T Map.empty) []
+emptyClosure = Cap (Closure.T Map.empty) (Feedback.empty) []
 
 -- recordClosure ::
 --   (HasReader "closure" a m, HasWriter "report" [a] m) => Env.Pass m
@@ -215,10 +217,12 @@ openTest =
   T.testGroup
     "open Tests"
     [ T.testCase "open properly adds symbols" $ do
+        sexp1 <- parseDesugarSexp "let f = open A in print-closure 2"
+        sexp2 <- parseDesugarSexp "let bar = 3"
         Right (ctx, _) <-
-          Contextify.contextify
-            ( ("Foo", parseDesugarSexp "let f = open A in print-closure 2")
-                :| [("A", parseDesugarSexp "let bar = 3")]
+          emptyContextify
+            ( ("Foo", sexp1)
+                :| [("A", sexp2)]
             )
         let (_, Cap _ _ [Closure.T capture]) =
               runCtx (Env.contextPassStar ctx recordClosure) emptyClosure
