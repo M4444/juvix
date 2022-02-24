@@ -1,6 +1,7 @@
 module Test.Context.Environment (top) where
 
 import qualified Data.HashSet as Set
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Binders as Bind
@@ -27,6 +28,7 @@ top =
 --------------------------------------------------------------------------------
 data Capture = Cap
   { closure :: Closure.T,
+    feedback :: Feedback.T,
     report :: [Closure.T]
   }
   deriving (Generic, Show)
@@ -46,6 +48,12 @@ newtype Context a = Ctx {_run :: CaptureAlias a}
       HasSink "report" [Closure.T]
     )
     via WriterField "report" CaptureAlias
+  deriving
+    ( HasState "feedback" Feedback.T,
+      HasSource "feedback" Feedback.T,
+      HasSink "feedback" Feedback.T
+    )
+    via StateField "feedback" CaptureAlias
   deriving
     (HasThrow "error" Sexp.T)
     via MonadError CaptureAlias
@@ -212,7 +220,7 @@ openTest =
             ( ("Foo", parseDesugarSexp "let f = open A in print-closure 2")
                 :| [("A", parseDesugarSexp "let bar = 3")]
             )
-        let (_, Cap _ [Closure.T capture]) =
+        let (_, Cap _ _ [Closure.T capture]) =
               runCtx (Env.contextPassStar ctx recordClosure) emptyClosure
         Map.toList capture T.@=? [("bar", Closure.Info Nothing [] (Just "A"))]
     ]
@@ -221,7 +229,7 @@ capture :: ByteString -> IO [Closure.T]
 capture str = do
   Right (ctx, _) <-
     contextualizeFoo str
-  let (_, Cap _ capture) =
+  let (_, Cap _ _ capture) =
         runCtx (Env.contextPassStar ctx recordClosure) emptyClosure
   pure capture
 
@@ -229,7 +237,7 @@ captureOnAtom :: ByteString -> IO [Closure.T]
 captureOnAtom str = do
   Right (ctx, _) <-
     contextualizeFoo str
-  let (_, Cap _ capture) =
+  let (_, Cap _ _ capture) =
         runCtx (Env.contextPassStar ctx atomClosure) emptyClosure
   pure capture
 

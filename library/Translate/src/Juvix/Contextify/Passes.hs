@@ -247,18 +247,18 @@ figureRecord info =
 ------------------------------------------------------------
 
 recordToFields ::
-  (HasThrow "error" Sexp.T m) => Structure.RecordDec -> m [CoreNamed.Field]
+  Env.ErrS m => Structure.RecordDec -> m [CoreNamed.Field]
 recordToFields record =
   traverse notPunnedToField (record ^. value)
 
 notPunnedToField ::
-  (HasThrow "error" Sexp.T m) => Structure.NameUsage -> m CoreNamed.Field
+  Env.ErrS m => Structure.NameUsage -> m CoreNamed.Field
 notPunnedToField notPunned = do
   name <- sexpToNameSymbolErr (notPunned ^. name)
   pure $ CoreNamed.Field name (notPunned ^. usage) (notPunned ^. value)
 
 sexpToNameSymbolErr ::
-  HasThrow "error" Sexp.T m => Sexp.T -> m NameSymbol.T
+  Env.ErrS m => Sexp.T -> m NameSymbol.T
 sexpToNameSymbolErr sexp =
   case Sexp.atomFromT sexp of
     Nothing ->

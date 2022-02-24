@@ -30,6 +30,7 @@ module Juvix.Contextify.Environment
 where
 
 import Control.Lens hiding ((|>))
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
@@ -65,10 +66,14 @@ instance Sexp.Serialize ErrorS
 
 type HasClosure m = HasReader "closure" Closure.T m
 
-type ErrS m = HasThrow "error" Sexp.T m
+type ErrS m = (Feedback.Eff m, HasThrow "error" Sexp.T m)
 
-throwSexp :: (HasThrow "error" Sexp.T m) => ErrorS -> m a
-throwSexp err = throw @"error" (Sexp.serialize err)
+throwSexp :: ErrS m => ErrorS -> m a
+throwSexp err = do
+  Feedback.error sErr
+  throw @"error" sErr
+  where
+    sErr = (Sexp.serialize err)
 
 type HasSearch m = (ErrS m, HasClosure m)
 
@@ -76,8 +81,9 @@ type HasSearch m = (ErrS m, HasClosure m)
 -- Runner environment
 ------------------------------------------------------------
 
-newtype Minimal = Minimal
-  { closure :: Closure.T
+data Minimal = Minimal
+  { closure :: Closure.T,
+    feedback :: Feedback.T
   }
   deriving (Generic, Show)
 
@@ -106,14 +112,20 @@ newtype MinimalMIO a = CtxIO {_runIO :: MinimalAliasIO a}
     )
     via ReaderField "closure" MinimalAliasIO
   deriving
+    ( HasState "feedback" Feedback.T,
+      HasSource "feedback" Feedback.T,
+      HasSink "feedback" Feedback.T
+    )
+    via StateField "feedback" MinimalAliasIO
+  deriving
     (HasThrow "error" Sexp.T)
     via MonadError MinimalAliasIO
 
 runMIO :: MinimalMIO a -> IO (Either Sexp.T a, Minimal)
-runMIO (CtxIO c) = runStateT (runExceptT c) (Minimal Closure.empty)
+runMIO (CtxIO c) = runStateT (runExceptT c) (Minimal Closure.empty Feedback.empty)
 
 runM :: MinimalM a -> (Either Sexp.T a, Minimal)
-runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty)
+runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty Feedback.empty)
 
 ------------------------------------------------------------
 -- Type aliases

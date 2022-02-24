@@ -343,6 +343,7 @@ resolveModulePass = mkPass name trans
 
 resolveModuleTransform ::
   ( HasThrow "error" Sexp.T m,
+    Feedback.Eff m,
     HasClosure m,
     MonadIO m
   ) =>
@@ -364,6 +365,7 @@ infixConversionPass = mkPass name trans
 
 infixConversionTransform ::
   ( HasThrow "error" Sexp.T m,
+    Feedback.Eff m,
     HasClosure m,
     MonadIO m
   ) =>
@@ -385,6 +387,7 @@ unknownSymbolLookupPass = mkPass name trans
 
 unknownSymbolLookupTransform ::
   ( HasThrow "error" Sexp.T m,
+    Feedback.Eff m,
     HasClosure m,
     MonadIO m
   ) =>
@@ -627,7 +630,7 @@ initContext meta ctx sexps = do
   case context of
     -- TODO: Calls to fullyContextify and below should use MinimialIO so
     -- we get proper Feedback and Tracing
-    Left err -> Pipeline.Failure meta Nothing |> pure
+    Left err -> Pipeline.Failure (errMeta err) Nothing |> pure
     Right ctx ->
       Pipeline.WorkingEnv ctxSexps ctx
         |> Pipeline.Success meta
@@ -637,6 +640,10 @@ initContext meta ctx sexps = do
       NonEmpty.toList sexps
         |> sexpsByModule (Context.currentName ctx)
     ctxSexps = (NonEmpty.toList moduleSexps) >>= inContextSexps
+    errMeta err = over Meta.feedback (updateFeedback err) meta
+    updateFeedback err f =
+      Feedback.addMessageNoEff Feedback.Error (errSexp err) f
+    errSexp err = Sexp.serialize @Contextify.ResolveErr err
 
 fullyContextify ::
   Context.T ->

@@ -23,7 +23,11 @@ data ResolveErr
   = Path Context.PathError
   | Resolve ResolveOpen.Error
   | PassErr Sexp.T
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Sexp.DefaultOptions ResolveErr
+
+instance Sexp.Serialize ResolveErr
 
 type PathError t = Either Context.PathError t
 
