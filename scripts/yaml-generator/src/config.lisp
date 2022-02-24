@@ -259,6 +259,18 @@
    :deps (list
           (string->dep-sha "fgl-visualize-0.1.0.1@sha256:e682066053a6e75478a08fd6822dd0143a3b8ea23244bdb01dd389a266447c5e,995"))))
 
+(defparameter *functors*
+  (make-groups :comment "Functor definitions for category-theoretic constructions"
+               :deps (list
+                      (string->dep-sha
+                       "functors-0.1@sha256:5a7e63d1a25057b3e82ab5fd060a951e0593fd588f8286fbc9f90c7f1d65c3f3,1990"))))
+
+(defparameter *functor-utils*
+  (make-groups :comment "Functor utilities for category-theoretic constructions"
+               :deps (list
+                      (string->dep-sha
+                       "functor-utils-1.17.2@sha256:828cf87f085430f02f1815dd7c760e19b8053f45f340f32f02a3675f73dff486,1739"))))
+
 ;; -----------------------------------
 ;; stack-yaml for the YAML helpers
 ;; -----------------------------------
@@ -294,6 +306,8 @@ common ones to include"
         ;; Context Dependencies
         *stm-container-group*
         *interaction-net-extra-deps*
+        *functors*
+        *functor-utils*
         *morley-arithmetic-circuit-deps*
         *sub-morley-arithmetic-circuit-deps*))
 
@@ -383,6 +397,8 @@ common ones to include"
    :packages   (list *standard-library* *sexp*)
    :extra-deps (list (general-dependencies *extensible*)
                       *standard-library-extra-deps*
+                      *functors*
+                      *functor-utils*
                       *eac-solver*)))
 
 (defparameter *translate*
@@ -437,8 +453,21 @@ common ones to include"
                      *stm-container-group*
 
                      ;; for standard-library
+                     *functors*
+                     *functor-utils*
                      *standard-library-extra-deps*)
    :nix-build (nix-enable-custom) ;; (nix-enable-llvm *nix-zlib*)
+   :extra "allow-newer: true"))
+
+(defparameter *interpreter*
+  (make-stack-yaml
+   :name "Backends/Interpreter"
+   :path-to-other "../../"
+   :packages (list *standard-library* *core* *context* *pipeline* *parsing* *sexp* *translate* *data-structures*)
+   :extra-deps (list (make-general-dependencies *capability* *extensible* *prettiest*)
+                     *stm-container-group*
+                     *standard-library-extra-deps*)
+   :nix-build (nix-disable)
    :extra "allow-newer: true"))
 
 (defparameter *michelson*
@@ -477,6 +506,7 @@ common ones to include"
                    *translate*
                    *michelson*
                    *llvm*
+                   *interpreter*
                    *pipeline*
                    *context*
                    *sexp*
@@ -508,6 +538,7 @@ common ones to include"
                    *michelson*
                    *context*
                    *llvm*
+                   *interpreter*
                    *sexp*
                    *data-structures*)
    ;; hack name, for sub dirs
@@ -544,6 +575,7 @@ common ones to include"
                    *easy*
                    *http*
                    *llvm*
+                   *interpreter*
                    *witch*
                    *context*
                    *sexp*

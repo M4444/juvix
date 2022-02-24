@@ -33,6 +33,7 @@ dependencies:
   - pipeline
   - context
   - llvm
+  - interpreter
   ###########################
   # To make life easier
   ###########################

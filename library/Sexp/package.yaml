@@ -28,6 +28,7 @@ dependencies:
 - megaparsec
 - hashable
 - word8
+- bytestring
 - generic-deriving
 - unordered-containers
 - recursion-schemes
