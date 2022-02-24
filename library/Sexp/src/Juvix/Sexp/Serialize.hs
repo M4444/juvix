@@ -312,6 +312,10 @@ instance Serialize a => Serialize [a] where
   deserialize Nil = Just []
   deserialize _ = Nothing
 
+instance (Eq a, Hashable a, Serialize a) => Serialize (Set.HashSet a) where
+  serialize = serialize . Set.toList
+  deserialize = fmap Set.fromList . deserialize
+
 instance Serialize Text where
   serialize i = Atom (S i Nothing)
   deserialize (Atom (S i Nothing)) = Just i
