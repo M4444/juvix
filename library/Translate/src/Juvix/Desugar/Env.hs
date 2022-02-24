@@ -128,7 +128,7 @@ startingEnv =
 
 exampleMeta :: IO Meta.T
 exampleMeta = do
-  Pipeline.CIn languageData surroudning <-
+  Pipeline.CIn _ surroudning <-
     startingEnv
       >>= Pipeline.Env.run eval
         . Pipeline.modifyTraceCIn
@@ -192,7 +192,7 @@ condTrans :: Automation.SimplifiedPassArgument -> MinimalMIO Automation.Job
 condTrans simplify = do
   Trace.withScope "Desugar.condTrans" [show (simplify ^. current)] $ do
     condTransform (simplify ^. current)
-      >>| (\transformed -> Automation.ProcessNoEnv transformed [])
+      >>| (`Automation.ProcessNoEnv` [])
       >>| Automation.ProcessJob
 
 -- | @condTransform@ - CondTransform turns the cond form of the fronted
@@ -263,7 +263,7 @@ desugarTrans ::
 desugarTrans trans name simplify = do
   Trace.withScope ("Desugar." <> name) [show (simplify ^. current)] $ do
     (pure . trans) (simplify ^. current)
-      >>| (\transformed -> Automation.ProcessNoEnv transformed [])
+      >>| (`Automation.ProcessNoEnv` [])
       >>| Automation.ProcessJob
 
 --------------------------------------------------------------------------------
