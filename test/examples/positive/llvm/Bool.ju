@@ -1,0 +1,15 @@
+mod Help where
+
+open Prelude
+open LLVM
+
+type bool : ty =
+  | True
+  | False
+
+sig is-false : bool -> bool
+let is-false True  = False
+let is-false False = True
+
+sig main : string
+let main = "hello-world"
