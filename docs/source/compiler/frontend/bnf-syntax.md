@@ -18,6 +18,8 @@ The bnf diagram below, is the BNF of the Juvix Programming Language
               | <module>
               | <module-open>
               | <signature>
+              | <inlcude>
+              | <alias>
               | <function>
 
   ;;;; Declarations ======================================================
@@ -31,6 +33,12 @@ The bnf diagram below, is the BNF of the Juvix Programming Language
                   | infixr <symbol> <number>
 
   declaration-expression ::= <declarations> in <expression>
+
+  ;;;; Module Manipulators ============================================
+
+  include ::= include <symbol>
+  alias   ::= alias   <symbol> = <symbol>
+
 
   ;;;; Functions ======================================================
 
