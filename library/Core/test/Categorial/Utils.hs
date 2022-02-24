@@ -1,0 +1,1 @@
+module Categorial.Utils where
