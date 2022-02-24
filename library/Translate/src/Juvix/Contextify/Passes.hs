@@ -93,10 +93,12 @@ atomResolution context (atom@Sexp.A {atomName = name}) = do
       let qualified =
             context ^. Context._currentNameSpace . Context.record . Context.qualifiedMap
       looked <- liftIO $ atomically $ STM.lookup symbolName qualified
-      case looked of
-        Just Context.SymInfo {mod = prefix} ->
-          pure $ Sexp.addMetaToCar atom (Sexp.atom (prefix <> name))
-        Nothing -> pure (Sexp.Atom atom)
+      case Context.lookup (pure symbolName) context of
+        Nothing -> case looked of
+          Just Context.SymInfo {mod = prefix} ->
+            pure $ Sexp.addMetaToCar atom (Sexp.atom (prefix <> name))
+          Nothing -> pure (Sexp.Atom atom)
+        Just _ -> pure (Sexp.Atom atom)
 atomResolution _ s = pure (Sexp.Atom s)
 
 --------------------------------------------------------------------------------
