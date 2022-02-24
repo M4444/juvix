@@ -1,7 +1,7 @@
 ;; -----------------------------------
 ;; Configuration variables
 ;; -----------------------------------
-(defparameter *default-resolver* 18.16)
+(defparameter *default-resolver* 18.26)
 
 ;; -----------------------------------
 ;; General Abstractions Types

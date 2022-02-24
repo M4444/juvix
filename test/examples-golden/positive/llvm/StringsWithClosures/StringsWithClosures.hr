@@ -1,5 +1,412 @@
 fromList
     [
+        ( "Prelude" :|
+            [ "LLVM"
+            , "int8"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "int8"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy
+                        ( PrimTy
+                            ( IntegerType
+                                { typeBits = 8 }
+                            )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "Int"
+            , "add"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "Int"
+                    , "add"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim Add ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "Int"
+            , "*"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "Int"
+                    , "*"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim Mul ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "int16"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "int16"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy
+                        ( PrimTy
+                            ( IntegerType
+                                { typeBits = 16 }
+                            )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "StringsWithClosures" :| [ "test-add" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "StringsWithClosures" :| [ "test-add" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int8"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int8"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Elim
+                        ( App
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "Int"
+                                    , "add"
+                                    ]
+                                )
+                            )
+                            ( Prim
+                                ( LitInt 44 ) ()
+                            ) ()
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "LLVM"
+            , "Int"
+            , "-"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "LLVM"
+                    , "Int"
+                    , "-"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim Sub ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "StringsWithClosures" :| [ "hello-world" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "StringsWithClosures" :| [ "hello-world" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :|
+                            [ "LLVM"
+                            , "string"
+                            ]
+                        )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim
+                        ( LitString "Hello, world!" ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :| [ "const" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :| [ "const" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :| [ "ty" ] )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        )
+                        ( Pi SAny
+                            ( Elim
+                                ( ElimX
+                                    ( "a" :| [] )
+                                ) ()
+                            )
+                            ( Pi SAny
+                                ( Elim
+                                    ( ElimX
+                                        ( "b" :| [] )
+                                    ) ()
+                                )
+                                ( Elim
+                                    ( ElimX
+                                        ( "a" :| [] )
+                                    ) ()
+                                )
+                                ( "" :| [] )
+                            )
+                            ( "" :| [] )
+                        )
+                        ( "b" :| [] )
+                    )
+                    ( "a" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats =
+                        [ PatternX
+                            ( "_" :| [] )
+                        , PatternX
+                            ( "_" :| [] )
+                        , PatternX
+                            ( "x" :| [] )
+                        ]
+                    , rawClauseBody = Lam
+                        ( Elim
+                            ( ElimX
+                                ( "x" :| [] )
+                            ) ()
+                        )
+                        ( "_" :| [] )
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "StringsWithClosures" :| [ "llvm-litint" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "StringsWithClosures" :| [ "llvm-litint" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :|
+                            [ "LLVM"
+                            , "int8"
+                            ]
+                        )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim
+                        ( LitInt 0 ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :| [ "ty" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :| [ "ty" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Star
+                    ( U'
+                        ( CU 1 )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Star
+                        ( U'
+                            ( CU 0 )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
         ( "StringsWithClosures" :| [ "main" ]
         , RawGFunction
             ( RawFunction
@@ -91,91 +498,6 @@ fromList
     ,
         ( "Prelude" :|
             [ "LLVM"
-            , "Int"
-            , "add"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "Int"
-                    , "add"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim Add ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "int8"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "int8"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Elim
-                    ( ElimX
-                        ( "Prelude" :| [ "ty" ] )
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = PrimTy
-                        ( PrimTy
-                            ( IntegerType
-                                { typeBits = 8 }
-                            )
-                        ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
             , "int"
             ]
         , RawGFunction
@@ -200,61 +522,6 @@ fromList
                                 ]
                             )
                         ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "Int"
-            , "*"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "Int"
-                    , "*"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim Mul ()
                     , rawClauseCatchall = False
                     } :| []
                 }
@@ -419,36 +686,6 @@ fromList
             )
         )
     ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "int16"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "int16"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Elim
-                    ( ElimX
-                        ( "Prelude" :| [ "ty" ] )
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = PrimTy
-                        ( PrimTy
-                            ( IntegerType
-                                { typeBits = 16 }
-                            )
-                        ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
         ( "Prelude" :| [ "id" ]
         , RawGFunction
             ( RawFunction
@@ -485,54 +722,6 @@ fromList
                     , rawClauseBody = Elim
                         ( ElimX
                             ( "x" :| [] )
-                        ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "StringsWithClosures" :| [ "test-add" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "StringsWithClosures" :| [ "test-add" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int8"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int8"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( "" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Elim
-                        ( App
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "Int"
-                                    , "add"
-                                    ]
-                                )
-                            )
-                            ( Prim
-                                ( LitInt 44 ) ()
-                            ) ()
                         ) ()
                     , rawClauseCatchall = False
                     } :| []
@@ -589,6 +778,54 @@ fromList
                     { rawClauseTel = []
                     , rawClausePats = []
                     , rawClauseBody = Prim Add ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "StringsWithClosures" :| [ "test-mul" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "StringsWithClosures" :| [ "test-mul" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int8"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "LLVM"
+                                , "int8"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Elim
+                        ( App
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "LLVM"
+                                    , "Int"
+                                    , "mul"
+                                    ]
+                                )
+                            )
+                            ( Prim
+                                ( LitInt 50 ) ()
+                            ) ()
+                        ) ()
                     , rawClauseCatchall = False
                     } :| []
                 }
@@ -667,133 +904,6 @@ fromList
             )
         )
     ,
-        ( "StringsWithClosures" :| [ "test-mul" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "StringsWithClosures" :| [ "test-mul" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int8"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int8"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( "" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Elim
-                        ( App
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "Int"
-                                    , "mul"
-                                    ]
-                                )
-                            )
-                            ( Prim
-                                ( LitInt 50 ) ()
-                            ) ()
-                        ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :|
-            [ "LLVM"
-            , "Int"
-            , "-"
-            ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :|
-                    [ "LLVM"
-                    , "Int"
-                    , "-"
-                    ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :|
-                                [ "LLVM"
-                                , "int"
-                                ]
-                            )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :|
-                                    [ "LLVM"
-                                    , "int"
-                                    ]
-                                )
-                            ) ()
-                        )
-                        ( "" :| [] )
-                    )
-                    ( "" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim Sub ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "StringsWithClosures" :| [ "hello-world" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "StringsWithClosures" :| [ "hello-world" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Elim
-                    ( ElimX
-                        ( "Prelude" :|
-                            [ "LLVM"
-                            , "string"
-                            ]
-                        )
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim
-                        ( LitString "Hello, world!" ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
         ( "StringsWithClosures" :| [ "test-litint-add" ]
         , RawGFunction
             ( RawFunction
@@ -864,116 +974,6 @@ fromList
                                 }
                             )
                         ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :| [ "const" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :| [ "const" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Pi SAny
-                    ( Elim
-                        ( ElimX
-                            ( "Prelude" :| [ "ty" ] )
-                        ) ()
-                    )
-                    ( Pi SAny
-                        ( Elim
-                            ( ElimX
-                                ( "Prelude" :| [ "ty" ] )
-                            ) ()
-                        )
-                        ( Pi SAny
-                            ( Elim
-                                ( ElimX
-                                    ( "a" :| [] )
-                                ) ()
-                            )
-                            ( Pi SAny
-                                ( Elim
-                                    ( ElimX
-                                        ( "b" :| [] )
-                                    ) ()
-                                )
-                                ( Elim
-                                    ( ElimX
-                                        ( "a" :| [] )
-                                    ) ()
-                                )
-                                ( "" :| [] )
-                            )
-                            ( "" :| [] )
-                        )
-                        ( "b" :| [] )
-                    )
-                    ( "a" :| [] )
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats =
-                        [ PatternX
-                            ( "_" :| [] )
-                        , PatternX
-                            ( "_" :| [] )
-                        , PatternX
-                            ( "x" :| [] )
-                        ]
-                    , rawClauseBody = Lam
-                        ( Elim
-                            ( ElimX
-                                ( "x" :| [] )
-                            ) ()
-                        )
-                        ( "_" :| [] )
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "Prelude" :| [ "ty" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "Prelude" :| [ "ty" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Star
-                    ( U'
-                        ( CU 1 )
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Star
-                        ( U'
-                            ( CU 0 )
-                        ) ()
-                    , rawClauseCatchall = False
-                    } :| []
-                }
-            )
-        )
-    ,
-        ( "StringsWithClosures" :| [ "llvm-litint" ]
-        , RawGFunction
-            ( RawFunction
-                { rawFunName = "StringsWithClosures" :| [ "llvm-litint" ]
-                , rawFunUsage = GSAny
-                , rawFunType = Elim
-                    ( ElimX
-                        ( "Prelude" :|
-                            [ "LLVM"
-                            , "int8"
-                            ]
-                        )
-                    ) ()
-                , rawFunClauses = RawFunClause
-                    { rawClauseTel = []
-                    , rawClausePats = []
-                    , rawClauseBody = Prim
-                        ( LitInt 0 ) ()
                     , rawClauseCatchall = False
                     } :| []
                 }
