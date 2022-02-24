@@ -56,21 +56,6 @@
           overlays = [ haskellNix.overlay overlayHs ] ++ overlays;
         };
 
-        # Better (faster) shell for use with stack's nix integration.
-        # Usage:
-        #    nix develop --option sandbox relaxed -c stack ghci
-        stackNixEnv = { ghcVersion }:
-          with pkgsHs;
-          haskell.lib.buildStackProject {
-            ghc = haskell.compiler.${ghcVersion};
-            buildInputs = [ llvm_9 zlib curl time ldb git ];
-            name = "stackNixEnv";
-            stack = pkgs.writeShellScriptBin "stack" ''
-              STACK=$(PATH=$(echo $PATH | sed 's,/nix/[^:]*:,,g') type -p stack)
-              exec "$STACK" $STACK_IN_NIX_EXTRA_ARGS --internal-re-exec-version="$("$STACK" --numeric-version)" "$@"
-            '' // { version = "0.0.0"; };
-          };
-
         mkAppsCross = project:
         pkgs.lib.mapAttrs' (name: _:
           let v = project.projectCross.musl64.getComponent name; in
@@ -119,7 +104,7 @@
             {
               name = "stack-nix-shell";
               category = "haskell";
-              command = ''exec nix develop .#stack-nix-shell --option sandbox relaxed "$@"'';
+              command = ''exec nix develop .#stack-nix-shell "$@"'';
               help = "For use with 'stack'. Shell where you can use 'stack' to build with system dependencies provided via Nix.";
             }
             {
@@ -155,7 +140,8 @@
         lib.project = project;
 
         devShells = {
-          stack-nix-shell = stackNixEnv { ghcVersion = project.pkg-set.config.compiler.nix-name; };
+          # nix develop -c stack-nix-shell -c stack ghci
+          stack-nix-shell = pkgsHs.callPackage nix/packages/stack-nix-shell.nix { ghcVersion = project.pkg-set.config.compiler.nix-name; };
           haskell-nix-shell = flake.devShell;
           juvixDocsShell = pkgs.juvix-docs;
 
