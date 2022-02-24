@@ -249,25 +249,13 @@ writeout fout code = liftIO $ T.writeFile fout code
 ------------------
 
 -- | @runSexpPipeline@ Runs a pipeline definition against a list of module Sexps
--- and evaluates to the resulting WorkingEnv
+-- and evaluates to the resulting WorkingEnv using MonadFail to throw errors.
 runSexpPipeline ::
   Pipeline.Env.EnvS () ->
   [(NameSymbol.T, [Sexp.T])] ->
   IO Pipeline.WorkingEnv
-runSexpPipeline pipeline x = liftIO $ do
-  let workingEnv =
-        x >>= mergeTopLevel
-          >>| Pipeline.Sexp
-          |> Pipeline.WorkingEnv
-      defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
-      startingEnv =
-        (Context.empty defaultNs :: IO Context.T)
-          >>| workingEnv
-
-  Pipeline.CIn languageData surrounding <-
-    startingEnv
-      >>= Pipeline.Env.run pipeline
-        . Pipeline.emptyInput
+runSexpPipeline pipeline x = do
+  Pipeline.CIn languageData surrounding <- runSexpPipelineEnv pipeline x
 
   let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
       errors = BerlinPipeline.Feedback.getErrors feedback
@@ -275,6 +263,29 @@ runSexpPipeline pipeline x = liftIO $ do
   case errors of
     [] -> languageData |> pure
     es -> Feedback.fail . toS . pShowNoColor $ es
+
+-- | @runSexpPipeline@ Runs a pipeline definition against a list of module Sexps
+-- and evaluates to the resulting WorkingEnv and SurroundingEnv.
+runSexpPipelineEnv ::
+  Pipeline.Env.EnvS () ->
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.CIn
+runSexpPipelineEnv pipeline x =
+  do
+    let workingEnv =
+          x >>= mergeTopLevel
+            >>| Pipeline.Sexp
+            |> Pipeline.WorkingEnv
+        defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
+        startingEnv =
+          (Context.empty defaultNs :: IO Context.T)
+            >>| workingEnv
+
+    startingEnv
+    >>= Pipeline.Env.run pipeline
+      -- . Pipeline.modifyTraceCIn
+      --     (`Trace.enable` ["Context.resolveModule", "Context.resolveModule.runner", "Context.resolveModule.trans"])
+      . Pipeline.emptyInput
   where
-    inPackage name = Structure.InPackage name |> Sexp.serialize
+    inPackage name = Structure.InPackage (Context.addTopName name) |> Sexp.serialize
     mergeTopLevel (name, exps) = [inPackage name] <> exps
