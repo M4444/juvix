@@ -562,8 +562,14 @@ sexpsByModule initialModule sexps =
 -- contextify transforms them to name symbols that reference the corresponding
 -- item in the context.
 inContextSexps :: (NameSymbol.T, [Sexp.T]) -> [Pipeline.EnvOrSexp]
-inContextSexps (moduleName, sexps) = sexps >>= f
+inContextSexps (moduleName, sexps) = inPackage : (sexps >>= f)
   where
+    inPackage =
+      moduleName
+        |> Context.addTopName
+        |> Structure.InPackage
+        |> Sexp.serialize
+        |> Pipeline.Sexp
     f sexp
       | (Just defun) <-
           sexp |> Sexp.deserialize @Structure.DefunSigMatch =
