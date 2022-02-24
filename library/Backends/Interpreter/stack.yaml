@@ -1,0 +1,40 @@
+resolver: lts-18.26
+
+packages:
+- .
+- ../../StandardLibrary
+- ../../Core
+- ../../Context
+- ../../Pipeline
+- ../../Parsing
+- ../../Sexp
+- ../../Translate
+- ../../Test/DataStructures
+
+
+extra-deps:
+
+########################
+# General Dependencies #
+########################
+- capability-0.4.0.0@sha256:d86d85a1691ef0165c77c47ea72eac75c99d21fb82947efe8b2f758991cf1837,3345
+- github: metastatedev/extensible-data
+  commit: d11dee6006169cb537e95af28c3541a24194dea8
+- github: jyp/prettiest
+  commit: e5ce6cd6b4da71860c3d97da84bed4a827fa00ef
+
+###############################
+# Stm Containers Dependencies #
+###############################
+- stm-containers-1.2@sha256:a887f2e7692b7cf20e0b081e2d66e21076e2bd4b57016ec59c484edfa2d29397,3244
+- stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
+
+#####################################
+# Standard Library Extra Dependency #
+#####################################
+- github: phile314/tasty-silver
+  commit: f1f90ac3113cd445e2a7ade43ebb29f0db38ab9b
+- tasty-1.4.1@sha256:69e90e965543faf0fc2c8e486d6c1d8cf81fd108e2c4541234c41490f392f94f,2638
+
+
+allow-newer: true

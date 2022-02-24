@@ -1,0 +1,85 @@
+name:                interpreter
+version:             0.1.0.0
+github:              "heliaxdev/juvix"
+license:             GPL-3
+author:              "Heliax AG <hello@heliax.dev>"
+maintainer:          "Heliax AG <hello@heliax.dev>"
+copyright:           "2022 Heliax AG"
+
+description:         Haskell-interpreted pseudo-backend for the Juvix programming language
+
+dependencies:
+  - adjunctions
+  - aeson
+  - base >= 4.7 && < 5
+  - Cabal
+  - bytestring
+  - containers
+  - core
+  - data-fix
+  - data-structures
+  - deepseq
+  - distributive
+  - functors
+  - functor-utils
+  - hashable
+  - kan-extensions
+  - mtl
+  - pipeline
+  - recursion-schemes
+  - safe
+  - semigroupoids
+  - sexp
+  - standard-library
+  - template-haskell
+  - text
+  - transformers
+  - unordered-containers >= 0.2.13
+
+default-extensions:
+- BlockArguments
+- DataKinds
+- DeriveGeneric
+- DerivingStrategies
+- DerivingVia
+- DisambiguateRecordFields
+- FlexibleContexts
+- FlexibleInstances
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
+- NoImplicitPrelude
+- OverloadedStrings
+- QuasiQuotes
+- ScopedTypeVariables
+- StandaloneDeriving
+- TupleSections
+- TypeApplications
+- TypeFamilies
+- TypeFamilies
+- TypeInType
+- TypeOperators
+- TypeSynonymInstances
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Juvix.Backends.Interpreter
+
+tests:
+  interpreter-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - interpreter
+    - tasty
+    - tasty-hunit
+    - unordered-containers
+    - data-structures
+
