@@ -1,0 +1,13 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "LLVM" )
+,
+    ( "type" ( "bool" ":type" "ty" ) () ( "True" ) ( "False" ) )
+,
+    ( ":defsig-match" "is-false"
+        ( ":infix" "->" "bool" "bool" )
+        ( ( ( "True" ) ) "False" )
+        ( ( ( "False" ) ) "True" ) )
+,
+    ( ":defsig-match" "main" "string" ( () "hello-world" ) ) ]

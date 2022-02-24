@@ -1,0 +1,116 @@
+Right
+    ( Header
+        ( "Help" :| [] )
+        [ ModuleOpen
+            ( Open
+                ( "Prelude" :| [] )
+            )
+        , ModuleOpen
+            ( Open
+                ( "LLVM" :| [] )
+            )
+        , Type
+            ( Typ
+                { typeUsage = Nothing
+                , typeName' = "bool"
+                , typeArgs = []
+                , typeForm = Arrowed
+                    { dataArrow = Name
+                        ( "ty" :| [] )
+                    , dataAdt' = Sum
+                        ( S
+                            { sumConstructor = "True"
+                            , sumValue = Just
+                                ( ADTLike [] )
+                            } :|
+                            [ S
+                                { sumConstructor = "False"
+                                , sumValue = Just
+                                    ( ADTLike [] )
+                                }
+                            ]
+                        )
+                    }
+                }
+            )
+        , Signature
+            ( Sig
+                { signatureName = "is-false"
+                , signatureUsage = Nothing
+                , signatureArrowType = Infix
+                    ( Inf
+                        { infixLeft = Name
+                            ( "bool" :| [] )
+                        , infixOp = "->" :| []
+                        , infixRight = Name
+                            ( "bool" :| [] )
+                        }
+                    )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "is-false"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchCon
+                                    ( "True" :| [] ) []
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Name
+                            ( "False" :| [] )
+                        )
+                    }
+                )
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "is-false"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchCon
+                                    ( "False" :| [] ) []
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Name
+                            ( "True" :| [] )
+                        )
+                    }
+                )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "main"
+                , signatureUsage = Nothing
+                , signatureArrowType = Name
+                    ( "string" :| [] )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "main"
+                    , functionLikeArgs = []
+                    , functionLikeBody = Body
+                        ( Constant
+                            ( String
+                                ( Sho "hello-world" )
+                            )
+                        )
+                    }
+                )
+            )
+        ]
+    )
