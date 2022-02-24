@@ -131,7 +131,8 @@ transformConSig q name mHd typeCon r@((t Sexp.:> ts) Sexp.:> _)
 
     -- g (Sexp.List [s, e]) = e
     named = Sexp.isAtomNamed t
-transformConSig q name mHd _ r@(t Sexp.:> ts)
+-- Don't assume r is a cons, as an empty constructor has r = ()
+transformConSig q name mHd _ r
   -- TODO: Should check if there any data constructor with a signature (See GADT)
   | isNothing mHd = do
     throwFF $ InvalidConstructor name r
@@ -142,10 +143,6 @@ transformConSig q name mHd _ r@(t Sexp.:> ts)
         names = makeFieldName <$> [0 ..]
         makeFieldName i = NameSymbol.fromText $ "$field" <> show (i :: Int)
      in foldrM makeArr hd $ zip names xs
-  where
-    named = Sexp.isAtomNamed t
-transformConSig _ _ _ _ r = do
-  error "malformed transformConSig"
 
 eleToSymbol :: Sexp.T -> Maybe Symbol
 eleToSymbol x
