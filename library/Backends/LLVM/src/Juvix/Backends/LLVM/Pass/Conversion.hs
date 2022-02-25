@@ -2,6 +2,7 @@ module Juvix.Backends.LLVM.Pass.Conversion (op) where
 
 import qualified Juvix.Backends.LLVM.Pass.Types as Types
 import qualified Juvix.Backends.LLVM.Primitive as Prim
+import qualified Juvix.Core.Categorial ()
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library hiding (Map)
 import qualified Juvix.Library.HashMap as HashMap
@@ -68,6 +69,8 @@ convert (ErasedAnn.Ann {usage, type', term}) oldToNew =
           ErasedAnn.UnitM -> Types.UnitM
           ErasedAnn.AppM f xs ->
             Types.AppM (convert f oldToNew) (fmap (flip convert oldToNew) xs)
+          ErasedAnn.CategorialTermM term ->
+            Types.CategorialTermM (fmap (`convert` oldToNew) term)
    in Types.Ann {usage, annTy = Types.injectErasedTypeIntoLLVM type', term = newTerm}
 
 handleLambda :: (Term, Type') -> Environment -> Types.TermLLVM

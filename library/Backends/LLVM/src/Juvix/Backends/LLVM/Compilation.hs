@@ -5,6 +5,7 @@ module Juvix.Backends.LLVM.Compilation
 where
 
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
+import qualified Juvix.Backends.LLVM.Codegen.Categorial ()
 import qualified Juvix.Backends.LLVM.Codegen.Closure as Closure
 import qualified Juvix.Backends.LLVM.Codegen.Record as Record
 import qualified Juvix.Backends.LLVM.Codegen.Sum as Sum
@@ -12,7 +13,8 @@ import qualified Juvix.Backends.LLVM.Codegen.Types as Types
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
 import qualified Juvix.Backends.LLVM.Pass.Conversion as Conversion
 import qualified Juvix.Backends.LLVM.Pass.Types as Types
-import Juvix.Backends.LLVM.Primitive
+import Juvix.Backends.LLVM.Primitive as Primitive
+import qualified Juvix.Core.Categorial ()
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
@@ -138,6 +140,8 @@ compileTerm (Types.Ann _usage ty t) =
     Types.ScopedSumDeclM decl term -> compileSumDecl decl term
     Types.VariantM injector -> compileVariant ty injector
     Types.MatchM cases -> compileMatch ty cases
+    Types.PrimRecM zeroCase succCase n -> compilePrimRec ty zeroCase succCase n False
+    Types.NatIterM zeroCase succCase n -> compilePrimRec ty zeroCase succCase n True
     _ -> P.error "TODO"
 
 -- | @compileTermForApplication@ like @compileTerm@ however it will
@@ -422,6 +426,48 @@ compileMatch ty (sumName, term, cases) = do
   compiledCases <- mapM compileTerm cases
   environments <- mapM getCompiledEnvironment compiledCases
   Sum.makeCase sumName outputType compiledTerm (Safe.zip3Exact llvmCaseTypes compiledCases environments)
+
+compilePrimRec ::
+  Types.Define m =>
+  Types.TypeLLVM ->
+  -- | Zero case
+  Types.Annotated Types.TermLLVM ->
+  -- | Successor case
+  Types.Annotated Types.TermLLVM ->
+  -- | Natural number
+  Types.Annotated Types.TermLLVM ->
+  Bool ->
+  m LLVM.Operand
+compilePrimRec ty zeroCase succCase n@(Types.Ann _usage nTy _term) iterative = do
+  llvmTy <- typeToLLVM ty
+  compiledZeroCase <- compileTerm zeroCase
+  compiledSuccCase <- compileTerm succCase
+  succEnvironment <- getCompiledEnvironment compiledSuccCase
+  compiledN <- compileTerm n
+  nbits <- case nTy of
+    Types.PrimTy (Primitive.PrimTy pty) -> case pty of
+      LLVM.IntegerType nty -> pure nty
+      _ ->
+        throw @"err"
+          ( Types.PrimitiveRecursionOnNonIntegerType $
+              "Primitive recursion on non-integer type " <> show pty
+          )
+    _ ->
+      throw @"err"
+        ( Types.PrimitiveRecursionOnNonPrimitiveType $
+            "Primitive recursion on non-primitive type " <> show nTy
+        )
+  recFuncName <- Block.generateUniqueSymbol "natIter"
+  let generateFunc = if iterative then Block.generateNatIter else Block.generatePrimRec
+  recFunc <- generateFunc nbits llvmTy
+  Block.call
+    llvmTy
+    recFunc
+    [ (compiledZeroCase, []),
+      (compiledSuccCase, []),
+      (succEnvironment, []),
+      (compiledN, [])
+    ]
 
 --------------------------------------------------------------------------------
 -- Capture Conversion

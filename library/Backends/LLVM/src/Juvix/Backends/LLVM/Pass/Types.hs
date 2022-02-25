@@ -1,11 +1,17 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DerivingStrategies #-}
+
 module Juvix.Backends.LLVM.Pass.Types where
 
 import qualified Juvix.Backends.LLVM.Primitive as Prim
 import qualified Juvix.Core.Base.Types as BaseTypes
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
+import qualified Juvix.Sexp.Serialize as Serialize
 
 --------------------------------------------------------------------------------
 -- LLVM internal term types
@@ -38,10 +44,25 @@ data TypeLLVM
   | Sig Usage.T TypeLLVM TypeLLVM
   | CatProduct TypeLLVM TypeLLVM
   | CatCoproduct TypeLLVM TypeLLVM
+  | CategorialType Usage.T
   | UnitTy
   | RecordType RecordName
   | SumType SumName
-  deriving (Show, Read, Eq, Generic)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Read,
+      Show,
+      Eq,
+      Ord,
+      Generic,
+      Data
+    )
 
 -- | When LLVM receives a term from Core, it converts the core type
 -- | to its LLVM-extended version using this function (see the
@@ -55,6 +76,7 @@ injectErasedTypeIntoLLVM t = case t of
   ErasedAnn.Sig π a b -> Sig π (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
   ErasedAnn.CatProduct a b -> CatProduct (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
   ErasedAnn.CatCoproduct a b -> CatCoproduct (injectErasedTypeIntoLLVM a) (injectErasedTypeIntoLLVM b)
+  ErasedAnn.CategorialType σ -> CategorialType σ
   ErasedAnn.UnitTy -> UnitTy
 
 --------------------------------------------------------------------------------
@@ -309,6 +331,8 @@ data TermLLVM
   | AppM
       (Annotated TermLLVM)
       [Annotated TermLLVM]
+  | -- | A replica of the corresponding core term.
+    CategorialTermM (Categorial.Term (Annotated TermLLVM))
   | -- | One of the extensions to Core's term type, this wraps
     -- | a term in a record type declaration, so that the record
     -- | type is available within the wrapped term.
@@ -336,4 +360,33 @@ data TermLLVM
     -- | type which must be in scope from terms which will become the
     -- | cases (whose types must therefore match those of the sum type).
     MatchM TermMatch
-  deriving (Show)
+  | -- | Another of the extensions to Core's term type, this defines a
+    -- | primitive recursive function, also known as a catamorphism on
+    -- | the natural numbers.
+    -- |  Parameters:
+    -- |  - Zero case ("base case"): output type
+    -- |  - Successor case ("induction step"): a function with signature
+    -- |    predecessor (Nat) -> previous output value -> new output value
+    -- |  - The natural number to destruct (also known as the number of
+    -- |    loop iterations)
+    PrimRecM (Annotated TermLLVM) (Annotated TermLLVM) (Annotated TermLLVM)
+  | -- | Another of the extensions to Core's term type, this defines a
+    -- | function with the same semantics as PrimRecM, but with an
+    -- | iterative implementation.
+    NatIterM (Annotated TermLLVM) (Annotated TermLLVM) (Annotated TermLLVM)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
+
+deriving anyclass instance Serialize.Serialize TermLLVM
