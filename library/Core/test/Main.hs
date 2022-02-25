@@ -1,5 +1,6 @@
 module Main where
 
+import qualified Categorial.Typechecker as CategorialTypecheckerTest
 import Conv (coreConversions)
 import Erasure (erasureTests)
 import qualified HR.Pretty
@@ -28,7 +29,8 @@ allCheckedTests =
       Weak.top,
       HR.Pretty.top,
       Utility.top,
-      Serialize.top
+      Serialize.top,
+      CategorialTypecheckerTest.top
     ]
 
 main :: IO ()
