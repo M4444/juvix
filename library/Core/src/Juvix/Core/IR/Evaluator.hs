@@ -23,6 +23,7 @@ module Juvix.Core.IR.Evaluator
   )
 where
 
+import Control.Monad.Trans.Except as ExceptT
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.IntMap as IntMap
 import qualified Data.IntMap.Strict as PM
@@ -30,6 +31,7 @@ import Juvix.Core.Base.TransformExt
 import qualified Juvix.Core.Base.TransformExt as TransformExt
 import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Core.IR.Evaluator.PatSubst
 import Juvix.Core.IR.Evaluator.SubstV
 import Juvix.Core.IR.Evaluator.Types
@@ -119,6 +121,10 @@ inlineAllGlobals t lookupFun patternMap =
       Core.CatCoproductIntroRight (inlineAllGlobals x lookupFun patternMap) ann
     Core.CatCoproductElim a b cp x1 x2 ann ->
       Core.CatCoproductElim (inlineAllGlobals a lookupFun patternMap) (inlineAllGlobals b lookupFun patternMap) (inlineAllGlobals cp lookupFun patternMap) (inlineAllGlobals x1 lookupFun patternMap) (inlineAllGlobals x2 lookupFun patternMap) ann
+    Core.CategorialType π ann ->
+      Core.CategorialType π ann
+    Core.CategorialTerm term ann ->
+      Core.CategorialTerm (fmap (flip (`inlineAllGlobals` lookupFun) patternMap) term) ann
     Core.Prim {} -> t
     Core.PrimTy {} -> t
     Core.Star {} -> t
@@ -194,6 +200,14 @@ evalTermWith _ _ (Core.UnitTy _) =
   pure IR.VUnitTy
 evalTermWith _ _ (Core.Unit _) =
   pure IR.VUnit
+evalTermWith _g _exts (Core.CategorialType π _) =
+  pure $ IR.VCategorialType π
+evalTermWith g exts (Core.CategorialTerm term _) =
+  join $
+    traverse (evalTermWith g exts) term
+      >>= second (bimap CategorialReduceError IR.VCategorialTerm)
+        . ExceptT.runExceptT
+        . Categorial.reduce
 evalTermWith g exts (Core.Let _ l b _) = do
   l' <- evalElimWith g exts l
   b' <- evalTermWith g exts b

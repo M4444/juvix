@@ -13,6 +13,7 @@ module Juvix.Core.IR.Evaluator.Types
 where
 
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.HR.Pretty as HR
 import qualified Juvix.Core.IR.Typechecker.Types as TC
 import qualified Juvix.Core.IR.Types as IR
@@ -81,6 +82,15 @@ data Error extV extT primTy primVal
     UnsupportedTermExt (Core.TermX extT primTy primVal)
   | -- | Unsupported elimination extension.
     UnsupportedElimExt (Core.ElimX extT primTy primVal)
+  | -- | Error while reducing (evaluating) categorial term.
+    --   This indicates a compiler bug:  either a client
+    --   attempted to reduce a categorial term which had
+    --   not been typechecked, or the categorial typechecker
+    --   allowed a term to typecheck which produced an
+    --   error during evaluation (which in turn could be
+    --   a bug in either the categorial typecheker or the
+    --   categorial evaluator).
+    CategorialReduceError (Categorial.EvalError (Core.Value extV primTy primVal))
 
 -- | Errors that can occur during evaluation.
 data ErrorValue extV primTy primVal = -- | Error during application.
@@ -117,13 +127,19 @@ instance
 
 -- | Pretty-printer intance for errors.
 instance
-  ApplyErrorPretty primTy primVal =>
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    ApplyErrorPretty primTy primVal
+  ) =>
   PP.PrettyText (Error IR.T TC.T primTy primVal)
   where
   prettyT = \case
     ErrorValue value -> PP.prettyT value
     UnsupportedTermExt x -> absurd x
     UnsupportedElimExt x -> absurd x
+    CategorialReduceError e -> PP.show e
 
 deriving instance
   ( Eq primTy,

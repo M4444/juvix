@@ -93,6 +93,10 @@ instance AllWeak ext primTy primVal => HasWeak (Core.Term ext primTy primVal) wh
     Core.UnitTy (weakBy' b i a)
   weakBy' b i (Core.Unit a) =
     Core.Unit (weakBy' b i a)
+  weakBy' b i (Core.CategorialType π a) =
+    Core.CategorialType π (weakBy' b i a)
+  weakBy' b i (Core.CategorialTerm term a) =
+    Core.CategorialTerm (fmap (weakBy' b i) term) (weakBy' b i a)
   weakBy' b i (Core.Let π s t a) =
     Core.Let π (weakBy' b i s) (weakBy' b (succ i) t) (weakBy' b i a)
   weakBy' b i (Core.Elim f a) =
@@ -161,6 +165,10 @@ instance
     Core.VUnitTy (weakBy' b i a)
   weakBy' b i (Core.VUnit a) =
     Core.VUnit (weakBy' b i a)
+  weakBy' b i (Core.VCategorialType π a) =
+    Core.VCategorialType π (weakBy' b i a)
+  weakBy' b i (Core.VCategorialTerm term a) =
+    Core.VCategorialTerm (fmap (weakBy' b i) term) (weakBy' b i a)
   weakBy' b i (Core.VNeutral n a) =
     Core.VNeutral (weakBy' b i n) (weakBy' b i a)
   weakBy' b i (Core.VPrim p a) =

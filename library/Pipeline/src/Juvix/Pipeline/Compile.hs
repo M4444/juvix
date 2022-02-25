@@ -218,6 +218,8 @@ baseToReturn t =
     IR.Let u a b -> IR.Let u (elimToReturn a) (baseToReturn b)
     IR.UnitTy -> IR.UnitTy
     IR.Unit -> IR.Unit
+    IR.CategorialType π -> IR.CategorialType π
+    IR.CategorialTerm term -> IR.CategorialTerm (fmap baseToReturn term)
     IR.Elim e -> IR.Elim (elimToReturn e)
 
 elimToReturn ::

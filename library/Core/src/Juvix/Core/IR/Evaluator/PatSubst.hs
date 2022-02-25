@@ -147,6 +147,10 @@ instance
     Core.UnitTy <$> patSubst' b m a
   patSubst' b m (Core.Unit a) =
     Core.Unit <$> patSubst' b m a
+  patSubst' b m (Core.CategorialType π a) =
+    Core.CategorialType π <$> patSubst' b m a
+  patSubst' b m (Core.CategorialTerm term a) =
+    Core.CategorialTerm <$> traverse (patSubst' b m) term <*> patSubst' b m a
   patSubst' b m (Core.Let π l t a) =
     Core.Let π <$> patSubst' b m l
       <*> patSubst' (succ b) m t
