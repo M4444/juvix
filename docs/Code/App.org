@@ -1,6 +1,6 @@
 * Main
 - _Relies on_
-  + [[LLVM]]
+  + [[Interpreter]]
   + [[Michelson]]
   + [[Library]]
   + [[Feedback]]
@@ -8,6 +8,7 @@
   + [[Pipeline]]
 * Options
 - _Relies on_
+  + [[Interpreter]]
   + [[LLVM]]
   + [[Michelson]]
   + [[Library]]
