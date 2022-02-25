@@ -45,6 +45,8 @@ module Juvix.Core.Pretty
     ppCatProductIntro,
     ppCatProductElimLeft,
     ppCatProductElimRight,
+    ppCategorialTerm,
+    ppCategorialType,
     unitCon,
     unitVal,
   )
@@ -163,6 +165,12 @@ sumCon = annotate' ATyCon "+"
 leftIntroSum = annotate' AValCon "inl"
 rightIntroSum = annotate' AValCon "inr"
 elimSum = annotate' AValCon "case"
+
+categorialTypeDoc :: Doc
+categorialTypeDoc = annotate' AValCon "catType"
+
+categorialTermDoc :: Doc
+categorialTermDoc = annotate' AValCon "catTerm"
 
 unitCon :: Doc
 unitCon = annotate' ATyCon "Unit"
@@ -346,6 +354,14 @@ ppCatCoproductElim match c1 c2 = hangsA indentWidth caseDoc [inl, inr]
     caseDoc = hsepA [pure elimSum, pretty' match, pure arrow]
     inl = hsepA [pure leftIntroSum, pure mapsto, pretty' c1]
     inr = hsepA [pure leftIntroSum, pure mapsto, pretty' c2]
+
+-- | Print a categorial type.
+ppCategorialType :: (PrecReader m) => Usage.T -> m Doc
+ppCategorialType π = fmap parens (hsepA [pure categorialTypeDoc, ppUsage π, pure pipe])
+
+-- | Print a categorial term.
+ppCategorialTerm :: (PrettySyntax a, PrecReader m, Ann a ~ PPAnn) => a -> m Doc
+ppCategorialTerm t = fmap parens (hsepA [pure categorialTermDoc, pretty' t])
 
 class ToPPAnn ann where
   toPPAnn :: ann -> PPAnn

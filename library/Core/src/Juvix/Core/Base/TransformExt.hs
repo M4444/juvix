@@ -25,6 +25,8 @@ data ExtTransformTEF f ext1 ext2 primTy primVal = ExtTransformTEF
     etfCatCoproductElim :: XCatCoproductElim ext1 primTy primVal -> f (XCatCoproductElim ext2 primTy primVal),
     etfUnitTy :: XUnitTy ext1 primTy primVal -> f (XUnitTy ext2 primTy primVal),
     etfUnit :: XUnit ext1 primTy primVal -> f (XUnit ext2 primTy primVal),
+    etfCategorialType :: XCategorialType ext1 primTy primVal -> f (XCategorialType ext2 primTy primVal),
+    etfCategorialTerm :: XCategorialTerm ext1 primTy primVal -> f (XCategorialTerm ext2 primTy primVal),
     etfLet :: XLet ext1 primTy primVal -> f (XLet ext2 primTy primVal),
     etfElim :: XElim ext1 primTy primVal -> f (XElim ext2 primTy primVal),
     etfBound :: XBound ext1 primTy primVal -> f (XBound ext2 primTy primVal),
@@ -61,6 +63,8 @@ pattern ExtTransformTE ::
   (XCatCoproductElim ext1 primTy primVal -> XCatCoproductElim ext2 primTy primVal) ->
   (XUnitTy ext1 primTy primVal -> XUnitTy ext2 primTy primVal) ->
   (XUnit ext1 primTy primVal -> XUnit ext2 primTy primVal) ->
+  (XCategorialType ext1 primTy primVal -> XCategorialType ext2 primTy primVal) ->
+  (XCategorialTerm ext1 primTy primVal -> XCategorialTerm ext2 primTy primVal) ->
   (XLet ext1 primTy primVal -> XLet ext2 primTy primVal) ->
   (XElim ext1 primTy primVal -> XElim ext2 primTy primVal) ->
   (XBound ext1 primTy primVal -> XBound ext2 primTy primVal) ->
@@ -88,6 +92,8 @@ pattern ExtTransformTE
     etCatCoproductElim,
     etUnitTy,
     etUnit,
+    etCategorialType,
+    etCategorialTerm,
     etLet,
     etElim,
     etBound,
@@ -115,6 +121,8 @@ pattern ExtTransformTE
       etfCatCoproductIntroLeft = Coerce etCatCoproductIntroLeft,
       etfCatCoproductIntroRight = Coerce etCatCoproductIntroRight,
       etfCatCoproductElim = Coerce etCatCoproductElim,
+      etfCategorialType = Coerce etCategorialType,
+      etfCategorialTerm = Coerce etCategorialTerm,
       etfLet = Coerce etLet,
       etfElim = Coerce etElim,
       etfBound = Coerce etBound,
@@ -160,6 +168,10 @@ extTransformTF fs (UnitTy e) =
   UnitTy <$> etfUnitTy fs e
 extTransformTF fs (Unit e) =
   Unit <$> etfUnit fs e
+extTransformTF fs (CategorialType π e) =
+  CategorialType π <$> etfCategorialType fs e
+extTransformTF fs (CategorialTerm term e) =
+  CategorialTerm <$> traverse (extTransformTF fs) term <*> etfCategorialTerm fs e
 extTransformTF fs (Let π l b e) =
   Let π <$> extTransformEF fs l <*> extTransformTF fs b <*> etfLet fs e
 extTransformTF fs (Elim f e) = Elim <$> extTransformEF fs f <*> etfElim fs e
@@ -209,6 +221,8 @@ type ForgotExt ext primTy primVal =
     XCatCoproductIntroLeft ext primTy primVal ~ (),
     XCatCoproductIntroRight ext primTy primVal ~ (),
     XCatCoproductElim ext primTy primVal ~ (),
+    XCategorialType ext primTy primVal ~ (),
+    XCategorialTerm ext primTy primVal ~ (),
     XUnitTy ext primTy primVal ~ (),
     XUnit ext primTy primVal ~ (),
     XLam ext primTy primVal ~ (),
@@ -244,6 +258,8 @@ forgetter =
       etCatCoproductElim = const (),
       etUnitTy = const (),
       etUnit = const (),
+      etCategorialType = const (),
+      etCategorialTerm = const (),
       etLam = const (),
       etLet = const (),
       etElim = const (),
@@ -296,6 +312,8 @@ compose fs gs =
       etfCatCoproductElim = etfCatCoproductElim fs <=< etfCatCoproductElim gs,
       etfUnitTy = etfUnitTy fs <=< etfUnitTy gs,
       etfUnit = etfUnit fs <=< etfUnit gs,
+      etfCategorialType = etfCategorialType fs <=< etfCategorialType gs,
+      etfCategorialTerm = etfCategorialTerm fs <=< etfCategorialTerm gs,
       etfLam = etfLam fs <=< etfLam gs,
       etfLet = etfLet fs <=< etfLet gs,
       etfElim = etfElim fs <=< etfElim gs,
