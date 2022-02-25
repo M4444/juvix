@@ -9,6 +9,7 @@ where
 
 ------------------------------------------------------------------------------
 
+import qualified Juvix.Backends.Interpreter as Interpreter
 import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
 import Juvix.Library hiding (option)
@@ -24,6 +25,7 @@ data Context = Context
 data Backend
   = Michelson Michelson.BMichelson
   | LLVM LLVM.BLLVM
+  | Interpreter Interpreter.BInterpreter
   deriving (Eq, Show)
 
 data Options = Options
@@ -104,6 +106,7 @@ backendOptions =
         ( \case
             "michelson" -> pure $ Michelson Michelson.BMichelson
             "llvm" -> pure $ LLVM LLVM.BLLVM
+            "interpreter" -> pure $ Interpreter Interpreter.BInterpreter
             _ -> Nothing
         )
     )

@@ -3,7 +3,7 @@ module Main (main) where
 ------------------------------------------------------------------------------
 
 import qualified Data.ByteString as BS
-import qualified Juvix.Backends.LLVM as LLVM
+import qualified Juvix.Backends.Interpreter as Interpreter
 import qualified Juvix.Backends.Michelson as Michelson
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
@@ -28,6 +28,7 @@ run' _ (Options cmd _) = do
     Parse fin -> runCmd fin (LLVM LLVM.BLLVM) Pipeline.parse
     Typecheck fin backend -> case backend of
       LLVM b -> g b
+      Interpreter b -> g b
       Michelson b -> g b
       where
         g ::
@@ -44,6 +45,7 @@ run' _ (Options cmd _) = do
     Compile fin fout backend ->
       case backend of
         LLVM b -> g b
+        Interpreter b -> g b
         Michelson b -> g b
       where
         g ::
@@ -75,6 +77,7 @@ runCmd ::
   (forall b. Pipeline.HasBackend b => b -> Text -> Pipeline.Pipeline a) ->
   Pipeline.Pipeline ()
 runCmd fin backend f = case backend of
+  Interpreter b -> runCmd' fin b f
   LLVM b -> runCmd' fin b f
   Michelson b -> runCmd' fin b f
 
