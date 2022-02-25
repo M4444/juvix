@@ -2,7 +2,7 @@
 , lib ? pkgs.lib
 , haskell-nix ? pkgs.haskell-nix
   # Should match the one in stack.yaml, usually inferred automatically "ghc8107"
-, compiler-nix-name ? null
+, compiler-nix-name ? "ghc8107"
 , doHaddock ? doHoogle # hoogle requires haddock
 , doHoogle ? false
 , doCheck ? false
