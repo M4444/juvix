@@ -415,8 +415,8 @@ debugLevelOne = whenM ((1 <=) <$> ask @"debug")
 --------------------------------------------------------------------------------
 
 -- | 'variantToType' takes the type out of the variant
-variantToType :: Sum.VariantInfo -> Type
-variantToType = Sum.typ'
+variantToType :: VariantInfo -> Type
+variantToType = typ'
 
 pointerOf :: Type -> Type
 pointerOf typ = PointerType typ (AddrSpace.AddrSpace 0)
