@@ -1,0 +1,49 @@
+mod Categorial where
+
+open Prelude
+open Interpreter
+
+sig morphism-intro : (int -> int) -> categorial-type SAny
+let morphism-intro f = cat-cons
+    (cat-keyword "KMorphismIntro")
+    (cat-cons (cat-atom int)
+    (cat-cons (cat-atom int)
+    (cat-cons (cat-atom f)
+    (cat-keyword "nil"))))
+
+sig int-inc : int -> int
+let int-inc i = i + 1
+
+sig main : categorial-type SAny
+let main =
+  let a = 1 + 2 : int in
+  let m = 3 * 4 : int in
+  let s = "test" : string in
+  let ap = append "test" "-append" : string in
+  -- let n = nth (int-to-nat 2) "test" : string in
+  let l = length "test" : nat in
+  let it = int-lt 2 4 : bool in
+  let ilt = int-lt 4 2 : bool in
+  let n = int-to-nat 7 : nat in
+  -- let mi = morphism-intro int-inc in
+  let ieq = int-eq 5 5 : bool in
+  let ineq = int-eq 5 6 : bool in
+  let seq = string-eq "foo" "foo" in
+  let sneq = string-eq "foo" "bar" in
+  let and-true = and true true in
+  let and-false = and false true in
+  let or-true = or false true in
+  let or-false = or false false in
+  let not-true = not false in
+  let not-false = not true in
+  let int-if-left = int-if true 9 10 : int in
+  let int-if-right = int-if or-false 9 10 : int in
+  let string-if-left = string-if or-true "foo" "bar" : string in
+  let string-if-right = string-if and-false "foo" "bar" : string in
+  let inc-intro = cat-cons
+    (cat-keyword "KMorphismIntro")
+    (cat-cons (cat-atom int)
+    (cat-cons (cat-atom int)
+    (cat-cons (cat-atom int-inc)
+    (cat-keyword "nil")))) : categorial-type SAny in
+  inc-intro
