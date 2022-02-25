@@ -15,7 +15,7 @@ module Juvix.Context
     lookup,
     tryLookup,
     (!?),
-    CantResolve(..),
+    CantResolve (..),
 
     -- * Functions on Info
     lookupInfoSexp,
@@ -45,7 +45,7 @@ module Juvix.Context
 
     -- ** Extra API
     persistDefinition,
-    AmbiguousDef(..),
+    AmbiguousDef (..),
 
     -- * Dealing with Top Level Naming
     addTopName,
@@ -53,13 +53,14 @@ module Juvix.Context
     qualifySymbol,
 
     -- * Table Operations
-    Table(..),
+    Table (..),
     nameFromTable,
     nameSpaceFromTableErr,
     currentRecordContents,
 
     -- * Operations on From
     extractValue,
+
     -- * NameSymbol Operations
   )
 where

@@ -384,7 +384,6 @@ coreify3 = do
   x <- coreify "type verySimpleType = One" defMichelson
   printCoreFunction (snd x) defMichelson "One"
 
-
 coreify2 :: IO ()
 coreify2 = do
   -- Broken example that works currently
