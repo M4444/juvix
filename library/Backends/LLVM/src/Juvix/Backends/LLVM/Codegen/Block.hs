@@ -140,6 +140,8 @@ module Juvix.Backends.LLVM.Codegen.Block
     switch,
     generateIf,
     generateSwitch,
+    generatePrimRec,
+    generateNatIter,
 
     -- ** Calling Operations
     emptyArgs,
@@ -1125,6 +1127,176 @@ generateSwitch ty tag caseInfos mdefault = do
       pure (op, blockName)
     (names, values, cases) = unzip3 caseInfos
 
+-- | @generatePrimRec@ generates code for a primitive-recursive function
+-- call: that is, a catamorphism over natural numbers (integer values, in
+-- LLVM) with a number of iterations known at the time of the call.
+--
+-- This function's implementation is recursive.
+--
+-- @
+-- Block.generatePrimRec ty term cases
+-- @
+generatePrimRec ::
+  ( Define m,
+    RetInstruction m,
+    HasState "moduleDefinitions" [Definition] m,
+    HasState "blockCount" Int m,
+    HasState "names" Names m,
+    HasState "symTab" SymbolTable m
+  ) =>
+  Word32 ->
+  Type ->
+  m Operand
+generatePrimRec intBits outputTy = do
+  recFuncName <- generateUniqueSymbol "primRec"
+
+  defineFunction outputTy recFuncName [zeroCaseArg, succCaseArg, envArg, natArg] $ do
+    negativeCountError <- addBlock "primRec.error"
+    valid <- addBlock "primRec.valid"
+    recurse <- addBlock "primRec.recurse"
+    zeroBlock <- addBlock "primRec.zero"
+
+    self <- getvar recFuncName
+    zeroResult <- externf zeroCaseName
+    succCase <- externf succCaseName
+    env <- externf envName
+    n <- externf nName
+
+    negativeCount <- icmp IntPred.SLT n zeroVal
+    void $ cbr negativeCount negativeCountError valid
+
+    setBlock negativeCountError
+    abort
+    ret zeroResult
+
+    setBlock valid
+    isZero <- icmp IntPred.EQ n zeroVal
+    cbr isZero zeroBlock recurse
+
+    setBlock zeroBlock
+    ret zeroResult
+
+    setBlock recurse
+    pred <- sub natTy n oneVal
+    predResult <-
+      call
+        outputTy
+        self
+        [(zeroResult, []), (succCase, []), (env, []), (pred, [])]
+    call
+      outputTy
+      succCase
+      [(env, []), (pred, []), (predResult, [])]
+      >>= ret
+  where
+    intVal i =
+      AST.ConstantOperand $
+        C.Int {C.integerBits = intBits, C.integerValue = i}
+
+    natTy = AST.IntegerType {AST.typeBits = intBits}
+
+    zeroVal = intVal 0
+    oneVal = intVal 1
+
+    zeroCaseName = "zeroCase"
+    succCaseName = "succCase"
+    envName = "primRecEnv"
+    nName = "n"
+
+    succCaseType =
+      Types.pointerOf $
+        FunctionType outputTy [envType, natTy, outputTy] False
+    envType = Types.pointerOf (Types.pointerOf Type.i8)
+
+    zeroCaseArg = (outputTy, zeroCaseName)
+    succCaseArg = (succCaseType, succCaseName)
+    envArg = (envType, envName)
+    natArg = (natTy, nName)
+
+-- | @generateNatIter@ generates code for a primitive-recursive function
+-- call: that is, a catamorphism over natural numbers (integer values, in
+-- LLVM) with a number of iterations known at the time of the call.
+--
+-- Although this function has the semantics of a recursive one, its
+-- implementation is iterative.
+--
+-- @
+-- Block.generateNatIter ty term cases
+-- @
+generateNatIter ::
+  ( Define m,
+    RetInstruction m,
+    HasState "moduleDefinitions" [Definition] m,
+    HasState "blockCount" Int m,
+    HasState "names" Names m,
+    HasState "symTab" SymbolTable m
+  ) =>
+  Word32 ->
+  Type ->
+  m Operand
+generateNatIter intBits outputTy = do
+  recFuncName <- generateUniqueSymbol "natIter"
+
+  defineFunction outputTy recFuncName [zeroCaseArg, succCaseArg, envArg, natArg] $ do
+    negativeCountError <- addBlock "natIter.error"
+    loop <- addBlock "natIter.loop"
+    step <- addBlock "natIter.step"
+    exit <- addBlock "natIter.exit"
+
+    curNVar <- alloca natTy
+    curResultVar <- alloca outputTy
+
+    store curNVar zeroVal
+    externf zeroCaseName >>= store curResultVar
+    numSuccCalls <- externf nName
+    succCase <- externf succCaseName
+    env <- externf envName
+
+    negativeCount <- icmp IntPred.SLT numSuccCalls zeroVal
+    void $ cbr negativeCount negativeCountError loop
+
+    setBlock negativeCountError
+    abort
+    void $ br exit
+
+    setBlock loop
+    curN <- load natTy curNVar
+    curResult <- load outputTy curResultVar
+    finished <- icmp IntPred.EQ curN numSuccCalls
+    void $ cbr finished exit step
+
+    setBlock step
+    call outputTy succCase [(env, []), (curN, []), (curResult, [])] >>= store curResultVar
+    add natTy curN oneVal >>= store curNVar
+    void $ br loop
+
+    setBlock exit
+    load outputTy curResultVar >>= ret
+  where
+    intVal i =
+      AST.ConstantOperand $
+        C.Int {C.integerBits = intBits, C.integerValue = i}
+
+    natTy = AST.IntegerType {AST.typeBits = intBits}
+
+    zeroVal = intVal 0
+    oneVal = intVal 1
+
+    zeroCaseName = "zeroCase"
+    succCaseName = "succCase"
+    envName = "natIterEnv"
+    nName = "n"
+
+    succCaseType =
+      Types.pointerOf $
+        FunctionType outputTy [envType, natTy, outputTy] False
+    envType = Types.pointerOf (Types.pointerOf Type.i8)
+
+    zeroCaseArg = (outputTy, zeroCaseName)
+    succCaseArg = (succCaseType, succCaseName)
+    envArg = (envType, envName)
+    natArg = (natTy, nName)
+
 --------------------------------------------------------------------------------
 -- Effects
 --------------------------------------------------------------------------------
@@ -1211,6 +1383,25 @@ call typ fn args =
     Call
       { functionAttributes = [],
         tailCallKind = Nothing,
+        callingConvention = CC.Fast,
+        returnAttributes = [],
+        function = Right fn,
+        arguments = args,
+        metadata = []
+      }
+
+-- | @tailCall@ is like @call@, but marks the call as tail-recursive.
+tailCall ::
+  RetInstruction m =>
+  Type ->
+  Operand ->
+  [(Operand, [ParameterAttribute.ParameterAttribute])] ->
+  m Operand
+tailCall typ fn args =
+  instr typ $
+    Call
+      { functionAttributes = [],
+        tailCallKind = Just MustTail,
         callingConvention = CC.Fast,
         returnAttributes = [],
         function = Right fn,
