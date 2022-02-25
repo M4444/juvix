@@ -4,6 +4,7 @@ import Control.Arrow (left)
 import qualified Data.ByteString as ByteString (readFile)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Juvix.BerlinPasses.Contextify as BerlinPasses
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Environment
@@ -256,7 +257,7 @@ fullyContextify ::
   IO (Either Contextify.ResolveErr Environment.T)
 fullyContextify xs = do
   ctx <- Context.empty "JU-USER"
-  Desugar.Env.fullyContextify ctx xs
+  BerlinPasses.fullyContextify ctx xs
 
 -- contextifySexp ::
 --   NonEmpty (NameSymbol.T, [Sexp.T]) -> IO Environment.SexpContext

@@ -28,6 +28,7 @@ import qualified Juvix.Backends.LLVM.Pipeline as LLVM
 import qualified Juvix.Backends.LLVM.Primitive as LLVM.Prim
 import qualified Juvix.Backends.Michelson.Parameterisation as Michelson.Param
 import qualified Juvix.Backends.Michelson.Pipeline as Michelson
+import qualified Juvix.BerlinPasses.Contextify as BerlinPasses
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
@@ -271,7 +272,7 @@ contextifyNoResolve ::
   IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextifyNoResolve bs def = do
   ctx <- Context.empty "Juvix-User"
-  contextifyGen (Desugar.Env.contextify ctx) bs def
+  contextifyGen (BerlinPasses.contextify ctx) bs def
 
 -- | We do @contextifyNoResolve@ but on a file instead
 -- File ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP, Resolves
@@ -281,7 +282,7 @@ contextifyNoResolveFile ::
   IO (Contextify.PathError (Context.T, [ResolveOpen.PreQualified]))
 contextifyNoResolveFile bs def = do
   ctx <- Context.empty "Juvix-User"
-  contextifyFileGen (Desugar.Env.contextify ctx) bs def
+  contextifyFileGen (BerlinPasses.contextify ctx) bs def
 
 ----------------------------------------
 -- CONTEXTIFY Examples
@@ -318,7 +319,7 @@ contextify ::
   ByteString -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
 contextify bs def = do
   ctx <- Context.empty "Juvix-User"
-  contextifyGen (Desugar.Env.fullyContextify ctx) bs def
+  contextifyGen (BerlinPasses.fullyContextify ctx) bs def
 
 -- | we do @contextify@ but on a file instead
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified
@@ -326,7 +327,7 @@ contextifyFile ::
   FilePath -> Options primTy primVal -> IO (Either Contextify.ResolveErr Context.T)
 contextifyFile bs def = do
   ctx <- Context.empty "Juvix-User"
-  contextifyFileGen (Desugar.Env.fullyContextify ctx) bs def
+  contextifyFileGen (BerlinPasses.fullyContextify ctx) bs def
 
 --------------------------------------------------------------------------------
 -- Context Resolve Phase
@@ -335,7 +336,6 @@ contextifyFile bs def = do
 -- | Here is where we want to stop when we want to see what the context
 -- passes have done, and the final form before we run CotnexttoParsing
 -- Text ⟶ ML AST ⟶ LISP AST ⟶ De-sugared LISP ⟶ Contextified LISP ⟶ Resolved Contextified ⟶ Context Desugar
-
 contextifyDesugar ::
   ByteString ->
   Options primTy primVal ->
@@ -362,7 +362,6 @@ contextifyDesugarSexps xs def = do
     |> runFullPipeline
     >>| view Pipeline.context
 
-
 ----------------------------------------
 -- CONTEXTIFY Examples
 ----------------------------------------
@@ -370,6 +369,23 @@ contexify1 :: IO ()
 contexify1 = do
   ctx <- contextifyDesugar "let foo = 3" defMichelson
   printDefModule defMichelson ctx
+
+testMainMultiArgs =
+  "open LLVM \
+  \ open LLVM.Int \
+  \ let main x y = x + y"
+
+contexify2 :: IO ()
+contexify2 = do
+  ctx <-
+    contextifyDesugar
+      "open Prelude \
+      \ open LLVM \
+      \ open LLVM.Int \
+      \ sig main : int -> int -> int \
+      \ let main x y = x + y"
+      defLLVM
+  printDefModule defLLVM ctx
 
 --------------------------------------------------------------------------------
 -- Core Phase
@@ -421,6 +437,11 @@ coreify2 = do
   -- Broken example that works currently
   x <- coreify "sig foo : int let foo x = x" defMichelson
   printCoreFunction (snd x) defMichelson "foo"
+
+coreify3 :: IO ()
+coreify3 = do
+  x <- coreify testMainMultiArgs defLLVM
+  printCoreFunction (snd x) defLLVM "main"
 
 --------------------------------------------------------------------------------
 -- Erasure Phase

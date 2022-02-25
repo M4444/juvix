@@ -1,6 +1,7 @@
 module Test.Context.Helpers where
 
 import Control.Lens (view, (^.))
+import Juvix.BerlinPasses.Contextify (contextify)
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
@@ -35,7 +36,7 @@ contextualizeFoo ::
 contextualizeFoo byte = do
   ctx <- Context.empty "JU-USER"
   sexp <- parseDesugarSexp byte
-  Desugar.Env.contextify ctx (("Foo", sexp) :| [])
+  contextify ctx (("Foo", sexp) :| [])
 
 parseDesugarSexp :: ByteString -> IO [Sexp.T]
 parseDesugarSexp = desugarLisp . parsedSexp
@@ -101,4 +102,4 @@ runPipelineToStep step = runSexpPipeline pipeline
 
 emptyContextify names = do
   ctx <- Context.empty "JU-USER"
-  Desugar.Env.contextify ctx names
+  contextify ctx names
