@@ -12,6 +12,7 @@ where
 import qualified Data.Aeson as A
 import Data.Kind (Constraint)
 import Extensible (Config (..), NameAffix (..), defaultConfig, extensibleWith)
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Library hiding (Pos, datatypeName)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Usage
@@ -158,6 +159,20 @@ extensibleWith
         UnitTy
       | -- | Unit Value
         Unit
+      | -- | The type of a categorial term -- this contains only a usage
+        -- | because a categorial term is self-describing; in particular,
+        -- | it includes its own type.
+        CategorialType Usage
+      | -- | A categorial term -- expressed in terms of category theory
+        -- | rather than a dependent type system.  In particular, this
+        -- | means that it represents an object (AKA type), morphism (function),
+        -- | category (universe), logic (AKA higher category, AKA type
+        -- | system), natural transformation (polymorphic function), or
+        -- | adjunction (introduction and elimination rule).  It is mutually
+        -- | recursive with other Core terms, and defined á la carte, as a
+        -- | functor -- extensions to the term within the Categorial module
+        -- | do not induce modifications throughout Core.
+        CategorialTerm (Categorial.Term (Term primTy primVal))
       | -- | CONV conversion rule. TODO make sure 0Γ ⊢ S≡T
         -- Elim is the constructor that embeds Elim to Term
         Elim (Elim primTy primVal)
@@ -193,6 +208,8 @@ extensibleWith
       | VCatCoproductElim (Value primTy primVal) (Value primTy primVal) (Value primTy primVal) (Value primTy primVal) (Value primTy primVal)
       | VUnitTy
       | VUnit
+      | VCategorialType Usage
+      | VCategorialTerm (Categorial.Term (Value primTy primVal))
       | VNeutral (Neutral primTy primVal)
       | VPrim primVal
       deriving (Eq, Show, Generic, Data, NFData)
@@ -381,6 +398,8 @@ type QuoteContext ext primTy primVal =
     XVCatCoproductIntroLeft ext primTy primVal ~ XCatCoproductIntroLeft ext primTy primVal,
     XVCatCoproductIntroRight ext primTy primVal ~ XCatCoproductIntroRight ext primTy primVal,
     XVCatCoproductElim ext primTy primVal ~ XCatCoproductElim ext primTy primVal,
+    XVCategorialType ext primTy primVal ~ XCategorialType ext primTy primVal,
+    XVCategorialTerm ext primTy primVal ~ XCategorialTerm ext primTy primVal,
     XVUnitTy ext primTy primVal ~ XUnitTy ext primTy primVal,
     XVUnit ext primTy primVal ~ XUnit ext primTy primVal,
     XVPrim ext primTy primVal ~ XPrim ext primTy primVal,
@@ -411,6 +430,8 @@ quote (VCatCoproductIntroRight s ext) = CatCoproductIntroRight (quote s) ext
 quote (VCatCoproductElim a b cp s t ext) = CatCoproductElim (quote a) (quote b) (quote cp) (quote s) (quote t) ext
 quote (VUnitTy ext) = UnitTy ext
 quote (VUnit ext) = Unit ext
+quote (VCategorialType π ext) = CategorialType π ext
+quote (VCategorialTerm term ext) = CategorialTerm (fmap quote term) ext
 quote (VPrim pri ext) = Prim pri ext
 quote (VNeutral n ext) = Elim (neutralQuote n) ext
 quote (ValueX ext) = TermX ext
