@@ -33,7 +33,9 @@ transformSig ::
     HasCoreSigs HR.T primTy primVal m,
     HasClosure m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.T ->
   Ctx.Info ->
@@ -59,7 +61,9 @@ transformNormalSig ::
     HasParam primTy primVal m,
     HasClosure m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
@@ -93,7 +97,9 @@ transformValSig ::
     HasCoreSigs HR.T primTy primVal m,
     HasClosure m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
@@ -112,6 +118,8 @@ transformValSig _ x def _ _ = throwFF $ SigRequired x def
 transformSpecial ::
   ( Show primTy,
     Show primVal,
+    Eq primTy,
+    Eq primVal,
     HasThrowFF ext primTy primVal m,
     HasCoreSigs ext primTy primVal m,
     HasClosure m

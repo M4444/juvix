@@ -33,7 +33,9 @@ isMain _ = False
 -- | Evaluate terms of a global definition
 unsafeEvalGlobal ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawGlobal IR.T primTy primVal ->
@@ -52,7 +54,7 @@ unsafeEvalGlobal globals g =
 
 -- | Type primitive values of a global definition
 typePrims ::
-  (Show ty, Show val, Param.CanPrimApply k ty) =>
+  (Show ty, Show val, Param.CanPrimApply k ty, Eq ty, Eq val) =>
   Core.RawGlobal IR.T ty val ->
   Core.RawGlobal IR.T (Param.KindedType ty) (Param.TypedPrim ty val)
 typePrims g =
@@ -75,7 +77,9 @@ argReturn arg@Core.RawDataArg {rawArgType} =
 
 argEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawDataArg IR.T primTy primVal ->
@@ -92,7 +96,9 @@ conReturn con@Core.RawDataCon {rawConType, rawConDef} =
 
 conEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawDataCon IR.T primTy primVal ->
@@ -109,7 +115,9 @@ funReturn (Core.RawFunction name usage term clauses) =
 
 funEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawFunction IR.T primTy primVal ->
@@ -126,7 +134,9 @@ funClauseReturn (Core.RawFunClause tel patts term catchall) =
 
 funClauseEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawFunClause IR.T primTy primVal ->
@@ -151,7 +161,9 @@ telescopeReturn = fmap f
 
 telescopeEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.RawTelescope IR.T primTy primVal ->
@@ -235,7 +247,11 @@ elimToReturn e =
 
 unsafeEval ::
   ( IR.CanEval IR.T IR.T primTy primVal,
-    Debug primTy primVal
+    Debug primTy primVal,
+    Show primTy,
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   Core.RawGlobals IR.T primTy primVal ->
   Core.Term IR.T primTy primVal ->

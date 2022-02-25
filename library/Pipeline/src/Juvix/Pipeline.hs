@@ -143,7 +143,7 @@ class HasBackend b where
       Right x -> pure x
 
   toHR ::
-    (Show (Ty b), Show (Val b)) =>
+    (Show (Ty b), Show (Val b), Eq (Ty b), Eq (Val b)) =>
     Param.Parameterisation (Ty b) (Val b) ->
     Context.T ->
     Pipeline (Core.RawGlobals HR.T (Ty b) (Val b))
