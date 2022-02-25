@@ -1,0 +1,388 @@
+ShowMod
+    { contents = T
+        { public = fromList
+            [
+                ( "main"
+                , Info
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
+                                ( "TopLevel.Prelude.categorial-type" "TopLevel.Prelude.SAny" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( ":let-match" "a"
+                                    ( ()
+                                        ( "TopLevel.Prelude.:"
+                                            ( "TopLevel.Prelude.Interpreter.+" 1 2 ) "TopLevel.Prelude.Interpreter.int" ) )
+                                    ( ":let-match" "m"
+                                        ( ()
+                                            ( "TopLevel.Prelude.:"
+                                                ( "TopLevel.Prelude.Interpreter.*" 3 4 ) "TopLevel.Prelude.Interpreter.int" ) )
+                                        ( ":let-match" "s"
+                                            ( ()
+                                                ( "TopLevel.Prelude.:" "test" "TopLevel.Prelude.Interpreter.string" ) )
+                                            ( ":let-match" "ap"
+                                                ( ()
+                                                    ( "TopLevel.Prelude.:"
+                                                        ( "TopLevel.Prelude.Interpreter.append" "test" "-append" ) "TopLevel.Prelude.Interpreter.string" ) )
+                                                ( ":let-match" "l"
+                                                    ( ()
+                                                        ( "TopLevel.Prelude.:"
+                                                            ( "TopLevel.Prelude.Interpreter.length" "test" ) "TopLevel.Prelude.Interpreter.nat" ) )
+                                                    ( ":let-match" "it"
+                                                        ( ()
+                                                            ( "TopLevel.Prelude.:"
+                                                                ( "TopLevel.Prelude.Interpreter.int-lt" 2 4 ) "TopLevel.Prelude.Interpreter.bool" ) )
+                                                        ( ":let-match" "ilt"
+                                                            ( ()
+                                                                ( "TopLevel.Prelude.:"
+                                                                    ( "TopLevel.Prelude.Interpreter.int-lt" 4 2 ) "TopLevel.Prelude.Interpreter.bool" ) )
+                                                            ( ":let-match" "n"
+                                                                ( ()
+                                                                    ( "TopLevel.Prelude.:"
+                                                                        ( "TopLevel.Prelude.Interpreter.int-to-nat" 7 ) "TopLevel.Prelude.Interpreter.nat" ) )
+                                                                ( ":let-match" "ieq"
+                                                                    ( ()
+                                                                        ( "TopLevel.Prelude.:"
+                                                                            ( "TopLevel.Prelude.Interpreter.int-eq" 5 5 ) "TopLevel.Prelude.Interpreter.bool" ) )
+                                                                    ( ":let-match" "ineq"
+                                                                        ( ()
+                                                                            ( "TopLevel.Prelude.:"
+                                                                                ( "TopLevel.Prelude.Interpreter.int-eq" 5 6 ) "TopLevel.Prelude.Interpreter.bool" ) )
+                                                                        ( ":let-match" "seq"
+                                                                            ( ()
+                                                                                ( "TopLevel.Prelude.Interpreter.string-eq" "foo" "foo" ) )
+                                                                            ( ":let-match" "sneq"
+                                                                                ( ()
+                                                                                    ( "TopLevel.Prelude.Interpreter.string-eq" "foo" "bar" ) )
+                                                                                ( ":let-match" "and-true"
+                                                                                    ( ()
+                                                                                        ( "TopLevel.Prelude.Interpreter.and" "TopLevel.Prelude.Interpreter.true" "TopLevel.Prelude.Interpreter.true" ) )
+                                                                                    ( ":let-match" "and-false"
+                                                                                        ( ()
+                                                                                            ( "TopLevel.Prelude.Interpreter.and" "TopLevel.Prelude.Interpreter.false" "TopLevel.Prelude.Interpreter.true" ) )
+                                                                                        ( ":let-match" "or-true"
+                                                                                            ( ()
+                                                                                                ( "TopLevel.Prelude.Interpreter.or" "TopLevel.Prelude.Interpreter.false" "TopLevel.Prelude.Interpreter.true" ) )
+                                                                                            ( ":let-match" "or-false"
+                                                                                                ( ()
+                                                                                                    ( "TopLevel.Prelude.Interpreter.or" "TopLevel.Prelude.Interpreter.false" "TopLevel.Prelude.Interpreter.false" ) )
+                                                                                                ( ":let-match" "not-true"
+                                                                                                    ( ()
+                                                                                                        ( "TopLevel.Prelude.Interpreter.not" "TopLevel.Prelude.Interpreter.false" ) )
+                                                                                                    ( ":let-match" "not-false"
+                                                                                                        ( ()
+                                                                                                            ( "TopLevel.Prelude.Interpreter.not" "TopLevel.Prelude.Interpreter.true" ) )
+                                                                                                        ( ":let-match" "int-if-left"
+                                                                                                            ( ()
+                                                                                                                ( "TopLevel.Prelude.:"
+                                                                                                                    ( "TopLevel.Prelude.Interpreter.int-if" "TopLevel.Prelude.Interpreter.true" 9 10 ) "TopLevel.Prelude.Interpreter.int" ) )
+                                                                                                            ( ":let-match" "int-if-right"
+                                                                                                                ( ()
+                                                                                                                    ( "TopLevel.Prelude.:"
+                                                                                                                        ( "TopLevel.Prelude.Interpreter.int-if" "or-false" 9 10 ) "TopLevel.Prelude.Interpreter.int" ) )
+                                                                                                                ( ":let-match" "string-if-left"
+                                                                                                                    ( ()
+                                                                                                                        ( "TopLevel.Prelude.:"
+                                                                                                                            ( "TopLevel.Prelude.Interpreter.string-if" "or-true" "foo" "bar" ) "TopLevel.Prelude.Interpreter.string" ) )
+                                                                                                                    ( ":let-match" "string-if-right"
+                                                                                                                        ( ()
+                                                                                                                            ( "TopLevel.Prelude.:"
+                                                                                                                                ( "TopLevel.Prelude.Interpreter.string-if" "and-false" "foo" "bar" ) "TopLevel.Prelude.Interpreter.string" ) )
+                                                                                                                        ( ":let-match" "inc-intro"
+                                                                                                                            ( ()
+                                                                                                                                ( "TopLevel.Prelude.:"
+                                                                                                                                    ( "TopLevel.Prelude.cat-cons"
+                                                                                                                                        ( ":paren"
+                                                                                                                                            ( "TopLevel.Prelude.cat-keyword" "KMorphismIntro" ) )
+                                                                                                                                        ( ":paren"
+                                                                                                                                            ( "TopLevel.Prelude.cat-cons"
+                                                                                                                                                ( ":paren"
+                                                                                                                                                    ( "TopLevel.Prelude.cat-atom" "TopLevel.Prelude.Interpreter.int" ) )
+                                                                                                                                                ( ":paren"
+                                                                                                                                                    ( "TopLevel.Prelude.cat-cons"
+                                                                                                                                                        ( ":paren"
+                                                                                                                                                            ( "TopLevel.Prelude.cat-atom" "TopLevel.Prelude.Interpreter.int" ) )
+                                                                                                                                                        ( ":paren"
+                                                                                                                                                            ( "TopLevel.Prelude.cat-cons"
+                                                                                                                                                                ( ":paren"
+                                                                                                                                                                    ( "TopLevel.Prelude.cat-atom" "int-inc" ) )
+                                                                                                                                                                ( ":paren"
+                                                                                                                                                                    ( "TopLevel.Prelude.cat-keyword" "nil" ) ) ) ) ) ) ) ) )
+                                                                                                                                    ( "TopLevel.Prelude.categorial-type" "TopLevel.Prelude.SAny" ) ) ) "inc-intro" ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) } )
+            ,
+                ( "int-inc"
+                , Info
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
+                                ( "TopLevel.Prelude.->" "TopLevel.Prelude.Interpreter.int" "TopLevel.Prelude.Interpreter.int" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ( "i" )
+                                ( "TopLevel.Prelude.Interpreter.+" "i" 1 ) ) ) } )
+            ,
+                ( "morphism-intro"
+                , Info
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
+                                ( "TopLevel.Prelude.->"
+                                    ( ":paren"
+                                        ( "TopLevel.Prelude.->" "TopLevel.Prelude.Interpreter.int" "TopLevel.Prelude.Interpreter.int" ) )
+                                    ( "TopLevel.Prelude.categorial-type" "TopLevel.Prelude.SAny" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ( "f" )
+                                ( "TopLevel.Prelude.cat-cons"
+                                    ( ":paren"
+                                        ( "TopLevel.Prelude.cat-keyword" "KMorphismIntro" ) )
+                                    ( ":paren"
+                                        ( "TopLevel.Prelude.cat-cons"
+                                            ( ":paren"
+                                                ( "TopLevel.Prelude.cat-atom" "TopLevel.Prelude.Interpreter.int" ) )
+                                            ( ":paren"
+                                                ( "TopLevel.Prelude.cat-cons"
+                                                    ( ":paren"
+                                                        ( "TopLevel.Prelude.cat-atom" "TopLevel.Prelude.Interpreter.int" ) )
+                                                    ( ":paren"
+                                                        ( "TopLevel.Prelude.cat-cons"
+                                                            ( ":paren"
+                                                                ( "TopLevel.Prelude.cat-atom" "f" ) )
+                                                            ( ":paren"
+                                                                ( "TopLevel.Prelude.cat-keyword" "nil" ) ) ) ) ) ) ) ) ) ) ) } ) ]
+        , private = fromList [] }
+    , openList = []
+    , qualifiedMap = fromList
+        [
+            ( "cat-coproduct-elim"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "length"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( ":"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "ty_"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-coproduct-intro-right"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-cons"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "not"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "SAny"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "+"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "LLVM"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product-elim-left"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "true"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "add"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "string-eq"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-atom"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "string-if"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-keyword"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "id"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "or"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "nat"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "dpair"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "append"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-coproduct-intro-left"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "mul"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-coproduct"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int-eq"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "*"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "false"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "ty"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "string"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "->"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int-to-nat"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "and"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "int-lt"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "int-if"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "arr"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Michelson"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "nth"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-product-elim-right"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "const"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "categorial-type"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Interpreter"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product-intro"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "bool"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } ) ] }

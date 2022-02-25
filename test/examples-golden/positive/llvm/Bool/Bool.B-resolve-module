@@ -8,18 +8,37 @@ ShowMod
                         [
                             ( "type"
                             ,
-                                ( ":infix" "TopLevel.Prelude.->" "TopLevel.LLVM.Data.Bool.bool" "TopLevel.LLVM.Data.Bool.bool" ) ) ]
+                                ( ":infix" "TopLevel.Prelude.->" "bool" "bool" ) ) ]
                     , infoDef = Term
                         ( ":lambda-case"
-                            ( ( ( "TopLevel.LLVM.Data.Bool.True" ) ) "TopLevel.LLVM.Data.Bool.False" )
-                            ( ( ( "TopLevel.LLVM.Data.Bool.False" ) ) "TopLevel.LLVM.Data.Bool.True" ) ) } )
+                            ( ( ( "True" ) ) "False" )
+                            ( ( ( "False" ) ) "True" ) ) } )
             ,
                 ( "main"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.LLVM.Data.String.string" ) ]
+                        [ ( "type", "TopLevel.Prelude.LLVM.string" ) ]
                     , infoDef = Term
-                        ( ":lambda-case" ( () "hello-world" ) ) } ) ]
+                        ( ":lambda-case" ( () "hello-world" ) ) } )
+            ,
+                ( "True"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Term
+                        ( ":sum-con" "bool" ) } )
+            ,
+                ( "False"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Term
+                        ( ":sum-con" "bool" ) } )
+            ,
+                ( "bool"
+                , Info
+                    { infoTable = fromList []
+                    , infoDef = Term
+                        ( "type"
+                            ( "bool" ":type" "TopLevel.Prelude.ty" ) () ( "True" ) ( "False" ) ) } ) ]
         , private = fromList [] }
     , openList = []
     , qualifiedMap = fromList
@@ -40,7 +59,15 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "cat-cons"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
             ( "SAny"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "LLVM"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
@@ -48,15 +75,21 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "True"
+            ( "cat-atom"
             , SymInfo
-                { used = NotUsed
-                , mod = "TopLevel" :|
-                    [ "LLVM", "Data", "Bool" ] } )
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-keyword"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
             ( "id"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int8"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
         ,
             ( "dpair"
             , SymInfo
@@ -66,6 +99,10 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "int16"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
+        ,
             ( "cat-coproduct"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
@@ -74,23 +111,19 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "False"
-            , SymInfo
-                { used = NotUsed
-                , mod = "TopLevel" :|
-                    [ "LLVM", "Data", "Bool" ] } )
-        ,
             ( "string"
             , SymInfo
-                { used = NotUsed
-                , mod = "TopLevel" :|
-                    [ "LLVM", "Data", "String" ] } )
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
         ,
             ( "->"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
             ( "arr"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Michelson"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
@@ -106,12 +139,24 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "categorial-type"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Interpreter"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Int"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
+        ,
             ( "cat-product-intro"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "bool"
+            ( "int"
             , SymInfo
                 { used = NotUsed
                 , mod = "TopLevel" :|
-                    [ "LLVM", "Data", "Bool" ] } ) ] }
+                    [ "Prelude", "LLVM" ] } ) ] }

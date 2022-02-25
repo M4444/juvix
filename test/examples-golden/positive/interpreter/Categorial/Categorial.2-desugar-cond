@@ -1,0 +1,103 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "Interpreter" )
+,
+    ( ":defsig" "morphism-intro"
+        ( ":infix" "->"
+            ( ":paren" ( ":infix" "->" "int" "int" ) )
+            ( "categorial-type" "SAny" ) ) )
+,
+    ( ":defun" "morphism-intro" ( "f" )
+        ( "cat-cons"
+            ( ":paren" ( "cat-keyword" "KMorphismIntro" ) )
+            ( ":paren"
+                ( "cat-cons"
+                    ( ":paren" ( "cat-atom" "int" ) )
+                    ( ":paren"
+                        ( "cat-cons"
+                            ( ":paren" ( "cat-atom" "int" ) )
+                            ( ":paren"
+                                ( "cat-cons"
+                                    ( ":paren" ( "cat-atom" "f" ) )
+                                    ( ":paren"
+                                        ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) ) )
+,
+    ( ":defsig" "int-inc" ( ":infix" "->" "int" "int" ) )
+,
+    ( ":defun" "int-inc" ( "i" ) ( ":infix" "+" "i" 1 ) )
+,
+    ( ":defsig" "main" ( "categorial-type" "SAny" ) )
+,
+    ( ":defun" "main" ()
+        ( "let" "a" ()
+            ( ":infix" "+" 1 ( ":infix" ":" 2 "int" ) )
+            ( "let" "m" ()
+                ( ":infix" "*" 3 ( ":infix" ":" 4 "int" ) )
+                ( "let" "s" ()
+                    ( ":infix" ":" "test" "string" )
+                    ( "let" "ap" ()
+                        ( ":infix" ":" ( "append" "test" "-append" ) "string" )
+                        ( "let" "l" ()
+                            ( ":infix" ":" ( "length" "test" ) "nat" )
+                            ( "let" "it" ()
+                                ( ":infix" ":" ( "int-lt" 2 4 ) "bool" )
+                                ( "let" "ilt" ()
+                                    ( ":infix" ":" ( "int-lt" 4 2 ) "bool" )
+                                    ( "let" "n" ()
+                                        ( ":infix" ":"
+                                            ( "int-to-nat" 7 ) "nat" )
+                                        ( "let" "ieq" ()
+                                            ( ":infix" ":"
+                                                ( "int-eq" 5 5 ) "bool" )
+                                            ( "let" "ineq" ()
+                                                ( ":infix" ":"
+                                                    ( "int-eq" 5 6 ) "bool" )
+                                                ( "let" "seq" ()
+                                                    ( "string-eq" "foo" "foo" )
+                                                    ( "let" "sneq" ()
+                                                        ( "string-eq" "foo" "bar" )
+                                                        ( "let" "and-true" ()
+                                                            ( "and" "true" "true" )
+                                                            ( "let" "and-false" ()
+                                                                ( "and" "false" "true" )
+                                                                ( "let" "or-true" ()
+                                                                    ( "or" "false" "true" )
+                                                                    ( "let" "or-false" ()
+                                                                        ( "or" "false" "false" )
+                                                                        ( "let" "not-true" ()
+                                                                            ( "not" "false" )
+                                                                            ( "let" "not-false" ()
+                                                                                ( "not" "true" )
+                                                                                ( "let" "int-if-left" ()
+                                                                                    ( ":infix" ":"
+                                                                                        ( "int-if" "true" 9 10 ) "int" )
+                                                                                    ( "let" "int-if-right" ()
+                                                                                        ( ":infix" ":"
+                                                                                            ( "int-if" "or-false" 9 10 ) "int" )
+                                                                                        ( "let" "string-if-left" ()
+                                                                                            ( ":infix" ":"
+                                                                                                ( "string-if" "or-true" "foo" "bar" ) "string" )
+                                                                                            ( "let" "string-if-right" ()
+                                                                                                ( ":infix" ":"
+                                                                                                    ( "string-if" "and-false" "foo" "bar" ) "string" )
+                                                                                                ( "let" "inc-intro" ()
+                                                                                                    ( ":infix" ":"
+                                                                                                        ( "cat-cons"
+                                                                                                            ( ":paren"
+                                                                                                                ( "cat-keyword" "KMorphismIntro" ) )
+                                                                                                            ( ":paren"
+                                                                                                                ( "cat-cons"
+                                                                                                                    ( ":paren"
+                                                                                                                        ( "cat-atom" "int" ) )
+                                                                                                                    ( ":paren"
+                                                                                                                        ( "cat-cons"
+                                                                                                                            ( ":paren"
+                                                                                                                                ( "cat-atom" "int" ) )
+                                                                                                                            ( ":paren"
+                                                                                                                                ( "cat-cons"
+                                                                                                                                    ( ":paren"
+                                                                                                                                        ( "cat-atom" "int-inc" ) )
+                                                                                                                                    ( ":paren"
+                                                                                                                                        ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) )
+                                                                                                        ( "categorial-type" "SAny" ) ) "inc-intro" ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ]

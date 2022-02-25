@@ -1,0 +1,1995 @@
+fromList
+    [
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "+"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "+"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimAdd ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "int-eq"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "int-eq"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimIntEq ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "or"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "or"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimAnd ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "length"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "length"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "string"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "nat"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimLength ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "string-if"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "string-if"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Pi SAny
+                            ( Elim
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "string"
+                                        ]
+                                    )
+                                ) ()
+                            )
+                            ( Elim
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "string"
+                                        ]
+                                    )
+                                ) ()
+                            )
+                            ( "" :| [] )
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimStringIf ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "int-lt"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "int-lt"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimIntLt ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "true"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "true"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :|
+                            [ "Interpreter"
+                            , "bool"
+                            ]
+                        )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim ( BoolVal True ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Categorial" :| [ "int-inc" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Categorial" :| [ "int-inc" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats =
+                        [ PatternX
+                            ( "i" :| [] )
+                        ]
+                    , rawClauseBody = Elim
+                        ( App
+                            ( App
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "+"
+                                        ]
+                                    )
+                                )
+                                ( Elim
+                                    ( ElimX
+                                        ( "i" :| [] )
+                                    ) ()
+                                ) ()
+                            )
+                            ( Prim
+                                ( IntVal 1 ) ()
+                            ) ()
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "int"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "int"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy PrimInt ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "*"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "*"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimMul ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "string"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "string"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy PrimString ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "mul"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "mul"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimMul ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "bool"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "bool"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy PrimBool ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "append"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "append"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "string"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimAppend ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :| [ "const" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :| [ "const" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :| [ "ty" ] )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :| [ "ty" ] )
+                            ) ()
+                        )
+                        ( Pi SAny
+                            ( Elim
+                                ( ElimX
+                                    ( "a" :| [] )
+                                ) ()
+                            )
+                            ( Pi SAny
+                                ( Elim
+                                    ( ElimX
+                                        ( "b" :| [] )
+                                    ) ()
+                                )
+                                ( Elim
+                                    ( ElimX
+                                        ( "a" :| [] )
+                                    ) ()
+                                )
+                                ( "" :| [] )
+                            )
+                            ( "" :| [] )
+                        )
+                        ( "b" :| [] )
+                    )
+                    ( "a" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats =
+                        [ PatternX
+                            ( "_" :| [] )
+                        , PatternX
+                            ( "_" :| [] )
+                        , PatternX
+                            ( "x" :| [] )
+                        ]
+                    , rawClauseBody = Lam
+                        ( Elim
+                            ( ElimX
+                                ( "x" :| [] )
+                            ) ()
+                        )
+                        ( "_" :| [] )
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :| [ "ty" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :| [ "ty" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Star
+                    ( U'
+                        ( CU 1 )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Star
+                        ( U'
+                            ( CU 0 )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "int-if"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "int-if"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Pi SAny
+                            ( Elim
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "int"
+                                        ]
+                                    )
+                                ) ()
+                            )
+                            ( Elim
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "int"
+                                        ]
+                                    )
+                                ) ()
+                            )
+                            ( "" :| [] )
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimIntIf ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "and"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "and"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimAnd ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "nth"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "nth"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "nat"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimNth ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Categorial" :| [ "main" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Categorial" :| [ "main" ]
+                , rawFunUsage = GSAny
+                , rawFunType = CategorialType SAny ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Let SAny
+                        ( Ann
+                            ( Elim
+                                ( App
+                                    ( App
+                                        ( ElimX
+                                            ( "Prelude" :|
+                                                [ "Interpreter"
+                                                , "+"
+                                                ]
+                                            )
+                                        )
+                                        ( Prim
+                                            ( IntVal 1 ) ()
+                                        ) ()
+                                    )
+                                    ( Prim
+                                        ( IntVal 2 ) ()
+                                    ) ()
+                                ) ()
+                            )
+                            ( Elim
+                                ( ElimX
+                                    ( "Prelude" :|
+                                        [ "Interpreter"
+                                        , "int"
+                                        ]
+                                    )
+                                ) ()
+                            ) ()
+                        )
+                        ( Let SAny
+                            ( Ann
+                                ( Elim
+                                    ( App
+                                        ( App
+                                            ( ElimX
+                                                ( "Prelude" :|
+                                                    [ "Interpreter"
+                                                    , "*"
+                                                    ]
+                                                )
+                                            )
+                                            ( Prim
+                                                ( IntVal 3 ) ()
+                                            ) ()
+                                        )
+                                        ( Prim
+                                            ( IntVal 4 ) ()
+                                        ) ()
+                                    ) ()
+                                )
+                                ( Elim
+                                    ( ElimX
+                                        ( "Prelude" :|
+                                            [ "Interpreter"
+                                            , "int"
+                                            ]
+                                        )
+                                    ) ()
+                                ) ()
+                            )
+                            ( Let SAny
+                                ( Ann
+                                    ( Prim
+                                        ( StringVal "test" ) ()
+                                    )
+                                    ( Elim
+                                        ( ElimX
+                                            ( "Prelude" :|
+                                                [ "Interpreter"
+                                                , "string"
+                                                ]
+                                            )
+                                        ) ()
+                                    ) ()
+                                )
+                                ( Let SAny
+                                    ( Ann
+                                        ( Elim
+                                            ( App
+                                                ( App
+                                                    ( ElimX
+                                                        ( "Prelude" :|
+                                                            [ "Interpreter"
+                                                            , "append"
+                                                            ]
+                                                        )
+                                                    )
+                                                    ( Prim
+                                                        ( StringVal "test" ) ()
+                                                    ) ()
+                                                )
+                                                ( Prim
+                                                    ( StringVal "-append" ) ()
+                                                ) ()
+                                            ) ()
+                                        )
+                                        ( Elim
+                                            ( ElimX
+                                                ( "Prelude" :|
+                                                    [ "Interpreter"
+                                                    , "string"
+                                                    ]
+                                                )
+                                            ) ()
+                                        ) ()
+                                    )
+                                    ( Let SAny
+                                        ( Ann
+                                            ( Elim
+                                                ( App
+                                                    ( ElimX
+                                                        ( "Prelude" :|
+                                                            [ "Interpreter"
+                                                            , "length"
+                                                            ]
+                                                        )
+                                                    )
+                                                    ( Prim
+                                                        ( StringVal "test" ) ()
+                                                    ) ()
+                                                ) ()
+                                            )
+                                            ( Elim
+                                                ( ElimX
+                                                    ( "Prelude" :|
+                                                        [ "Interpreter"
+                                                        , "nat"
+                                                        ]
+                                                    )
+                                                ) ()
+                                            ) ()
+                                        )
+                                        ( Let SAny
+                                            ( Ann
+                                                ( Elim
+                                                    ( App
+                                                        ( App
+                                                            ( ElimX
+                                                                ( "Prelude" :|
+                                                                    [ "Interpreter"
+                                                                    , "int-lt"
+                                                                    ]
+                                                                )
+                                                            )
+                                                            ( Prim
+                                                                ( IntVal 2 ) ()
+                                                            ) ()
+                                                        )
+                                                        ( Prim
+                                                            ( IntVal 4 ) ()
+                                                        ) ()
+                                                    ) ()
+                                                )
+                                                ( Elim
+                                                    ( ElimX
+                                                        ( "Prelude" :|
+                                                            [ "Interpreter"
+                                                            , "bool"
+                                                            ]
+                                                        )
+                                                    ) ()
+                                                ) ()
+                                            )
+                                            ( Let SAny
+                                                ( Ann
+                                                    ( Elim
+                                                        ( App
+                                                            ( App
+                                                                ( ElimX
+                                                                    ( "Prelude" :|
+                                                                        [ "Interpreter"
+                                                                        , "int-lt"
+                                                                        ]
+                                                                    )
+                                                                )
+                                                                ( Prim
+                                                                    ( IntVal 4 ) ()
+                                                                ) ()
+                                                            )
+                                                            ( Prim
+                                                                ( IntVal 2 ) ()
+                                                            ) ()
+                                                        ) ()
+                                                    )
+                                                    ( Elim
+                                                        ( ElimX
+                                                            ( "Prelude" :|
+                                                                [ "Interpreter"
+                                                                , "bool"
+                                                                ]
+                                                            )
+                                                        ) ()
+                                                    ) ()
+                                                )
+                                                ( Let SAny
+                                                    ( Ann
+                                                        ( Elim
+                                                            ( App
+                                                                ( ElimX
+                                                                    ( "Prelude" :|
+                                                                        [ "Interpreter"
+                                                                        , "int-to-nat"
+                                                                        ]
+                                                                    )
+                                                                )
+                                                                ( Prim
+                                                                    ( IntVal 7 ) ()
+                                                                ) ()
+                                                            ) ()
+                                                        )
+                                                        ( Elim
+                                                            ( ElimX
+                                                                ( "Prelude" :|
+                                                                    [ "Interpreter"
+                                                                    , "nat"
+                                                                    ]
+                                                                )
+                                                            ) ()
+                                                        ) ()
+                                                    )
+                                                    ( Let SAny
+                                                        ( Ann
+                                                            ( Elim
+                                                                ( App
+                                                                    ( App
+                                                                        ( ElimX
+                                                                            ( "Prelude" :|
+                                                                                [ "Interpreter"
+                                                                                , "int-eq"
+                                                                                ]
+                                                                            )
+                                                                        )
+                                                                        ( Prim
+                                                                            ( IntVal 5 ) ()
+                                                                        ) ()
+                                                                    )
+                                                                    ( Prim
+                                                                        ( IntVal 5 ) ()
+                                                                    ) ()
+                                                                ) ()
+                                                            )
+                                                            ( Elim
+                                                                ( ElimX
+                                                                    ( "Prelude" :|
+                                                                        [ "Interpreter"
+                                                                        , "bool"
+                                                                        ]
+                                                                    )
+                                                                ) ()
+                                                            ) ()
+                                                        )
+                                                        ( Let SAny
+                                                            ( Ann
+                                                                ( Elim
+                                                                    ( App
+                                                                        ( App
+                                                                            ( ElimX
+                                                                                ( "Prelude" :|
+                                                                                    [ "Interpreter"
+                                                                                    , "int-eq"
+                                                                                    ]
+                                                                                )
+                                                                            )
+                                                                            ( Prim
+                                                                                ( IntVal 5 ) ()
+                                                                            ) ()
+                                                                        )
+                                                                        ( Prim
+                                                                            ( IntVal 6 ) ()
+                                                                        ) ()
+                                                                    ) ()
+                                                                )
+                                                                ( Elim
+                                                                    ( ElimX
+                                                                        ( "Prelude" :|
+                                                                            [ "Interpreter"
+                                                                            , "bool"
+                                                                            ]
+                                                                        )
+                                                                    ) ()
+                                                                ) ()
+                                                            )
+                                                            ( Let SAny
+                                                                ( App
+                                                                    ( App
+                                                                        ( ElimX
+                                                                            ( "Prelude" :|
+                                                                                [ "Interpreter"
+                                                                                , "string-eq"
+                                                                                ]
+                                                                            )
+                                                                        )
+                                                                        ( Prim
+                                                                            ( StringVal "foo" ) ()
+                                                                        ) ()
+                                                                    )
+                                                                    ( Prim
+                                                                        ( StringVal "foo" ) ()
+                                                                    ) ()
+                                                                )
+                                                                ( Let SAny
+                                                                    ( App
+                                                                        ( App
+                                                                            ( ElimX
+                                                                                ( "Prelude" :|
+                                                                                    [ "Interpreter"
+                                                                                    , "string-eq"
+                                                                                    ]
+                                                                                )
+                                                                            )
+                                                                            ( Prim
+                                                                                ( StringVal "foo" ) ()
+                                                                            ) ()
+                                                                        )
+                                                                        ( Prim
+                                                                            ( StringVal "bar" ) ()
+                                                                        ) ()
+                                                                    )
+                                                                    ( Let SAny
+                                                                        ( App
+                                                                            ( App
+                                                                                ( ElimX
+                                                                                    ( "Prelude" :|
+                                                                                        [ "Interpreter"
+                                                                                        , "and"
+                                                                                        ]
+                                                                                    )
+                                                                                )
+                                                                                ( Elim
+                                                                                    ( ElimX
+                                                                                        ( "Prelude" :|
+                                                                                            [ "Interpreter"
+                                                                                            , "true"
+                                                                                            ]
+                                                                                        )
+                                                                                    ) ()
+                                                                                ) ()
+                                                                            )
+                                                                            ( Elim
+                                                                                ( ElimX
+                                                                                    ( "Prelude" :|
+                                                                                        [ "Interpreter"
+                                                                                        , "true"
+                                                                                        ]
+                                                                                    )
+                                                                                ) ()
+                                                                            ) ()
+                                                                        )
+                                                                        ( Let SAny
+                                                                            ( App
+                                                                                ( App
+                                                                                    ( ElimX
+                                                                                        ( "Prelude" :|
+                                                                                            [ "Interpreter"
+                                                                                            , "and"
+                                                                                            ]
+                                                                                        )
+                                                                                    )
+                                                                                    ( Elim
+                                                                                        ( ElimX
+                                                                                            ( "Prelude" :|
+                                                                                                [ "Interpreter"
+                                                                                                , "false"
+                                                                                                ]
+                                                                                            )
+                                                                                        ) ()
+                                                                                    ) ()
+                                                                                )
+                                                                                ( Elim
+                                                                                    ( ElimX
+                                                                                        ( "Prelude" :|
+                                                                                            [ "Interpreter"
+                                                                                            , "true"
+                                                                                            ]
+                                                                                        )
+                                                                                    ) ()
+                                                                                ) ()
+                                                                            )
+                                                                            ( Let SAny
+                                                                                ( App
+                                                                                    ( App
+                                                                                        ( ElimX
+                                                                                            ( "Prelude" :|
+                                                                                                [ "Interpreter"
+                                                                                                , "or"
+                                                                                                ]
+                                                                                            )
+                                                                                        )
+                                                                                        ( Elim
+                                                                                            ( ElimX
+                                                                                                ( "Prelude" :|
+                                                                                                    [ "Interpreter"
+                                                                                                    , "false"
+                                                                                                    ]
+                                                                                                )
+                                                                                            ) ()
+                                                                                        ) ()
+                                                                                    )
+                                                                                    ( Elim
+                                                                                        ( ElimX
+                                                                                            ( "Prelude" :|
+                                                                                                [ "Interpreter"
+                                                                                                , "true"
+                                                                                                ]
+                                                                                            )
+                                                                                        ) ()
+                                                                                    ) ()
+                                                                                )
+                                                                                ( Let SAny
+                                                                                    ( App
+                                                                                        ( App
+                                                                                            ( ElimX
+                                                                                                ( "Prelude" :|
+                                                                                                    [ "Interpreter"
+                                                                                                    , "or"
+                                                                                                    ]
+                                                                                                )
+                                                                                            )
+                                                                                            ( Elim
+                                                                                                ( ElimX
+                                                                                                    ( "Prelude" :|
+                                                                                                        [ "Interpreter"
+                                                                                                        , "false"
+                                                                                                        ]
+                                                                                                    )
+                                                                                                ) ()
+                                                                                            ) ()
+                                                                                        )
+                                                                                        ( Elim
+                                                                                            ( ElimX
+                                                                                                ( "Prelude" :|
+                                                                                                    [ "Interpreter"
+                                                                                                    , "false"
+                                                                                                    ]
+                                                                                                )
+                                                                                            ) ()
+                                                                                        ) ()
+                                                                                    )
+                                                                                    ( Let SAny
+                                                                                        ( App
+                                                                                            ( ElimX
+                                                                                                ( "Prelude" :|
+                                                                                                    [ "Interpreter"
+                                                                                                    , "not"
+                                                                                                    ]
+                                                                                                )
+                                                                                            )
+                                                                                            ( Elim
+                                                                                                ( ElimX
+                                                                                                    ( "Prelude" :|
+                                                                                                        [ "Interpreter"
+                                                                                                        , "false"
+                                                                                                        ]
+                                                                                                    )
+                                                                                                ) ()
+                                                                                            ) ()
+                                                                                        )
+                                                                                        ( Let SAny
+                                                                                            ( App
+                                                                                                ( ElimX
+                                                                                                    ( "Prelude" :|
+                                                                                                        [ "Interpreter"
+                                                                                                        , "not"
+                                                                                                        ]
+                                                                                                    )
+                                                                                                )
+                                                                                                ( Elim
+                                                                                                    ( ElimX
+                                                                                                        ( "Prelude" :|
+                                                                                                            [ "Interpreter"
+                                                                                                            , "true"
+                                                                                                            ]
+                                                                                                        )
+                                                                                                    ) ()
+                                                                                                ) ()
+                                                                                            )
+                                                                                            ( Let SAny
+                                                                                                ( Ann
+                                                                                                    ( Elim
+                                                                                                        ( App
+                                                                                                            ( App
+                                                                                                                ( App
+                                                                                                                    ( ElimX
+                                                                                                                        ( "Prelude" :|
+                                                                                                                            [ "Interpreter"
+                                                                                                                            , "int-if"
+                                                                                                                            ]
+                                                                                                                        )
+                                                                                                                    )
+                                                                                                                    ( Elim
+                                                                                                                        ( ElimX
+                                                                                                                            ( "Prelude" :|
+                                                                                                                                [ "Interpreter"
+                                                                                                                                , "true"
+                                                                                                                                ]
+                                                                                                                            )
+                                                                                                                        ) ()
+                                                                                                                    ) ()
+                                                                                                                )
+                                                                                                                ( Prim
+                                                                                                                    ( IntVal 9 ) ()
+                                                                                                                ) ()
+                                                                                                            )
+                                                                                                            ( Prim
+                                                                                                                ( IntVal 10 ) ()
+                                                                                                            ) ()
+                                                                                                        ) ()
+                                                                                                    )
+                                                                                                    ( Elim
+                                                                                                        ( ElimX
+                                                                                                            ( "Prelude" :|
+                                                                                                                [ "Interpreter"
+                                                                                                                , "int"
+                                                                                                                ]
+                                                                                                            )
+                                                                                                        ) ()
+                                                                                                    ) ()
+                                                                                                )
+                                                                                                ( Let SAny
+                                                                                                    ( Ann
+                                                                                                        ( Elim
+                                                                                                            ( App
+                                                                                                                ( App
+                                                                                                                    ( App
+                                                                                                                        ( ElimX
+                                                                                                                            ( "Prelude" :|
+                                                                                                                                [ "Interpreter"
+                                                                                                                                , "int-if"
+                                                                                                                                ]
+                                                                                                                            )
+                                                                                                                        )
+                                                                                                                        ( Elim
+                                                                                                                            ( ElimX
+                                                                                                                                ( "or-false" :| [] )
+                                                                                                                            ) ()
+                                                                                                                        ) ()
+                                                                                                                    )
+                                                                                                                    ( Prim
+                                                                                                                        ( IntVal 9 ) ()
+                                                                                                                    ) ()
+                                                                                                                )
+                                                                                                                ( Prim
+                                                                                                                    ( IntVal 10 ) ()
+                                                                                                                ) ()
+                                                                                                            ) ()
+                                                                                                        )
+                                                                                                        ( Elim
+                                                                                                            ( ElimX
+                                                                                                                ( "Prelude" :|
+                                                                                                                    [ "Interpreter"
+                                                                                                                    , "int"
+                                                                                                                    ]
+                                                                                                                )
+                                                                                                            ) ()
+                                                                                                        ) ()
+                                                                                                    )
+                                                                                                    ( Let SAny
+                                                                                                        ( Ann
+                                                                                                            ( Elim
+                                                                                                                ( App
+                                                                                                                    ( App
+                                                                                                                        ( App
+                                                                                                                            ( ElimX
+                                                                                                                                ( "Prelude" :|
+                                                                                                                                    [ "Interpreter"
+                                                                                                                                    , "string-if"
+                                                                                                                                    ]
+                                                                                                                                )
+                                                                                                                            )
+                                                                                                                            ( Elim
+                                                                                                                                ( ElimX
+                                                                                                                                    ( "or-true" :| [] )
+                                                                                                                                ) ()
+                                                                                                                            ) ()
+                                                                                                                        )
+                                                                                                                        ( Prim
+                                                                                                                            ( StringVal "foo" ) ()
+                                                                                                                        ) ()
+                                                                                                                    )
+                                                                                                                    ( Prim
+                                                                                                                        ( StringVal "bar" ) ()
+                                                                                                                    ) ()
+                                                                                                                ) ()
+                                                                                                            )
+                                                                                                            ( Elim
+                                                                                                                ( ElimX
+                                                                                                                    ( "Prelude" :|
+                                                                                                                        [ "Interpreter"
+                                                                                                                        , "string"
+                                                                                                                        ]
+                                                                                                                    )
+                                                                                                                ) ()
+                                                                                                            ) ()
+                                                                                                        )
+                                                                                                        ( Let SAny
+                                                                                                            ( Ann
+                                                                                                                ( Elim
+                                                                                                                    ( App
+                                                                                                                        ( App
+                                                                                                                            ( App
+                                                                                                                                ( ElimX
+                                                                                                                                    ( "Prelude" :|
+                                                                                                                                        [ "Interpreter"
+                                                                                                                                        , "string-if"
+                                                                                                                                        ]
+                                                                                                                                    )
+                                                                                                                                )
+                                                                                                                                ( Elim
+                                                                                                                                    ( ElimX
+                                                                                                                                        ( "and-false" :| [] )
+                                                                                                                                    ) ()
+                                                                                                                                ) ()
+                                                                                                                            )
+                                                                                                                            ( Prim
+                                                                                                                                ( StringVal "foo" ) ()
+                                                                                                                            ) ()
+                                                                                                                        )
+                                                                                                                        ( Prim
+                                                                                                                            ( StringVal "bar" ) ()
+                                                                                                                        ) ()
+                                                                                                                    ) ()
+                                                                                                                )
+                                                                                                                ( Elim
+                                                                                                                    ( ElimX
+                                                                                                                        ( "Prelude" :|
+                                                                                                                            [ "Interpreter"
+                                                                                                                            , "string"
+                                                                                                                            ]
+                                                                                                                        )
+                                                                                                                    ) ()
+                                                                                                                ) ()
+                                                                                                            )
+                                                                                                            ( Let SAny
+                                                                                                                ( Ann
+                                                                                                                    ( CategorialTerm
+                                                                                                                        ( SexpRepresentation
+                                                                                                                            ( #S ( Keyword KMorphismIntro ) #S
+                                                                                                                                ( Variable
+                                                                                                                                    ( Elim
+                                                                                                                                        ( ElimX
+                                                                                                                                            ( "Prelude" :|
+                                                                                                                                                [ "Interpreter"
+                                                                                                                                                , "int"
+                                                                                                                                                ]
+                                                                                                                                            )
+                                                                                                                                        ) ()
+                                                                                                                                    )
+                                                                                                                                ) #S
+                                                                                                                                ( Variable
+                                                                                                                                    ( Elim
+                                                                                                                                        ( ElimX
+                                                                                                                                            ( "Prelude" :|
+                                                                                                                                                [ "Interpreter"
+                                                                                                                                                , "int"
+                                                                                                                                                ]
+                                                                                                                                            )
+                                                                                                                                        ) ()
+                                                                                                                                    )
+                                                                                                                                ) #S
+                                                                                                                                ( Variable
+                                                                                                                                    ( Elim
+                                                                                                                                        ( ElimX
+                                                                                                                                            ( "Categorial" :| [ "int-inc" ] )
+                                                                                                                                        ) ()
+                                                                                                                                    )
+                                                                                                                                )
+                                                                                                                            )
+                                                                                                                        ) ()
+                                                                                                                    )
+                                                                                                                    ( CategorialType SAny () ) ()
+                                                                                                                )
+                                                                                                                ( Elim
+                                                                                                                    ( ElimX
+                                                                                                                        ( "inc-intro" :| [] )
+                                                                                                                    ) ()
+                                                                                                                )
+                                                                                                                ( "inc-intro" :| [] )
+                                                                                                            )
+                                                                                                            ( "string-if-right" :| [] )
+                                                                                                        )
+                                                                                                        ( "string-if-left" :| [] )
+                                                                                                    )
+                                                                                                    ( "int-if-right" :| [] )
+                                                                                                )
+                                                                                                ( "int-if-left" :| [] )
+                                                                                            )
+                                                                                            ( "not-false" :| [] )
+                                                                                        )
+                                                                                        ( "not-true" :| [] )
+                                                                                    )
+                                                                                    ( "or-false" :| [] )
+                                                                                )
+                                                                                ( "or-true" :| [] )
+                                                                            )
+                                                                            ( "and-false" :| [] )
+                                                                        )
+                                                                        ( "and-true" :| [] )
+                                                                    )
+                                                                    ( "sneq" :| [] )
+                                                                )
+                                                                ( "seq" :| [] )
+                                                            )
+                                                            ( "ineq" :| [] )
+                                                        )
+                                                        ( "ieq" :| [] )
+                                                    )
+                                                    ( "n" :| [] )
+                                                )
+                                                ( "ilt" :| [] )
+                                            )
+                                            ( "it" :| [] )
+                                        )
+                                        ( "l" :| [] )
+                                    )
+                                    ( "ap" :| [] )
+                                )
+                                ( "s" :| [] )
+                            )
+                            ( "m" :| [] )
+                        )
+                        ( "a" :| [] )
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "false"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "false"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :|
+                            [ "Interpreter"
+                            , "bool"
+                            ]
+                        )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim ( BoolVal True ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Categorial" :| [ "morphism-intro" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Categorial" :| [ "morphism-intro" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( CategorialType SAny () )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats =
+                        [ PatternX
+                            ( "f" :| [] )
+                        ]
+                    , rawClauseBody = CategorialTerm
+                        ( SexpRepresentation
+                            ( #S ( Keyword KMorphismIntro ) #S
+                                ( Variable
+                                    ( Elim
+                                        ( ElimX
+                                            ( "Prelude" :|
+                                                [ "Interpreter"
+                                                , "int"
+                                                ]
+                                            )
+                                        ) ()
+                                    )
+                                ) #S
+                                ( Variable
+                                    ( Elim
+                                        ( ElimX
+                                            ( "Prelude" :|
+                                                [ "Interpreter"
+                                                , "int"
+                                                ]
+                                            )
+                                        ) ()
+                                    )
+                                ) #S
+                                ( Variable
+                                    ( Elim
+                                        ( ElimX
+                                            ( "f" :| [] )
+                                        ) ()
+                                    )
+                                )
+                            )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "not"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "not"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "bool"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimNot ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "string-eq"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "string-eq"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "string"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "string"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "bool"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimStringEq ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :| [ "id" ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :| [ "id" ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :| [ "ty" ] )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "a" :| [] )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "a" :| [] )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "a" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats =
+                        [ PatternX
+                            ( "_" :| [] )
+                        , PatternX
+                            ( "x" :| [] )
+                        ]
+                    , rawClauseBody = Elim
+                        ( ElimX
+                            ( "x" :| [] )
+                        ) ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "add"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "add"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Pi SAny
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( Elim
+                            ( ElimX
+                                ( "Prelude" :|
+                                    [ "Interpreter"
+                                    , "int"
+                                    ]
+                                )
+                            ) ()
+                        )
+                        ( "" :| [] )
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimAdd ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "nat"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "nat"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Elim
+                    ( ElimX
+                        ( "Prelude" :| [ "ty" ] )
+                    ) ()
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = PrimTy PrimNat ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ,
+        ( "Prelude" :|
+            [ "Interpreter"
+            , "int-to-nat"
+            ]
+        , RawGFunction
+            ( RawFunction
+                { rawFunName = "Prelude" :|
+                    [ "Interpreter"
+                    , "int-to-nat"
+                    ]
+                , rawFunUsage = GSAny
+                , rawFunType = Pi SAny
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "int"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( Elim
+                        ( ElimX
+                            ( "Prelude" :|
+                                [ "Interpreter"
+                                , "nat"
+                                ]
+                            )
+                        ) ()
+                    )
+                    ( "" :| [] )
+                , rawFunClauses = RawFunClause
+                    { rawClauseTel = []
+                    , rawClausePats = []
+                    , rawClauseBody = Prim PrimIntToNat ()
+                    , rawClauseCatchall = False
+                    } :| []
+                }
+            )
+        )
+    ]
