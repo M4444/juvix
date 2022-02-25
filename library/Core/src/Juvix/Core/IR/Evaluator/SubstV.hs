@@ -11,7 +11,6 @@ module Juvix.Core.IR.Evaluator.SubstV
   )
 where
 
-import Data.Foldable (foldr1) -- on NonEmpty
 import qualified Juvix.Core.Application as App
 import qualified Juvix.Core.Base.Types as Core
 import Juvix.Core.IR.Evaluator.Types
