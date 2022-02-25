@@ -28,6 +28,7 @@ import qualified Juvix.Backends.LLVM.Pipeline as LLVM
 import qualified Juvix.Backends.LLVM.Primitive as LLVM.Prim
 import qualified Juvix.Backends.Michelson.Parameterisation as Michelson.Param
 import qualified Juvix.Backends.Michelson.Pipeline as Michelson
+import qualified Juvix.BerlinPasses as BerlinPasses
 import qualified Juvix.BerlinPasses.Contextify as BerlinPasses
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
@@ -47,7 +48,6 @@ import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Types as Types
 import qualified Juvix.Desugar as Desugar
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.HashMap as Map
@@ -679,9 +679,9 @@ runPipelineToStep ::
   IO Pipeline.WorkingEnv
 runPipelineToStep step = Pipeline.runSexpPipeline pipeline
   where
-    pipeline = Pipeline.Env.stopAt step >> Desugar.Env.eval
+    pipeline = Pipeline.Env.stopAt step >> BerlinPasses.eval
 
 runFullPipeline ::
   [(NameSymbol.T, [Sexp.T])] ->
   IO Pipeline.WorkingEnv
-runFullPipeline = Pipeline.runSexpPipeline Desugar.Env.eval
+runFullPipeline = Pipeline.runSexpPipeline BerlinPasses.eval

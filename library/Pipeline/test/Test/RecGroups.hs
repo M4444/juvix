@@ -3,12 +3,12 @@
 module Test.RecGroups where
 
 import Control.Lens hiding ((|>))
+import qualified Juvix.BerlinPasses as BerlinPasses
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Common.Context.Traverse as Traverse
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Parsing as Parsing
 import qualified Juvix.Pipeline as Pipeline
@@ -39,7 +39,7 @@ toSexp paths = do
     Left er -> pure $ Left (Pipeline.ParseErr er)
     Right x ->
       second (fmap ToSexp.transTopLevel) <$> x
-        |> Pipeline.runSexpPipelineEnv Desugar.Env.eval
+        |> Pipeline.runSexpPipelineEnv BerlinPasses.eval
         >>| view (Pipeline.languageData . Pipeline.context)
         >>| Right
 

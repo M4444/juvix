@@ -1,70 +1,27 @@
-module Juvix.Desugar.Env where
+module Juvix.BerlinPasses
+  ( eval,
+    desugarPasses,
+    contextPasses,
+  )
+where
 
 import Control.Lens hiding ((|>))
 import qualified Juvix.BerlinPasses.Contextify as Contextify
 import qualified Juvix.BerlinPasses.Desugar as Desugar
-import qualified Juvix.BerlinPasses.Environment as Env
 import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
-import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import Juvix.BerlinPipeline.Lens
-import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Context as Context
 import Juvix.Library hiding (trace)
-import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Transition as Structure
 
 --------------------------------------------------------------------------------
 -- Functions
 --------------------------------------------------------------------------------
-
-Right sexp =
-  Sexp.parse
-    "(:defun foo (x) (:cond (pred-1 (:cond (pred-1 result-1) (pred-n result-n))) (pred-n result-n)))"
-
-Right secondSexp = Sexp.parse "(:defun foo (x) (+ x 1))"
-
-startingEnv :: IO Pipeline.WorkingEnv
-startingEnv =
-  Context.empty "JU-USER"
-    >>| Pipeline.WorkingEnv [Pipeline.Sexp sexp, Pipeline.Sexp secondSexp]
-
-exampleMeta :: IO Meta.T
-exampleMeta = do
-  Pipeline.CIn _ surroudning <-
-    startingEnv
-      >>= Pipeline.Env.run eval
-        . Pipeline.modifyTraceCIn
-          (`Trace.enable` ["Desugar.cond-runner", "Desugar.condTransform"])
-        -- . Pipeline.modifyTraceCIn Trace.traceAll
-        . Pipeline.emptyInput
-  surroudning ^. Pipeline.metaInfo |> pure
-
-exampleCtx :: IO Pipeline.WorkingEnv
-exampleCtx = do
-  Pipeline.CIn languageData _ <-
-    startingEnv
-      >>= Pipeline.Env.run eval
-        . Pipeline.modifyTraceCIn
-          (`Trace.enable` ["Desugar.cond-runner", "Desugar.condTransform"])
-        -- . Pipeline.modifyTraceCIn Trace.traceAll
-        . Pipeline.emptyInput
-  languageData |> pure
-
-example :: IO ()
-example = do
-  exampleMeta >>= Meta.info
-
-exampleIndexing :: IO (Maybe Env.Error)
-exampleIndexing = do
-  myValue <- exampleMeta
-  Feedback.contentsAt 0 (myValue ^. Meta.feedback)
-    |> Sexp.deserialize @Env.Error
-    |> pure
 
 eval :: Pipeline.Env.EnvS ()
 eval = do

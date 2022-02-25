@@ -1,12 +1,12 @@
 module Test.Sexp.Helpers where
 
 import Control.Lens (view, (^.))
+import qualified Juvix.BerlinPasses as BerlinPasses
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Desugar as Desugar
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Parsing.Parser as Parser
@@ -37,7 +37,7 @@ contextualizeFooEnv ::
   ByteString -> IO Pipeline.CIn
 contextualizeFooEnv byte =
   [("A", juvix), ("Foo", parsedSexp byte)]
-    |> runSexpPipelineEnv Desugar.Env.eval
+    |> runSexpPipelineEnv BerlinPasses.eval
   where
     juvix =
       parsedSexp
@@ -67,7 +67,7 @@ contextualizeFooAmbiEnv byte =
     ("B", parsedSexp "declare infixl (+) 9 let (+) = 3"),
     ("Foo", parsedSexp byte)
   ]
-    |> runSexpPipelineEnv Desugar.Env.eval
+    |> runSexpPipelineEnv BerlinPasses.eval
 
 parseDesugarSexp :: ByteString -> IO [Sexp.T]
 parseDesugarSexp = desugarLisp . parsedSexp

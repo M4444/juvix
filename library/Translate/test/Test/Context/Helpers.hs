@@ -1,17 +1,14 @@
 module Test.Context.Helpers where
 
 import Control.Lens (view, (^.))
+import qualified Juvix.BerlinPasses as BerlinPasses
 import Juvix.BerlinPasses.Contextify (contextify)
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
-import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as Contextify
-import qualified Juvix.Contextify.ToContext.Types as Contextify
-import qualified Juvix.Desugar.Env as Desugar
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -98,7 +95,7 @@ runPipelineToStep ::
   IO Pipeline.WorkingEnv
 runPipelineToStep step = runSexpPipeline pipeline
   where
-    pipeline = Pipeline.Env.stopAt step >> Desugar.Env.eval
+    pipeline = Pipeline.Env.stopAt step >> BerlinPasses.eval
 
 emptyContextify names = do
   ctx <- Context.empty "JU-USER"

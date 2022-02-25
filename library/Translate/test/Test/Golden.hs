@@ -9,8 +9,6 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Environment
 import qualified Juvix.Contextify.Passes as Contextify
-import qualified Juvix.Desugar.Env as Desugar
-import qualified Juvix.Desugar.Env as Desugar.Env
 import qualified Juvix.Desugar.Passes as Pass
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
@@ -29,7 +27,7 @@ import qualified System.FilePath as FP
 import Test.Tasty
 import qualified Text.Megaparsec as P
 import qualified Text.Megaparsec.Byte as P
-import Prelude (String, error)
+import Prelude (String)
 
 juvixRootPath :: FilePath
 juvixRootPath = "../../"

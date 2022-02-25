@@ -4,7 +4,6 @@ import Data.List.NonEmpty (fromList)
 import qualified Juvix.BerlinPasses.Contextify as Contextify
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
-import qualified Juvix.Desugar.Env as Env
 import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp

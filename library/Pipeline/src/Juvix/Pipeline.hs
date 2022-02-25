@@ -17,6 +17,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as T
 import Debug.Pretty.Simple
 import Debug.Pretty.Simple (pTraceShowM)
+import qualified Juvix.BerlinPasses as BerlinPasses
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
 import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
@@ -37,7 +38,6 @@ import Juvix.Core.Parameterisation
 import qualified Juvix.Core.Parameterisation as Param
 import qualified Juvix.Core.Translate as Translate
 import qualified Juvix.Core.Types as Core
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -145,7 +145,7 @@ class HasBackend b where
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline Context.T
   toSexp _ x =
-    runSexpPipeline Desugar.Env.eval sexps
+    runSexpPipeline BerlinPasses.eval sexps
       >>| view Pipeline.context
       |> liftIO
     where

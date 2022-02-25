@@ -7,7 +7,6 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Binders as Bind
 import qualified Juvix.Contextify.Environment as Env
-import qualified Juvix.Desugar.Env as Desugar.Env
 import Juvix.Library
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Sexp as Sexp
