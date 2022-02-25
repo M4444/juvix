@@ -97,6 +97,7 @@ inst (Types.Ann _usage ty t) =
             _ -> constructPrim prim' ty
         App.Cont {fun, args} ->
           notImplemented
+    Ann.CategorialTermM _term -> error "Michelson can not compile categorial terms"
 
 applyPrimOnArgs :: Types.Term -> [Types.Term] -> Types.Term
 applyPrimOnArgs prim arguments =
@@ -1003,6 +1004,9 @@ typeToPrimType ty =
     Ann.CatCoproduct {} ->
       throw @"compilationError" $
         Types.InvalidInputType "cannot convert category-theoretical coproduct to primty"
+    Ann.CategorialType {} ->
+      throw @"compilationError" $
+        Types.InvalidInputType "cannot convert category-theoretical expression to primty"
     Ann.Sig _usage fst snd ->
       Untyped.pair <$> typeToPrimType fst <*> typeToPrimType snd
     Ann.UnitTy -> pure Untyped.unit
