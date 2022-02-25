@@ -180,6 +180,7 @@ stdlibs =
     "LLVM/Data/String.ju",
     "Michelson/Alias.ju",
     "Michelson/Prelude.ju",
+    "Interpreter.ju",
     "Prelude.ju"
   ]
 
