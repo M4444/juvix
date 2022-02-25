@@ -253,13 +253,16 @@ lists are indented by an extra 2 each"
   (concatenate 'string relative-path "../"  file))
 
 (defun stack-yaml->string (yaml-config)
-  (format nil "~a~%~%~a~%~a~%~%~a~a"
+  (let* ((nix-yaml (if (string= (software-type) "Darwin")
+                       (nix-disable)
+                       (stack-yaml-nix-build yaml-config))))
+    (format nil "~a~%~%~a~%~a~%~%~a~a"
           (format-resolver (stack-yaml-resolver yaml-config))
           ;; TODO
           (format-packages yaml-config)
-          (format-nix (stack-yaml-nix-build yaml-config) (stack-yaml-path-to-other yaml-config))
+          (format-nix nix-yaml (stack-yaml-path-to-other yaml-config))
           (format-extra-deps (stack-yaml-extra-deps yaml-config))
-          (format-extra (stack-yaml-extra yaml-config))))
+          (format-extra (stack-yaml-extra yaml-config)))))
 
 (defun merge-group (g1 g2)
   "merges 2 groups, taking the comment from the first"
