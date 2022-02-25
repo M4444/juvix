@@ -1,0 +1,90 @@
+mod Prelude.Interpreter where
+
+open Prelude
+
+--------------------------------------
+---- Integer types and operations ----
+--------------------------------------
+
+sig int : ty
+let int = %Interpreter.int
+
+sig add : int -> int -> int
+let add = %Interpreter.add
+
+sig (+) : int -> int -> int
+let (+) = %Interpreter.add
+declare infixl (+) 5
+
+sig mul : int -> int -> int
+let mul = %Interpreter.mul
+
+sig (*) : int -> int -> int
+let (*) = %Interpreter.mul
+declare infixl (*) 7
+
+sig int : ty
+let int = %Interpreter.int
+
+sig int-eq : int -> int -> bool
+let int-eq = %Interpreter.int-eq
+
+sig int-lt : int -> int -> bool
+let int-lt = %Interpreter.int-lt
+
+-------------------------
+---- Natural numbers ----
+-------------------------
+
+sig nat : ty
+let nat = %Interpreter.nat
+
+sig int-to-nat : int -> nat
+let int-to-nat = %Interpreter.int-to-nat
+
+---------------------
+---- String type ----
+---------------------
+
+sig string : ty
+let string = %Interpreter.string
+
+sig append : string -> string -> string
+let append = %Interpreter.append
+
+sig nth : nat -> string -> string
+let nth = %Interpreter.nth
+
+sig length : string -> nat
+let length = %Interpreter.length
+
+sig string-eq : string -> string -> bool
+let string-eq = %Interpreter.string-eq
+
+----------------------
+---- Boolean type ----
+----------------------
+
+sig bool : ty
+let bool = %Interpreter.bool
+
+sig true : bool
+let true = %Interpreter.true
+
+sig false : bool
+let false = %Interpreter.true
+
+sig and : bool -> bool -> bool
+let and = %Interpreter.and
+
+sig or : bool -> bool -> bool
+let or = %Interpreter.and
+
+sig not : bool -> bool
+let not = %Interpreter.not
+
+sig int-if : bool -> int -> int -> int
+let int-if = %Interpreter.int-if
+
+sig string-if : bool -> string -> string -> string
+let string-if = %Interpreter.string-if

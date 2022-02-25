@@ -17,6 +17,10 @@ declare infixr (->) 1
 let (:) = %Builtin.Colon
 declare infixr (:) 2
 
+----------------------------------------
+---- Categorial types and functions ----
+----------------------------------------
+
 let cat-product = %Builtin.CatProduct
 let cat-coproduct = %Builtin.CatCoproduct
 
@@ -26,6 +30,14 @@ let cat-product-elim-right = %Builtin.CatProductElimRight
 let cat-coproduct-intro-left = %Builtin.CatCoproductIntroLeft
 let cat-coproduct-intro-right = %Builtin.CatCoproductIntroRight
 let cat-coproduct-elim = %Builtin.CatCoproductElim
+
+let categorial-type = %Builtin.CategorialType
+
+let cat-atom = %Builtin.CatSexpAtom
+let cat-keyword = %Builtin.CatSexpKeyword
+let cat-cons = %Builtin.CatSexpCons
+
+----------------------------------------
 
 sig id : (a : ty) -> a -> a
 let id _ x = x

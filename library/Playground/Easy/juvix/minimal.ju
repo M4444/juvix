@@ -5,6 +5,10 @@ let ty_ = %Builtin.Type
 sig ty : ty_ 1
 let ty = ty_ 0
 
+----------------------------------------
+---- Categorial types and functions ----
+----------------------------------------
+
 let cat-product = %Builtin.CatProduct
 let cat-coproduct = %Builtin.CatCoproduct
 
@@ -14,6 +18,14 @@ let cat-product-elim-right = %Builtin.CatProductElimRight
 let cat-coproduct-intro-left = %Builtin.CatCoproductIntroLeft
 let cat-coproduct-intro-right = %Builtin.CatCoproductIntroRight
 let cat-coproduct-elim = %Builtin.CatCoproductElim
+
+let categorial-type = %Builtin.CategorialType
+
+let cat-atom = %Builtin.CatSexpAtom
+let cat-keyword = %Builtin.CatSexpKeyword
+let cat-cons = %Builtin.CatSexpCons
+
+----------------------------------------
 
 let SAny = %Builtin.SAny
 let arr = %Builtin.Arrow
