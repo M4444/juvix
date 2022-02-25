@@ -27,7 +27,7 @@ pattern Sig π x s t = Sig0 π s t x
 
 pattern Let π x l b = Let0 π l b x
 
-{-# COMPLETE Star, PrimTy, Prim, Pi, Lam, Sig, CatProduct, CatCoproduct, CatProductIntro, CatProductElimLeft, CatProductElimRight, CatCoproductIntroLeft, CatCoproductIntroRight, CatCoproductElim, Pair, Let, UnitTy, Unit, Elim #-}
+{-# COMPLETE Star, PrimTy, Prim, Pi, Lam, Sig, CatProduct, CatCoproduct, CategorialType, CategorialTerm, CatProductIntro, CatProductElimLeft, CatProductElimRight, CatCoproductIntroLeft, CatCoproductIntroRight, CatCoproductElim, CategorialTerm, Pair, Let, UnitTy, Unit, Elim #-}
 
 Core.extendElim "Elim" [] [t|T|] extElim
 

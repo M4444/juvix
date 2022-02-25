@@ -127,6 +127,16 @@ data CatCoproductElim = CatCoproductElim
   }
   deriving (Show)
 
+data CategorialType = CategorialType
+  { categorialUsage :: Sexp.T
+  }
+  deriving (Show)
+
+newtype CategorialTerm = CategorialTerm
+  { categorialTerm :: Sexp.T
+  }
+  deriving (Show)
+
 -- Elim
 
 newtype Var = Var {varName :: NameSymbol.T} deriving (Show)
@@ -862,3 +872,63 @@ fromCatCoproductElim (CatCoproductElim sexp1 sexp2 sexp3 sexp4 sexp5) =
 instance Sexp.Serialize CatCoproductElim where
   deserialize = toCatCoproductElim
   serialize = fromCatCoproductElim
+
+----------------------------------------
+-- CategorialType
+----------------------------------------
+
+nameCategorialType :: NameSymbol.T
+nameCategorialType = ":categorial-type"
+
+isCategorialType :: Sexp.T -> Bool
+isCategorialType (Sexp.Cons form _) = Sexp.isAtomNamed form nameCategorialType
+isCategorialType _ = False
+
+toCategorialType :: Sexp.T -> Maybe CategorialType
+toCategorialType form
+  | isCategorialType form =
+    case form of
+      _nameCategorialType Sexp.:> sexp1 Sexp.:> Sexp.Nil ->
+        CategorialType sexp1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromCategorialType :: CategorialType -> Sexp.T
+fromCategorialType (CategorialType sexp1) =
+  Sexp.list [Sexp.atom nameCategorialType, sexp1]
+
+instance Sexp.Serialize CategorialType where
+  deserialize = toCategorialType
+  serialize = fromCategorialType
+
+----------------------------------------
+-- CategorialTerm
+----------------------------------------
+
+nameCategorialTerm :: NameSymbol.T
+nameCategorialTerm = ":categorial-term"
+
+isCategorialTerm :: Sexp.T -> Bool
+isCategorialTerm (Sexp.Cons form _) = Sexp.isAtomNamed form nameCategorialTerm
+isCategorialTerm _ = False
+
+toCategorialTerm :: Sexp.T -> Maybe CategorialTerm
+toCategorialTerm form
+  | isCategorialTerm form =
+    case form of
+      _nameCategorialTerm Sexp.:> sexp1 Sexp.:> Sexp.Nil ->
+        CategorialTerm sexp1 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromCategorialTerm :: CategorialTerm -> Sexp.T
+fromCategorialTerm (CategorialTerm sexp1) =
+  Sexp.list [Sexp.atom nameCategorialTerm, sexp1]
+
+instance Sexp.Serialize CategorialTerm where
+  deserialize = toCategorialTerm
+  serialize = fromCategorialTerm

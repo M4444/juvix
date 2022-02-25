@@ -8,6 +8,7 @@ module Juvix.Core.HR.Pretty
   )
 where
 
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Core.HR.Types
 import Juvix.Core.Pretty
 import Juvix.Library
@@ -19,7 +20,38 @@ type instance Ann (Elim _ _) = PPAnn
 
 type instance Ann (Pattern _ _) = PPAnn
 
-instance PrimPretty primTy primVal => PrettySyntax (Term primTy primVal) where
+type instance Ann (Categorial.Term _) = PPAnn
+
+deriving anyclass instance
+  ( Show primTy,
+    Show primVal,
+    PrettyText primTy,
+    PrettyText primVal
+  ) =>
+  PrettyText (Term primTy primVal)
+
+deriving anyclass instance
+  ( Show freeAlgObj,
+    PrettyText freeAlgObj
+  ) =>
+  PrettyText (Categorial.Term freeAlgObj)
+
+deriving anyclass instance
+  ( Show freeAlgObj,
+    PrettyText freeAlgObj,
+    PrettySyntax freeAlgObj
+  ) =>
+  PrettySyntax (Categorial.Term freeAlgObj)
+
+instance
+  ( Show primTy,
+    Show primVal,
+    PrettyText primTy,
+    PrettyText primVal,
+    PrimPretty primTy primVal
+  ) =>
+  PrettySyntax (Term primTy primVal)
+  where
   pretty' = \case
     -- Universe types
     Star i -> ppStar i
@@ -49,9 +81,19 @@ instance PrimPretty primTy primVal => PrettySyntax (Term primTy primVal) where
     Let π x b t -> ppLet π x b t
     UnitTy -> pure $ annotate' ATyCon "Unit"
     Unit -> pure box
+    CategorialType π -> ppCategorialType π
+    CategorialTerm term -> ppCategorialTerm term
     Elim e -> pretty' e
 
-instance PrimPretty primTy primVal => PrettySyntax (Elim primTy primVal) where
+instance
+  ( Show primTy,
+    Show primVal,
+    PrettyText primTy,
+    PrettyText primVal,
+    PrimPretty primTy primVal
+  ) =>
+  PrettySyntax (Elim primTy primVal)
+  where
   pretty' = \case
     Var x -> pname x
     App f s -> ppApps f' $ ss <> [s]
