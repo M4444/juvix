@@ -16,7 +16,7 @@ import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Passes as Passes
 import qualified Juvix.Contextify.ToContext.ResolveOpenInfo as ResolveOpen
 import qualified Juvix.Desugar.Passes as Desugar.Passes
-import qualified Juvix.Environment as Env
+import qualified Juvix.BerlinPasses.Environment as Env
 import Juvix.Library hiding (trace)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Trace as Trace
