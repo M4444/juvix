@@ -34,7 +34,7 @@ import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified Prelude (error)
 
 contextToHR ::
-  (Show primTy, Show primVal) =>
+  (Show primTy, Show primVal, Eq primTy, Eq primVal) =>
   Context.T ->
   P.Parameterisation primTy primVal ->
   Either (Types.Error HR.T primTy primVal) (Core.RawGlobals HR.T primTy primVal)
@@ -128,6 +128,8 @@ contextToHR ctx param =
 addSig ::
   ( Show primTy,
     Show primVal,
+    Eq primTy,
+    Eq primVal,
     HasState "closure" Closure.T m,
     HasThrow "fromToHRError" (Types.Error HR.T primTy primVal) m,
     HasReader "param" (P.Parameterisation primTy primVal) m,
@@ -143,6 +145,8 @@ addSig (ContextT.Entry x feDef) = do
 addDef ::
   ( Show primTy,
     Show primVal,
+    Eq primTy,
+    Eq primVal,
     HasState "closure" Closure.T m,
     HasThrow "fromToHRError" (Types.Error HR.T primTy primVal) m,
     HasReader "param" (P.Parameterisation primTy primVal) m,

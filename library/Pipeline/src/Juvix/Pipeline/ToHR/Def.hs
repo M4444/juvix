@@ -34,7 +34,9 @@ transformDef ::
     HasNextPatVar m,
     HasPatVars m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.T ->
   Ctx.Info ->

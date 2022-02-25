@@ -19,7 +19,9 @@ transformTypeSig ::
     HasParam primTy primVal m,
     HasClosure m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
@@ -46,7 +48,9 @@ transformConSigs ::
     HasPatVars m,
     HasParam primTy primVal m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   -- | namespace containing declaration
   NameSymbol.Mod ->
@@ -90,7 +94,9 @@ transformProduct ::
     HasCoreSigs HR.T primTy primVal m,
     HasClosure m,
     Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   NameSymbol.Mod ->
   -- | datatype head
@@ -106,7 +112,15 @@ transformProduct q hd typeCon (x, prod) =
     makeSig ty = CoreSig (Core.ConSig {sigConType = Just ty})
 
 transformConSig ::
-  (HasCallStack, ReduceEff HR.T primTy primVal m, HasPatVars m, Show primTy, Show primVal, HasClosure m) =>
+  ( HasCallStack,
+    ReduceEff HR.T primTy primVal m,
+    HasPatVars m,
+    Show primTy,
+    Show primVal,
+    Eq primTy,
+    Eq primVal,
+    HasClosure m
+  ) =>
   NameSymbol.Mod ->
   NameSymbol.T ->
   -- | datatype head
