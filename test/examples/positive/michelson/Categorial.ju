@@ -1,0 +1,14 @@
+mod Categorial where
+
+open Prelude
+open Michelson
+
+sig nil : list operation
+let nil = %Michelson.nil
+
+sig make-pair : list operation -> nat -> pair (list operation) nat
+let make-pair = %Michelson.pair
+
+sig main : pair nat nat -> pair (list operation) nat
+let main =
+  \_ -> make-pair nil 0
