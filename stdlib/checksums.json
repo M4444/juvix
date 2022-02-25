@@ -4,5 +4,6 @@
     "LLVM/LLVM.ju": "66d32313ab8144818f2b4fd8d0b0bd0f1a9765065ae110eb1fac80c1039fd4b3",
     "Michelson/Alias.ju": "4673d269b37dbfa1b68d3b4e96b1f527ae7220c977646c52453dcba61c71dc09",
     "Michelson/Prelude.ju": "8db41e0e3e8a13f67b58c13167c3575c9828649a47ce314d4e0c1ffe443f55c4",
+    "Interpreter.ju": "fb0b71b6269f660847554d3d0b88584c09fa8bf207572dffb9ce91b063ecf71f",
     "Prelude.ju": "642a29457dcf93a8e545f276eec3efcdee02b0f4732975cc691a9f849360f4e5"
 }
