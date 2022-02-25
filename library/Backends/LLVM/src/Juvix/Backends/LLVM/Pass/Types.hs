@@ -72,7 +72,21 @@ data Capture = Capture
     -- argument
     capType :: TypeLLVM
   }
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 ----------------------------------------
 -- Slot Location Storage Types
@@ -87,10 +101,41 @@ data ArraySlot = Slot
     -- | @newIndex@ represents the new slot location into the array.
     newIndex :: Index
   }
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 -- | @Index@ is the index into the array
-newtype Index = Index {num :: Natural} deriving (Show)
+newtype Index = Index {num :: Natural}
+  deriving newtype
+    ( Typeable,
+      NFData,
+      Hashable
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
+  deriving anyclass
+    ( Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
 
 ----------------------------------------
 -- Storage Location and Indexing Types
@@ -104,7 +149,21 @@ data CaptureFrom
     -- to store are offsets inside some environment, rather than a name
     -- that we can directly bind.
     FromClosureEnv IndexInto
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 -- | @IndexInto@ represents the Index into an environment, along with
 -- which environment it originates from.
@@ -112,7 +171,21 @@ data IndexInto = IndexInto
   { index :: Index,
     into :: FunctionEnvironment
   }
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 -- | @FunctionEnvironment@ represents if the index into an array is
 -- from the closure array/environment or the closure argument array/environment
@@ -122,7 +195,21 @@ data FunctionEnvironment
     -- between functions and closures. We should in time compile with
     -- this, and will be needed for currying
     ArgumentEnvironemnt
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 ------------------------------
 ---- Record-related types ----
@@ -161,7 +248,21 @@ data Annotated term = Ann
     annTy :: TypeLLVM,
     term :: term
   }
-  deriving (Show)
+  deriving anyclass
+    ( Typeable,
+      NFData,
+      Hashable,
+      Serialize.DefaultOptions,
+      Serialize.Serialize
+    )
+  deriving stock
+    ( Generic,
+      Data,
+      Read,
+      Show,
+      Eq,
+      Ord
+    )
 
 -- TODO ∷ replace more data types with SEXPs for easier
 -- processing... Might end up with having more than 1 of these which
