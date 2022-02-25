@@ -163,6 +163,8 @@ type instance Foldable.Base (Category a) = CategoryF a
 
 data Morphism freeAlgObj
   = IdentityMorphism (Object freeAlgObj)
+  | ComposeMorphisms (Morphism freeAlgObj) (Morphism freeAlgObj)
+  | ErasedComposedMorphism (Morphism freeAlgObj) (Morphism freeAlgObj)
   | ErasedIdentity
   | MorphismIntro freeAlgObj freeAlgObj freeAlgObj
   | ErasedMorphism freeAlgObj

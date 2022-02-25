@@ -114,6 +114,12 @@ eraseMorphism _checks ErasedIdentity =
 eraseMorphism _checks (ErasedMorphism morphism) =
   ExceptT.throwE $
     CategorialErrors.AlreadyErasedMorphism $ ErasedMorphism morphism
+eraseMorphism _checks composed@(ErasedComposedMorphism _morphism _morphism') =
+  ExceptT.throwE $ CategorialErrors.AlreadyErasedMorphism composed
+eraseMorphism checks (ComposeMorphisms morphism morphism') = do
+  erased <- eraseMorphism checks morphism
+  erased' <- eraseMorphism checks morphism'
+  return $ ErasedComposedMorphism erased erased'
 
 eraseAbstract ::
   ( Monad m,
