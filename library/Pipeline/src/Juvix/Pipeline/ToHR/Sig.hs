@@ -7,8 +7,34 @@ import qualified Juvix.Context as Context
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Context.InfoNames as Info
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial ()
 import qualified Juvix.Core.HR as HR
 import Juvix.Library
+  ( Alternative ((<|>)),
+    Applicative (pure, (<*>)),
+    Functor (fmap),
+    Maybe (..),
+    Monad ((>>=)),
+    NonEmpty ((:|)),
+    Semigroup ((<>)),
+    Show,
+    Symbol,
+    Traversable (traverse),
+    fromMaybe,
+    identity,
+    isJust,
+    isNothing,
+    maybe,
+    otherwise,
+    panic,
+    show,
+    unless,
+    when,
+    ($),
+    (.),
+    (<$>),
+  )
+import Juvix.Library hiding (show)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
 import Juvix.Pipeline.ToHR.Env
@@ -158,14 +184,22 @@ transformSpecialRhs _ (Sexp.List [name, prim])
       "Builtin" :| ["SAny"] -> pure $ Just SAnyS
       "Builtin" :| ["Colon"] -> pure $ Just ColonS
       "Builtin" :| ["Type"] -> pure $ Just TypeS
-      "Builtin" :| ["CatProduct"] -> pure $ Just $ CatProductS
-      "Builtin" :| ["CatCoproduct"] -> pure $ Just $ CatCoproductS
-      "Builtin" :| ["CatProductIntro"] -> pure $ Just $ CatProductIntroS
-      "Builtin" :| ["CatProductElimLeft"] -> pure $ Just $ CatProductElimLeftS
-      "Builtin" :| ["CatProductElimRight"] -> pure $ Just $ CatProductElimRightS
-      "Builtin" :| ["CatCoproductIntroLeft"] -> pure $ Just $ CatCoproductIntroLeftS
-      "Builtin" :| ["CatCoproductIntroRight"] -> pure $ Just $ CatCoproductIntroRightS
-      "Builtin" :| ["CatCoproductElim"] -> pure $ Just $ CatCoproductElimS
+      "Builtin" :| ["CatProduct"] -> pure $ Just CatProductS
+      "Builtin" :| ["CatCoproduct"] -> pure $ Just CatCoproductS
+      "Builtin" :| ["CatProductIntro"] -> pure $ Just CatProductIntroS
+      "Builtin" :| ["CatProductElimLeft"] -> pure $ Just CatProductElimLeftS
+      "Builtin" :| ["CatProductElimRight"] -> pure $ Just CatProductElimRightS
+      "Builtin" :| ["CatCoproductIntroLeft"] -> pure $ Just CatCoproductIntroLeftS
+      "Builtin" :| ["CatCoproductIntroRight"] -> pure $ Just CatCoproductIntroRightS
+      "Builtin" :| ["CatCoproductElim"] -> pure $ Just CatCoproductElimS
+      -- The type of all categorial introduction terms.
+      -- (Elimination terms might have any type.)
+      "Builtin" :| ["CategorialType"] -> pure $ Just $ CategorialTypeS Nothing
+      -- Categorial terms, which either introduce or eliminate terms of
+      -- type CategorialType.
+      "Builtin" :| ["CatSexpAtom"] -> pure $ Just CatSexpAtomS
+      "Builtin" :| ["CatSexpKeyword"] -> pure $ Just CatSexpKeywordS
+      "Builtin" :| ["CatSexpCons"] -> pure $ Just CatSexpConsS
       "Builtin" :| (s : ss) -> throwFF $ UnknownBuiltin $ s :| ss
       _ -> pure Nothing
 transformSpecialRhs q prim
@@ -180,14 +214,19 @@ transformSpecialRhs q (Sexp.List [f, arg])
         case head of
           Just (ArrowS Nothing) -> Just . ArrowS . Just <$> transformUsage q arg
           Just (PairS Nothing) -> Just . PairS . Just <$> transformUsage q arg
-          Just CatProductS -> pure $ Just $ CatProductS
-          Just CatCoproductS -> pure $ Just $ CatCoproductS
-          Just CatProductIntroS -> pure $ Just $ CatProductIntroS
-          Just CatProductElimLeftS -> pure $ Just $ CatProductElimLeftS
-          Just CatProductElimRightS -> pure $ Just $ CatProductElimRightS
-          Just CatCoproductIntroLeftS -> pure $ Just $ CatCoproductIntroLeftS
-          Just CatCoproductIntroRightS -> pure $ Just $ CatCoproductIntroRightS
-          Just CatCoproductElimS -> pure $ Just $ CatCoproductElimS
+          Just CatProductS -> pure $ Just CatProductS
+          Just CatCoproductS -> pure $ Just CatCoproductS
+          Just CatProductIntroS -> pure $ Just CatProductIntroS
+          Just CatProductElimLeftS -> pure $ Just CatProductElimLeftS
+          Just CatProductElimRightS -> pure $ Just CatProductElimRightS
+          Just CatCoproductIntroLeftS -> pure $ Just CatCoproductIntroLeftS
+          Just CatCoproductIntroRightS -> pure $ Just CatCoproductIntroRightS
+          Just CatCoproductElimS -> pure $ Just CatCoproductElimS
+          Just (CategorialTypeS Nothing) -> do
+            Just . CategorialTypeS . Just <$> transformUsage q arg
+          Just CatSexpAtomS -> pure $ Just CatSexpAtomS
+          Just CatSexpKeywordS -> pure $ Just CatSexpKeywordS
+          Just CatSexpConsS -> pure $ Just CatSexpConsS
           _ -> pure Nothing
 transformSpecialRhs _ _ = pure Nothing
 

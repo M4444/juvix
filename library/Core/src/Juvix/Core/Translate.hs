@@ -102,6 +102,10 @@ hrToIR' = \case
     IR.CatCoproductElim <$> hrToIR' a <*> hrToIR' b <*> hrToIR' cp <*> hrToIR' s <*> hrToIR' t
   HR.UnitTy -> pure IR.UnitTy
   HR.Unit -> pure IR.Unit
+  HR.CategorialType π ->
+    pure $ IR.CategorialType π
+  HR.CategorialTerm t ->
+    IR.CategorialTerm <$> traverse hrToIR' t
   HR.Let π n l b -> do
     l <- hrElimToIR' l
     b <- withName n $ hrToIR' b
@@ -200,6 +204,10 @@ irToHR' = \case
     HR.CatCoproductElim <$> irToHR' a <*> irToHR' b <*> irToHR' cp <*> irToHR' s <*> irToHR' t
   IR.UnitTy -> pure HR.UnitTy
   IR.Unit -> pure HR.Unit
+  IR.CategorialType π -> do
+    pure $ HR.CategorialType π
+  IR.CategorialTerm t -> do
+    HR.CategorialTerm <$> traverse irToHR' t
   IR.Let π l b -> do
     l <- irElimToHR' l
     withFresh \n -> do
@@ -316,6 +324,8 @@ varsTerm = \case
   IR.Let _ e t -> varsElim e <> varsTerm t
   IR.UnitTy -> mempty
   IR.Unit -> mempty
+  IR.CategorialType _π -> mempty
+  IR.CategorialTerm t -> foldr (<>) mempty (fmap varsTerm t)
   IR.Elim e -> varsElim e
 
 varsElim :: IR.Elim primTy primVal -> HashSet NameSymbol.T

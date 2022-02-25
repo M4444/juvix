@@ -1,9 +1,11 @@
 module Juvix.Pipeline.ToHR.Term (transformTermHR) where
 
+import Control.Monad.Trans.Except as ExceptT
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Core.Base as Core
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.HR as HR
 import qualified Juvix.Core.Parameterisation as P
 import Juvix.Library
@@ -214,6 +216,43 @@ transformApplication q a@(f Sexp.:> args)
         a <- transformTermHR q a
         b <- transformTermHR q b
         pure $ HR.CatCoproductElim t1 t2 c a b
+      CategorialTypeS Nothing -> do
+        ~[π] <- nargs s 1 xs
+        π <- transformUsage q π
+        go (Just (CategorialTypeS (Just π))) []
+      CategorialTypeS (Just π) -> do
+        ~[] <- nargs s 0 xs
+        pure $ HR.CategorialType π
+      CatSexpAtomS -> do
+        ~[a] <- nargs s 1 xs
+        a' <- transformTermHR q a
+        atomOrError <- ExceptT.runExceptT $ Categorial.atom a'
+        case atomOrError of
+          Left err -> throwFF $ CategorialSyntaxError err
+          Right term -> pure $ HR.CategorialTerm term
+      CatSexpKeywordS -> do
+        ~[k] <- nargs s 1 xs
+        case k of
+          Sexp.Atom (Sexp.S k' _) -> do
+            keywordOrError <- ExceptT.runExceptT $ Categorial.keyword k'
+            case keywordOrError of
+              Left err -> throwFF $ CategorialSyntaxError err
+              Right term -> pure $ HR.CategorialTerm term
+          _ -> throwFF $ NonTextKeyword k
+      CatSexpConsS -> do
+        ~[fst, snd] <- nargs s 2 xs
+        fst' <- transformTermHR q fst
+        snd' <- transformTermHR q snd
+        case fst' of
+          HR.CategorialTerm fst'' -> do
+            case snd' of
+              HR.CategorialTerm snd'' -> do
+                termOrError <- ExceptT.runExceptT $ Categorial.cons fst'' snd''
+                case termOrError of
+                  Left err -> throwFF $ CategorialSyntaxError err
+                  Right term -> pure $ HR.CategorialTerm term
+              _ -> throwFF $ NonCategorialCons snd'
+          _ -> throwFF $ NonCategorialCons fst'
       ColonS -> do
         ~[a, b] <- nargs s 2 xs
         a <- transformTermHR q a

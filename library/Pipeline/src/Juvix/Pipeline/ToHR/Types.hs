@@ -7,6 +7,7 @@ import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base as Core
+import Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.HR as HR
 import Juvix.Library hiding (show)
 import qualified Juvix.Library.NameSymbol as NameSymbol
@@ -99,6 +100,17 @@ data Special
     CatCoproductElimS
   | -- | type annotation
     ColonS
+  | -- | Refined S-expression types representing general categorial types
+    -- | (possibly with usage already supplied)
+    CategorialTypeS (Maybe Usage.T)
+  | -- | Introduction rule for atoms of s-expressions representing
+    -- | categorial terms
+    CatSexpAtomS
+  | -- | Introduction rule for keywords of s-expressions representing
+    -- | categorial terms
+    CatSexpKeywordS
+  | -- | Introduction rule for s-expressions from pairs of s-expressions
+    CatSexpConsS
   | -- | type of types
     TypeS
   | -- | SAny usage
@@ -206,6 +218,12 @@ data Error ext primTy primVal
     WrongNumberBuiltinArgs Special Int Sexp.T
   | -- | Using SAny as an expression
     UnexpectedSAny
+  | -- | Categorial keyword of non-text-literal type
+    NonTextKeyword Sexp.T
+  | -- | Tried to use a non-categorial term in a categorial cons term
+    NonCategorialCons (HR.Term primTy primVal)
+  | -- | Syntax error trying to construct a categorial term
+    CategorialSyntaxError (Categorial.SyntaxError (HR.Term primTy primVal))
   deriving (Generic)
 
 deriving instance
@@ -317,3 +335,8 @@ instance
     UnexpectedSAny ->
       "%Builtin.SAny cannot be used as an arbitrary term, only as\n"
         <> "the first argument of %Builtin.Arrow or %Builtin.Pair"
+    NonTextKeyword s ->
+      "Categorial keyword must be string literal; found '" <> show s <> "'"
+    NonCategorialCons t ->
+      "Attempted to categorial-cons non-categorial term " <> show t
+    CategorialSyntaxError err -> "Syntax error on categorial term: " <> show err
