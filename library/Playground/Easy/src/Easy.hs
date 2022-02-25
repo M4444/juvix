@@ -340,7 +340,9 @@ contexify1 = do
 
 coreify ::
   ( Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   ByteString ->
   Options primTy primVal ->
@@ -356,7 +358,9 @@ coreify juvix options = do
 
 coreifyFile ::
   ( Show primTy,
-    Show primVal
+    Show primVal,
+    Eq primTy,
+    Eq primVal
   ) =>
   FilePath ->
   Options primTy primVal ->
@@ -397,6 +401,8 @@ coreify2 = do
 inline ::
   ( Show primTy,
     Show primVal,
+    Eq primTy,
+    Eq primVal,
     IR.HasPatSubstTerm (OnlyExts.T IR.T) primTy primVal primVal,
     IR.HasPatSubstType (OnlyExts.T IR.T) primTy primVal primTy
   ) =>
@@ -426,6 +432,8 @@ inline input options = do
 inlineFile ::
   ( Show primTy,
     Show primVal,
+    Eq primTy,
+    Eq primVal,
     IR.HasPatSubstTerm (OnlyExts.T IR.T) primTy primVal primVal,
     IR.HasPatSubstType (OnlyExts.T IR.T) primTy primVal primTy
   ) =>
