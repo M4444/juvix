@@ -425,3 +425,7 @@ and a rhs that may contain a guard, so no = is assumed for the rhs"
   (generate-haskell "CatCoproductIntroRight" (repeat 1 "sexp") ":cat-intro-right")
 
   (generate-haskell "CatCoproductElim" (repeat 5 "sexp") ":cat-coelim"))
+
+  (generate-haskell "CategorialType" (repeat 1 "sexp") ":categorial-type")
+
+  (generate-haskell "CategorialTerm" (repeat 1 "sexp") ":categorial-term")

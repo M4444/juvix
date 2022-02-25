@@ -70,6 +70,10 @@ serialize term =
       serialize c5
         |> Named.CatCoproductElim (serialize c1) (serialize c2) (serialize c3) (serialize c4)
         |> Structure.from
+    HR.CategorialType π ->
+      Structure.from (Named.CategorialType (serializeUsage π))
+    HR.CategorialTerm term ->
+      Structure.from (Named.CategorialTerm (Structure.from term))
 
 serializeElim ::
   (Serialize primTy, Serialize primVal) => HR.Elim primTy primVal -> Sexp.T
@@ -165,6 +169,12 @@ deserialize expr
       <*> deserialize c3
       <*> deserialize c4
       <*> deserialize c5
+  | Named.isCategorialType expr = do
+    (Named.CategorialType π) <- Named.toCategorialType expr
+    HR.CategorialType <$> deserializeUsage π
+  | Named.isCategorialTerm expr = do
+    (Named.CategorialTerm term) <- Named.toCategorialTerm expr
+    HR.CategorialTerm <$> Structure.to term
   | otherwise = HR.Elim <$> deserializeElim expr
 
 deserializeElim ::
