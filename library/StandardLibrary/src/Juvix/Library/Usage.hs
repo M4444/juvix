@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 -- | Each binder and local context element in Juvix is annotated with
 -- a /usage/, which tracks how many times it is needed in a
@@ -33,7 +34,20 @@ import qualified Juvix.Library.PrettyPrint as PP
 -- not an upper bound), or "any", meaning that usage is not tracked
 -- for that variable and any number of usages is allowed.
 data Usage = SNat Natural | SAny
-  deriving (Eq, Show, Read, Generic, Data, NFData)
+  deriving
+    ( Eq,
+      Show,
+      Read,
+      NFData,
+      Typeable,
+      A.ToJSONKey,
+      A.FromJSONKey,
+      Hashable
+    )
+  deriving stock
+    ( Generic,
+      Data
+    )
 
 type T = Usage
 
