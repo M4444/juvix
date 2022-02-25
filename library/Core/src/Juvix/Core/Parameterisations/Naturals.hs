@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Juvix.Core.Parameterisations.Naturals
@@ -27,6 +28,7 @@ import Text.Show
 data Ty
   = Ty
   deriving (Show, Eq)
+  deriving anyclass (PP.PrettyText)
 
 -- c: primitive constant and f: functions
 data Val
@@ -36,6 +38,7 @@ data Val
   | Mul -- f multiplication
   | Curried Val Natural
   deriving (Eq)
+  deriving anyclass (PP.PrettyText)
 
 instance Show Val where
   show (Val x) = "Nat " <> Text.Show.show x

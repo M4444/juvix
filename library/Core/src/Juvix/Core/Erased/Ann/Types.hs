@@ -1,3 +1,7 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DerivingStrategies #-}
+
 module Juvix.Core.Erased.Ann.Types where
 
 ------------------------------------------------------------------------------
@@ -5,10 +9,12 @@ module Juvix.Core.Erased.Ann.Types where
 import qualified Data.Aeson as A
 import Juvix.Core.Application (IsParamVar (..))
 import Juvix.Core.Base.Types (Universe)
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Core.Parameterisation (KindedType', TypedPrim')
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Library.Usage as Usage
+import qualified Juvix.Sexp.Serialize as Serialize
 
 ------------------------------------------------------------------------------
 

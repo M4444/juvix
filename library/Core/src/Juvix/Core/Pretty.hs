@@ -77,7 +77,7 @@ data PPAnn'
 type PPAnn = Last PPAnn'
 
 -- | Requirements to be able to print a primitive type or value
-type PrimPretty1 p = (PrettySyntax p, ToPPAnn (Ann p))
+type PrimPretty1 p = (PrettyText p, PrettySyntax p, ToPPAnn (Ann p))
 
 type PrimPretty ty val = (PrimPretty1 ty, PrimPretty1 val)
 

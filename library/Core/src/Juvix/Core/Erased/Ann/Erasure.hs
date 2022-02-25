@@ -5,7 +5,10 @@ import qualified Juvix.Core.Erased.Ann.Types as Types
 import qualified Juvix.Core.Erased.Types as E
 import Juvix.Library
 
-eraseTerm :: Types.Term primTy primVal -> E.Term primVal
+eraseTerm ::
+  (Show primTy, Show primVal) =>
+  Types.Term primTy primVal ->
+  E.Term primVal
 eraseTerm term =
   case term of
     Types.Var s -> E.Var s
