@@ -130,7 +130,10 @@ instance Show primTy => Show (ApplyError primTy) where
 type instance PP.Ann (ApplyError _) = HR.PPAnn
 
 instance
-  (PP.PrettySyntax primTy, HR.ToPPAnn (PP.Ann primTy)) =>
+  ( PP.PrettyText primTy,
+    PP.PrettySyntax primTy,
+    HR.ToPPAnn (PP.Ann primTy)
+  ) =>
   PP.PrettyText (ApplyError primTy)
   where
   prettyT = \case
