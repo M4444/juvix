@@ -2,11 +2,13 @@ module Test.Codegen (top) where
 
 import qualified GHC.Ptr as Ptr
 import qualified Juvix.Backends.LLVM.Codegen.Block as Block
+import qualified Juvix.Backends.LLVM.Codegen.Categorial ()
 import qualified Juvix.Backends.LLVM.Codegen.Types as CodegenTypes
 import qualified Juvix.Backends.LLVM.Codegen.Types.Sum as Sum
 import qualified Juvix.Backends.LLVM.Compilation as Compilation
 import qualified Juvix.Backends.LLVM.Pass.Types as PassTypes
 import qualified Juvix.Backends.LLVM.Primitive as Primitive
+import qualified Juvix.Core.Categorial ()
 import qualified Juvix.Core.Erased.Ann as ErasedAnn
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
@@ -64,6 +66,79 @@ llvmConstantFunction ::
 llvmConstantFunction domain codomain val =
   llvmAnnotatedTerm (llvmFunctionType domain codomain) $
     PassTypes.LamM ["0"] $ llvmAnnotatedTerm codomain (PassTypes.Prim val)
+
+llvmCurry2 ::
+  Primitive.PrimTy ->
+  Primitive.PrimTy ->
+  Primitive.PrimTy ->
+  PassTypes.Annotated PassTypes.TermLLVM ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmCurry2 a b c f =
+  llvmAnnotatedTerm
+    (llvmFunctionType aAnn (llvmFunctionType bAnn cAnn))
+    ( PassTypes.LamM
+        ["0", "1"]
+        ( llvmAnnotatedTerm
+            cAnn
+            ( PassTypes.AppM
+                f
+                [ llvmAnnotatedTerm aAnn (PassTypes.Var "0"),
+                  llvmAnnotatedTerm bAnn (PassTypes.Var "1")
+                ]
+            )
+        )
+    )
+  where
+    aAnn = PassTypes.PrimTy a
+    bAnn = PassTypes.PrimTy b
+    cAnn = PassTypes.PrimTy c
+
+llvmHigherOrderPrimFunc ::
+  PassTypes.Annotated PassTypes.TermLLVM ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmHigherOrderPrimFunc f =
+  llvmAnnotatedTerm
+    (llvmFunctionType intTy (llvmFunctionType fTy fTy))
+    ( PassTypes.LamM
+        ["0", "1", "2"]
+        ( llvmAnnotatedTerm
+            intTy
+            ( PassTypes.AppM
+                f
+                [ llvmAnnotatedTerm intTy $
+                    PassTypes.AppM
+                      (llvmAnnotatedTerm fTy (PassTypes.Var "1"))
+                      [llvmAnnotatedTerm intTy $ PassTypes.Var "0"],
+                  llvmAnnotatedTerm intTy (PassTypes.Var "2")
+                ]
+            )
+        )
+    )
+  where
+    intTy = llvmIntType 32
+    fTy = llvmFunctionType intTy intTy
+
+llvmPrimCurry2 ::
+  ASTTypes.Type ->
+  ASTTypes.Type ->
+  ASTTypes.Type ->
+  Primitive.RawPrimVal ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmPrimCurry2 a b c f = llvmCurry2 aPrim bPrim cPrim fAnn
+  where
+    aPrim = Primitive.PrimTy a
+    bPrim = Primitive.PrimTy b
+    cPrim = Primitive.PrimTy c
+    fType = Primitive.PrimTy $ AST.FunctionType c [a, b] False
+    fAnn = llvmAnnotatedTerm (PassTypes.PrimTy fType) (PassTypes.Prim f)
+
+llvmIntCurry2 ::
+  Word32 ->
+  Primitive.RawPrimVal ->
+  PassTypes.Annotated PassTypes.TermLLVM
+llvmIntCurry2 b = llvmPrimCurry2 llvmTy llvmTy llvmTy
+  where
+    llvmTy = AST.IntegerType {typeBits = b}
 
 llvmCurry ::
   -- | Input: a type 'a'
@@ -132,7 +207,8 @@ tests =
   [ trivialLLVMCodegenClosureTest,
     trivialLLVMCodegenRecordTest,
     llvmRecordNameShadowingTest,
-    trivialLLVMCodegenSumTest
+    trivialLLVMCodegenSumTest,
+    llvmNatIterTest
   ]
 
 trivialLLVMCodegenClosureTest :: TestTree
@@ -263,3 +339,42 @@ trivialLLVMCodegenSumTest = testCase "Trivial LLVM codegen test with sum types" 
   output <- runIntModule compiled
   let casted :: Int8 = fromIntegral output
   casted @?= fromIntegral ((intValToAdd + intValToAddTo) * valIfString)
+
+llvmNatIterTest :: TestTree
+llvmNatIterTest = testCase "LLVM codegen for primitive recursion" $ do
+  let bits = 64
+      intTy = llvmIntType bits
+
+      zeroCase = llvmAnnotatedTerm intTy $ llvmIntVal 0
+      succCase = llvmIntCurry2 bits Primitive.Add
+      nRec = 100000
+      nIter = 10000000
+      nTermRec = llvmAnnotatedTerm intTy $ llvmIntVal nRec
+      nTermIter = llvmAnnotatedTerm intTy $ llvmIntVal nIter
+
+      annotatedRecTerm =
+        llvmAnnotatedTerm intTy $
+          PassTypes.PrimRecM zeroCase succCase nTermRec
+
+      annotatedIterTerm =
+        llvmAnnotatedTerm intTy $
+          PassTypes.NatIterM zeroCase succCase nTermIter
+
+      compiledRec = case Compilation.termLLVMToModule annotatedRecTerm of
+        Left err -> P.error $ "LLVM primitive recursion test compilation failed: " <> show err
+        Right t -> t
+
+      compiledIter = case Compilation.termLLVMToModule annotatedIterTerm of
+        Left err -> P.error $ "LLVM natural number iteration test compilation failed: " <> show err
+        Right t -> t
+
+  let expectedRec = sum [0 .. nRec -1]
+  let expectedIter = sum [0 .. nIter -1]
+
+  outputRec <- runIntModule compiledRec
+  let castedRec :: Int64 = fromIntegral outputRec
+  castedRec @?= fromIntegral expectedRec
+
+  outputIter <- runIntModule compiledIter
+  let castedIter :: Int64 = fromIntegral outputIter
+  castedIter @?= fromIntegral expectedIter

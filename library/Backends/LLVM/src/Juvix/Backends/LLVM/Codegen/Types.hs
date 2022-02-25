@@ -12,6 +12,7 @@ import Juvix.Backends.LLVM.Codegen.Types.CString (CString)
 import qualified Juvix.Backends.LLVM.Codegen.Types.CString as CString
 import Juvix.Backends.LLVM.Codegen.Types.Shared
 import qualified Juvix.Backends.LLVM.Codegen.Types.Sum as Sum
+import qualified Juvix.Core.Categorial ()
 import Juvix.Library hiding (Type)
 import qualified Juvix.Library.HashMap as Map
 import LLVM.AST as AST
@@ -128,6 +129,16 @@ data Errors
     -- | typechecker, if the type of the term did not come directly from a
     -- | test, or some other module that bypasses the typechecker)
     MismatchedSumTypes Text
+  | -- | Found a call to primitive recursion on natural numbers whose
+    -- | argument to destruct had a non-primitive type (this indicates a bug in
+    -- | the typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    PrimitiveRecursionOnNonPrimitiveType Text
+  | -- | Found a call to primitive recursion on natural numbers whose
+    -- | argument to destruct had a non-integer type (this indicates a bug in
+    -- | the typechecker, if the type of the term did not come directly from a
+    -- | test, or some other module that bypasses the typechecker)
+    PrimitiveRecursionOnNonIntegerType Text
   deriving (Show, Eq)
 
 type CodegenAlias = ExceptT Errors (State CodegenState)
