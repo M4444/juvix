@@ -87,8 +87,10 @@ module Juvix.Sexp.Serialize
   )
 where
 
+import qualified Data.ByteString.Short as Short
 import qualified Data.Char8 as Char8
 import qualified Data.HashSet as Set
+import qualified GHC.Exts as Exts
 import GHC.Generics as Generics
 import qualified Generics.Deriving.ConNames as ConNames
 import Juvix.Library hiding (foldr)
@@ -312,6 +314,25 @@ instance Serialize a => Serialize [a] where
   deserialize Nil = Just []
   deserialize _ = Nothing
 
+-- Serialize/deserialize pairs as two-element lists.
+instance (Serialize a, Serialize b) => Serialize (a, b) where
+  serialize (x, y) = serialize [serialize x, serialize y]
+  deserialize s = do
+    [x, y] <- (deserialize :: T -> Maybe [T]) s
+    x' <- deserialize x
+    y' <- deserialize y
+    Just (x', y')
+
+-- Serialize/deserialize triples as three-element lists.
+instance (Serialize a, Serialize b, Serialize c) => Serialize (a, b, c) where
+  serialize (x, y, z) = serialize [serialize x, serialize y, serialize z]
+  deserialize s = do
+    [x, y, z] <- (deserialize :: T -> Maybe [T]) s
+    x' <- deserialize x
+    y' <- deserialize y
+    z' <- deserialize z
+    Just (x', y', z')
+
 instance Serialize Text where
   serialize i = Atom (S i Nothing)
   deserialize (Atom (S i Nothing)) = Just i
@@ -337,6 +358,13 @@ instance Serialize Integer where
   deserialize (Atom (N i Nothing)) = Just i
   deserialize _ = Nothing
 
+instance Serialize Bool where
+  serialize False = Atom (N 0 Nothing)
+  serialize True = Atom (N 1 Nothing)
+  deserialize (Atom (N 0 Nothing)) = Just False
+  deserialize (Atom (N 1 Nothing)) = Just True
+  deserialize _ = Nothing
+
 instance Serialize Natural where
   serialize i = Atom (N (toInteger i) Nothing)
   deserialize (Atom (N i Nothing)) = Just $ fromInteger i
@@ -346,6 +374,30 @@ instance Serialize Int where
   serialize i = Atom (N (toInteger i) Nothing)
   deserialize (Atom (N i Nothing)) = Just $ fromInteger i
   deserialize _ = Nothing
+
+instance Serialize Word where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
+instance Serialize Word8 where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
+instance Serialize Word32 where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
+instance Serialize Word64 where
+  serialize i = Atom (N (toInteger i) Nothing)
+  deserialize (Atom (N i Nothing)) = Just $ fromInteger i
+  deserialize _ = Nothing
+
+instance Serialize Short.ShortByteString where
+  serialize = serialize . Exts.toList
+  deserialize = map Exts.fromList . deserialize
 
 instance Serialize () where
   serialize () = Nil
