@@ -33,3 +33,5 @@ eraseTerm term =
       E.Unit
     Types.AppM (Ann _ _ f) xs ->
       foldl (\apps (Ann _ _ x) -> E.App apps (eraseTerm x)) (eraseTerm f) xs
+    Types.CategorialTermM term ->
+      E.CategorialTerm $ fmap (eraseTerm . Types.term) term

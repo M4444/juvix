@@ -7,8 +7,10 @@ where
 
 ------------------------------------------------------------------------------
 
+import qualified Control.Monad.Trans.Except as ExceptT
 import Data.List (genericIndex)
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Core.Erased.Algorithm.Types as Erasure
 import qualified Juvix.Core.IR as IR
 import qualified Juvix.Core.IR.Typechecker.Types as Typed
@@ -311,6 +313,22 @@ eraseTerm (Typed.CatCoproductElim a b cp s t ann) =
         <*> eraseType (Typed.annType ann)
 eraseTerm t@Typed.UnitTy {} = throwEra $ Erasure.UnsupportedTermT t
 eraseTerm (Typed.Unit ann) = Erasure.Unit <$> eraseType (Typed.annType ann)
+eraseTerm t@(Typed.CategorialType _π _ann) = throwEra $ Erasure.UnsupportedTermT t
+eraseTerm
+  ( Typed.CategorialTerm
+      term
+      (Typed.Annotation Usage.SAny (Core.VCategorialType Usage.SAny _ext'))
+    ) = do
+    termOrError <-
+      ExceptT.runExceptT $ Categorial.erase (Categorial.EraseChecks eraseTerm) term
+    case termOrError of
+      Right erasedTerm ->
+        pure $
+          Erasure.CategorialTerm erasedTerm $
+            Erasure.CategorialType Usage.SAny
+      Left err -> throwEra $ Erasure.CategorialEraseError err
+eraseTerm term@(Typed.CategorialTerm _term _ann) =
+  throwEra $ Erasure.UnexpectedCategorialAnnotation term
 eraseTerm (Typed.Let π b t anns) = do
   (x, t) <- withName \x -> (x,) <$> eraseTerm t
   if π == mempty
@@ -394,6 +412,8 @@ eraseType IR.VUnitTy = do
   pure Erasure.UnitTy
 eraseType IR.VUnit = do
   throwEra $ Erasure.UnsupportedTypeV IR.VUnit
+eraseType (IR.VCategorialType π) = pure $ Erasure.CategorialType π
+eraseType v@(IR.VCategorialTerm _term) = throwEra $ Erasure.UnsupportedTypeV v
 eraseType (IR.VNeutral n) = do
   eraseTypeN n
 eraseType v@(IR.VPrim _) = do

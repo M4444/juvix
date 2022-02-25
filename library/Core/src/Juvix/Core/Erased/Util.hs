@@ -21,6 +21,7 @@ free = Set.toList . go Set.empty
       CatCoproductIntroLeft s -> go used s
       CatCoproductIntroRight s -> go used s
       CatCoproductElim a b cp s t -> go used a `Set.union` go used b `Set.union` go used cp `Set.union` go used s `Set.union` go used t
+      CategorialTerm term -> foldr Set.union Set.empty (fmap (go used) term)
       Unit -> Set.empty
       Let v b t -> go used b `Set.union` go (Set.insert v used) t
       App a b -> go used a `Set.union` go used b

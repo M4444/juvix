@@ -9,6 +9,7 @@ where
 
 ------------------------------------------------------------------------------
 
+import qualified Juvix.Core.Categorial as Categorial
 import Juvix.Core.Erased.Ann.Types
   ( AnnTerm (term),
     Term
@@ -19,6 +20,7 @@ import Juvix.Core.Erased.Ann.Types
         CatProductElimLeftM,
         CatProductElimRightM,
         CatProductIntroM,
+        CategorialTermM,
         LamM,
         PairM,
         Prim,
@@ -46,7 +48,17 @@ import qualified Juvix.Library.PrettyPrint as PP
 
 type instance PP.Ann (Term _ _) = PPAnn
 
-instance PrimPretty1 primVal => PP.PrettySyntax (Term primTy primVal) where
+type instance PP.Ann (Categorial.Term _) = PPAnn
+
+instance
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    PrimPretty1 primVal
+  ) =>
+  PP.PrettySyntax (Term primTy primVal)
+  where
   pretty' = \case
     Var x -> HR.pname x
     Prim p -> fmap HR.toPPAnn <$> PP.pretty' p
@@ -60,6 +72,7 @@ instance PrimPretty1 primVal => PP.PrettySyntax (Term primTy primVal) where
     CatCoproductElimM _ _ match c1 c2 -> HR.ppCatCoproductElim match c1 c2
     UnitM -> pure HR.unitVal
     AppM s ts -> HR.ppApps s ts
+    CategorialTermM term -> HR.ppCategorialTerm term
 
 getPairs :: Term primTy primVal -> [Term primTy primVal]
 getPairs (PairM s t) = term s : getPairs (term t)
@@ -77,6 +90,7 @@ instance PrimPretty1 primTy => PP.PrettySyntax (Type primTy) where
     CatProduct a b -> HR.ppCatProduct a b
     CatCoproduct a b -> HR.ppCatCoproduct a b
     UnitTy -> pure $ PP.annotate' ATyCon "Unit"
+    CategorialType π -> HR.ppCategorialType π
 
 getBinds :: Type primTy -> HR.WithBinders (Type primTy)
 getBinds = go []

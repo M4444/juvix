@@ -182,6 +182,8 @@ toRawTerm (ErasedAnn.CatCoproductElimM a b cp l r) =
   ErasedAnn.CatCoproductElimM (toRaw a) (toRaw b) (toRaw cp) (toRaw l) (toRaw r)
 toRawTerm ErasedAnn.UnitM = ErasedAnn.UnitM
 toRawTerm (ErasedAnn.AppM f xs) = ErasedAnn.AppM (toRaw f) (toRaw <$> xs)
+toRawTerm (ErasedAnn.CategorialTermM term) =
+  ErasedAnn.CategorialTermM (fmap toRaw term)
 
 toRawType :: HasCallStack => ErasedAnn.TypeT ty -> ErasedAnn.Type ty
 toRawType (ErasedAnn.SymT x) = ErasedAnn.SymT x
@@ -197,6 +199,8 @@ toRawType (ErasedAnn.CatProduct a b) =
   ErasedAnn.CatProduct (toRawType a) (toRawType b)
 toRawType (ErasedAnn.CatCoproduct a b) =
   ErasedAnn.CatCoproduct (toRawType a) (toRawType b)
+toRawType (ErasedAnn.CategorialType π) =
+  ErasedAnn.CategorialType π
 toRawType ErasedAnn.UnitTy = ErasedAnn.UnitTy
 
 primToRaw :: ErasedAnn.Prim ty val -> ErasedAnn.Term ty val
@@ -340,6 +344,9 @@ convertTerm term usage =
               left' = convertTerm left usage
               right' = convertTerm right usage
            in Ann usage ty' $ CatCoproductElimM a' b' cp' left' right'
+        E.CategorialTerm term _ ->
+          let term' = fmap (`convertTerm` usage) term
+           in Ann usage ty' $ CategorialTermM term'
         E.Unit _ ->
           Ann usage ty' UnitM
         E.App f a _ ->
@@ -362,4 +369,5 @@ convertType ty =
     E.Sig u a b -> Sig u (convertType a) (convertType b)
     E.CatProduct a b -> CatProduct (convertType a) (convertType b)
     E.CatCoproduct a b -> CatCoproduct (convertType a) (convertType b)
+    E.CategorialType π -> CategorialType π
     E.UnitTy -> UnitTy

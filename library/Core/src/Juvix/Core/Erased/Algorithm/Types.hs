@@ -11,11 +11,13 @@ import qualified Extensible as Ext
 import qualified Juvix.Core.Base as Core
 import Juvix.Core.Base.TransformExt
 import Juvix.Core.Base.Types (GlobalName, GlobalUsage, PatternVar)
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.Erased.Base.Types as Erased
 import Juvix.Core.Erased.Types as Type
   ( Type,
     pattern CatCoproduct,
     pattern CatProduct,
+    pattern CategorialType,
     pattern Pi,
     pattern PrimTy,
     pattern Sig,
@@ -93,6 +95,8 @@ data Error primTy primVal
   | UnsupportedTypeV (Core.Value IR.T primTy primVal)
   | UnsupportedTypeN (IR.Neutral primTy primVal)
   | CannotEraseZeroUsageTerm (Typed.Term' primTy primVal)
+  | UnexpectedCategorialAnnotation (Typed.Term' primTy primVal)
+  | CategorialEraseError (Categorial.EraseError (Typed.Term' primTy primVal))
   | InternalError Text
   deriving (Generic)
 
@@ -150,6 +154,16 @@ instance
         [ (False, "Entire term has zero usage:"),
           (True, PP.pretty0 $ Translate.irToHR $ extForgetT t)
         ]
+    UnexpectedCategorialAnnotation t ->
+      PP.sepIndent'
+        [ (False, "Categorial term should have categorial type annotation"),
+          (True, PP.pretty0 $ Translate.irToHR $ extForgetT t)
+        ]
+    CategorialEraseError t ->
+      PP.sepIndent'
+        [ (False, "Error erasing categorial term"),
+          (True, PP.annotate' HR.ATyCon $ PP.show t)
+        ]
     InternalError txt ->
       PP.text txt
 
@@ -174,6 +188,7 @@ do
           Erased.typeCatCoproductIntroRight = typed,
           Erased.typeCatCoproductElim = typed,
           Erased.typeUnit = typed,
+          Erased.typeCategorialTerm = typed,
           Erased.typeLet = typedTuple,
           Erased.typeApp = typed
         }
@@ -282,6 +297,7 @@ getType (CatCoproductIntroLeft _ ty) = ty
 getType (CatCoproductIntroRight _ ty) = ty
 getType (CatCoproductElim _ _ _ _ _ ty) = ty
 getType (Unit ty) = ty
+getType (CategorialTerm _ ty) = ty
 getType (Let _ _ _ (_, ty)) = ty
 getType (App _ _ ty) = ty
 
@@ -296,6 +312,7 @@ eraseAnn (CatProductElimRight t a _) = Erased.CatProductElimRight (eraseAnn t) (
 eraseAnn (CatCoproductIntroLeft a _) = Erased.CatCoproductIntroLeft (eraseAnn a)
 eraseAnn (CatCoproductIntroRight a _) = Erased.CatCoproductIntroRight (eraseAnn a)
 eraseAnn (CatCoproductElim t1 t2 cp a b _) = Erased.CatCoproductElim (eraseAnn t1) (eraseAnn t2) (eraseAnn cp) (eraseAnn a) (eraseAnn b)
+eraseAnn (CategorialTerm term _) = Erased.CategorialTerm $ fmap eraseAnn term
 eraseAnn (Unit _) = Erased.Unit
 eraseAnn (Let s a b _) = Erased.Let s (eraseAnn a) (eraseAnn b)
 eraseAnn (App a b _) = Erased.App (eraseAnn a) (eraseAnn b)

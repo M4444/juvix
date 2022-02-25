@@ -58,7 +58,22 @@ data Term primTy primVal
       (AnnTerm primTy primVal)
   | UnitM
   | AppM (AnnTerm primTy primVal) [AnnTerm primTy primVal]
-  deriving (Show, Read, Eq, Generic)
+  | CategorialTermM (Categorial.Term (AnnTerm primTy primVal))
+  deriving (Eq, Show, Generic, Typeable, Read, Data, NFData)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal
+  ) =>
+  Serialize.DefaultOptions (Term primTy primVal)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal
+  ) =>
+  Serialize.Serialize (Term primTy primVal)
 
 data Type primTy
   = SymT NameSymbol.T
@@ -70,14 +85,40 @@ data Type primTy
   | CatProduct (Type primTy) (Type primTy)
   | CatCoproduct (Type primTy) (Type primTy)
   | UnitTy
-  deriving (Show, Read, Eq, Generic)
+  | CategorialType Usage.T
+  deriving (Eq, Show, Generic, Data, NFData, Typeable, Read)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy
+  ) =>
+  Serialize.DefaultOptions (Type primTy)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy,
+    Serialize.Serialize primTy
+  ) =>
+  Serialize.Serialize (Type primTy)
 
 data AnnTerm primTy primVal = Ann
   { usage :: Usage.T,
     type' :: Type primTy,
     term :: Term primTy primVal
   }
-  deriving (Show, Read, Eq, Generic)
+  deriving (Eq, Show, Generic, Typeable, Read, Data, NFData)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal
+  ) =>
+  Serialize.DefaultOptions (AnnTerm primTy primVal)
+
+deriving anyclass instance
+  ( Serialize.DefaultOptions primTy,
+    Serialize.DefaultOptions primVal,
+    Serialize.Serialize primTy,
+    Serialize.Serialize primVal
+  ) =>
+  Serialize.Serialize (AnnTerm primTy primVal)
 
 pattern AnnAny :: Type primTy -> Term primTy primVal -> AnnTerm primTy primVal
 pattern AnnAny {typeA, termA} =
