@@ -189,6 +189,10 @@ checkCategory checks (SliceCat object) = do
 checkCategory checks (CosliceCat object) = do
   checked <- checkObject checks object
   return $ CosliceCat checked
+checkCategory checks (FunctorCat cat cat') = do
+  checked <- checkCategory checks cat
+  checked' <- checkCategory checks cat'
+  return $ FunctorCat checked checked'
 
 instance (Eq freeAlgObj) => Equiv (Category freeAlgObj) where
   equiv = (==)

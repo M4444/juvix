@@ -62,6 +62,10 @@ eraseCategory checks (SliceCat object) = do
 eraseCategory checks (CosliceCat object) = do
   erased <- eraseObject checks object
   return $ CosliceCat erased
+eraseCategory checks (FunctorCat cat cat') = do
+  erased <- eraseCategory checks cat
+  erased' <- eraseCategory checks cat'
+  return $ FunctorCat erased erased'
 
 eraseFunctor ::
   ( Monad m,

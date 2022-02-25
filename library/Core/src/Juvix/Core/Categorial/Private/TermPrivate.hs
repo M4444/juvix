@@ -129,12 +129,13 @@ data Category freeAlgObj
   = DirectedGraphCat
   | InitialCat
   | TerminalCat
-  | RefinedADTCat
-  | HigherOrderRefinedADTCat
   | ProductCat (Category freeAlgObj) (Category freeAlgObj)
   | OppositeCat (Category freeAlgObj)
   | SliceCat (Object freeAlgObj)
   | CosliceCat (Object freeAlgObj)
+  | FunctorCat (Category freeAlgObj) (Category freeAlgObj)
+  | RefinedADTCat
+  | HigherOrderRefinedADTCat
   deriving
     ( Read,
       Show,
