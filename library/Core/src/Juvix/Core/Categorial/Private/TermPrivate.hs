@@ -97,33 +97,6 @@ data Symbol freeAlgObj
       Traversable
     )
 
-data HigherCategory freeAlgObj
-  = MinimalMetalogic
-  deriving
-    ( Read,
-      Show,
-      Eq,
-      Hashable,
-      Ord,
-      Generic,
-      Typeable,
-      Data,
-      NFData,
-      Aeson.ToJSON,
-      Aeson.FromJSON,
-      Aeson.ToJSONKey,
-      Aeson.FromJSONKey,
-      Serialize.DefaultOptions,
-      Serialize.Serialize,
-      Functor,
-      Foldable,
-      Traversable
-    )
-
-FunctorTemplates.makeBaseFunctor ''HigherCategory
-
-type instance Foldable.Base (HigherCategory a) = HigherCategoryF a
-
 data Object freeAlgObj
   = HigherTerminalObject
   | AlgebraObject freeAlgObj
@@ -324,6 +297,36 @@ data Adjunction freeAlgObj
 FunctorTemplates.makeBaseFunctor ''Adjunction
 
 type instance Foldable.Base (Adjunction a) = AdjunctionF a
+
+data HigherCategory freeAlgObj
+  = MinimalMetalogic
+  | -- | Interpret a category as a higher category by specifying
+    -- an adjunction category.
+    FromCategory (Category freeAlgObj) (Category freeAlgObj)
+  deriving
+    ( Read,
+      Show,
+      Eq,
+      Hashable,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Aeson.ToJSON,
+      Aeson.FromJSON,
+      Aeson.ToJSONKey,
+      Aeson.FromJSONKey,
+      Serialize.DefaultOptions,
+      Serialize.Serialize,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
+FunctorTemplates.makeBaseFunctor ''HigherCategory
+
+type instance Foldable.Base (HigherCategory a) = HigherCategoryF a
 
 data AbstractTerm freeAlgObj
   = HigherCategoryTerm (HigherCategory freeAlgObj)
