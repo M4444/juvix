@@ -59,17 +59,34 @@
         # Better (faster) shell for use with stack's nix integration.
         # Usage:
         #    nix develop --option sandbox relaxed -c stack ghci
-        stackNixEnv = { ghcVersion }:
+        stackNixEnv =
           with pkgsHs;
-          haskell.lib.buildStackProject {
-            ghc = haskell.compiler.${ghcVersion};
-            buildInputs = [ llvm_9 zlib curl time ldb git ];
-            name = "stackNixEnv";
-            stack = pkgs.writeShellScriptBin "stack" ''
-              STACK=$(PATH=$(echo $PATH | sed 's,/nix/[^:]*:,,g') type -p stack)
-              exec "$STACK" $STACK_IN_NIX_EXTRA_ARGS --internal-re-exec-version="$("$STACK" --numeric-version)" "$@"
-            '' // { version = "0.0.0"; };
-          };
+          let
+            mkDrv = mkEnv:
+              { ghcVersion }:
+              let
+                stackWrap = writeShellScriptBin "stack" ''
+                  STACK=$(PATH=$(echo $PATH | sed 's,/nix/[^:]*:,,g') type -p stack)
+                  exec "$STACK" $STACK_IN_NIX_EXTRA_ARGS --internal-re-exec-version="$("$STACK" --numeric-version)" "$@"
+                '' // { version = "0.0.0"; };
+                ghc = haskell.compiler.${ghcVersion};
+                inputs = [ stackWrap ghc gcc llvm_9 zlib curl time ldb git ];
+                libPath = lib.makeLibraryPath inputs;
+                stackExtraArgs = lib.concatMap (pkg:
+                  [ ''--extra-lib-dirs=${lib.getLib pkg}/lib''
+                   ''--extra-include-dirs=${lib.getDev pkg}/include'' ]
+                   ) inputs;
+              in
+              runCommand "stackNixEnv" {
+                buildInputs = lib.optional stdenv.isLinux glibcLocales ++ inputs;
+                LD_LIBRARY_PATH = libPath;
+                STACK_IN_NIX_EXTRA_ARGS = stackExtraArgs;
+                STACK_PLATFORM_VARIANT = "nix";
+                STACK_IN_NIX_SHELL = 1;
+                passthru.withArgs = mkEnv mkEnv;
+              } "";
+
+          in mkDrv mkDrv;
 
         mkAppsCross = project:
         pkgs.lib.mapAttrs' (name: _:
