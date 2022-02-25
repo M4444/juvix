@@ -74,9 +74,9 @@ instance AllWeak ext primTy primVal => HasWeak (Core.Term ext primTy primVal) wh
   weakBy' b i (Core.Pair s t a) =
     Core.Pair (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
   weakBy' b i (Core.CatProduct s t a) =
-    Core.CatProduct (weakBy' b i s) (weakBy' b (succ i) t) (weakBy' b i a)
+    Core.CatProduct (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
   weakBy' b i (Core.CatCoproduct s t a) =
-    Core.CatCoproduct (weakBy' b i s) (weakBy' b (succ i) t) (weakBy' b i a)
+    Core.CatCoproduct (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
   weakBy' b i (Core.CatProductIntro s t a) =
     Core.CatProductIntro (weakBy' b i s) (weakBy' b i t) (weakBy' b i a)
   weakBy' b i (Core.CatProductElimLeft t s a) =
