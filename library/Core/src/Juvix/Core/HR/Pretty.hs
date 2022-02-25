@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -60,7 +61,12 @@ instance PrimPretty primTy primVal => PrettySyntax (Elim primTy primVal) where
       parens <$> hangA indentWidth (hsepA [ppOuter s, pure colon]) (ppOuter a)
 
 instance
-  PrimPretty primTy primVal =>
+  ( Show primTy,
+    Show primVal,
+    PrettyText primTy,
+    PrettyText primVal,
+    PrimPretty primTy primVal
+  ) =>
   PrettySyntax (Pattern primTy primVal)
   where
   pretty' = \case

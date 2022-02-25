@@ -31,6 +31,7 @@ typeCheckDeclaration ::
     Show primVal,
     Show extT,
     ShowExt extT primTy primVal,
+    IR.EqExt extT primTy primVal,
     Show (Core.Pattern extT primTy primVal),
     Show (Core.RawGlobal extT primTy primVal),
     Core.PatternAll Show extT (Param.KindedType primTy) (Typed.Prim primTy primVal),

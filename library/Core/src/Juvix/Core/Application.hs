@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -29,6 +30,7 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Pretty as PP
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
+import Juvix.Sexp.Serialize (DefaultOptions, Serialize)
 
 -- | A primitive along with its type, and possibly some arguments.
 data Return' ext ty term
@@ -74,6 +76,20 @@ instance
   where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
+deriving instance
+  (DefaultOptions (ParamVar ext), DefaultOptions ty, DefaultOptions term) =>
+  DefaultOptions (Return' ext ty term)
+
+deriving instance
+  ( DefaultOptions (ParamVar ext),
+    DefaultOptions ty,
+    DefaultOptions term,
+    Serialize (ParamVar ext),
+    Serialize ty,
+    Serialize term
+  ) =>
+  Serialize (Return' ext ty term)
+
 instance Bifunctor (Return' ext) where
   bimap = bimapDefault
 
@@ -106,6 +122,10 @@ data DeBruijn
   | -- | Reference to a free variable.
     FreeVar Core.GlobalName
   deriving (Show, Eq, Generic)
+
+deriving anyclass instance DefaultOptions DeBruijn
+
+deriving anyclass instance Serialize DeBruijn
 
 instance IsParamVar IR.T where
   type ParamVar IR.T = DeBruijn
@@ -159,6 +179,20 @@ instance
   where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
 
+deriving instance
+  (DefaultOptions (ParamVar ext), DefaultOptions ty, DefaultOptions term) =>
+  DefaultOptions (Arg' ext ty term)
+
+deriving instance
+  ( DefaultOptions (ParamVar ext),
+    DefaultOptions ty,
+    DefaultOptions term,
+    Serialize (ParamVar ext),
+    Serialize ty,
+    Serialize term
+  ) =>
+  Serialize (Arg' ext ty term)
+
 instance Bifunctor (Arg' ext) where bimap = bimapDefault
 
 instance Bifoldable (Arg' ext) where bifoldMap = bifoldMapDefault
@@ -204,6 +238,18 @@ instance
   A.FromJSON (Take ty term)
   where
   parseJSON = A.genericParseJSON (A.defaultOptions {A.sumEncoding = A.ObjectWithSingleField})
+
+deriving instance
+  ( DefaultOptions ty,
+    DefaultOptions term,
+    Serialize ty,
+    Serialize term
+  ) =>
+  DefaultOptions (Take ty term)
+
+deriving instance
+  (DefaultOptions ty, DefaultOptions term, Serialize ty, Serialize term) =>
+  Serialize (Take ty term)
 
 instance Bifunctor Take where
   bimap = bimapDefault

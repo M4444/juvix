@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Juvix.Core.IR.Typechecker.Types
@@ -26,6 +27,10 @@ import qualified Juvix.Core.IR.Types as IR
 import qualified Juvix.Core.Parameterisation as P
 import Juvix.Library
 import qualified Juvix.Library.Usage as Usage
+import Juvix.Sexp.Serialize
+  ( DefaultOptions (..),
+    Serialize,
+  )
 
 data Annotation ext primTy primVal = Annotation
   { annUsage :: Usage.T,
@@ -41,7 +46,23 @@ deriving instance
   (Show (Core.Value ext primTy primVal)) =>
   Show (Annotation ext primTy primVal)
 
+deriving anyclass instance
+  (DefaultOptions ext, DefaultOptions primTy, DefaultOptions primVal) =>
+  DefaultOptions (Annotation ext primTy primVal)
+
+deriving anyclass instance
+  ( DefaultOptions ext,
+    DefaultOptions primTy,
+    DefaultOptions primVal,
+    Serialize ext,
+    Serialize primTy,
+    Serialize primVal,
+    Serialize (Core.Value ext primTy primVal)
+  ) =>
+  Serialize (Annotation ext primTy primVal)
+
 data T
+  deriving (Read, Data, Generic, Typeable, NFData)
 
 data BindAnnotation ext primTy primVal = BindAnnotation
   { baBindAnn, baResAnn :: {-# UNPACK #-} !(Annotation ext primTy primVal)
@@ -55,6 +76,21 @@ deriving instance
 deriving instance
   (Show (Core.Value ext primTy primVal)) =>
   Show (BindAnnotation ext primTy primVal)
+
+deriving anyclass instance
+  (DefaultOptions ext, DefaultOptions primTy, DefaultOptions primVal) =>
+  DefaultOptions (BindAnnotation ext primTy primVal)
+
+deriving anyclass instance
+  ( DefaultOptions ext,
+    DefaultOptions primTy,
+    DefaultOptions primVal,
+    Serialize ext,
+    Serialize primTy,
+    Serialize primVal,
+    Serialize (Core.Value ext primTy primVal)
+  ) =>
+  Serialize (BindAnnotation ext primTy primVal)
 
 Core.extendTerm "Term'" [] [t|T|] $
   \primTy primVal ->

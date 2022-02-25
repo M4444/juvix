@@ -49,6 +49,7 @@ type CompConstraints primTy primVal compErr m =
     Eq primVal,
     Show primTy,
     Show primVal,
+    Eq IR.T,
     Types.CanPrimApply Types.Star primTy,
     Types.CanPrimApply primTy primVal,
     TC.PrimSubstValue primTy primVal,

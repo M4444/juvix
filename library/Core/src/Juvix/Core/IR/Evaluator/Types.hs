@@ -96,7 +96,12 @@ type instance PP.Ann (Error IR.T TC.T _ _) = HR.PPAnn
 type instance PP.Ann (ErrorValue IR.T _ _) = HR.PPAnn
 
 instance
-  ApplyErrorPretty primTy primVal =>
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    ApplyErrorPretty primTy primVal
+  ) =>
   PP.PrettyText (ErrorValue IR.T primTy primVal)
   where
   prettyT CannotApply {fun, arg, paramErr} =

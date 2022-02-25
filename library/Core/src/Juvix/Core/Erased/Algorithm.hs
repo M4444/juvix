@@ -31,7 +31,15 @@ type ErasureM primTy1 primTy2 primVal1 primVal2 m =
   )
 
 erase ::
-  (Show primTy1, Show primTy2, Show primVal1, Show primVal2) =>
+  ( Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Erasure.MapPrim primTy1 primTy2 primTy1 primVal1 ->
   Erasure.MapPrim primVal1 primVal2 primTy1 primVal1 ->
   Typed.Term' primTy1 primVal1 ->
@@ -42,7 +50,16 @@ erase mt mv t π
   | otherwise = exec mt mv $ eraseTerm t
 
 eraseGlobal ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.Global IR.T IR.T primTy1 primVal1 ->
   m (Erasure.Global primTy2 primVal2)
 eraseGlobal g =
@@ -55,14 +72,32 @@ eraseGlobal g =
     Core.GAbstract a -> Erasure.GAbstract |<< eraseAbstract a
 
 eraseAbstract ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.Abstract IR.T primTy1 primVal1 ->
   m (Erasure.Abstract primTy2)
 eraseAbstract (Core.Abstract name usage ty) =
   Erasure.Abstract name usage <$> eraseType ty
 
 eraseDatatype ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.Datatype IR.T IR.T primTy1 primVal1 ->
   m (Erasure.Datatype primTy2 primVal2)
 eraseDatatype (Core.Datatype name _pos args level cons) = do
@@ -71,7 +106,16 @@ eraseDatatype (Core.Datatype name _pos args level cons) = do
   pure (Erasure.Datatype name args level cons)
 
 eraseDataArg ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.DataArg IR.T primTy1 primVal1 ->
   m (Erasure.DataArg primTy2)
 eraseDataArg (Core.DataArg name usage ty) = do
@@ -79,7 +123,16 @@ eraseDataArg (Core.DataArg name usage ty) = do
   pure (Erasure.DataArg name usage ty)
 
 eraseDataCon ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.DataCon IR.T IR.T primTy1 primVal1 ->
   m (Erasure.DataCon primTy2 primVal2)
 eraseDataCon (Core.DataCon name ty def) = do
@@ -88,7 +141,16 @@ eraseDataCon (Core.DataCon name ty def) = do
   pure (Erasure.DataCon name ty def)
 
 eraseFunction ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Core.Function IR.T IR.T primTy1 primVal1 ->
   m (Erasure.Function primTy2 primVal2)
 eraseFunction (Core.Function name usage ty clauses) = do
@@ -103,7 +165,16 @@ eraseFunction (Core.Function name usage ty clauses) = do
   pure (Erasure.Function name usage ty clauses)
 
 erasePattern ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   IR.Pattern primTy1 primVal1 ->
   m (Erasure.Pattern primTy2 primVal2)
 erasePattern patt =
@@ -123,19 +194,50 @@ erasePattern patt =
     IR.PPrim p -> Erasure.PPrim <$> erasePrimVal p
 
 erasePrimTy ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m => primTy1 -> m primTy2
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
+  primTy1 ->
+  m primTy2
 erasePrimTy p = do
   ask @"mapPrimTy" <*> get @"nameStack" <*> pure p
     >>= either (throw @"erasureError") pure
 
 erasePrimVal ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m => primVal1 -> m primVal2
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
+  primVal1 ->
+  m primVal2
 erasePrimVal p = do
   ask @"mapPrimVal" <*> get @"nameStack" <*> pure p
     >>= either (throw @"erasureError") pure
 
 erasePatterns ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Show primTy1,
+    Show primTy2,
+    Show primVal1,
+    Show primVal2,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   ([pat], ([(Usage.Usage, arg)], ret)) ->
   m ([pat], ([(Usage.Usage, arg)], ret))
 erasePatterns ([], ([], ret)) = pure ([], ([], ret))
@@ -155,7 +257,12 @@ piTypeToList ty =
     _ -> ([], ty)
 
 eraseTerm ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Typed.Term' primTy1 primVal1 ->
   m (Erasure.Term primTy2 primVal2)
 eraseTerm t@(Typed.Star _ _) = throwEra $ Erasure.UnsupportedTermT t
@@ -218,7 +325,12 @@ eraseTerm (Typed.Let π b t anns) = do
 eraseTerm (Typed.Elim e _) = eraseElim e
 
 eraseElim ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   Typed.Elim' primTy1 primVal1 ->
   m (Erasure.Term primTy2 primVal2)
 eraseElim (Typed.Bound x ann) = do
@@ -241,7 +353,12 @@ eraseElim (Typed.Ann s _ _) = do
   eraseTerm s
 
 eraseType ::
-  ErasureM primTy1 primTy2 primVal1 primVal2 m =>
+  ( ErasureM primTy1 primTy2 primVal1 primVal2 m,
+    Eq primTy1,
+    Eq primVal1,
+    Eq primTy2,
+    Eq primVal2
+  ) =>
   IR.Value primTy1 primVal1 ->
   m (Erasure.Type primTy2)
 eraseType (IR.VStar i) = do

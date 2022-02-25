@@ -49,6 +49,7 @@ typeTerm ::
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -71,6 +72,7 @@ typeTermWith ::
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -98,6 +100,7 @@ typeElim ::
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -121,6 +124,7 @@ typeElimWith ::
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     Env.CanTC' ext primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -149,11 +153,13 @@ withLeftovers m =
     <*> fmap (fmap Typed.annUsage) (get @"patBinds")
 
 typeTerm' ::
+  forall m ext primTy primVal.
   ( Eq primTy,
     Eq primVal,
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     (Show (Core.XAnn ext primTy primVal)),
     Show primTy,
     (Show (Core.ElimX ext primTy primVal)),
@@ -295,6 +301,7 @@ typeElim' ::
     Show primVal,
     Show ext,
     ShowExt ext primTy primVal,
+    IR.EqExt ext primTy primVal,
     Env.CanInnerTC' ext primTy primVal m,
     Param.CanPrimApply Param.Star primTy,
     Param.CanPrimApply primTy primVal,
@@ -547,7 +554,9 @@ substApp ::
       (Param.TypedPrim primTy primVal)
       primTy,
     Show primVal,
-    Show primTy
+    Show primTy,
+    Eq primVal,
+    Eq primTy
   ) =>
   Typed.ValueT IR.T primTy primVal ->
   Typed.Term primTy primVal ->
@@ -566,7 +575,9 @@ evalTC ::
     Env.PrimSubstValue primTy primVal,
     Env.PrimPatSubstTerm primTy primVal,
     Show primVal,
-    Show primTy
+    Show primTy,
+    Eq primVal,
+    Eq primTy
   ) =>
   Typed.Term primTy primVal ->
   m (Typed.ValueT IR.T primTy primVal)

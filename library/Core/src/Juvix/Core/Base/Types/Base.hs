@@ -22,7 +22,7 @@ import qualified Juvix.Sexp.Serialize as Serialize
 -- | a concrete universe level is just a natural number.
 newtype ConcUniverse = CU Natural
   deriving (Show, Read, Eq, Ord, Generic, Data)
-  deriving newtype (NFData)
+  deriving newtype (NFData, Hashable)
   deriving anyclass (Serialize.DefaultOptions, Serialize.Serialize)
 
 instance A.ToJSON ConcUniverse where
@@ -38,7 +38,7 @@ instance A.FromJSON ConcUniverse where
 data Universe
   = U' ConcUniverse
   | UAny
-  deriving (Show, Read, Eq, Ord, Generic, Data, NFData)
+  deriving (Show, Read, Eq, Ord, Generic, Data, NFData, Hashable)
   deriving anyclass (Serialize.DefaultOptions, Serialize.Serialize)
 
 pattern U :: Natural -> Universe
@@ -352,7 +352,10 @@ type CoreAll (c :: Type -> Constraint) ext primTy primVal =
   )
 
 type CoreSerializable (c :: Type -> Constraint) ext primTy primVal =
-  ( TermAll c ext primTy primVal,
+  ( c ext,
+    c primTy,
+    c primVal,
+    TermAll c ext primTy primVal,
     ElimAll c ext primTy primVal,
     PatternAll c ext primTy primVal,
     ValueAll c ext primTy primVal,

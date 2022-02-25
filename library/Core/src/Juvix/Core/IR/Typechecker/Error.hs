@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Juvix.Core.IR.Typechecker.Error
@@ -129,9 +130,21 @@ type instance PP.Ann (TypecheckError' IR.T IR.T _ _) = HR.PPAnn
 
 type Doc = HR.Doc
 
+deriving anyclass instance
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal
+  ) =>
+  PP.PrettyText (Prim primTy primVal)
+
+deriving anyclass instance PP.PrettyText P.Star
+
 -- TODO generalise
 instance
-  ( HR.PrimPretty primTy primVal,
+  ( Show primTy,
+    Show primVal,
+    HR.PrimPretty primTy primVal,
     Eval.ApplyErrorPretty primTy (P.TypedPrim primTy primVal),
     PP.PrettyText (P.PrimApplyError primTy),
     HR.ToPPAnn (PP.Ann (P.PrimApplyError primTy))
@@ -237,10 +250,26 @@ instance
 prettySA :: Show a => a -> Doc
 prettySA = PP.annotate' HR.ATyCon . PP.show
 
-prettyVal :: HR.PrimPretty primTy primVal => IR.Value primTy primVal -> Doc
+prettyVal ::
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    HR.PrimPretty primTy primVal
+  ) =>
+  IR.Value primTy primVal ->
+  Doc
 prettyVal = prettyHR . Core.quote
 
-prettyHR :: HR.PrimPretty primTy primVal => IR.Term primTy primVal -> Doc
+prettyHR ::
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    HR.PrimPretty primTy primVal
+  ) =>
+  IR.Term primTy primVal ->
+  Doc
 prettyHR = PP.pretty0 . irToHR
 
 type HasThrowTC' extV extT primTy primVal m =

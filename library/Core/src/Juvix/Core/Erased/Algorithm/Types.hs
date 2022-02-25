@@ -113,7 +113,11 @@ deriving instance
 type instance PP.Ann (Error _ _) = HR.PPAnn
 
 instance
-  ( PP.PrettySyntax primTy,
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    PP.PrettySyntax primTy,
     HR.ToPPAnn (PP.Ann primTy),
     PP.PrettySyntax primVal,
     HR.ToPPAnn (PP.Ann primVal)

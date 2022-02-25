@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -33,6 +34,7 @@ import qualified Juvix.Core.HR.Pretty as HR
 import Juvix.Library
   ( Applicative (pure),
     Functor (fmap),
+    Show,
     reverse,
     ($),
     (.),
@@ -89,6 +91,21 @@ getBinds = go []
 
 type instance PP.Ann (AnnTerm _ _) = PPAnn
 
+deriving anyclass instance
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy
+  ) =>
+  PP.PrettyText (AnnTerm primTy primVal)
+
 -- FIXME: do we want to keep the type annotations?
-instance PrimPretty1 primVal => PP.PrettySyntax (AnnTerm primTy primVal) where
+instance
+  ( Show primTy,
+    Show primVal,
+    PP.PrettyText primTy,
+    PP.PrettyText primVal,
+    PrimPretty1 primVal
+  ) =>
+  PP.PrettySyntax (AnnTerm primTy primVal)
+  where
   pretty' = PP.pretty' . term

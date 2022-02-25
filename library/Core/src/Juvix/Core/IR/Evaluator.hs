@@ -151,6 +151,7 @@ inlineAllGlobalsElim t lookupFun patternMap =
 -- | Evaluate a term with extensions, discards annotations but keeps the
 -- extensions.
 evalTermWith ::
+  (Show primTy, Show primVal, Eq primTy, Eq primVal) =>
   CanEval extT extG primTy primVal =>
   -- | Lookup function for globals that may be present in the term.
   LookupFun extG primTy primVal ->
@@ -205,7 +206,12 @@ evalTermWith g exts (Core.TermX a) =
 -- | Evaluate an elimination with extensions, discards annotations but keeps
 -- the extensions.
 evalElimWith ::
-  CanEval extT extG primTy primVal =>
+  ( Show primTy,
+    Show primVal,
+    Eq primTy,
+    Eq primVal,
+    CanEval extT extG primTy primVal
+  ) =>
   -- | Lookup function for globals that may be present in the elimination.
   LookupFun extG primTy primVal ->
   -- | Functions to transform term and elim extensions.
@@ -234,7 +240,12 @@ evalElimWith g exts (Core.ElimX a) =
 -- Throws 'UnsupportedTermExt' or 'UnsupportedElimExt' if the
 -- input contains any extension constructors.
 evalTerm ::
-  CanEval extT extG primTy primVal =>
+  ( Show primTy,
+    Show primVal,
+    Eq primTy,
+    Eq primVal,
+    CanEval extT extG primTy primVal
+  ) =>
   -- | Lookup function for globals that may be present in the term.
   LookupFun extG primTy primVal ->
   -- | Term to evaluate.

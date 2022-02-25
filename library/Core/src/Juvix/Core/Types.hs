@@ -41,7 +41,9 @@ deriving instance
 type instance PP.Ann (PipelineError _ _ _) = HR.PPAnn
 
 instance
-  ( HR.PrettyText' compErr,
+  ( Show primTy,
+    Show primVal,
+    HR.PrettyText' compErr,
     HR.PrettyText' (PrimApplyError primTy),
     HR.PrettyText' (ApplyErrorExtra primTy),
     HR.PrettyText' (ApplyErrorExtra (TypedPrim primTy primVal)),
