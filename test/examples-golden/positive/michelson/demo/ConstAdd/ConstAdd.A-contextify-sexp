@@ -87,6 +87,10 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "cat-cons"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
             ( "set"
             , SymInfo
                 { used = NotUsed
@@ -171,11 +175,19 @@ ShowMod
                 , mod = "TopLevel" :|
                     [ "Prelude", "Michelson" ] } )
         ,
+            ( "cat-atom"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
             ( "key"
             , SymInfo
                 { used = NotUsed
                 , mod = "TopLevel" :|
                     [ "Prelude", "Michelson" ] } )
+        ,
+            ( "cat-keyword"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
             ( "contract"
             , SymInfo
@@ -404,6 +416,14 @@ ShowMod
                     [ "Prelude", "Michelson" ] } )
         ,
             ( "cat-product"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "categorial-type"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Interpreter"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,

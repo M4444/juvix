@@ -1,0 +1,932 @@
+Right
+    ( Header
+        ( "Categorial" :| [] )
+        [ ModuleOpen
+            ( Open
+                ( "Prelude" :| [] )
+            )
+        , ModuleOpen
+            ( Open
+                ( "Interpreter" :| [] )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "morphism-intro"
+                , signatureUsage = Nothing
+                , signatureArrowType = Infix
+                    ( Inf
+                        { infixLeft = Parened
+                            ( Infix
+                                ( Inf
+                                    { infixLeft = Name
+                                        ( "int" :| [] )
+                                    , infixOp = "->" :| []
+                                    , infixRight = Name
+                                        ( "int" :| [] )
+                                    }
+                                )
+                            )
+                        , infixOp = "->" :| []
+                        , infixRight = Application
+                            ( App
+                                { applicationName = Name
+                                    ( "categorial-type" :| [] )
+                                , applicationArgs = Name
+                                    ( "SAny" :| [] ) :| []
+                                }
+                            )
+                        }
+                    )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "morphism-intro"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchName "f"
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Application
+                            ( App
+                                { applicationName = Name
+                                    ( "cat-cons" :| [] )
+                                , applicationArgs = Parened
+                                    ( Application
+                                        ( App
+                                            { applicationName = Name
+                                                ( "cat-keyword" :| [] )
+                                            , applicationArgs = Constant
+                                                ( String
+                                                    ( Sho "KMorphismIntro" )
+                                                ) :| []
+                                            }
+                                        )
+                                    ) :|
+                                    [ Parened
+                                        ( Application
+                                            ( App
+                                                { applicationName = Name
+                                                    ( "cat-cons" :| [] )
+                                                , applicationArgs = Parened
+                                                    ( Application
+                                                        ( App
+                                                            { applicationName = Name
+                                                                ( "cat-atom" :| [] )
+                                                            , applicationArgs = Name
+                                                                ( "int" :| [] ) :| []
+                                                            }
+                                                        )
+                                                    ) :|
+                                                    [ Parened
+                                                        ( Application
+                                                            ( App
+                                                                { applicationName = Name
+                                                                    ( "cat-cons" :| [] )
+                                                                , applicationArgs = Parened
+                                                                    ( Application
+                                                                        ( App
+                                                                            { applicationName = Name
+                                                                                ( "cat-atom" :| [] )
+                                                                            , applicationArgs = Name
+                                                                                ( "int" :| [] ) :| []
+                                                                            }
+                                                                        )
+                                                                    ) :|
+                                                                    [ Parened
+                                                                        ( Application
+                                                                            ( App
+                                                                                { applicationName = Name
+                                                                                    ( "cat-cons" :| [] )
+                                                                                , applicationArgs = Parened
+                                                                                    ( Application
+                                                                                        ( App
+                                                                                            { applicationName = Name
+                                                                                                ( "cat-atom" :| [] )
+                                                                                            , applicationArgs = Name
+                                                                                                ( "f" :| [] ) :| []
+                                                                                            }
+                                                                                        )
+                                                                                    ) :|
+                                                                                    [ Parened
+                                                                                        ( Application
+                                                                                            ( App
+                                                                                                { applicationName = Name
+                                                                                                    ( "cat-keyword" :| [] )
+                                                                                                , applicationArgs = Constant
+                                                                                                    ( String
+                                                                                                        ( Sho "nil" )
+                                                                                                    ) :| []
+                                                                                                }
+                                                                                            )
+                                                                                        )
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                        )
+                                                                    ]
+                                                                }
+                                                            )
+                                                        )
+                                                    ]
+                                                }
+                                            )
+                                        )
+                                    ]
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "int-inc"
+                , signatureUsage = Nothing
+                , signatureArrowType = Infix
+                    ( Inf
+                        { infixLeft = Name
+                            ( "int" :| [] )
+                        , infixOp = "->" :| []
+                        , infixRight = Name
+                            ( "int" :| [] )
+                        }
+                    )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "int-inc"
+                    , functionLikeArgs =
+                        [ ConcreteA
+                            ( MatchLogic
+                                { matchLogicContents = MatchName "i"
+                                , matchLogicNamed = Nothing
+                                }
+                            )
+                        ]
+                    , functionLikeBody = Body
+                        ( Infix
+                            ( Inf
+                                { infixLeft = Name
+                                    ( "i" :| [] )
+                                , infixOp = "+" :| []
+                                , infixRight = Constant
+                                    ( Number
+                                        ( Integer' 1 )
+                                    )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        , Signature
+            ( Sig
+                { signatureName = "main"
+                , signatureUsage = Nothing
+                , signatureArrowType = Application
+                    ( App
+                        { applicationName = Name
+                            ( "categorial-type" :| [] )
+                        , applicationArgs = Name
+                            ( "SAny" :| [] ) :| []
+                        }
+                    )
+                , signatureConstraints = []
+                }
+            )
+        , Function
+            ( Func
+                ( Like
+                    { functionLikedName = "main"
+                    , functionLikeArgs = []
+                    , functionLikeBody = Body
+                        ( Let
+                            ( Let'
+                                { letBindings = Like
+                                    { functionLikedName = "a"
+                                    , functionLikeArgs = []
+                                    , functionLikeBody = Body
+                                        ( Infix
+                                            ( Inf
+                                                { infixLeft = Constant
+                                                    ( Number
+                                                        ( Integer' 1 )
+                                                    )
+                                                , infixOp = "+" :| []
+                                                , infixRight = Infix
+                                                    ( Inf
+                                                        { infixLeft = Constant
+                                                            ( Number
+                                                                ( Integer' 2 )
+                                                            )
+                                                        , infixOp = ":" :| []
+                                                        , infixRight = Name
+                                                            ( "int" :| [] )
+                                                        }
+                                                    )
+                                                }
+                                            )
+                                        )
+                                    }
+                                , letBody = Let
+                                    ( Let'
+                                        { letBindings = Like
+                                            { functionLikedName = "m"
+                                            , functionLikeArgs = []
+                                            , functionLikeBody = Body
+                                                ( Infix
+                                                    ( Inf
+                                                        { infixLeft = Constant
+                                                            ( Number
+                                                                ( Integer' 3 )
+                                                            )
+                                                        , infixOp = "*" :| []
+                                                        , infixRight = Infix
+                                                            ( Inf
+                                                                { infixLeft = Constant
+                                                                    ( Number
+                                                                        ( Integer' 4 )
+                                                                    )
+                                                                , infixOp = ":" :| []
+                                                                , infixRight = Name
+                                                                    ( "int" :| [] )
+                                                                }
+                                                            )
+                                                        }
+                                                    )
+                                                )
+                                            }
+                                        , letBody = Let
+                                            ( Let'
+                                                { letBindings = Like
+                                                    { functionLikedName = "s"
+                                                    , functionLikeArgs = []
+                                                    , functionLikeBody = Body
+                                                        ( Infix
+                                                            ( Inf
+                                                                { infixLeft = Constant
+                                                                    ( String
+                                                                        ( Sho "test" )
+                                                                    )
+                                                                , infixOp = ":" :| []
+                                                                , infixRight = Name
+                                                                    ( "string" :| [] )
+                                                                }
+                                                            )
+                                                        )
+                                                    }
+                                                , letBody = Let
+                                                    ( Let'
+                                                        { letBindings = Like
+                                                            { functionLikedName = "ap"
+                                                            , functionLikeArgs = []
+                                                            , functionLikeBody = Body
+                                                                ( Infix
+                                                                    ( Inf
+                                                                        { infixLeft = Application
+                                                                            ( App
+                                                                                { applicationName = Name
+                                                                                    ( "append" :| [] )
+                                                                                , applicationArgs = Constant
+                                                                                    ( String
+                                                                                        ( Sho "test" )
+                                                                                    ) :|
+                                                                                    [ Constant
+                                                                                        ( String
+                                                                                            ( Sho "-append" )
+                                                                                        )
+                                                                                    ]
+                                                                                }
+                                                                            )
+                                                                        , infixOp = ":" :| []
+                                                                        , infixRight = Name
+                                                                            ( "string" :| [] )
+                                                                        }
+                                                                    )
+                                                                )
+                                                            }
+                                                        , letBody = Let
+                                                            ( Let'
+                                                                { letBindings = Like
+                                                                    { functionLikedName = "l"
+                                                                    , functionLikeArgs = []
+                                                                    , functionLikeBody = Body
+                                                                        ( Infix
+                                                                            ( Inf
+                                                                                { infixLeft = Application
+                                                                                    ( App
+                                                                                        { applicationName = Name
+                                                                                            ( "length" :| [] )
+                                                                                        , applicationArgs = Constant
+                                                                                            ( String
+                                                                                                ( Sho "test" )
+                                                                                            ) :| []
+                                                                                        }
+                                                                                    )
+                                                                                , infixOp = ":" :| []
+                                                                                , infixRight = Name
+                                                                                    ( "nat" :| [] )
+                                                                                }
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                , letBody = Let
+                                                                    ( Let'
+                                                                        { letBindings = Like
+                                                                            { functionLikedName = "it"
+                                                                            , functionLikeArgs = []
+                                                                            , functionLikeBody = Body
+                                                                                ( Infix
+                                                                                    ( Inf
+                                                                                        { infixLeft = Application
+                                                                                            ( App
+                                                                                                { applicationName = Name
+                                                                                                    ( "int-lt" :| [] )
+                                                                                                , applicationArgs = Constant
+                                                                                                    ( Number
+                                                                                                        ( Integer' 2 )
+                                                                                                    ) :|
+                                                                                                    [ Constant
+                                                                                                        ( Number
+                                                                                                            ( Integer' 4 )
+                                                                                                        )
+                                                                                                    ]
+                                                                                                }
+                                                                                            )
+                                                                                        , infixOp = ":" :| []
+                                                                                        , infixRight = Name
+                                                                                            ( "bool" :| [] )
+                                                                                        }
+                                                                                    )
+                                                                                )
+                                                                            }
+                                                                        , letBody = Let
+                                                                            ( Let'
+                                                                                { letBindings = Like
+                                                                                    { functionLikedName = "ilt"
+                                                                                    , functionLikeArgs = []
+                                                                                    , functionLikeBody = Body
+                                                                                        ( Infix
+                                                                                            ( Inf
+                                                                                                { infixLeft = Application
+                                                                                                    ( App
+                                                                                                        { applicationName = Name
+                                                                                                            ( "int-lt" :| [] )
+                                                                                                        , applicationArgs = Constant
+                                                                                                            ( Number
+                                                                                                                ( Integer' 4 )
+                                                                                                            ) :|
+                                                                                                            [ Constant
+                                                                                                                ( Number
+                                                                                                                    ( Integer' 2 )
+                                                                                                                )
+                                                                                                            ]
+                                                                                                        }
+                                                                                                    )
+                                                                                                , infixOp = ":" :| []
+                                                                                                , infixRight = Name
+                                                                                                    ( "bool" :| [] )
+                                                                                                }
+                                                                                            )
+                                                                                        )
+                                                                                    }
+                                                                                , letBody = Let
+                                                                                    ( Let'
+                                                                                        { letBindings = Like
+                                                                                            { functionLikedName = "n"
+                                                                                            , functionLikeArgs = []
+                                                                                            , functionLikeBody = Body
+                                                                                                ( Infix
+                                                                                                    ( Inf
+                                                                                                        { infixLeft = Application
+                                                                                                            ( App
+                                                                                                                { applicationName = Name
+                                                                                                                    ( "int-to-nat" :| [] )
+                                                                                                                , applicationArgs = Constant
+                                                                                                                    ( Number
+                                                                                                                        ( Integer' 7 )
+                                                                                                                    ) :| []
+                                                                                                                }
+                                                                                                            )
+                                                                                                        , infixOp = ":" :| []
+                                                                                                        , infixRight = Name
+                                                                                                            ( "nat" :| [] )
+                                                                                                        }
+                                                                                                    )
+                                                                                                )
+                                                                                            }
+                                                                                        , letBody = Let
+                                                                                            ( Let'
+                                                                                                { letBindings = Like
+                                                                                                    { functionLikedName = "ieq"
+                                                                                                    , functionLikeArgs = []
+                                                                                                    , functionLikeBody = Body
+                                                                                                        ( Infix
+                                                                                                            ( Inf
+                                                                                                                { infixLeft = Application
+                                                                                                                    ( App
+                                                                                                                        { applicationName = Name
+                                                                                                                            ( "int-eq" :| [] )
+                                                                                                                        , applicationArgs = Constant
+                                                                                                                            ( Number
+                                                                                                                                ( Integer' 5 )
+                                                                                                                            ) :|
+                                                                                                                            [ Constant
+                                                                                                                                ( Number
+                                                                                                                                    ( Integer' 5 )
+                                                                                                                                )
+                                                                                                                            ]
+                                                                                                                        }
+                                                                                                                    )
+                                                                                                                , infixOp = ":" :| []
+                                                                                                                , infixRight = Name
+                                                                                                                    ( "bool" :| [] )
+                                                                                                                }
+                                                                                                            )
+                                                                                                        )
+                                                                                                    }
+                                                                                                , letBody = Let
+                                                                                                    ( Let'
+                                                                                                        { letBindings = Like
+                                                                                                            { functionLikedName = "ineq"
+                                                                                                            , functionLikeArgs = []
+                                                                                                            , functionLikeBody = Body
+                                                                                                                ( Infix
+                                                                                                                    ( Inf
+                                                                                                                        { infixLeft = Application
+                                                                                                                            ( App
+                                                                                                                                { applicationName = Name
+                                                                                                                                    ( "int-eq" :| [] )
+                                                                                                                                , applicationArgs = Constant
+                                                                                                                                    ( Number
+                                                                                                                                        ( Integer' 5 )
+                                                                                                                                    ) :|
+                                                                                                                                    [ Constant
+                                                                                                                                        ( Number
+                                                                                                                                            ( Integer' 6 )
+                                                                                                                                        )
+                                                                                                                                    ]
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        , infixOp = ":" :| []
+                                                                                                                        , infixRight = Name
+                                                                                                                            ( "bool" :| [] )
+                                                                                                                        }
+                                                                                                                    )
+                                                                                                                )
+                                                                                                            }
+                                                                                                        , letBody = Let
+                                                                                                            ( Let'
+                                                                                                                { letBindings = Like
+                                                                                                                    { functionLikedName = "seq"
+                                                                                                                    , functionLikeArgs = []
+                                                                                                                    , functionLikeBody = Body
+                                                                                                                        ( Application
+                                                                                                                            ( App
+                                                                                                                                { applicationName = Name
+                                                                                                                                    ( "string-eq" :| [] )
+                                                                                                                                , applicationArgs = Constant
+                                                                                                                                    ( String
+                                                                                                                                        ( Sho "foo" )
+                                                                                                                                    ) :|
+                                                                                                                                    [ Constant
+                                                                                                                                        ( String
+                                                                                                                                            ( Sho "foo" )
+                                                                                                                                        )
+                                                                                                                                    ]
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        )
+                                                                                                                    }
+                                                                                                                , letBody = Let
+                                                                                                                    ( Let'
+                                                                                                                        { letBindings = Like
+                                                                                                                            { functionLikedName = "sneq"
+                                                                                                                            , functionLikeArgs = []
+                                                                                                                            , functionLikeBody = Body
+                                                                                                                                ( Application
+                                                                                                                                    ( App
+                                                                                                                                        { applicationName = Name
+                                                                                                                                            ( "string-eq" :| [] )
+                                                                                                                                        , applicationArgs = Constant
+                                                                                                                                            ( String
+                                                                                                                                                ( Sho "foo" )
+                                                                                                                                            ) :|
+                                                                                                                                            [ Constant
+                                                                                                                                                ( String
+                                                                                                                                                    ( Sho "bar" )
+                                                                                                                                                )
+                                                                                                                                            ]
+                                                                                                                                        }
+                                                                                                                                    )
+                                                                                                                                )
+                                                                                                                            }
+                                                                                                                        , letBody = Let
+                                                                                                                            ( Let'
+                                                                                                                                { letBindings = Like
+                                                                                                                                    { functionLikedName = "and-true"
+                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                        ( Application
+                                                                                                                                            ( App
+                                                                                                                                                { applicationName = Name
+                                                                                                                                                    ( "and" :| [] )
+                                                                                                                                                , applicationArgs = Name
+                                                                                                                                                    ( "true" :| [] ) :|
+                                                                                                                                                    [ Name
+                                                                                                                                                        ( "true" :| [] )
+                                                                                                                                                    ]
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        )
+                                                                                                                                    }
+                                                                                                                                , letBody = Let
+                                                                                                                                    ( Let'
+                                                                                                                                        { letBindings = Like
+                                                                                                                                            { functionLikedName = "and-false"
+                                                                                                                                            , functionLikeArgs = []
+                                                                                                                                            , functionLikeBody = Body
+                                                                                                                                                ( Application
+                                                                                                                                                    ( App
+                                                                                                                                                        { applicationName = Name
+                                                                                                                                                            ( "and" :| [] )
+                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                            ( "false" :| [] ) :|
+                                                                                                                                                            [ Name
+                                                                                                                                                                ( "true" :| [] )
+                                                                                                                                                            ]
+                                                                                                                                                        }
+                                                                                                                                                    )
+                                                                                                                                                )
+                                                                                                                                            }
+                                                                                                                                        , letBody = Let
+                                                                                                                                            ( Let'
+                                                                                                                                                { letBindings = Like
+                                                                                                                                                    { functionLikedName = "or-true"
+                                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                                        ( Application
+                                                                                                                                                            ( App
+                                                                                                                                                                { applicationName = Name
+                                                                                                                                                                    ( "or" :| [] )
+                                                                                                                                                                , applicationArgs = Name
+                                                                                                                                                                    ( "false" :| [] ) :|
+                                                                                                                                                                    [ Name
+                                                                                                                                                                        ( "true" :| [] )
+                                                                                                                                                                    ]
+                                                                                                                                                                }
+                                                                                                                                                            )
+                                                                                                                                                        )
+                                                                                                                                                    }
+                                                                                                                                                , letBody = Let
+                                                                                                                                                    ( Let'
+                                                                                                                                                        { letBindings = Like
+                                                                                                                                                            { functionLikedName = "or-false"
+                                                                                                                                                            , functionLikeArgs = []
+                                                                                                                                                            , functionLikeBody = Body
+                                                                                                                                                                ( Application
+                                                                                                                                                                    ( App
+                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                            ( "or" :| [] )
+                                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                                            ( "false" :| [] ) :|
+                                                                                                                                                                            [ Name
+                                                                                                                                                                                ( "false" :| [] )
+                                                                                                                                                                            ]
+                                                                                                                                                                        }
+                                                                                                                                                                    )
+                                                                                                                                                                )
+                                                                                                                                                            }
+                                                                                                                                                        , letBody = Let
+                                                                                                                                                            ( Let'
+                                                                                                                                                                { letBindings = Like
+                                                                                                                                                                    { functionLikedName = "not-true"
+                                                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                                                        ( Application
+                                                                                                                                                                            ( App
+                                                                                                                                                                                { applicationName = Name
+                                                                                                                                                                                    ( "not" :| [] )
+                                                                                                                                                                                , applicationArgs = Name
+                                                                                                                                                                                    ( "false" :| [] ) :| []
+                                                                                                                                                                                }
+                                                                                                                                                                            )
+                                                                                                                                                                        )
+                                                                                                                                                                    }
+                                                                                                                                                                , letBody = Let
+                                                                                                                                                                    ( Let'
+                                                                                                                                                                        { letBindings = Like
+                                                                                                                                                                            { functionLikedName = "not-false"
+                                                                                                                                                                            , functionLikeArgs = []
+                                                                                                                                                                            , functionLikeBody = Body
+                                                                                                                                                                                ( Application
+                                                                                                                                                                                    ( App
+                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                            ( "not" :| [] )
+                                                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                                                            ( "true" :| [] ) :| []
+                                                                                                                                                                                        }
+                                                                                                                                                                                    )
+                                                                                                                                                                                )
+                                                                                                                                                                            }
+                                                                                                                                                                        , letBody = Let
+                                                                                                                                                                            ( Let'
+                                                                                                                                                                                { letBindings = Like
+                                                                                                                                                                                    { functionLikedName = "int-if-left"
+                                                                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                                                                        ( Infix
+                                                                                                                                                                                            ( Inf
+                                                                                                                                                                                                { infixLeft = Application
+                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                            ( "int-if" :| [] )
+                                                                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                                                                            ( "true" :| [] ) :|
+                                                                                                                                                                                                            [ Constant
+                                                                                                                                                                                                                ( Number
+                                                                                                                                                                                                                    ( Integer' 9 )
+                                                                                                                                                                                                                )
+                                                                                                                                                                                                            , Constant
+                                                                                                                                                                                                                ( Number
+                                                                                                                                                                                                                    ( Integer' 10 )
+                                                                                                                                                                                                                )
+                                                                                                                                                                                                            ]
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                    )
+                                                                                                                                                                                                , infixOp = ":" :| []
+                                                                                                                                                                                                , infixRight = Name
+                                                                                                                                                                                                    ( "int" :| [] )
+                                                                                                                                                                                                }
+                                                                                                                                                                                            )
+                                                                                                                                                                                        )
+                                                                                                                                                                                    }
+                                                                                                                                                                                , letBody = Let
+                                                                                                                                                                                    ( Let'
+                                                                                                                                                                                        { letBindings = Like
+                                                                                                                                                                                            { functionLikedName = "int-if-right"
+                                                                                                                                                                                            , functionLikeArgs = []
+                                                                                                                                                                                            , functionLikeBody = Body
+                                                                                                                                                                                                ( Infix
+                                                                                                                                                                                                    ( Inf
+                                                                                                                                                                                                        { infixLeft = Application
+                                                                                                                                                                                                            ( App
+                                                                                                                                                                                                                { applicationName = Name
+                                                                                                                                                                                                                    ( "int-if" :| [] )
+                                                                                                                                                                                                                , applicationArgs = Name
+                                                                                                                                                                                                                    ( "or-false" :| [] ) :|
+                                                                                                                                                                                                                    [ Constant
+                                                                                                                                                                                                                        ( Number
+                                                                                                                                                                                                                            ( Integer' 9 )
+                                                                                                                                                                                                                        )
+                                                                                                                                                                                                                    , Constant
+                                                                                                                                                                                                                        ( Number
+                                                                                                                                                                                                                            ( Integer' 10 )
+                                                                                                                                                                                                                        )
+                                                                                                                                                                                                                    ]
+                                                                                                                                                                                                                }
+                                                                                                                                                                                                            )
+                                                                                                                                                                                                        , infixOp = ":" :| []
+                                                                                                                                                                                                        , infixRight = Name
+                                                                                                                                                                                                            ( "int" :| [] )
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                    )
+                                                                                                                                                                                                )
+                                                                                                                                                                                            }
+                                                                                                                                                                                        , letBody = Let
+                                                                                                                                                                                            ( Let'
+                                                                                                                                                                                                { letBindings = Like
+                                                                                                                                                                                                    { functionLikedName = "string-if-left"
+                                                                                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                                                                                        ( Infix
+                                                                                                                                                                                                            ( Inf
+                                                                                                                                                                                                                { infixLeft = Application
+                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                            ( "string-if" :| [] )
+                                                                                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                                                                                            ( "or-true" :| [] ) :|
+                                                                                                                                                                                                                            [ Constant
+                                                                                                                                                                                                                                ( String
+                                                                                                                                                                                                                                    ( Sho "foo" )
+                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                            , Constant
+                                                                                                                                                                                                                                ( String
+                                                                                                                                                                                                                                    ( Sho "bar" )
+                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                , infixOp = ":" :| []
+                                                                                                                                                                                                                , infixRight = Name
+                                                                                                                                                                                                                    ( "string" :| [] )
+                                                                                                                                                                                                                }
+                                                                                                                                                                                                            )
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                , letBody = Let
+                                                                                                                                                                                                    ( Let'
+                                                                                                                                                                                                        { letBindings = Like
+                                                                                                                                                                                                            { functionLikedName = "string-if-right"
+                                                                                                                                                                                                            , functionLikeArgs = []
+                                                                                                                                                                                                            , functionLikeBody = Body
+                                                                                                                                                                                                                ( Infix
+                                                                                                                                                                                                                    ( Inf
+                                                                                                                                                                                                                        { infixLeft = Application
+                                                                                                                                                                                                                            ( App
+                                                                                                                                                                                                                                { applicationName = Name
+                                                                                                                                                                                                                                    ( "string-if" :| [] )
+                                                                                                                                                                                                                                , applicationArgs = Name
+                                                                                                                                                                                                                                    ( "and-false" :| [] ) :|
+                                                                                                                                                                                                                                    [ Constant
+                                                                                                                                                                                                                                        ( String
+                                                                                                                                                                                                                                            ( Sho "foo" )
+                                                                                                                                                                                                                                        )
+                                                                                                                                                                                                                                    , Constant
+                                                                                                                                                                                                                                        ( String
+                                                                                                                                                                                                                                            ( Sho "bar" )
+                                                                                                                                                                                                                                        )
+                                                                                                                                                                                                                                    ]
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                            )
+                                                                                                                                                                                                                        , infixOp = ":" :| []
+                                                                                                                                                                                                                        , infixRight = Name
+                                                                                                                                                                                                                            ( "string" :| [] )
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                )
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                        , letBody = Let
+                                                                                                                                                                                                            ( Let'
+                                                                                                                                                                                                                { letBindings = Like
+                                                                                                                                                                                                                    { functionLikedName = "inc-intro"
+                                                                                                                                                                                                                    , functionLikeArgs = []
+                                                                                                                                                                                                                    , functionLikeBody = Body
+                                                                                                                                                                                                                        ( Infix
+                                                                                                                                                                                                                            ( Inf
+                                                                                                                                                                                                                                { infixLeft = Application
+                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                            ( "cat-cons" :| [] )
+                                                                                                                                                                                                                                        , applicationArgs = Parened
+                                                                                                                                                                                                                                            ( Application
+                                                                                                                                                                                                                                                ( App
+                                                                                                                                                                                                                                                    { applicationName = Name
+                                                                                                                                                                                                                                                        ( "cat-keyword" :| [] )
+                                                                                                                                                                                                                                                    , applicationArgs = Constant
+                                                                                                                                                                                                                                                        ( String
+                                                                                                                                                                                                                                                            ( Sho "KMorphismIntro" )
+                                                                                                                                                                                                                                                        ) :| []
+                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                            ) :|
+                                                                                                                                                                                                                                            [ Parened
+                                                                                                                                                                                                                                                ( Application
+                                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                                            ( "cat-cons" :| [] )
+                                                                                                                                                                                                                                                        , applicationArgs = Parened
+                                                                                                                                                                                                                                                            ( Application
+                                                                                                                                                                                                                                                                ( App
+                                                                                                                                                                                                                                                                    { applicationName = Name
+                                                                                                                                                                                                                                                                        ( "cat-atom" :| [] )
+                                                                                                                                                                                                                                                                    , applicationArgs = Name
+                                                                                                                                                                                                                                                                        ( "int" :| [] ) :| []
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                            ) :|
+                                                                                                                                                                                                                                                            [ Parened
+                                                                                                                                                                                                                                                                ( Application
+                                                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                                                            ( "cat-cons" :| [] )
+                                                                                                                                                                                                                                                                        , applicationArgs = Parened
+                                                                                                                                                                                                                                                                            ( Application
+                                                                                                                                                                                                                                                                                ( App
+                                                                                                                                                                                                                                                                                    { applicationName = Name
+                                                                                                                                                                                                                                                                                        ( "cat-atom" :| [] )
+                                                                                                                                                                                                                                                                                    , applicationArgs = Name
+                                                                                                                                                                                                                                                                                        ( "int" :| [] ) :| []
+                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                            ) :|
+                                                                                                                                                                                                                                                                            [ Parened
+                                                                                                                                                                                                                                                                                ( Application
+                                                                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                                                                            ( "cat-cons" :| [] )
+                                                                                                                                                                                                                                                                                        , applicationArgs = Parened
+                                                                                                                                                                                                                                                                                            ( Application
+                                                                                                                                                                                                                                                                                                ( App
+                                                                                                                                                                                                                                                                                                    { applicationName = Name
+                                                                                                                                                                                                                                                                                                        ( "cat-atom" :| [] )
+                                                                                                                                                                                                                                                                                                    , applicationArgs = Name
+                                                                                                                                                                                                                                                                                                        ( "int-inc" :| [] ) :| []
+                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                                            ) :|
+                                                                                                                                                                                                                                                                                            [ Parened
+                                                                                                                                                                                                                                                                                                ( Application
+                                                                                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                                                                                            ( "cat-keyword" :| [] )
+                                                                                                                                                                                                                                                                                                        , applicationArgs = Constant
+                                                                                                                                                                                                                                                                                                            ( String
+                                                                                                                                                                                                                                                                                                                ( Sho "nil" )
+                                                                                                                                                                                                                                                                                                            ) :| []
+                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                                )
+                                                                                                                                                                                                                                            ]
+                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                , infixOp = ":" :| []
+                                                                                                                                                                                                                                , infixRight = Application
+                                                                                                                                                                                                                                    ( App
+                                                                                                                                                                                                                                        { applicationName = Name
+                                                                                                                                                                                                                                            ( "categorial-type" :| [] )
+                                                                                                                                                                                                                                        , applicationArgs = Name
+                                                                                                                                                                                                                                            ( "SAny" :| [] ) :| []
+                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                    )
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                            )
+                                                                                                                                                                                                                        )
+                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                , letBody = Name
+                                                                                                                                                                                                                    ( "inc-intro" :| [] )
+                                                                                                                                                                                                                }
+                                                                                                                                                                                                            )
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                    )
+                                                                                                                                                                                                }
+                                                                                                                                                                                            )
+                                                                                                                                                                                        }
+                                                                                                                                                                                    )
+                                                                                                                                                                                }
+                                                                                                                                                                            )
+                                                                                                                                                                        }
+                                                                                                                                                                    )
+                                                                                                                                                                }
+                                                                                                                                                            )
+                                                                                                                                                        }
+                                                                                                                                                    )
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        }
+                                                                                                                                    )
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                    )
+                                                                                                                }
+                                                                                                            )
+                                                                                                        }
+                                                                                                    )
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                    )
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    )
+                                                                }
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    )
+                                }
+                            )
+                        )
+                    }
+                )
+            )
+        ]
+    )

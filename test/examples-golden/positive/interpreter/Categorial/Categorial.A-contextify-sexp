@@ -1,0 +1,379 @@
+ShowMod
+    { contents = T
+        { public = fromList
+            [
+                ( "main"
+                , Info
+                    { infoTable = fromList
+                        [ ( "type", ( "categorial-type" "SAny" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ()
+                                ( ":let-match" "a"
+                                    ( ()
+                                        ( ":infix" "+" 1
+                                            ( ":infix" ":" 2 "int" ) ) )
+                                    ( ":let-match" "m"
+                                        ( ()
+                                            ( ":infix" "*" 3
+                                                ( ":infix" ":" 4 "int" ) ) )
+                                        ( ":let-match" "s"
+                                            ( ()
+                                                ( ":infix" ":" "test" "string" ) )
+                                            ( ":let-match" "ap"
+                                                ( ()
+                                                    ( ":infix" ":"
+                                                        ( "append" "test" "-append" ) "string" ) )
+                                                ( ":let-match" "l"
+                                                    ( ()
+                                                        ( ":infix" ":"
+                                                            ( "length" "test" ) "nat" ) )
+                                                    ( ":let-match" "it"
+                                                        ( ()
+                                                            ( ":infix" ":"
+                                                                ( "int-lt" 2 4 ) "bool" ) )
+                                                        ( ":let-match" "ilt"
+                                                            ( ()
+                                                                ( ":infix" ":"
+                                                                    ( "int-lt" 4 2 ) "bool" ) )
+                                                            ( ":let-match" "n"
+                                                                ( ()
+                                                                    ( ":infix" ":"
+                                                                        ( "int-to-nat" 7 ) "nat" ) )
+                                                                ( ":let-match" "ieq"
+                                                                    ( ()
+                                                                        ( ":infix" ":"
+                                                                            ( "int-eq" 5 5 ) "bool" ) )
+                                                                    ( ":let-match" "ineq"
+                                                                        ( ()
+                                                                            ( ":infix" ":"
+                                                                                ( "int-eq" 5 6 ) "bool" ) )
+                                                                        ( ":let-match" "seq"
+                                                                            ( ()
+                                                                                ( "string-eq" "foo" "foo" ) )
+                                                                            ( ":let-match" "sneq"
+                                                                                ( ()
+                                                                                    ( "string-eq" "foo" "bar" ) )
+                                                                                ( ":let-match" "and-true"
+                                                                                    ( ()
+                                                                                        ( "and" "true" "true" ) )
+                                                                                    ( ":let-match" "and-false"
+                                                                                        ( ()
+                                                                                            ( "and" "false" "true" ) )
+                                                                                        ( ":let-match" "or-true"
+                                                                                            ( ()
+                                                                                                ( "or" "false" "true" ) )
+                                                                                            ( ":let-match" "or-false"
+                                                                                                ( ()
+                                                                                                    ( "or" "false" "false" ) )
+                                                                                                ( ":let-match" "not-true"
+                                                                                                    ( ()
+                                                                                                        ( "not" "false" ) )
+                                                                                                    ( ":let-match" "not-false"
+                                                                                                        ( ()
+                                                                                                            ( "not" "true" ) )
+                                                                                                        ( ":let-match" "int-if-left"
+                                                                                                            ( ()
+                                                                                                                ( ":infix" ":"
+                                                                                                                    ( "int-if" "true" 9 10 ) "int" ) )
+                                                                                                            ( ":let-match" "int-if-right"
+                                                                                                                ( ()
+                                                                                                                    ( ":infix" ":"
+                                                                                                                        ( "int-if" "or-false" 9 10 ) "int" ) )
+                                                                                                                ( ":let-match" "string-if-left"
+                                                                                                                    ( ()
+                                                                                                                        ( ":infix" ":"
+                                                                                                                            ( "string-if" "or-true" "foo" "bar" ) "string" ) )
+                                                                                                                    ( ":let-match" "string-if-right"
+                                                                                                                        ( ()
+                                                                                                                            ( ":infix" ":"
+                                                                                                                                ( "string-if" "and-false" "foo" "bar" ) "string" ) )
+                                                                                                                        ( ":let-match" "inc-intro"
+                                                                                                                            ( ()
+                                                                                                                                ( ":infix" ":"
+                                                                                                                                    ( "cat-cons"
+                                                                                                                                        ( ":paren"
+                                                                                                                                            ( "cat-keyword" "KMorphismIntro" ) )
+                                                                                                                                        ( ":paren"
+                                                                                                                                            ( "cat-cons"
+                                                                                                                                                ( ":paren"
+                                                                                                                                                    ( "cat-atom" "int" ) )
+                                                                                                                                                ( ":paren"
+                                                                                                                                                    ( "cat-cons"
+                                                                                                                                                        ( ":paren"
+                                                                                                                                                            ( "cat-atom" "int" ) )
+                                                                                                                                                        ( ":paren"
+                                                                                                                                                            ( "cat-cons"
+                                                                                                                                                                ( ":paren"
+                                                                                                                                                                    ( "cat-atom" "int-inc" ) )
+                                                                                                                                                                ( ":paren"
+                                                                                                                                                                    ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) )
+                                                                                                                                    ( "categorial-type" "SAny" ) ) ) "inc-intro" ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) } )
+            ,
+                ( "int-inc"
+                , Info
+                    { infoTable = fromList
+                        [ ( "type", ( ":infix" "->" "int" "int" ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ( "i" ) ( ":infix" "+" "i" 1 ) ) ) } )
+            ,
+                ( "morphism-intro"
+                , Info
+                    { infoTable = fromList
+                        [
+                            ( "type"
+                            ,
+                                ( ":infix" "->"
+                                    ( ":paren" ( ":infix" "->" "int" "int" ) )
+                                    ( "categorial-type" "SAny" ) ) ) ]
+                    , infoDef = Term
+                        ( ":lambda-case"
+                            ( ( "f" )
+                                ( "cat-cons"
+                                    ( ":paren"
+                                        ( "cat-keyword" "KMorphismIntro" ) )
+                                    ( ":paren"
+                                        ( "cat-cons"
+                                            ( ":paren" ( "cat-atom" "int" ) )
+                                            ( ":paren"
+                                                ( "cat-cons"
+                                                    ( ":paren"
+                                                        ( "cat-atom" "int" ) )
+                                                    ( ":paren"
+                                                        ( "cat-cons"
+                                                            ( ":paren"
+                                                                ( "cat-atom" "f" ) )
+                                                            ( ":paren"
+                                                                ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) ) ) ) } ) ]
+        , private = fromList [] }
+    , openList = []
+    , qualifiedMap = fromList
+        [
+            ( "cat-coproduct-elim"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "length"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( ":"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "ty_"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-coproduct-intro-right"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-cons"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "not"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "SAny"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "+"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "LLVM"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product-elim-left"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "true"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "add"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "string-eq"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-atom"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "string-if"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-keyword"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "id"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "or"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "nat"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "dpair"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "append"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-coproduct-intro-left"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "mul"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-coproduct"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int-eq"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "*"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "false"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "ty"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "string"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "->"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int-to-nat"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "and"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "int-lt"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "int-if"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "arr"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Michelson"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "nth"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "cat-product-elim-right"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "const"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "categorial-type"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "Interpreter"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "cat-product-intro"
+            , SymInfo
+                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+        ,
+            ( "int"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } )
+        ,
+            ( "bool"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "Prelude", "Interpreter" ] } ) ] }

@@ -1,0 +1,128 @@
+[
+    ( "open" "Prelude" )
+,
+    ( "open" "Interpreter" )
+,
+    ( ":defsig" "morphism-intro"
+        ( ":infix" "->"
+            ( ":paren" ( ":infix" "->" "int" "int" ) )
+            ( "categorial-type" "SAny" ) ) )
+,
+    ( ":defun-match" "morphism-intro"
+        ( ( "f" )
+            ( "cat-cons"
+                ( ":paren" ( "cat-keyword" "KMorphismIntro" ) )
+                ( ":paren"
+                    ( "cat-cons"
+                        ( ":paren" ( "cat-atom" "int" ) )
+                        ( ":paren"
+                            ( "cat-cons"
+                                ( ":paren" ( "cat-atom" "int" ) )
+                                ( ":paren"
+                                    ( "cat-cons"
+                                        ( ":paren" ( "cat-atom" "f" ) )
+                                        ( ":paren"
+                                            ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) ) ) )
+,
+    ( ":defsig" "int-inc" ( ":infix" "->" "int" "int" ) )
+,
+    ( ":defun-match" "int-inc" ( ( "i" ) ( ":infix" "+" "i" 1 ) ) )
+,
+    ( ":defsig" "main" ( "categorial-type" "SAny" ) )
+,
+    ( ":defun-match" "main"
+        ( ()
+            ( ":let-match" "a"
+                ( () ( ":infix" "+" 1 ( ":infix" ":" 2 "int" ) ) )
+                ( ":let-match" "m"
+                    ( () ( ":infix" "*" 3 ( ":infix" ":" 4 "int" ) ) )
+                    ( ":let-match" "s"
+                        ( () ( ":infix" ":" "test" "string" ) )
+                        ( ":let-match" "ap"
+                            ( ()
+                                ( ":infix" ":"
+                                    ( "append" "test" "-append" ) "string" ) )
+                            ( ":let-match" "l"
+                                ( ()
+                                    ( ":infix" ":" ( "length" "test" ) "nat" ) )
+                                ( ":let-match" "it"
+                                    ( ()
+                                        ( ":infix" ":"
+                                            ( "int-lt" 2 4 ) "bool" ) )
+                                    ( ":let-match" "ilt"
+                                        ( ()
+                                            ( ":infix" ":"
+                                                ( "int-lt" 4 2 ) "bool" ) )
+                                        ( ":let-match" "n"
+                                            ( ()
+                                                ( ":infix" ":"
+                                                    ( "int-to-nat" 7 ) "nat" ) )
+                                            ( ":let-match" "ieq"
+                                                ( ()
+                                                    ( ":infix" ":"
+                                                        ( "int-eq" 5 5 ) "bool" ) )
+                                                ( ":let-match" "ineq"
+                                                    ( ()
+                                                        ( ":infix" ":"
+                                                            ( "int-eq" 5 6 ) "bool" ) )
+                                                    ( ":let-match" "seq"
+                                                        ( ()
+                                                            ( "string-eq" "foo" "foo" ) )
+                                                        ( ":let-match" "sneq"
+                                                            ( ()
+                                                                ( "string-eq" "foo" "bar" ) )
+                                                            ( ":let-match" "and-true"
+                                                                ( ()
+                                                                    ( "and" "true" "true" ) )
+                                                                ( ":let-match" "and-false"
+                                                                    ( ()
+                                                                        ( "and" "false" "true" ) )
+                                                                    ( ":let-match" "or-true"
+                                                                        ( ()
+                                                                            ( "or" "false" "true" ) )
+                                                                        ( ":let-match" "or-false"
+                                                                            ( ()
+                                                                                ( "or" "false" "false" ) )
+                                                                            ( ":let-match" "not-true"
+                                                                                ( ()
+                                                                                    ( "not" "false" ) )
+                                                                                ( ":let-match" "not-false"
+                                                                                    ( ()
+                                                                                        ( "not" "true" ) )
+                                                                                    ( ":let-match" "int-if-left"
+                                                                                        ( ()
+                                                                                            ( ":infix" ":"
+                                                                                                ( "int-if" "true" 9 10 ) "int" ) )
+                                                                                        ( ":let-match" "int-if-right"
+                                                                                            ( ()
+                                                                                                ( ":infix" ":"
+                                                                                                    ( "int-if" "or-false" 9 10 ) "int" ) )
+                                                                                            ( ":let-match" "string-if-left"
+                                                                                                ( ()
+                                                                                                    ( ":infix" ":"
+                                                                                                        ( "string-if" "or-true" "foo" "bar" ) "string" ) )
+                                                                                                ( ":let-match" "string-if-right"
+                                                                                                    ( ()
+                                                                                                        ( ":infix" ":"
+                                                                                                            ( "string-if" "and-false" "foo" "bar" ) "string" ) )
+                                                                                                    ( ":let-match" "inc-intro"
+                                                                                                        ( ()
+                                                                                                            ( ":infix" ":"
+                                                                                                                ( "cat-cons"
+                                                                                                                    ( ":paren"
+                                                                                                                        ( "cat-keyword" "KMorphismIntro" ) )
+                                                                                                                    ( ":paren"
+                                                                                                                        ( "cat-cons"
+                                                                                                                            ( ":paren"
+                                                                                                                                ( "cat-atom" "int" ) )
+                                                                                                                            ( ":paren"
+                                                                                                                                ( "cat-cons"
+                                                                                                                                    ( ":paren"
+                                                                                                                                        ( "cat-atom" "int" ) )
+                                                                                                                                    ( ":paren"
+                                                                                                                                        ( "cat-cons"
+                                                                                                                                            ( ":paren"
+                                                                                                                                                ( "cat-atom" "int-inc" ) )
+                                                                                                                                            ( ":paren"
+                                                                                                                                                ( "cat-keyword" "nil" ) ) ) ) ) ) ) ) )
+                                                                                                                ( "categorial-type" "SAny" ) ) ) "inc-intro" ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ]
