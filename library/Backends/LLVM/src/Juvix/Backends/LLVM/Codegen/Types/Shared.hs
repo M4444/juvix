@@ -4,6 +4,8 @@ module Juvix.Backends.LLVM.Codegen.Types.Shared
     TypeTable,
     RecordDesc,
     RecordTable,
+    Size,
+    VariantInfo (..),
     SumDesc,
     SumTable,
     StringsTable,
@@ -46,6 +48,17 @@ type RecordDesc = (Type, [(Symbol, Type)])
 -- | A mapping of record names to LLVM types and lists of (name, type) pairs
 -- | (one for each field).
 type RecordTable = Map.T Symbol RecordDesc
+
+-- | The type we use to track the size of a variant in a sum type.
+type Size = Int
+
+-- | The information we track for each variant of a sum type.
+data VariantInfo = Variant
+  { size :: Size,
+    name :: Symbol,
+    typ' :: Type
+  }
+  deriving (Show, Generic)
 
 -- | The information associated with a single sum type.
 type SumDesc = (Type, [(Symbol, Type)])
