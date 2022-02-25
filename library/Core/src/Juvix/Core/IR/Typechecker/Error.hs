@@ -11,6 +11,7 @@ module Juvix.Core.IR.Typechecker.Error
 where
 
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.HR.Pretty as HR
 import qualified Juvix.Core.IR.Evaluator as Eval
 import Juvix.Core.IR.Typechecker.Types
@@ -42,6 +43,9 @@ data TypecheckError' extV extT primTy primVal
       { typeActual :: ValueT extV primTy primVal
       }
   | ShouldBeCatCoproductType
+      { typeActual :: ValueT extV primTy primVal
+      }
+  | ShouldBeCategorialType
       { typeActual :: ValueT extV primTy primVal
       }
   | ShouldBeUnitType
@@ -96,6 +100,13 @@ data TypecheckError' extV extT primTy primVal
       { tg :: Core.Term extT primTy primVal,
         name :: Core.GlobalName,
         tel :: Core.RawTelescope extT primTy primVal
+      }
+  | CategorialTypeError
+      { catErr :: Categorial.CheckError (Core.Term extT primTy primVal)
+      }
+  | RestrictedCategorialUsage
+      { catTerm :: Core.Term extT primTy primVal,
+        restrictedUsage :: Usage.T
       }
 
 type TypecheckError = TypecheckError' IR.T IR.T
@@ -171,6 +182,13 @@ instance
     ShouldBePairType ty -> expected "a pair" ty
     ShouldBeCatProductType ty -> expected "a categorical product" ty
     ShouldBeCatCoproductType ty -> expected "a categorical coproduct" ty
+    ShouldBeCategorialType ty -> expected "a categorical type" ty
+    CategorialTypeError catErr -> prettySA catErr
+    RestrictedCategorialUsage term usage ->
+      PP.sep
+        [ PP.hsep ["Term", prettyHR term, " had non-Any usage "],
+          PP.hsep ["Usage", prettySA usage]
+        ]
     ShouldBeUnitType ty -> expected "a unit" ty
     LeftoverUsage π ->
       -- TODO: leftover usage of what???

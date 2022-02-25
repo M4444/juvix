@@ -6,11 +6,13 @@ module Juvix.Core.IR.CheckTerm
   )
 where
 
+import qualified Control.Monad.Trans.Except as ExceptT
 import qualified Data.IntMap.Strict as IntMap
 import Data.List.NonEmpty ((<|))
 import qualified Juvix.Core.Application as App
 import qualified Juvix.Core.Base.TransformExt.OnlyExts as OnlyExts
 import qualified Juvix.Core.Base.Types as Core
+import qualified Juvix.Core.Categorial as Categorial
 import qualified Juvix.Core.IR.Evaluator as Eval
 import qualified Juvix.Core.IR.Typechecker.Env as Env
 import qualified Juvix.Core.IR.Typechecker.Error as Error
@@ -279,6 +281,83 @@ typeTerm' term ann@(Typed.Annotation σ ty) =
     Core.Unit _ -> do
       requireUnitTy ty
       pure $ Typed.Unit ann
+    Core.CategorialType π _ -> do
+      requireZero σ
+      pure $ Typed.CategorialType π ann
+    Core.CategorialTerm term' _ -> do
+      -- Currently we require categorial terms to have unrestricted ("SAny")
+      -- usage.
+      unless (σ == Usage.SAny) $
+        Error.throwTC (Error.RestrictedCategorialUsage term σ)
+      let abstractChecks = Categorial.AbstractChecks checkAsType checkAsFunction
+      case ty of
+        {- Introduction of a categorial term. -}
+        IR.VCategorialType π -> do
+          unless (π == Usage.SAny) $
+            Error.throwTC (Error.RestrictedCategorialUsage term π)
+          termOrError <-
+            ExceptT.runExceptT $
+              Categorial.checkIntro
+                (Categorial.IntroChecks abstractChecks)
+                term'
+          case termOrError of
+            Right typedTerm -> pure $ Typed.CategorialTerm typedTerm ann
+            Left err -> Error.throwTC $ Error.CategorialTypeError err
+        {- Elimination of a categorial term. -}
+        _nonCatTy -> do
+          termOrError <-
+            ExceptT.runExceptT $
+              Categorial.checkElim
+                @m
+                @(Core.Term ext primTy primVal)
+                @(Typed.Term primTy primVal)
+                (Categorial.ElimChecks abstractChecks)
+                term'
+          case termOrError of
+            Right typedTerm -> pure typedTerm
+            Left err -> Error.throwTC $ Error.CategorialTypeError err
+      where
+        -- Only closed Core terms may be embedded within categorial terms,
+        -- because the latter can not understand Core captures.  Therefore,
+        -- we type embedded Core terms with empty binding environments.
+
+        checkAsType ::
+          ( Env.HasBound primTy primVal m,
+            Env.HasPatBinds primTy primVal m
+          ) =>
+          Core.Term ext primTy primVal ->
+          m (Typed.Term primTy primVal)
+        checkAsType term = do
+          locals <- get @"bound"
+          put @"bound" []
+          pats <- get @"patBinds"
+          put @"patBinds" mempty
+          checked <- typeTerm' term $ Typed.Annotation mempty (IR.VStar Core.UAny)
+          put @"bound" locals
+          put @"patBinds" pats
+          pure checked
+
+        checkAsFunction ::
+          ( Env.HasBound primTy primVal m,
+            Env.HasPatBinds primTy primVal m
+          ) =>
+          Typed.Term primTy primVal ->
+          Typed.Term primTy primVal ->
+          Core.Term ext primTy primVal ->
+          m (Typed.Term primTy primVal)
+        checkAsFunction domain codomain function = do
+          locals <- get @"bound"
+          put @"bound" []
+          pats <- get @"patBinds"
+          put @"patBinds" mempty
+          domain <- evalTC domain
+          codomain <- withLocal (Typed.Annotation mempty domain) $ evalTC codomain
+          checked <-
+            typeTerm' function $
+              Typed.Annotation mempty (IR.VPi Usage.SAny domain codomain)
+          put @"bound" locals
+          put @"patBinds" pats
+          pure checked
     Core.Let σb b t _ -> do
       b' <- typeElim' b σb
       let bAnn = Typed.getElimAnn b'

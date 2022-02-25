@@ -172,6 +172,11 @@ instance
     Core.VUnitTy <$> substVWith w i e a
   substVWith w i e (Core.VUnit a) =
     Core.VUnit <$> substVWith w i e a
+  substVWith w i e (Core.VCategorialType π a) =
+    Core.VCategorialType π <$> substVWith w i e a
+  substVWith w i e (Core.VCategorialTerm term a) =
+    Core.VCategorialTerm <$> traverse (substVWith w i e) term
+      <*> substVWith w i e a
   substVWith w i e (Core.VNeutral n a) =
     substNeutralWith w i e n a
   substVWith w i e (Core.VPrim p _) =

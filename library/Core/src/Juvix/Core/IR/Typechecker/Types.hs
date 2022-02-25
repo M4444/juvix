@@ -113,6 +113,8 @@ Core.extendTerm "Term'" [] [t|T|] $
             Core.typeCatCoproductElim = typed,
             Core.typeUnitTy = typed,
             Core.typeUnit = typed,
+            Core.typeCategorialType = typed,
+            Core.typeCategorialTerm = typed,
             Core.typeLam = bindTyped,
             Core.typeLet = bindTyped,
             Core.typeElim = typed
@@ -193,6 +195,8 @@ getTermAnn (CatCoproductIntroRight _ ann) = ann
 getTermAnn (CatCoproductElim _ _ _ _ _ ann) = ann
 getTermAnn (UnitTy ann) = ann
 getTermAnn (Unit ann) = ann
+getTermAnn (CategorialType _ ann) = ann
+getTermAnn (CategorialTerm _ ann) = ann
 getTermAnn (Lam _ anns) = baResAnn anns
 getTermAnn (Let _ _ _ anns) = baResAnn anns
 getTermAnn (Elim _ ann) = ann
