@@ -24,6 +24,7 @@ import Juvix.Library
     Monoid (mempty),
     Text,
     const,
+    notImplemented,
     ($),
     (.),
   )
@@ -33,13 +34,13 @@ instance Param.CanPrimApply Param.Star PrimTy where
   primArity = arityTy
 
   -- TODO: Needs to implement apply
-  primApply = _
+  primApply = notImplemented
 
 instance Param.CanPrimApply PrimTy RawPrimVal where
   primArity = arityRaw
 
   -- TODO: Needs to implement apply
-  primApply = _
+  primApply = notImplemented
 
 -- | Parameters for the LLVM backend.
 llvm :: Param.Parameterisation PrimTy RawPrimVal
