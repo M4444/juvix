@@ -1,4 +1,75 @@
 * Backends
+** Interpreter
+*** Setup <<Interpreter/Setup>>
+*** src
+**** Juvix
+***** Backends
+****** Interpreter
+- _Relies on_
+  + [[Interpreter/Compilation]]
+  + [[Interpreter/Parameterization]]
+  + [[Interpreter/Pipeline]]
+  + [[Interpreter/Primitive]]
+******* Compilation <<Interpreter/Compilation>>
+- _Relies on_
+  + [[Interpreter/Primitive]]
+  + [[Core/Categorial]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Feedback]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp/Serialize]]
+******* Parameterization <<Interpreter/Parameterization>>
+- _Relies on_
+  + [[Interpreter/Primitive]]
+  + [[Core/Base/Types]]
+  + [[Evaluator]]
+  + [[Core/Parameterisation]]
+  + [[Library]]
+  + [[HashMap]]
+******* Pipeline <<Interpreter/Pipeline>>
+The basic connection between the backend and the Juvix pipeline.
+- _Relies on_
+  + [[Interpreter/Compilation]]
+  + [[Interpreter/Parameterization]]
+  + [[Interpreter/Primitive]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Juvix/Pipeline]]
+******* Primitive <<Interpreter/Primitive>>
+- _Relies on_
+  + [[Application]]
+  + [[Core/Parameterisation]]
+  + [[Library]]
+  + [[Juvix/Sexp/Serialize]]
+*** test
+**** Main <<Interpreter/test/Main>>
+- _Relies on_
+  + [[Library]]
+  + [[Fetch]]
+**** Test
+***** Codegen <<Interpreter/test/Test/Codegen>>
+- _Relies on_
+  + [[Core/Categorial]]
+  + [[Ann]]
+  + [[Library]]
+  + [[Library/Usage]]
+***** Golden <<Interpreter/test/Test/Golden>>
+- _Relies on_
+  + [[Interpreter]]
+  + [[Core/Base/Types]]
+  + [[Ann]]
+  + [[HR/Types]]
+  + [[Library]]
+  + [[Feedback]]
+  + [[Library/Test/Golden]]
+  + [[Juvix/Pipeline]]
+  + [[Juvix/Pipeline]]
+***** Parameterization <<Interpreter/test/Test/Parameterization>>
+- _Relies on_
+  + [[Interpreter]]
+  + [[Core/Parameterisation]]
+  + [[Library]]
 ** LLVM
 *** Setup <<LLVM/Setup>>
 *** src
@@ -9,10 +80,11 @@
   + [[LLVM/Compilation]]
   + [[LLVM/Parameterization]]
   + [[LLVM/Pipeline]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
 ******* Compilation <<LLVM/Compilation>>
 - _Relies on_
   + [[Block]]
+  + [[Codegen/Categorial]]
   + [[Codegen/Closure]]
   + [[Record]]
   + [[Codegen/Sum]]
@@ -20,7 +92,8 @@
   + [[CString]]
   + [[Pass/Conversion]]
   + [[Pass/Types]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
+  + [[Core/Categorial]]
   + [[Ann]]
   + [[Library]]
   + [[Library/Feedback]]
@@ -29,7 +102,7 @@
 Parameterization and application of the LLVM backend primitives.
 - _Relies on_
   + [[Codegen/Types]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
   + [[Core/Base/Types]]
   + [[Evaluator]]
   + [[Core/Parameterisation]]
@@ -39,16 +112,17 @@ The basic connection between the backend and the Juvix pipeline.
 - _Relies on_
   + [[LLVM/Compilation]]
   + [[LLVM/Parameterization]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
   + [[Ann]]
   + [[Library]]
   + [[Juvix/Pipeline]]
-******* Primitive
+******* Primitive <<LLVM/Primitive>>
 Representation of LLVM primitives in Juvix.
 - _Relies on_
   + [[Application]]
   + [[Core/Parameterisation]]
   + [[Library]]
+  + [[Juvix/Sexp/Serialize]]
 ******* Codegen
 ******** Block
 - Has the code necessary to generate LLVM Code, and gives a small
@@ -119,6 +193,7 @@ compile a new top level declaration.
   + [[CString]]
   + [[Library]]
   + [[HashMap]]
+******** Categorial <<Codegen/Categorial>>
 ******** Closure <<Codegen/Closure>>
 - _Relies on_
   + [[Block]]
@@ -152,6 +227,7 @@ Module for predefined constants
   + [[CString]]
   + [[Shared]]
   + [[Types/Sum]]
+  + [[Core/Categorial]]
   + [[Library]]
   + [[HashMap]]
 ********* CString
@@ -178,33 +254,38 @@ Provides a mechanism for defining Sum types
 ******** Conversion <<Pass/Conversion>>
 - _Relies on_
   + [[Pass/Types]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
+  + [[Core/Categorial]]
   + [[Ann]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
 ******** Types <<Pass/Types>>
 - _Relies on_
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Ann]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 *** test
 **** Main <<LLVM/test/Main>>
 - _Relies on_
   + [[Library]]
   + [[Fetch]]
 **** Test
-***** Codegen
+***** Codegen <<LLVM/test/Test/Codegen>>
 - _Relies on_
   + [[Block]]
+  + [[Codegen/Categorial]]
   + [[Codegen/Types]]
   + [[Types/Sum]]
   + [[LLVM/Compilation]]
   + [[Pass/Types]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
+  + [[Core/Categorial]]
   + [[Ann]]
   + [[Library]]
   + [[Library/Usage]]
@@ -219,12 +300,12 @@ Provides a mechanism for defining Sum types
   + [[Library/Test/Golden]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Pipeline]]
-***** Parameterization <<Test/Parameterization>>
+***** Parameterization <<LLVM/test/Test/Parameterization>>
 - _Relies on_
   + [[LLVM/Compilation]]
   + [[LLVM/Parameterization]]
   + [[LLVM/Pipeline]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
   + [[Core/Parameterisation]]
 ** Michelson
 *** Setup <<Michelson/Setup>>
@@ -370,7 +451,7 @@ Module that implements the backend parameters for the Michelson backend.
   + [[DSL/Environment]]
   + [[Instructions]]
   + [[Untyped]]
-  + [[Utils]]
+  + [[DSL/Utils]]
   + [[Application]]
   + [[Ann]]
   + [[Library]]
@@ -385,7 +466,7 @@ Module that implements the backend parameters for the Michelson backend.
 ******** Untyped
 - _Relies on_
   + [[Library]]
-******** Utils
+******** Utils <<DSL/Utils>>
 - _Relies on_
   + [[Instructions]]
   + [[Untyped]]
@@ -641,6 +722,7 @@ Types to support partial application and polymorphic primitives.
   + [[Core/Pretty]]
   + [[Library]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 ***** Parameterisation <<Core/Parameterisation>>
 Juvix parameterises the type theory & core language over a set of
 primitive data types and primitive values, which can include native data
@@ -721,6 +803,7 @@ keeps the extensions.
   + [[Types/Sig]]
 ******* Base <<Base/Types/Base>>
 - _Relies on_
+  + [[Core/Categorial]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
@@ -736,6 +819,67 @@ keeps the extensions.
   + [[Base/Types/Base]]
   + [[Library]]
   + [[NameSymbol]]
+***** Categorial <<Core/Categorial>>
+- _Relies on_
+  + [[Categorial/Codegen]]
+  + [[Categorial/Erasure]]
+  + [[Errors]]
+  + [[Eval]]
+  + [[TermPrivate]]
+  + [[Syntax]]
+  + [[Core/Categorial/Typechecker]]
+****** Codegen <<Categorial/Codegen>>
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Library]]
+****** Erasure <<Categorial/Erasure>>
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Private/Utils]]
+  + [[Library]]
+****** Errors
+- _Relies on_
+  + [[TermPrivate]]
+  + [[Library]]
+  + [[Juvix/Sexp/Serialize]]
+  + [[Sexp/Types]]
+****** Eval
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Library]]
+****** Syntax
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Library]]
+  + [[Juvix/Sexp]]
+  + [[Sexp/Types]]
+****** Typechecker <<Core/Categorial/Typechecker>>
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Theory]]
+  + [[Private/Utils]]
+  + [[Library]]
+  + [[Sexp/Types]]
+****** Private
+******* TermPrivate
+- _Relies on_
+  + [[Library]]
+  + [[Juvix/Sexp/Serialize]]
+  + [[Sexp/Types]]
+******* Theory
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Private/Utils]]
+******* Utils <<Private/Utils>>
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
 ***** Erased
 - _Relies on_
   + [[Erased/Types]]
@@ -753,6 +897,7 @@ keeps the extensions.
 ****** Algorithm
 - _Relies on_
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Algorithm/Types]]
   + [[IR]]
   + [[Typechecker/Types]]
@@ -764,6 +909,7 @@ keeps the extensions.
   + [[Core/Base]]
   + [[TransformExt]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Erased/Base/Types]]
   + [[Erased/Types]]
   + [[Erased/Types]]
@@ -810,6 +956,7 @@ keeps the extensions.
   + [[Library]]
 ******* Pretty <<Ann/Pretty>>
 - _Relies on_
+  + [[Core/Categorial]]
   + [[Ann/Types]]
   + [[Core/HR/Pretty]]
   + [[Core/HR/Pretty]]
@@ -826,14 +973,17 @@ keeps the extensions.
 - _Relies on_
   + [[Application]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 ****** Base
 ******* Types <<Erased/Base/Types>>
 - _Relies on_
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
@@ -849,6 +999,7 @@ keeps the extensions.
   + [[NameSymbol]]
 ****** Pretty <<Core/HR/Pretty>>
 - _Relies on_
+  + [[Core/Categorial]]
   + [[HR/Types]]
   + [[Core/Pretty]]
   + [[Library]]
@@ -898,6 +1049,7 @@ datatype and function declarations.
   + [[Application]]
   + [[OnlyExts]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Evaluator]]
   + [[Typechecker/Env]]
   + [[Error]]
@@ -914,6 +1066,7 @@ Quantitative type implementation inspired by
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 ****** Evaluator
 This includes the evaluators (`evalTerm` and `evalElim`),
 the value application function (`vapp`) and
@@ -923,6 +1076,7 @@ the substitution functions (`substV`).
   + [[TransformExt]]
   + [[OnlyExts]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[PatSubst]]
   + [[SubstV]]
   + [[Evaluator/Types]]
@@ -958,6 +1112,7 @@ values.
 The types as used by the evaluator.
 - _Relies on_
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Core/HR/Pretty]]
   + [[Typechecker/Types]]
   + [[IR/Types]]
@@ -1006,6 +1161,7 @@ Typechecked declarations are added to the signature.
 ******* Error
 - _Relies on_
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[Core/HR/Pretty]]
   + [[Evaluator]]
   + [[Typechecker/Types]]
@@ -1023,6 +1179,7 @@ Typechecked declarations are added to the signature.
   + [[Core/Parameterisation]]
   + [[Library]]
   + [[Library/Usage]]
+  + [[Juvix/Sexp/Serialize]]
 ***** Parameterisations
 ****** All
 - _Relies on_
@@ -1104,6 +1261,11 @@ Tests for the type checker and evaluator in Core/IR/Typechecker.hs
 *** Utility <<test/Utility>>
 - _Relies on_
   + [[Core/Utility]]
+*** Categorial
+**** Typechecker <<test/Categorial/Typechecker>>
+- _Relies on_
+  + [[Core/Categorial]]
+**** Utils <<Categorial/Utils>>
 *** HR
 **** Pretty <<test/HR/Pretty>>
 - _Relies on_
@@ -1380,6 +1542,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Core/Base]]
+  + [[Core/Categorial]]
   + [[HR]]
   + [[Core/Parameterisation]]
   + [[Library]]
@@ -1407,6 +1570,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Juvix/Context]]
   + [[Core/Base]]
+  + [[Core/Categorial]]
   + [[HR]]
   + [[Library]]
   + [[NameSymbol]]
@@ -1428,7 +1592,9 @@ would be a shame if the `a` was applied to `List a`!
   + [[Juvix/Context]]
   + [[InfoNames]]
   + [[Core/Base/Types]]
+  + [[Core/Categorial]]
   + [[HR]]
+  + [[Library]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Library/Usage]]
@@ -1506,7 +1672,7 @@ with any stage of the compiler while modifying the source code.
 - _Relies on_
   + [[LLVM/Parameterization]]
   + [[LLVM/Pipeline]]
-  + [[Primitive]]
+  + [[LLVM/Primitive]]
   + [[Michelson/Parameterisation]]
   + [[Michelson/Pipeline]]
   + [[Juvix/BerlinPasses]]
