@@ -52,7 +52,7 @@ type MinimalInstanceAlgebra freeAlgObj =
 data Keyword
   = KRefinedADTCat
   | KAlgObject
-  | KMorphismIntro
+  | KFreeAlgMorphism
   deriving
     ( Read,
       Show,
@@ -166,7 +166,7 @@ data Morphism freeAlgObj
   | ComposeMorphisms (Morphism freeAlgObj) (Morphism freeAlgObj)
   | ErasedComposedMorphism (Morphism freeAlgObj) (Morphism freeAlgObj)
   | ErasedIdentity
-  | MorphismIntro freeAlgObj freeAlgObj freeAlgObj
+  | FreeAlgMorphism freeAlgObj freeAlgObj freeAlgObj
   | ErasedMorphism freeAlgObj
   deriving
     ( Read,

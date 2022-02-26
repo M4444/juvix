@@ -106,7 +106,7 @@ eraseMorphism ::
 eraseMorphism checks (IdentityMorphism object) = do
   void $ eraseObject checks object
   return ErasedIdentity
-eraseMorphism checks (MorphismIntro _domain _codomain morphism) = do
+eraseMorphism checks (FreeAlgMorphism _domain _codomain morphism) = do
   erased <- Trans.lift $ eraseFunction checks morphism
   return $ ErasedMorphism erased
 eraseMorphism _checks ErasedIdentity =

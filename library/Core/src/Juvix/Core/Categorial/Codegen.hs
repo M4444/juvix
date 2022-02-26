@@ -41,7 +41,7 @@ generateMorphism ::
 generateMorphism cf (TermPrivate.IdentityMorphism obj) = do
   objOp <- generateObject cf obj
   Trans.lift $ genIdentity cf objOp
-generateMorphism cf (TermPrivate.MorphismIntro domain codomain morphism) = do
+generateMorphism cf (TermPrivate.FreeAlgMorphism domain codomain morphism) = do
   domain <- Trans.lift $ genObj cf domain
   codomain <- Trans.lift $ genObj cf codomain
   Trans.lift $ genFunc cf domain codomain morphism

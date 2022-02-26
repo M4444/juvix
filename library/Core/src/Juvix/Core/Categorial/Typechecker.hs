@@ -69,7 +69,7 @@ decode term@(SexpTypes.Atom a) =
 decode SexpTypes.Nil = ExceptT.throwE CategorialErrors.EmptySexp
 decode
   ( SexpTypes.Cons
-      (SexpTypes.Atom (SexpTypes.P (Keyword KMorphismIntro) _))
+      (SexpTypes.Atom (SexpTypes.P (Keyword KFreeAlgMorphism) _))
       sexp
     ) =
     case sexp of
@@ -82,10 +82,10 @@ decode
           domain <- decodeAlgebra domain
           codomain <- decodeAlgebra codomain
           morphism <- decodeAlgebra morphism
-          return $ MorphismTerm $ MorphismIntro domain codomain morphism
+          return $ MorphismTerm $ FreeAlgMorphism domain codomain morphism
       _ ->
         ExceptT.throwE $
-          CategorialErrors.WrongNumberOfArgumentsForKeyword KMorphismIntro
+          CategorialErrors.WrongNumberOfArgumentsForKeyword KFreeAlgMorphism
 decode
   ( SexpTypes.Cons
       (SexpTypes.Atom (SexpTypes.P (Keyword KAlgObject) _))
@@ -153,11 +153,11 @@ checkMorphism ::
   AbstractChecks m uncheckedAlg checkedAlg ->
   Morphism uncheckedAlg ->
   CheckResultT m (Morphism checkedAlg) uncheckedAlg
-checkMorphism checks (MorphismIntro domain codomain function) = do
+checkMorphism checks (FreeAlgMorphism domain codomain function) = do
   domain <- checkVariableAsType checks domain
   codomain <- checkVariableAsType checks codomain
   function <- checkVariableAsFunction checks domain codomain function
-  return $ MorphismIntro domain codomain function
+  return $ FreeAlgMorphism domain codomain function
 checkMorphism _checks morphism =
   ExceptT.throwE $
     CategorialErrors.CheckUnimplemented (MorphismTerm morphism) "checkMorphism"
