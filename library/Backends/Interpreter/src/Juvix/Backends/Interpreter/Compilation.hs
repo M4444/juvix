@@ -226,8 +226,8 @@ codegenFunctions env =
       InterpretResultT m
     gf _maybeSignature = interpret env
 
-    gi :: Monad m => InterpretedVal -> InterpretResultT m
-    gi _ty = return $ InterpretedLambda [var] $ InterpretedVar var
+    gi :: Monad m => Maybe InterpretedVal -> InterpretResultT m
+    gi _maybeType = return $ InterpretedLambda [var] $ InterpretedVar var
       where
         var :: NameSymbol.T
         var = "v"

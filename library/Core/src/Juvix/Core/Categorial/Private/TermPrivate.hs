@@ -185,11 +185,31 @@ data Annotation freeAlgObj = Annotation freeAlgObj freeAlgObj
     )
 
 data UnannotatedMorphism freeAlgObj
-  = IdentityMorphism (Object freeAlgObj)
-  | ComposeMorphisms
-      (UnannotatedMorphism freeAlgObj)
-      (UnannotatedMorphism freeAlgObj)
-  | FreeAlgMorphism freeAlgObj
+  = FreeAlgMorphism freeAlgObj
+  | Composition [Morphism freeAlgObj]
+  deriving
+    ( Read,
+      Show,
+      Eq,
+      Hashable,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Aeson.ToJSON,
+      Aeson.FromJSON,
+      Aeson.ToJSONKey,
+      Aeson.FromJSONKey,
+      Serialize.DefaultOptions,
+      Serialize.Serialize,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
+data Morphism freeAlgObj
+  = Morphism (UnannotatedMorphism freeAlgObj) (Maybe (Annotation freeAlgObj))
   deriving
     ( Read,
       Show,
@@ -214,29 +234,6 @@ data UnannotatedMorphism freeAlgObj
 FunctorTemplates.makeBaseFunctor ''UnannotatedMorphism
 
 type instance Foldable.Base (UnannotatedMorphism a) = UnannotatedMorphismF a
-
-data Morphism freeAlgObj
-  = Morphism (UnannotatedMorphism freeAlgObj) (Maybe (Annotation freeAlgObj))
-  deriving
-    ( Read,
-      Show,
-      Eq,
-      Hashable,
-      Ord,
-      Generic,
-      Typeable,
-      Data,
-      NFData,
-      Aeson.ToJSON,
-      Aeson.FromJSON,
-      Aeson.ToJSONKey,
-      Aeson.FromJSONKey,
-      Serialize.DefaultOptions,
-      Serialize.Serialize,
-      Functor,
-      Foldable,
-      Traversable
-    )
 
 FunctorTemplates.makeBaseFunctor ''Morphism
 

@@ -11,6 +11,8 @@ import qualified Juvix.Core.Categorial.Private.TermPrivate as TermPrivate
 import Juvix.Library
   ( Maybe (..),
     Monad,
+    fst,
+    map,
     ($),
   )
 
@@ -18,20 +20,11 @@ data CodegenFunctions m operation freeAlgObj = CodegenFunctions
   { genObj :: freeAlgObj -> m operation,
     genFunc :: Maybe (operation, operation) -> freeAlgObj -> m operation,
     genAtom :: operation -> m operation,
-    genIdentity :: operation -> m operation
+    genIdentity :: Maybe operation -> m operation
   }
 
 type CodegenResultT m a freeAlgObj =
   ExceptT.ExceptT (CategorialErrors.CodegenError freeAlgObj) m a
-
-generateObject ::
-  Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.Object freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
-generateObject cf (TermPrivate.AlgebraObject obj) = Trans.lift $ genObj cf obj
-generateObject _cf term@TermPrivate.HigherTerminalObject =
-  ExceptT.throwE $ CategorialErrors.CodegenErased $ TermPrivate.ObjectTerm term
 
 generateMorphismUsingSignature ::
   Monad m =>
@@ -39,12 +32,8 @@ generateMorphismUsingSignature ::
   Maybe (operation, operation) ->
   TermPrivate.UnannotatedMorphism freeAlgObj ->
   CodegenResultT m operation freeAlgObj
-generateMorphismUsingSignature
-  cf
-  _signature
-  (TermPrivate.IdentityMorphism obj) = do
-    objOp <- generateObject cf obj
-    Trans.lift $ genIdentity cf objOp
+generateMorphismUsingSignature cf signature (TermPrivate.Composition []) =
+  Trans.lift $ genIdentity cf $ map fst signature
 generateMorphismUsingSignature
   cf
   signature
@@ -73,14 +62,6 @@ generateMorphismCommon
   cf
   unannotated
   Nothing = generateMorphismUsingSignature cf Nothing unannotated
-
-generateUnannotatedMorphism ::
-  Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.UnannotatedMorphism freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
-generateUnannotatedMorphism cf unannotated =
-  generateMorphismCommon cf unannotated Nothing
 
 generateMorphism ::
   Monad m =>

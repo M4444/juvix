@@ -23,6 +23,7 @@ import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
   ( Maybe (..),
     Monad (..),
+    mapM,
     return,
     ($),
     (<$>),
@@ -104,16 +105,11 @@ eraseUnannotatedMorphism ::
   EraseChecks m annotated erased ->
   UnannotatedMorphism annotated ->
   EraseResultT m (UnannotatedMorphism erased) annotated
-eraseUnannotatedMorphism checks (IdentityMorphism object) = do
-  object' <- eraseObject checks object
-  return $ IdentityMorphism object'
 eraseUnannotatedMorphism checks (FreeAlgMorphism morphism) = do
   erased <- Trans.lift $ eraseFunction checks morphism
   return $ FreeAlgMorphism erased
-eraseUnannotatedMorphism checks (ComposeMorphisms morphism morphism') = do
-  erased <- eraseUnannotatedMorphism checks morphism
-  erased' <- eraseUnannotatedMorphism checks morphism'
-  return $ ComposeMorphisms erased erased'
+eraseUnannotatedMorphism checks (Composition morphisms) =
+  Composition <$> mapM (eraseMorphism checks) morphisms
 
 eraseMorphism ::
   ( Monad m,
