@@ -314,9 +314,18 @@ instance Serialize a => Serialize [a] where
   deserialize Nil = Just []
   deserialize _ = Nothing
 
+
 instance (Eq a, Hashable a, Serialize a) => Serialize (Set.HashSet a) where
   serialize = serialize . Set.toList
   deserialize = fmap Set.fromList . deserialize
+
+-- Serialize/deserialize Maybe where "Nil" represents Nothing
+-- and "Just" is a one-element list (of S-expressions).
+instance (Serialize a) => Serialize (Maybe a) where
+  serialize (Just x) = (serialize :: a -> Sexp.T) x :> Sexp.Nil
+  serialize Nothing = Sexp.Nil
+  deserialize (Sexp.Atom (A n i)) = Just <$> deserialize (Atom (A n i))
+  deserialize _ = Nothing
 
 -- Serialize/deserialize pairs as two-element lists.
 instance (Serialize a, Serialize b) => Serialize (a, b) where
