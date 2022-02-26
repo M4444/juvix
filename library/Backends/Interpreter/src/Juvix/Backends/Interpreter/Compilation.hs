@@ -210,7 +210,6 @@ codegenFunctions env =
     { Categorial.genObj = obj,
       Categorial.genAtom = atom,
       Categorial.genFunc = gf,
-      Categorial.genFuncErased = gfe,
       Categorial.genIdentity = gi
     }
   where
@@ -222,14 +221,10 @@ codegenFunctions env =
 
     gf ::
       Monad m =>
-      InterpretedVal ->
-      InterpretedVal ->
+      Maybe (InterpretedVal, InterpretedVal) ->
       ErasedAnnTerm ->
       InterpretResultT m
-    gf _domain _codomain = interpret env
-
-    gfe :: Monad m => ErasedAnnTerm -> InterpretResultT m
-    gfe = interpret env
+    gf _maybeSignature = interpret env
 
     gi :: Monad m => InterpretedVal -> InterpretResultT m
     gi _ty = return $ InterpretedLambda [var] $ InterpretedVar var

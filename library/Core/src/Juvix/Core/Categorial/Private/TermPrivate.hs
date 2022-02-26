@@ -16,6 +16,7 @@ import Juvix.Library
     Functor,
     Generic,
     Hashable,
+    Maybe,
     NFData,
     Ord,
     Read,
@@ -161,13 +162,61 @@ FunctorTemplates.makeBaseFunctor ''Category
 
 type instance Foldable.Base (Category a) = CategoryF a
 
-data Morphism freeAlgObj
+data Annotation freeAlgObj = Annotation freeAlgObj freeAlgObj
+  deriving
+    ( Read,
+      Show,
+      Eq,
+      Hashable,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Aeson.ToJSON,
+      Aeson.FromJSON,
+      Aeson.ToJSONKey,
+      Aeson.FromJSONKey,
+      Serialize.DefaultOptions,
+      Serialize.Serialize,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
+data UnannotatedMorphism freeAlgObj
   = IdentityMorphism (Object freeAlgObj)
-  | ComposeMorphisms (Morphism freeAlgObj) (Morphism freeAlgObj)
-  | ErasedComposedMorphism (Morphism freeAlgObj) (Morphism freeAlgObj)
-  | ErasedIdentity
-  | FreeAlgMorphism freeAlgObj freeAlgObj freeAlgObj
-  | ErasedMorphism freeAlgObj
+  | ComposeMorphisms
+      (UnannotatedMorphism freeAlgObj)
+      (UnannotatedMorphism freeAlgObj)
+  | FreeAlgMorphism freeAlgObj
+  deriving
+    ( Read,
+      Show,
+      Eq,
+      Hashable,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Aeson.ToJSON,
+      Aeson.FromJSON,
+      Aeson.ToJSONKey,
+      Aeson.FromJSONKey,
+      Serialize.DefaultOptions,
+      Serialize.Serialize,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
+FunctorTemplates.makeBaseFunctor ''UnannotatedMorphism
+
+type instance Foldable.Base (UnannotatedMorphism a) = UnannotatedMorphismF a
+
+data Morphism freeAlgObj
+  = Morphism (UnannotatedMorphism freeAlgObj) (Maybe (Annotation freeAlgObj))
   deriving
     ( Read,
       Show,

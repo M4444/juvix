@@ -47,6 +47,7 @@ data CheckError freeAlgObj
   | WrongNumberOfArgumentsForKeyword TermPrivate.Keyword
   | KeywordRequiresArguments TermPrivate.Keyword
   | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm freeAlgObj)
+  | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism freeAlgObj)
   deriving
     ( Read,
       Show,
@@ -143,7 +144,7 @@ data EvalError freeAlgObj
 data EraseError freeAlgObj
   = EraseUnimplemented (TermPrivate.AbstractTerm freeAlgObj) Text
   | ErasingUncheckedTerm (TermPrivate.Term freeAlgObj)
-  | AlreadyErasedMorphism (TermPrivate.Morphism freeAlgObj)
+  | AlreadyErasedMorphism (TermPrivate.UnannotatedMorphism freeAlgObj)
   deriving
     ( Read,
       Show,

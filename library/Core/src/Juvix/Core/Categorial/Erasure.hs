@@ -17,12 +17,13 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Morphism (..),
     Object (..),
     Term (..),
+    UnannotatedMorphism (..),
   )
 import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
-  ( Monad (..),
+  ( Maybe (..),
+    Monad (..),
     return,
-    void,
     ($),
     (<$>),
   )
@@ -95,6 +96,25 @@ eraseObject _checks object =
       (ObjectTerm object)
       "Categorial.eraseObject"
 
+eraseUnannotatedMorphism ::
+  ( Monad m,
+    MinimalInstanceAlgebra annotated,
+    MinimalInstanceAlgebra erased
+  ) =>
+  EraseChecks m annotated erased ->
+  UnannotatedMorphism annotated ->
+  EraseResultT m (UnannotatedMorphism erased) annotated
+eraseUnannotatedMorphism checks (IdentityMorphism object) = do
+  object' <- eraseObject checks object
+  return $ IdentityMorphism object'
+eraseUnannotatedMorphism checks (FreeAlgMorphism morphism) = do
+  erased <- Trans.lift $ eraseFunction checks morphism
+  return $ FreeAlgMorphism erased
+eraseUnannotatedMorphism checks (ComposeMorphisms morphism morphism') = do
+  erased <- eraseUnannotatedMorphism checks morphism
+  erased' <- eraseUnannotatedMorphism checks morphism'
+  return $ ComposeMorphisms erased erased'
+
 eraseMorphism ::
   ( Monad m,
     MinimalInstanceAlgebra annotated,
@@ -103,23 +123,11 @@ eraseMorphism ::
   EraseChecks m annotated erased ->
   Morphism annotated ->
   EraseResultT m (Morphism erased) annotated
-eraseMorphism checks (IdentityMorphism object) = do
-  void $ eraseObject checks object
-  return ErasedIdentity
-eraseMorphism checks (FreeAlgMorphism _domain _codomain morphism) = do
-  erased <- Trans.lift $ eraseFunction checks morphism
-  return $ ErasedMorphism erased
-eraseMorphism _checks ErasedIdentity =
-  ExceptT.throwE $ CategorialErrors.AlreadyErasedMorphism ErasedIdentity
-eraseMorphism _checks (ErasedMorphism morphism) =
-  ExceptT.throwE $
-    CategorialErrors.AlreadyErasedMorphism $ ErasedMorphism morphism
-eraseMorphism _checks composed@(ErasedComposedMorphism _morphism _morphism') =
-  ExceptT.throwE $ CategorialErrors.AlreadyErasedMorphism composed
-eraseMorphism checks (ComposeMorphisms morphism morphism') = do
-  erased <- eraseMorphism checks morphism
-  erased' <- eraseMorphism checks morphism'
-  return $ ErasedComposedMorphism erased erased'
+eraseMorphism checks (Morphism unannotated (Just _annotation)) = do
+  erased <- eraseUnannotatedMorphism checks unannotated
+  return $ Morphism erased Nothing
+eraseMorphism _checks (Morphism unannotated Nothing) =
+  ExceptT.throwE $ CategorialErrors.AlreadyErasedMorphism unannotated
 
 eraseAbstract ::
   ( Monad m,

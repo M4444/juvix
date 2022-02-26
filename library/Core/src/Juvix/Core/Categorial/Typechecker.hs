@@ -14,6 +14,7 @@ import Juvix.Core.Categorial.Errors as CategorialErrors
   )
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
+    Annotation (..),
     Category (..),
     ConcreteTerm,
     Functor' (..),
@@ -23,12 +24,14 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Object (..),
     Symbol (..),
     Term (..),
+    UnannotatedMorphism (..),
   )
 import Juvix.Core.Categorial.Private.Theory ()
 import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
   ( Bool (..),
     Eq,
+    Maybe (..),
     Monad (..),
     return,
     unless,
@@ -82,7 +85,9 @@ decode
           domain <- decodeAlgebra domain
           codomain <- decodeAlgebra codomain
           morphism <- decodeAlgebra morphism
-          return $ MorphismTerm $ FreeAlgMorphism domain codomain morphism
+          return $
+            MorphismTerm $
+              Morphism (FreeAlgMorphism morphism) (Just (Annotation domain codomain))
       _ ->
         ExceptT.throwE $
           CategorialErrors.WrongNumberOfArgumentsForKeyword KFreeAlgMorphism
@@ -145,6 +150,27 @@ checkObject _checks object =
       (ObjectTerm object)
       "checkObject"
 
+checkMorphismWithSignature ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedAlg,
+    MinimalInstanceAlgebra checkedAlg
+  ) =>
+  AbstractChecks m uncheckedAlg checkedAlg ->
+  uncheckedAlg ->
+  uncheckedAlg ->
+  UnannotatedMorphism uncheckedAlg ->
+  CheckResultT m (Morphism checkedAlg) uncheckedAlg
+checkMorphismWithSignature checks domain codomain (FreeAlgMorphism function) = do
+  domain <- checkVariableAsType checks domain
+  codomain <- checkVariableAsType checks codomain
+  function <- checkVariableAsFunction checks domain codomain function
+  return $ Morphism (FreeAlgMorphism function) $ Just (Annotation domain codomain)
+checkMorphismWithSignature _checks domain codomain morphism =
+  ExceptT.throwE $
+    CategorialErrors.CheckUnimplemented
+      (MorphismTerm (Morphism morphism (Just (Annotation domain codomain))))
+      "checkMorphism"
+
 checkMorphism ::
   ( Monad m,
     MinimalInstanceAlgebra uncheckedAlg,
@@ -153,14 +179,10 @@ checkMorphism ::
   AbstractChecks m uncheckedAlg checkedAlg ->
   Morphism uncheckedAlg ->
   CheckResultT m (Morphism checkedAlg) uncheckedAlg
-checkMorphism checks (FreeAlgMorphism domain codomain function) = do
-  domain <- checkVariableAsType checks domain
-  codomain <- checkVariableAsType checks codomain
-  function <- checkVariableAsFunction checks domain codomain function
-  return $ FreeAlgMorphism domain codomain function
-checkMorphism _checks morphism =
-  ExceptT.throwE $
-    CategorialErrors.CheckUnimplemented (MorphismTerm morphism) "checkMorphism"
+checkMorphism checks (Morphism morphism (Just (Annotation domain codomain))) =
+  checkMorphismWithSignature checks domain codomain morphism
+checkMorphism _checks (Morphism morphism Nothing) =
+  ExceptT.throwE $ CategorialErrors.CheckingMorphismAfterErasure morphism
 
 checkCategory ::
   ( Monad m,
