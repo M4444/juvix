@@ -1542,7 +1542,7 @@ fromList
                                                                                                                 ( Ann
                                                                                                                     ( CategorialTerm
                                                                                                                         ( SexpRepresentation
-                                                                                                                            ( #S ( Keyword KMorphismIntro ) #S
+                                                                                                                            ( #S ( Keyword KFreeAlgMorphism ) #S
                                                                                                                                 ( Variable
                                                                                                                                     ( Elim
                                                                                                                                         ( ElimX
@@ -1699,7 +1699,7 @@ fromList
                         ]
                     , rawClauseBody = CategorialTerm
                         ( SexpRepresentation
-                            ( #S ( Keyword KMorphismIntro ) #S
+                            ( #S ( Keyword KFreeAlgMorphism ) #S
                                 ( Variable
                                     ( Elim
                                         ( ElimX

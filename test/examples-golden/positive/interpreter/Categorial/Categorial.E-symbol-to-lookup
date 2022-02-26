@@ -96,7 +96,7 @@ ShowMod
                                                                                                                                 ( "TopLevel.Prelude.:"
                                                                                                                                     ( "TopLevel.Prelude.cat-cons"
                                                                                                                                         ( ":paren"
-                                                                                                                                            ( "TopLevel.Prelude.cat-keyword" "KMorphismIntro" ) )
+                                                                                                                                            ( "TopLevel.Prelude.cat-keyword" "KFreeAlgMorphism" ) )
                                                                                                                                         ( ":paren"
                                                                                                                                             ( "TopLevel.Prelude.cat-cons"
                                                                                                                                                 ( ":paren"
@@ -140,7 +140,7 @@ ShowMod
                             ( ( "f" )
                                 ( "TopLevel.Prelude.cat-cons"
                                     ( ":paren"
-                                        ( "TopLevel.Prelude.cat-keyword" "KMorphismIntro" ) )
+                                        ( "TopLevel.Prelude.cat-keyword" "KFreeAlgMorphism" ) )
                                     ( ":paren"
                                         ( "TopLevel.Prelude.cat-cons"
                                             ( ":paren"

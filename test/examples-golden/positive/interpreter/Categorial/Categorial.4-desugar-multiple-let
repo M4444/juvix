@@ -10,7 +10,7 @@
 ,
     ( ":defun" "morphism-intro" ( "f" )
         ( "cat-cons"
-            ( ":paren" ( "cat-keyword" "KMorphismIntro" ) )
+            ( ":paren" ( "cat-keyword" "KFreeAlgMorphism" ) )
             ( ":paren"
                 ( "cat-cons"
                     ( ":paren" ( "cat-atom" "int" ) )
@@ -105,7 +105,7 @@
                                                                                                         ( ":infix" ":"
                                                                                                             ( "cat-cons"
                                                                                                                 ( ":paren"
-                                                                                                                    ( "cat-keyword" "KMorphismIntro" ) )
+                                                                                                                    ( "cat-keyword" "KFreeAlgMorphism" ) )
                                                                                                                 ( ":paren"
                                                                                                                     ( "cat-cons"
                                                                                                                         ( ":paren"
