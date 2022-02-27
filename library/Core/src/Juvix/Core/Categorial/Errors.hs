@@ -119,7 +119,7 @@ data SyntaxError freeAlgObj
     )
 
 data EvalError freeAlgObj
-  = EvalUnimplemented (TermPrivate.Term freeAlgObj) Text
+  = EvalError
   deriving
     ( Read,
       Show,
