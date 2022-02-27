@@ -385,7 +385,6 @@ data AbstractTerm freeAlgObj
   | FunctorTerm (Functor' freeAlgObj)
   | NaturalTransformationTerm (NaturalTransformation freeAlgObj)
   | AdjunctionTerm (Adjunction freeAlgObj)
-  | VariableTerm freeAlgObj
   deriving
     ( Read,
       Show,

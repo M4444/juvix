@@ -61,8 +61,6 @@ decode ::
   ) =>
   ConcreteTerm freeAlgObj ->
   CheckResultT m (AbstractTerm freeAlgObj) freeAlgObj
-decode (SexpTypes.Atom (SexpTypes.P (Variable a) _)) =
-  return $ VariableTerm a
 decode _term@(SexpTypes.Atom (SexpTypes.P (Keyword k) _)) =
   case k of
     KRefinedADTCat -> return $ CategoryTerm RefinedADTCat
