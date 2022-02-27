@@ -48,6 +48,7 @@ data CheckError freeAlgObj
   | KeywordRequiresArguments TermPrivate.Keyword
   | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm freeAlgObj)
   | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism freeAlgObj)
+  | IdentityBetweenDifferentObjects freeAlgObj freeAlgObj
   deriving
     ( Read,
       Show,

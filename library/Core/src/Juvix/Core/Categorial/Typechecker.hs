@@ -161,6 +161,12 @@ checkMorphismWithSignature checks domain codomain (FreeAlgMorphism function) = d
   codomain <- checkVariableAsType checks codomain
   function <- checkVariableAsFunction checks domain codomain function
   return $ Morphism (FreeAlgMorphism function) $ Just (Annotation domain codomain)
+checkMorphismWithSignature checks domain codomain (Composition []) = do
+  unless (domain == codomain) $
+    ExceptT.throwE $
+      CategorialErrors.IdentityBetweenDifferentObjects domain codomain
+  domain' <- checkVariableAsType checks domain
+  return $ Morphism (Composition []) $ Just (Annotation domain' domain')
 checkMorphismWithSignature _checks domain codomain morphism =
   ExceptT.throwE $
     CategorialErrors.CheckUnimplemented
