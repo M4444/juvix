@@ -20,7 +20,8 @@ data CodegenFunctions m operation freeAlgObj = CodegenFunctions
   { genObj :: freeAlgObj -> m operation,
     genFunc :: Maybe (operation, operation) -> freeAlgObj -> m operation,
     genAtom :: operation -> m operation,
-    genIdentity :: Maybe operation -> m operation
+    genIdentity :: Maybe operation -> m operation,
+    genCompose :: operation -> operation -> m operation
   }
 
 type CodegenResultT m a freeAlgObj =
@@ -32,18 +33,29 @@ generateMorphismUsingSignature ::
   Maybe (operation, operation) ->
   TermPrivate.UnannotatedMorphism freeAlgObj ->
   CodegenResultT m operation freeAlgObj
-generateMorphismUsingSignature cf signature (TermPrivate.Composition []) =
-  Trans.lift $ genIdentity cf $ map fst signature
 generateMorphismUsingSignature
   cf
   signature
   (TermPrivate.FreeAlgMorphism morphism) =
     Trans.lift $ genFunc cf signature morphism
-generateMorphismUsingSignature _cf _signature term =
-  ExceptT.throwE $
-    CategorialErrors.CodegenUnimplemented
-      (TermPrivate.MorphismTerm (TermPrivate.Morphism term Nothing))
-      "generateMorphismUsingSignature"
+generateMorphismUsingSignature
+  cf
+  signature
+  (TermPrivate.Composition []) =
+    Trans.lift $ genIdentity cf $ map fst signature
+generateMorphismUsingSignature
+  cf
+  _signature
+  (TermPrivate.Composition [morphism]) =
+    generateMorphism cf morphism
+generateMorphismUsingSignature
+  cf
+  _signature
+  (TermPrivate.Composition (morphism : morphisms)) = do
+    left <- generateMorphism cf morphism
+    right <-
+      generateMorphismUsingSignature cf Nothing (TermPrivate.Composition morphisms)
+    Trans.lift $ genCompose cf left right
 
 generateMorphismCommon ::
   Monad m =>
@@ -76,12 +88,12 @@ generateAbstract ::
   CodegenFunctions m operation freeAlgObj ->
   TermPrivate.AbstractTerm freeAlgObj ->
   CodegenResultT m operation freeAlgObj
-generateAbstract _cf term@(TermPrivate.CategoryTerm _cat) =
-  ExceptT.throwE $ CategorialErrors.CodegenErased term
 generateAbstract cf (TermPrivate.MorphismTerm morphism) =
   generateMorphism cf morphism
+-- Morphisms are the only terms from which code can be generated -- other
+-- term types are pure specifications.
 generateAbstract _cf term =
-  ExceptT.throwE $ CategorialErrors.CodegenUnimplemented term "generateAbstract"
+  ExceptT.throwE $ CategorialErrors.CodegenErased term
 
 generateCode ::
   ( Monad m,

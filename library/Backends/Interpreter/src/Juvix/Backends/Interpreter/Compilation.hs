@@ -210,7 +210,8 @@ codegenFunctions env =
     { Categorial.genObj = obj,
       Categorial.genAtom = atom,
       Categorial.genFunc = gf,
-      Categorial.genIdentity = gi
+      Categorial.genIdentity = gi,
+      Categorial.genCompose = gc
     }
   where
     obj :: Monad m => ErasedAnnTerm -> InterpretResultT m
@@ -228,6 +229,15 @@ codegenFunctions env =
 
     gi :: Monad m => Maybe InterpretedVal -> InterpretResultT m
     gi _maybeType = return $ InterpretedLambda [var] $ InterpretedVar var
+      where
+        var :: NameSymbol.T
+        var = "v"
+
+    gc :: Monad m => InterpretedVal -> InterpretedVal -> InterpretResultT m
+    gc g f =
+      return $
+        InterpretedLambda [var] $
+          InterpretedApply g [InterpretedApply f [InterpretedVar var]]
       where
         var :: NameSymbol.T
         var = "v"

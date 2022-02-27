@@ -71,7 +71,6 @@ data CheckError freeAlgObj
 
 data CodegenError freeAlgObj
   = CodegenUnchecked (TermPrivate.ConcreteTerm freeAlgObj)
-  | CodegenUnimplemented (TermPrivate.AbstractTerm freeAlgObj) Text
   | CodegenErased (TermPrivate.AbstractTerm freeAlgObj)
   deriving
     ( Read,
