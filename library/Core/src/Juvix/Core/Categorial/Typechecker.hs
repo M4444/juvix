@@ -102,8 +102,7 @@ decode
         ExceptT.throwE $
           CategorialErrors.WrongNumberOfArgumentsForKeyword KAlgObject
 decode term@(SexpTypes.Cons _ _) =
-  ExceptT.throwE $
-    CategorialErrors.DecodeUnimplemented term "Categorial.decode cons"
+  ExceptT.throwE $ CategorialErrors.IllFormedSExpression term
 
 class Equiv a where
   equiv :: a -> a -> Bool

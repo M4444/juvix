@@ -34,7 +34,7 @@ import qualified Juvix.Sexp.Types as SexpTypes
 data CheckError freeAlgObj
   = CheckUnimplemented (TermPrivate.AbstractTerm freeAlgObj) Text
   | AlreadyCheckedTerm (TermPrivate.AbstractTerm freeAlgObj)
-  | DecodeUnimplemented (TermPrivate.ConcreteTerm freeAlgObj) Text
+  | IllFormedSExpression (TermPrivate.ConcreteTerm freeAlgObj)
   | InvalidTermRepresentation (TermPrivate.ConcreteTerm freeAlgObj)
   | InvalidAtom
       (TermPrivate.ConcreteTerm freeAlgObj)
