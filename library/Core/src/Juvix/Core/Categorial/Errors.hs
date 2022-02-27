@@ -142,8 +142,7 @@ data EvalError freeAlgObj
     )
 
 data EraseError freeAlgObj
-  = ErasingNonFunctionalTerm (TermPrivate.AbstractTerm freeAlgObj)
-  | ErasingUncheckedTerm (TermPrivate.Term freeAlgObj)
+  = ErasingUncheckedTerm (TermPrivate.Term freeAlgObj)
   | AlreadyErasedMorphism (TermPrivate.UnannotatedMorphism freeAlgObj)
   deriving
     ( Read,

@@ -13,6 +13,7 @@ import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
     MinimalInstanceAlgebra,
     Morphism (..),
+    Object (..),
     Term (..),
     UnannotatedMorphism (..),
   )
@@ -72,8 +73,15 @@ eraseAbstract ::
   EraseResultT m (AbstractTerm erased) annotated
 eraseAbstract checks (MorphismTerm morphism) =
   MorphismTerm <$> eraseMorphism checks morphism
-eraseAbstract _checks term =
-  ExceptT.throwE $ CategorialErrors.ErasingNonFunctionalTerm term
+-- Any categorial term other than a MorphismTerm is a pure specification,
+-- with no executable interpretation.  Consequently, erasing anything other
+-- than a MorphismTerm leaves no information whatsoever.  We can allow
+-- clients, for simplicity, to erase categorial terms that might be
+-- non-functional (i.e. not morphisms), if we implement erasure of a
+-- non-functional term as translation into a term that contains no information:
+-- that is a terminal object.  We have available the higher terminal
+-- category, which is a terminal object in a higher category.
+eraseAbstract _checks _term = return $ ObjectTerm HigherTerminalObject
 
 erase ::
   ( Monad m,
