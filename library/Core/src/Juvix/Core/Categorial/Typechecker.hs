@@ -141,11 +141,10 @@ checkObject ::
 checkObject checks (AlgebraObject obj) = do
   checked <- Trans.lift $ checkAsType checks obj
   return $ AlgebraObject checked
-checkObject _checks object =
-  ExceptT.throwE $
-    CategorialErrors.CheckUnimplemented
-      (ObjectTerm object)
-      "checkObject"
+checkObject _checks HigherTerminalObject = return HigherTerminalObject
+
+instance (Eq freeAlgObj) => Equiv (Object freeAlgObj) where
+  equiv = (==)
 
 checkMorphismWithSignature ::
   ( Monad m,
