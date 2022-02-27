@@ -35,6 +35,7 @@ import Juvix.Library
     Monad (..),
     return,
     unless,
+    void,
     ($),
     (.),
     (<$>),
@@ -167,11 +168,44 @@ checkMorphismWithSignature checks domain codomain (Composition []) = do
       CategorialErrors.IdentityBetweenDifferentObjects domain codomain
   domain' <- checkVariableAsType checks domain
   return $ Morphism (Composition []) $ Just (Annotation domain' domain')
-checkMorphismWithSignature _checks domain codomain morphism =
-  ExceptT.throwE $
-    CategorialErrors.CheckUnimplemented
-      (MorphismTerm (Morphism morphism (Just (Annotation domain codomain))))
-      "checkMorphism"
+checkMorphismWithSignature
+  checks
+  _domain
+  _codomain
+  (Composition [morphism]) =
+    checkMorphism checks morphism
+checkMorphismWithSignature
+  checks
+  domain
+  codomain
+  ( Composition
+      (Morphism morphism (Just (Annotation domain' codomain')) : morphisms)
+    ) = do
+    left <-
+      checkMorphism checks $
+        Morphism morphism (Just $ Annotation domain' codomain')
+    checkedDomain <- checkVariableAsType checks domain
+    checkedDomain' <- checkVariableAsType checks domain'
+    checkedCodomain <- checkVariableAsType checks codomain
+    unless (checkedDomain == checkedDomain') $
+      ExceptT.throwE $
+        CategorialErrors.IllTypedMorphismComposition morphism domain domain'
+    void $ checkVariableAsType checks codomain'
+    right <-
+      checkMorphismWithSignature
+        checks
+        codomain'
+        codomain
+        (Composition morphisms)
+    return $
+      Morphism (Composition [left, right]) $
+        Just (Annotation checkedDomain checkedCodomain)
+checkMorphismWithSignature
+  _checks
+  _domain
+  _codomain
+  (Composition (Morphism morphism Nothing : _morphims)) =
+    ExceptT.throwE $ CategorialErrors.CheckingMorphismAfterErasure morphism
 
 checkMorphism ::
   ( Monad m,

@@ -49,6 +49,10 @@ data CheckError freeAlgObj
   | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm freeAlgObj)
   | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism freeAlgObj)
   | IdentityBetweenDifferentObjects freeAlgObj freeAlgObj
+  | IllTypedMorphismComposition
+      (TermPrivate.UnannotatedMorphism freeAlgObj)
+      freeAlgObj
+      freeAlgObj
   deriving
     ( Read,
       Show,
