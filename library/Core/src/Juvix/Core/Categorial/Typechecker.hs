@@ -286,6 +286,16 @@ checkFunctor checks (ComposeFunctors g f) = do
   unless (equiv fCod gDom) $
     ExceptT.throwE $ CategorialErrors.IllegalFunctorComposition g f
   return (fDom, gCod, ComposeFunctors g' f')
+checkFunctor checks (LeftFunctor f) = do
+  (dom, cod, f') <- checkFunctor checks f
+  case cod of
+    ProductCat codLeft _codRight -> return (dom, codLeft, f')
+    _ -> ExceptT.throwE $ CategorialErrors.ProjectingNonProductFunctor f
+checkFunctor checks (RightFunctor f) = do
+  (dom, cod, f') <- checkFunctor checks f
+  case cod of
+    ProductCat _codLeft codRight -> return (dom, codRight, f')
+    _ -> ExceptT.throwE $ CategorialErrors.ProjectingNonProductFunctor f
 checkFunctor _checks functor =
   ExceptT.throwE $
     CategorialErrors.CheckUnimplemented

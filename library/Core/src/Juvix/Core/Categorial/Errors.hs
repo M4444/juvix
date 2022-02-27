@@ -53,6 +53,7 @@ data CheckError freeAlgObj
       (TermPrivate.UnannotatedMorphism freeAlgObj)
       freeAlgObj
       freeAlgObj
+  | ProjectingNonProductFunctor (TermPrivate.Functor' freeAlgObj)
   deriving
     ( Read,
       Show,
