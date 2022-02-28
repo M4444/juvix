@@ -1,14 +1,16 @@
 module Test.Context.Environment (top) where
 
 import qualified Data.HashSet as Set
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Closure as Closure
+import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Binders as Bind
 import qualified Juvix.Contextify.Environment as Env
 import Juvix.Library
 import qualified Juvix.Library.HashMap as Map
 import qualified Juvix.Sexp as Sexp
-import Test.Context.Helpers (contextualizeFoo, parseDesugarSexp)
+import Test.Context.Helpers (contextualizeFoo, emptyContextify, parseDesugarSexp)
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 
@@ -27,12 +29,13 @@ top =
 --------------------------------------------------------------------------------
 data Capture = Cap
   { closure :: Closure.T,
+    feedback :: Feedback.T,
     report :: [Closure.T]
   }
   deriving (Generic, Show)
 
 type CaptureAlias =
-  ExceptT Env.ErrorS (State Capture)
+  ExceptT Sexp.T (State Capture)
 
 newtype Context a = Ctx {_run :: CaptureAlias a}
   deriving (Functor, Applicative, Monad)
@@ -47,14 +50,20 @@ newtype Context a = Ctx {_run :: CaptureAlias a}
     )
     via WriterField "report" CaptureAlias
   deriving
-    (HasThrow "error" Env.ErrorS)
+    ( HasState "feedback" Feedback.T,
+      HasSource "feedback" Feedback.T,
+      HasSink "feedback" Feedback.T
+    )
+    via StateField "feedback" CaptureAlias
+  deriving
+    (HasThrow "error" Sexp.T)
     via MonadError CaptureAlias
 
-runCtx :: Context a -> Capture -> (Either Env.ErrorS a, Capture)
+runCtx :: Context a -> Capture -> (Either Sexp.T a, Capture)
 runCtx (Ctx c) = runState (runExceptT c)
 
 emptyClosure :: Capture
-emptyClosure = Cap (Closure.T Map.empty) []
+emptyClosure = Cap (Closure.T Map.empty) (Feedback.empty) []
 
 -- recordClosure ::
 --   (HasReader "closure" a m, HasWriter "report" [a] m) => Env.Pass m
@@ -207,12 +216,14 @@ openTest =
   T.testGroup
     "open Tests"
     [ T.testCase "open properly adds symbols" $ do
+        sexp1 <- parseDesugarSexp "let f = open A in print-closure 2"
+        sexp2 <- parseDesugarSexp "let bar = 3"
         Right (ctx, _) <-
-          Contextify.contextify
-            ( ("Foo", parseDesugarSexp "let f = open A in print-closure 2")
-                :| [("A", parseDesugarSexp "let bar = 3")]
+          emptyContextify
+            ( ("Foo", sexp1)
+                :| [("A", sexp2)]
             )
-        let (_, Cap _ [Closure.T capture]) =
+        let (_, Cap _ _ [Closure.T capture]) =
               runCtx (Env.contextPassStar ctx recordClosure) emptyClosure
         Map.toList capture T.@=? [("bar", Closure.Info Nothing [] (Just "A"))]
     ]
@@ -221,7 +232,7 @@ capture :: ByteString -> IO [Closure.T]
 capture str = do
   Right (ctx, _) <-
     contextualizeFoo str
-  let (_, Cap _ capture) =
+  let (_, Cap _ _ capture) =
         runCtx (Env.contextPassStar ctx recordClosure) emptyClosure
   pure capture
 
@@ -229,7 +240,7 @@ captureOnAtom :: ByteString -> IO [Closure.T]
 captureOnAtom str = do
   Right (ctx, _) <-
     contextualizeFoo str
-  let (_, Cap _ capture) =
+  let (_, Cap _ _ capture) =
         runCtx (Env.contextPassStar ctx atomClosure) emptyClosure
   pure capture
 

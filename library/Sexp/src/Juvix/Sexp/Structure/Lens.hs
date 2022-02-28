@@ -5,6 +5,7 @@
 module Juvix.Sexp.Structure.Lens where
 
 import qualified Control.Lens as Lens hiding ((|>))
+import qualified Juvix.Sexp.Structure.Berlin as Berlin
 import qualified Juvix.Sexp.Structure.CoreNamed as Named
 import qualified Juvix.Sexp.Structure.Parsing as Parsing
 import qualified Juvix.Sexp.Structure.Transition as Transition
@@ -24,6 +25,7 @@ Lens.makeLensesWith Lens.camelCaseFields ''Transition.If
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.IfNoElse
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.SumCon
 Lens.makeLensesWith Lens.camelCaseFields ''Transition.SumConFilled
+Lens.makeLensesWith Lens.camelCaseFields ''Berlin.Relocated
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Case
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.DeconBody
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Arrow
@@ -43,6 +45,7 @@ Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetType
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetSignature
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.DefModule
 Lens.makeLensesWith Lens.camelCaseFields ''Parsing.LetModule
+Lens.makeLensesWith Lens.camelCaseFields ''Parsing.Header
 Lens.makeLensesWith Lens.camelCaseFields ''Named.Star
 Lens.makeLensesWith Lens.camelCaseFields ''Named.PrimTy
 Lens.makeLensesWith Lens.camelCaseFields ''Named.Prim

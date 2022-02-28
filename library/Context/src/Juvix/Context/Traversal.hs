@@ -123,15 +123,3 @@ runInsts ctx xs =
   where
     runInst ctx (sym, Add info) = Context.add sym info ctx
     runInst ctx (sym, Delete) = Context.remove sym ctx
-
---------------------------------------------------------------------------------
--- Generic Traversal Function
---------------------------------------------------------------------------------
-
-traverseAccumM ::
-  (Monad m, Traversable t) => (a -> b -> m (a, c)) -> a -> t b -> m (a, t c)
-traverseAccumM f init trav =
-  runStateT (traverse (StateT . newF) trav) init
-    >>| swap
-  where
-    newF b a = f a b >>| swap

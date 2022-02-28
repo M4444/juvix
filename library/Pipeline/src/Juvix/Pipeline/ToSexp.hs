@@ -1,8 +1,7 @@
 {-# LANGUAGE LiberalTypeSynonyms #-}
 
 module Juvix.Pipeline.ToSexp
-  ( contextify,
-    Error (..),
+  ( Error (..),
     module ToSexp,
   )
 where
@@ -33,19 +32,3 @@ instance PP.PrettyText Error where
   prettyT = \case
     ContextErr err -> PP.show err -- FIXME
     DesugarErr -> PP.text "no input after desugaring"
-
--- TODO ∷ update the target when the last pass is finished,
--- that way we can get the T out
-contextify ::
-  -- | List of module names and top level definitions
-  [(NameSymbol.T, [Initial.TopLevel])] ->
-  IO (Either Error Context.T)
-contextify syn =
-  case fmap (second (Desugar.op . fmap ToSexp.transTopLevel)) syn of
-    [] ->
-      pure $ Left DesugarErr
-    x : xs -> do
-      contextd <- Contextify.op (x :| xs)
-      pure $ case contextd of
-        Left errr -> Left (ContextErr errr)
-        Right con -> Right con

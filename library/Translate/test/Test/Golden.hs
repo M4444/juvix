@@ -4,6 +4,7 @@ import Control.Arrow (left)
 import qualified Data.ByteString as ByteString (readFile)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Juvix.BerlinPasses.Contextify as BerlinPasses
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Contextify.Environment as Environment
@@ -26,7 +27,7 @@ import qualified System.FilePath as FP
 import Test.Tasty
 import qualified Text.Megaparsec as P
 import qualified Text.Megaparsec.Byte as P
-import Prelude (String, error)
+import Prelude (String)
 
 juvixRootPath :: FilePath
 juvixRootPath = "../../"
@@ -249,6 +250,13 @@ fullDesugar = desugarHandlerTransform
 -- Context Passes
 ----------------------------------------------------------------------
 
+fullyContextify ::
+  NonEmpty (NameSymbol.T, [Sexp.T]) ->
+  IO (Either Contextify.ResolveErr Environment.T)
+fullyContextify xs = do
+  ctx <- Context.empty "JU-USER"
+  BerlinPasses.fullyContextify ctx xs
+
 -- contextifySexp ::
 --   NonEmpty (NameSymbol.T, [Sexp.T]) -> IO Environment.SexpContext
 contextifySexp ::
@@ -256,7 +264,7 @@ contextifySexp ::
   NonEmpty (NameSymbol.T, [Sexp.T]) ->
   m Context.T
 contextifySexp names = do
-  context <- liftIO (Contextify.fullyContextify names)
+  context <- liftIO (fullyContextify names)
   case context of
     Left _err -> Feedback.fail "Not all modules included, please include more modules"
     Right ctx -> pure ctx

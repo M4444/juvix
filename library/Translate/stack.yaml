@@ -8,6 +8,7 @@ packages:
 - ../Sexp
 - ../Context
 - ../Test/DataStructures
+- ../BerlinPipeline
 
 nix:
   enable: true

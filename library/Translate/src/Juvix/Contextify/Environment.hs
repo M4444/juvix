@@ -20,6 +20,7 @@ module Juvix.Contextify.Environment
     MinimalMIO (..),
     Pass,
     PassNoCtx,
+    throwSexp,
     runMIO,
     runM,
     namedForms,
@@ -29,6 +30,7 @@ module Juvix.Contextify.Environment
 where
 
 import Control.Lens hiding ((|>))
+import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
 import qualified Juvix.Context.NameSpace as NameSpace
@@ -48,11 +50,30 @@ data ErrorS
   | Clash
       (Shunt.Precedence NameSymbol.T)
       (Shunt.Precedence NameSymbol.T)
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Sexp.DefaultOptions (Shunt.Associativity)
+
+instance Sexp.Serialize (Shunt.Associativity)
+
+instance Sexp.DefaultOptions (Shunt.Precedence NameSymbol.T)
+
+instance Sexp.Serialize (Shunt.Precedence NameSymbol.T)
+
+instance Sexp.DefaultOptions ErrorS
+
+instance Sexp.Serialize ErrorS
 
 type HasClosure m = HasReader "closure" Closure.T m
 
-type ErrS m = HasThrow "error" ErrorS m
+type ErrS m = (Feedback.Eff m, HasThrow "error" Sexp.T m)
+
+throwSexp :: ErrS m => ErrorS -> m a
+throwSexp err = do
+  Feedback.error sErr
+  throw @"error" sErr
+  where
+    sErr = (Sexp.serialize err)
 
 type HasSearch m = (ErrS m, HasClosure m)
 
@@ -60,13 +81,14 @@ type HasSearch m = (ErrS m, HasClosure m)
 -- Runner environment
 ------------------------------------------------------------
 
-newtype Minimal = Minimal
-  { closure :: Closure.T
+data Minimal = Minimal
+  { closure :: Closure.T,
+    feedback :: Feedback.T
   }
   deriving (Generic, Show)
 
 type MinimalAlias =
-  ExceptT ErrorS (State Minimal)
+  ExceptT Sexp.T (State Minimal)
 
 newtype MinimalM a = Ctx {_run :: MinimalAlias a}
   deriving (Functor, Applicative, Monad)
@@ -76,11 +98,11 @@ newtype MinimalM a = Ctx {_run :: MinimalAlias a}
     )
     via ReaderField "closure" MinimalAlias
   deriving
-    (HasThrow "error" ErrorS)
+    (HasThrow "error" Sexp.T)
     via MonadError MinimalAlias
 
 type MinimalAliasIO =
-  ExceptT ErrorS (StateT Minimal IO)
+  ExceptT Sexp.T (StateT Minimal IO)
 
 newtype MinimalMIO a = CtxIO {_runIO :: MinimalAliasIO a}
   deriving (Functor, Applicative, Monad, MonadIO)
@@ -90,14 +112,20 @@ newtype MinimalMIO a = CtxIO {_runIO :: MinimalAliasIO a}
     )
     via ReaderField "closure" MinimalAliasIO
   deriving
-    (HasThrow "error" ErrorS)
+    ( HasState "feedback" Feedback.T,
+      HasSource "feedback" Feedback.T,
+      HasSink "feedback" Feedback.T
+    )
+    via StateField "feedback" MinimalAliasIO
+  deriving
+    (HasThrow "error" Sexp.T)
     via MonadError MinimalAliasIO
 
-runMIO :: MinimalMIO a -> IO (Either ErrorS a, Minimal)
-runMIO (CtxIO c) = runStateT (runExceptT c) (Minimal Closure.empty)
+runMIO :: MinimalMIO a -> IO (Either Sexp.T a, Minimal)
+runMIO (CtxIO c) = runStateT (runExceptT c) (Minimal Closure.empty Feedback.empty)
 
-runM :: MinimalM a -> (Either ErrorS a, Minimal)
-runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty)
+runM :: MinimalM a -> (Either Sexp.T a, Minimal)
+runM (Ctx c) = runState (runExceptT c) (Minimal Closure.empty Feedback.empty)
 
 ------------------------------------------------------------
 -- Type aliases
@@ -282,7 +310,7 @@ lookupPrecedence name ctx = do
     Just Closure.Info {mOpen = Just prefix} ->
       contextCase (prefix <> name) |> pure
     Just Closure.Info {} ->
-      throw @"error" (UnknownSymbol name)
+      throwSexp (UnknownSymbol name)
     Nothing ->
       contextCase name |> pure
   where
@@ -378,9 +406,9 @@ openIn ctx name body cont = do
               local @"closure" (\cnt -> foldr addSymbolInfo cnt newSymbs) $
                 Bind.OpenIn newMod <$> cont body
         _ ->
-          throw @"error" (CantResolve [Sexp.serialize newMod])
+          throwSexp (CantResolve [Sexp.serialize newMod])
     _ ->
-      throw @"error" (CantResolve [Sexp.serialize newMod])
+      throwSexp (CantResolve [Sexp.serialize newMod])
 
 -- | @lambdaCase@ we encounter a @:lambda-case@ at the start of every
 -- Definition in the context. This ensures the arguments are properly

@@ -286,6 +286,12 @@ data Via = Via
   }
   deriving (Show)
 
+data Header = Header
+  { headerName :: NameSymbol.T,
+    headerSexps :: Sexp.T
+  }
+  deriving (Show)
+
 --------------------------------------------------------------------------------
 -- Converter functions
 -- The format for these are
@@ -1353,3 +1359,34 @@ fromVia (Via sexp1 sexp2) =
 instance Sexp.Serialize Via where
   deserialize = toVia
   serialize = fromVia
+
+----------------------------------------
+-- Header
+----------------------------------------
+
+nameHeader :: NameSymbol.T
+nameHeader = ":header"
+
+isHeader :: Sexp.T -> Bool
+isHeader (Sexp.Cons form _) = Sexp.isAtomNamed form nameHeader
+isHeader _ = False
+
+toHeader :: Sexp.T -> Maybe Header
+toHeader form
+  | isHeader form =
+    case form of
+      _nameHeader Sexp.:> nameSymbol1 Sexp.:> sexp2
+        | Just nameSymbol1 <- toNameSymbol nameSymbol1 ->
+          Header nameSymbol1 sexp2 |> Just
+      _ ->
+        Nothing
+  | otherwise =
+    Nothing
+
+fromHeader :: Header -> Sexp.T
+fromHeader (Header nameSymbol1 sexp2) =
+  Sexp.listStar [Sexp.atom nameHeader, fromNameSymbol nameSymbol1, sexp2]
+
+instance Sexp.Serialize Header where
+  deserialize = toHeader
+  serialize = fromHeader

@@ -107,6 +107,10 @@ newtype PathError
   deriving (Show, Read, Eq, Generic)
   deriving newtype (A.ToJSON, A.FromJSON)
 
+instance Sexp.DefaultOptions PathError
+
+instance Sexp.Serialize PathError
+
 --------------------------------------------------------------------------------
 -- Symbol Location Types
 --------------------------------------------------------------------------------

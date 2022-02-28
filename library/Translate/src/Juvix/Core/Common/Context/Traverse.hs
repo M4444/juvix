@@ -131,8 +131,8 @@ orderDatatypes (a NonEmpty.:| _as) (b NonEmpty.:| _bs) = case (def a, def b) of
       LT
   (_, _) -> EQ
 
-injectTopLevel :: (Semigroup a, IsString a) => a -> a
-injectTopLevel name = Context.topLevelName <> "." <> name
+injectTopLevel :: Symbol -> Symbol
+injectTopLevel = NameSymbol.toSymbol . Context.addTopName . NameSymbol.fromSymbol
 
 recGroups' ::
   HasRecGroups m => (Symbol -> Symbol) -> NameSpace.T Context.Info -> m ()

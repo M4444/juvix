@@ -23,7 +23,7 @@
   + [[Primitive]]
   + [[Ann]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
 ******* Parameterization <<LLVM/Parameterization>>
 Parameterization and application of the LLVM backend primitives.
@@ -215,7 +215,7 @@ Provides a mechanism for defining Sum types
   + [[Ann]]
   + [[HR/Types]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Library/Test/Golden]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Pipeline]]
@@ -285,7 +285,7 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Michelson/Parameterisation]]
   + [[Ann]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Juvix/Pipeline]]
 ******* Compilation <<Michelson/Compilation>>
 - Entrypoints into compilation from core terms to Michelson terms & contracts.
@@ -448,6 +448,21 @@ Module that implements the backend parameters for the Michelson backend.
 ** src
 *** Juvix
 **** BerlinPipeline
+***** Automation
+the job of @Automation@ is to make the step function more
+amenable to writing passes It is not ergonomic to take extra
+information one may not care about
+- _Relies on_
+  + [[BerlinPipeline/Lens]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Juvix/Context]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+  + [[Berlin]]
+  + [[Structure/Lens]]
 ***** CircularList
 - _Relies on_
   + [[RecursiveList]]
@@ -456,32 +471,65 @@ Module that implements the backend parameters for the Michelson backend.
 ***** Env <<BerlinPipeline/Env>>
 - _Relies on_
   + [[CircularList]]
+  + [[BerlinPipeline/Lens]]
   + [[BerlinPipeline/Pipeline]]
   + [[Step]]
+  + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
-***** Meta
+***** Feedback <<BerlinPipeline/Feedback>>
 - _Relies on_
   + [[Library]]
+  + [[Juvix/Sexp]]
+***** Lens <<BerlinPipeline/Lens>>
+- _Relies on_
+  + [[BerlinPipeline/Pipeline]]
+***** Meta
+- _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Library]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
 ***** Pipeline <<BerlinPipeline/Pipeline>>
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
   + [[Meta]]
   + [[Juvix/Context]]
   + [[Library]]
   + [[NameSymbol]]
+  + [[Library/Trace]]
   + [[Juvix/Sexp]]
 ***** RecursiveList
-A Recursive list represents the concept of a list with a chance to nest.
-This allows us to get a tree like structure, where a pipeline step can contain more steps.
+A Recursive list represents the concept of a list with a chance to
+nest. This allows us to get a tree like structure, where a pipeline
+step can contain more steps.
 - _Relies on_
   + [[Library]]
+  + [[NameSymbol]]
 ***** Step
+The Step Module serves as the base interface for any compiler
+step. The module is quite minimal, with only a few types along with
+a small set of operations.
+This main type of the module, @T@, is simply a function type that
+takes a structure type that has more than it needs to do any pass
+called @Pipeline.COut@ and gives back the result of the computation
+plus Meta-data.
+We say that the pass takes more than it needs because not only is
+@Piepline.COut@ composed of the @Pipeline._context@ and the
+@Pipeline._currentExp@ we are trying to compile against, but also
+the @Pipeline.SurroundingEnv@ which contains information such as
+metadata and enough data to fill the environment of any particular
+pass.
 - _Relies on_
-  + [[Meta]]
   + [[BerlinPipeline/Pipeline]]
   + [[Library]]
   + [[NameSymbol]]
 ** test
+*** Feedback <<test/Feedback>>
+- _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Library]]
+  + [[Juvix/Sexp]]
 *** Main <<BerlinPipeline/test/Main>>
 - _Relies on_
   + [[Library]]
@@ -808,7 +856,7 @@ keeps the extensions.
   + [[Juvix/Sexp]]
   + [[Structure]]
   + [[CoreNamed]]
-  + [[Lens]]
+  + [[Structure/Lens]]
 ****** Types <<HR/Types>>
 - _Relies on_
   + [[Application]]
@@ -1199,6 +1247,11 @@ would be a shame if the `a` was applied to `List a`!
 *** Juvix
 **** Pipeline <<Juvix/Pipeline>>
 - _Relies on_
+  + [[Juvix/BerlinPasses]]
+  + [[BerlinPipeline/Env]]
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Application]]
   + [[Core/Base]]
@@ -1213,9 +1266,10 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/Translate]]
   + [[Core/Types]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
+  + [[Library/Trace]]
   + [[Library/Usage]]
   + [[Juvix/Parsing]]
   + [[Parsing/Types]]
@@ -1225,6 +1279,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Pipeline/ToSexp]]
   + [[Pipeline/Types]]
   + [[Juvix/Sexp]]
+  + [[Transition]]
 ***** Compile
 - _Relies on_
   + [[Application]]
@@ -1232,7 +1287,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[IR]]
   + [[Core/Parameterisation]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Def]]
   + [[ToHR/Types]]
 ***** ToIR <<Juvix/Pipeline/ToIR>>
@@ -1246,7 +1301,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Core/HR/Pretty]]
   + [[Core/Translate]]
   + [[Core/Types]]
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
   + [[NameSymbol]]
   + [[PrettyPrint]]
@@ -1395,6 +1450,10 @@ would be a shame if the `a` was applied to `List a`!
 *** Test
 **** RecGroups
 - _Relies on_
+  + [[Juvix/BerlinPasses]]
+  + [[BerlinPipeline/Env]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Traverse]]
   + [[Library]]
@@ -1404,7 +1463,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Juvix/Sexp]]
 **** ToSexp <<Test/ToSexp>>
 - _Relies on_
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
   + [[Parsing/Parser]]
   + [[Parsing/Types]]
@@ -1435,6 +1494,12 @@ with any stage of the compiler while modifying the source code.
   + [[Primitive]]
   + [[Michelson/Parameterisation]]
   + [[Michelson/Pipeline]]
+  + [[Juvix/BerlinPasses]]
+  + [[BerlinPasses/Contextify]]
+  + [[BerlinPipeline/Env]]
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[NameSpace]]
   + [[Juvix/Contextify]]
@@ -1448,10 +1513,11 @@ with any stage of the compiler while modifying the source code.
   + [[IR]]
   + [[Core/Parameterisation]]
   + [[Core/Types]]
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[HashMap]]
+  + [[NameSymbol]]
   + [[NameSymbol]]
   + [[Library/Usage]]
   + [[Juvix/Parsing]]
@@ -1503,7 +1569,7 @@ with any stage of the compiler while modifying the source code.
   + [[Typechecker/Types]]
   + [[Core/Parameterisation]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Parsing/Types]]
   + [[Juvix/Pipeline]]
@@ -1612,6 +1678,12 @@ ending in an @InfixNoMore@
 - _Relies on_
   + [[Library]]
   + [[Juvix/Sexp]]
+****** Berlin
+- _Relies on_
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+  + [[Structure/Helpers]]
 ****** CoreNamed
 Hardening S-expressions into a more readable form. Here we use a
 mixture of record structures and aliases. Each cover a form that we
@@ -1651,8 +1723,9 @@ _TODO_
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-****** Lens
+****** Lens <<Structure/Lens>>
 - _Relies on_
+  + [[Berlin]]
   + [[CoreNamed]]
   + [[Structure/Parsing]]
   + [[Transition]]
@@ -1768,7 +1841,7 @@ _TODO_
   + _Changes_
     * The Capability library is imported and replaces the standard =MTL=
       constructs in =Protolude=
-***** Feedback
+***** Feedback <<Library/Feedback>>
 - _Relies on_
   + [[Library]]
 ***** Fetch
@@ -1824,7 +1897,7 @@ runtime-relevant way.
   much clearer to see what the expressions mean.
 - _Relies on_
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
 ******* NoQuotesText
 This structure allows us to have golden tests that are based around
 show instances instead of normal read instances.
@@ -1912,6 +1985,15 @@ the full symbol qualifying map.
 ** Setup <<Translate/Setup>>
 ** src
 *** Juvix
+**** Environment <<Juvix/Environment>>
+- _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Juvix/Closure]]
+  + [[Library]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
 **** FreeVars
 TODO ∷ determine what has changed in the rebasing of this algo
 - FreeVars is an algorithm that checks for free symbols in the AST.
@@ -1967,16 +2049,74 @@ TODO ∷ determine what has changed in the rebasing of this algo
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
+**** BerlinPasses <<Juvix/BerlinPasses>>
+- _Relies on_
+  + [[BerlinPasses/Contextify]]
+  + [[BerlinPasses/Desugar]]
+  + [[Automation]]
+  + [[CircularList]]
+  + [[BerlinPipeline/Env]]
+  + [[BerlinPipeline/Lens]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Step]]
+  + [[Juvix/Context]]
+  + [[Library]]
+  + [[Juvix/Sexp]]
+  + [[Transition]]
+***** Contextify <<BerlinPasses/Contextify>>
+- _Relies on_
+  + [[BerlinPasses/Environment]]
+  + [[Automation]]
+  + [[BerlinPipeline/Feedback]]
+  + [[BerlinPipeline/Lens]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Step]]
+  + [[Juvix/Context]]
+  + [[Traversal]]
+  + [[Juvix/Contextify]]
+  + [[Contextify/Passes]]
+  + [[ResolveOpenInfo]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
+  + [[Structure/Lens]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
+***** Desugar <<BerlinPasses/Desugar>>
+- _Relies on_
+  + [[BerlinPasses/Environment]]
+  + [[Automation]]
+  + [[BerlinPipeline/Lens]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Step]]
+  + [[Juvix/Context]]
+  + [[Desugar/Passes]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
+  + [[Structure/Lens]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
+***** Environment <<BerlinPasses/Environment>>
+- _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Juvix/Closure]]
+  + [[Library]]
+  + [[Library/Trace]]
+  + [[Juvix/Sexp]]
 **** Contextify <<Juvix/Contextify>>
 - _Relies on_
   + [[Juvix/Context]]
-  + [[Contextify/Environment]]
-  + [[Contextify/Passes]]
   + [[ResolveOpenInfo]]
   + [[ToContext/Sexp]]
   + [[ToContext/Types]]
   + [[Library]]
-  + [[NameSymbol]]
   + [[Juvix/Sexp]]
 ***** Binders <<Juvix/Contextify/Binders>>
 @Juvix.Contextify.Binders@ covers matching binders and the users
@@ -1989,6 +2129,7 @@ serialization works in Test.Contextify.Binders
   + [[Transition]]
 ***** Environment <<Contextify/Environment>>
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
   + [[NameSpace]]
@@ -2013,7 +2154,7 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Sexp]]
   + [[CoreNamed]]
   + [[Structure/Helpers]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 ***** InfixPrecedence
@@ -2051,6 +2192,7 @@ serialization works in Test.Contextify.Binders
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 ****** Sexp <<ToContext/Sexp>>
 - _Relies on_
   + [[Juvix/Context]]
@@ -2062,7 +2204,7 @@ serialization works in Test.Contextify.Binders
   + [[HashMap]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 ****** Types <<ToContext/Types>>
@@ -2083,7 +2225,7 @@ Calculate mutually-recursive groups of definitions.
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Transition]]
 ******** Types <<Traverse/Types>>
 - _Relies on_
@@ -2091,7 +2233,7 @@ Calculate mutually-recursive groups of definitions.
   + [[Context/Types]]
   + [[Library]]
   + [[NameSymbol]]
-**** Desugar
+**** Desugar <<Juvix/Desugar>>
 Desugar takes the frontend syntax and through the =desugar=
 function, removes all extra parts of syntax that can be boiled down
 to simple macro expansion (simplification of the frontend syntax
@@ -2111,13 +2253,13 @@ done with no extra information needed. Thus we export the following passes
 - _Relies on_
   + [[Library]]
   + [[Juvix/Sexp]]
-  + [[Lens]]
+  + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
 **** Translate <<Juvix/Translate>>
 - _Relies on_
   + [[Juvix/Contextify]]
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
 ***** Pipeline <<Translate/Pipeline>>
 - _Relies on_
   + [[TopLevel]]
@@ -2127,20 +2269,32 @@ done with no extra information needed. Thus we export the following passes
   + [[NameSymbol]]
   + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
 ** test
 *** Main <<Translate/test/Main>>
 - _Relies on_
   + [[Library]]
 *** Test
+**** BerlinPasses <<Test/BerlinPasses>>
+- _Relies on_
+  + [[BerlinPasses/Contextify]]
+  + [[BerlinPipeline/Pipeline]]
+  + [[Juvix/Context]]
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
+  + [[Structure/Parsing]]
+  + [[Transition]]
 **** Golden <<Translate/test/Test/Golden>>
 - _Relies on_
+  + [[BerlinPasses/Contextify]]
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
   + [[Contextify/Environment]]
   + [[Contextify/Passes]]
   + [[Desugar/Passes]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Library/Parser]]
   + [[Library/Parser]]
@@ -2155,7 +2309,9 @@ done with no extra information needed. Thus we export the following passes
 **** Context
 ***** Environment <<Context/Environment>>
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
   + [[Juvix/Closure]]
+  + [[Juvix/Context]]
   + [[Juvix/Contextify]]
   + [[Juvix/Contextify/Binders]]
   + [[Contextify/Environment]]
@@ -2164,18 +2320,27 @@ done with no extra information needed. Thus we export the following passes
   + [[Juvix/Sexp]]
 ***** Helpers <<Context/Helpers>>
 - _Relies on_
+  + [[Juvix/BerlinPasses]]
+  + [[BerlinPasses/Contextify]]
+  + [[BerlinPipeline/Env]]
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
-  + [[Juvix/Contextify]]
   + [[ResolveOpenInfo]]
-  + [[ToContext/Types]]
-  + [[Desugar]]
   + [[Library]]
+  + [[Library/Feedback]]
+  + [[NameSymbol]]
   + [[Parsing/Parser]]
   + [[Parsing/Types/Base]]
   + [[Juvix/Sexp]]
+  + [[Transition]]
   + [[TopLevel]]
 **** Contextify <<Test/Contextify>>
 - _Relies on_
+  + [[BerlinPipeline/Feedback]]
+  + [[Meta]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
   + [[Contextify/Environment]]
@@ -2195,7 +2360,7 @@ done with no extra information needed. Thus we export the following passes
   + [[Juvix/Context]]
   + [[InfoNames]]
   + [[Juvix/Contextify]]
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
   + [[Internal]]
   + [[Parsing/Parser]]
@@ -2211,7 +2376,7 @@ done with no extra information needed. Thus we export the following passes
 **** Desugar
 ***** Sexp <<Desugar/Sexp>>
 - _Relies on_
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Desugar/Passes]]
   + [[Library]]
   + [[Parsing/Parser]]
@@ -2221,9 +2386,12 @@ done with no extra information needed. Thus we export the following passes
 **** Sexp
 ***** Helpers <<Sexp/Helpers>>
 - _Relies on_
+  + [[Juvix/BerlinPasses]]
+  + [[BerlinPipeline/Env]]
+  + [[BerlinPipeline/Pipeline]]
   + [[Juvix/Context]]
   + [[Juvix/Contextify]]
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
   + [[NameSymbol]]
   + [[Parsing/Parser]]
@@ -2265,7 +2433,7 @@ done with no extra information needed. Thus we export the following passes
 ** test
 *** CPSTranslation <<test/CPSTranslation>>
 - _Relies on_
-  + [[Desugar]]
+  + [[Juvix/Desugar]]
   + [[Library]]
   + [[Parsing/Parser]]
   + [[Parsing/Types]]

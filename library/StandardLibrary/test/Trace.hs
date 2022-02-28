@@ -65,7 +65,7 @@ factorial x y =
 
 example1 :: IO ()
 example1 = do
-  (_, t) <- Env.runEmptyTraceAllIO (complexFormula (3 :: Double) 4)
+  (_, t) <- Env.runEmptyIO (Trace.traceAllEff >> complexFormula (3 :: Double) 4)
   Trace.info (Env.trace t)
 
 example2 :: IO ()

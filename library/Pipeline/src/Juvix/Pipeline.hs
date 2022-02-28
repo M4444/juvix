@@ -9,6 +9,7 @@ where
 
 ------------------------------------------------------------------------------
 import Control.Arrow (left)
+import Control.Lens hiding ((|>))
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
 import qualified Data.IntMap.Strict as PM
@@ -16,6 +17,11 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as T
 import Debug.Pretty.Simple
 import Debug.Pretty.Simple (pTraceShowM)
+import qualified Juvix.BerlinPasses as BerlinPasses
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Feedback as BerlinPipeline.Feedback
+import qualified Juvix.BerlinPipeline.Meta as Meta
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Application as CoreApp
 import qualified Juvix.Core.Base as Core
@@ -36,6 +42,7 @@ import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Library.Parser (ParserError)
+import qualified Juvix.Library.Trace as Trace
 import qualified Juvix.Library.Usage as Usage
 import qualified Juvix.Parsing as Parsing
 import qualified Juvix.Parsing.Types as Types
@@ -45,6 +52,7 @@ import qualified Juvix.Pipeline.ToIR as ToIR
 import qualified Juvix.Pipeline.ToSexp as ToSexp
 import Juvix.Pipeline.Types
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Transition as Structure
 import System.Directory (getHomeDirectory)
 import qualified System.IO.Temp as Temp
 import qualified Text.Megaparsec as P
@@ -136,11 +144,12 @@ class HasBackend b where
     toML' ((stdlibDir <>) <$> (prelude : stdlibs b)) b t
 
   toSexp :: b -> [(NameSymbol.T, [Types.TopLevel])] -> Pipeline Context.T
-  toSexp b x = liftIO $ do
-    e <- ToSexp.contextify x
-    case e of
-      Left err -> Feedback.fail . toS . pShowNoColor $ err
-      Right x -> pure x
+  toSexp _ x =
+    runSexpPipeline BerlinPasses.eval sexps
+      >>| view Pipeline.context
+      |> liftIO
+    where
+      sexps = second (fmap ToSexp.transTopLevel) <$> x
 
   toHR ::
     (Show (Ty b), Show (Val b)) =>
@@ -234,3 +243,49 @@ class HasBackend b where
 -- | Write the output code to a given file.
 writeout :: FilePath -> Text -> Pipeline ()
 writeout fout code = liftIO $ T.writeFile fout code
+
+------------------
+-- Helpers --
+------------------
+
+-- | @runSexpPipeline@ Runs a pipeline definition against a list of module Sexps
+-- and evaluates to the resulting WorkingEnv using MonadFail to throw errors.
+runSexpPipeline ::
+  Pipeline.Env.EnvS () ->
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.WorkingEnv
+runSexpPipeline pipeline x = do
+  Pipeline.CIn languageData surrounding <- runSexpPipelineEnv pipeline x
+
+  let feedback = surrounding ^. Pipeline.metaInfo . Meta.feedback
+      errors = BerlinPipeline.Feedback.getErrors feedback
+
+  case errors of
+    [] -> languageData |> pure
+    es -> Feedback.fail . toS . pShowNoColor $ es
+
+-- | @runSexpPipeline@ Runs a pipeline definition against a list of module Sexps
+-- and evaluates to the resulting WorkingEnv and SurroundingEnv.
+runSexpPipelineEnv ::
+  Pipeline.Env.EnvS () ->
+  [(NameSymbol.T, [Sexp.T])] ->
+  IO Pipeline.CIn
+runSexpPipelineEnv pipeline x =
+  do
+    let workingEnv =
+          x >>= mergeTopLevel
+            >>| Pipeline.Sexp
+            |> Pipeline.WorkingEnv
+        defaultNs = fromMaybe "JU-USER" (headMay x >>| fst)
+        startingEnv =
+          (Context.empty defaultNs :: IO Context.T)
+            >>| workingEnv
+
+    startingEnv
+    >>= Pipeline.Env.run pipeline
+      -- . Pipeline.modifyTraceCIn
+      --     (`Trace.enable` ["Context.resolveModule", "Context.resolveModule.runner", "Context.resolveModule.trans"])
+      . Pipeline.emptyInput
+  where
+    inPackage name = Structure.InPackage (Context.addTopName name) |> Sexp.serialize
+    mergeTopLevel (name, exps) = [inPackage name] <> exps

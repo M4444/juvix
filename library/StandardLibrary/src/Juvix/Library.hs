@@ -32,6 +32,7 @@ module Juvix.Library
     (>>|),
     (|>),
     (...),
+    traverseAccumM,
     foldMapA,
     traverseM,
     Symbol (..),
@@ -40,6 +41,7 @@ module Juvix.Library
     intern,
     unintern,
     textify,
+    uninternText,
     unixTime,
     Flip (..),
     untilNothingNTimesM,
@@ -129,6 +131,18 @@ undefined :: HasCallStack => a
 undefined =
   Prelude.error $ "undefined\n" ++ prettyCallStack callStack
 
+--------------------------------------------------------------------------------
+-- Generic Traversal Function
+--------------------------------------------------------------------------------
+
+traverseAccumM ::
+  (Monad m, Traversable t) => (a -> b -> m (a, c)) -> a -> t b -> m (a, t c)
+traverseAccumM f init trav =
+  runStateT (traverse (StateT . newF) trav) init
+    >>| swap
+  where
+    newF b a = f a b >>| swap
+
 traverseM ::
   (Monad m, Traversable m, Applicative f) =>
   (a1 -> f (m a2)) ->
@@ -165,6 +179,9 @@ intern = Sym . T.pack
 
 unintern :: Symbol -> String
 unintern (Sym s) = T.unpack s
+
+uninternText :: Symbol -> Text
+uninternText (Sym s) = s
 
 textify :: Symbol -> Text
 textify (Sym s) = s

@@ -32,6 +32,11 @@ dependencies:
   # Debugging
   ###########################
   - pretty-simple
+  ###########################
+  # Data Structures
+  ###########################
+  - unordered-containers
+  - lens
 
 default-extensions:
   - NoImplicitPrelude

@@ -29,6 +29,7 @@ import qualified Juvix.Context.Open as Open
 import Juvix.Library
 import qualified Juvix.Library.HashMap as HashMap
 import qualified Juvix.Library.NameSymbol as NameSymbol
+import qualified Juvix.Sexp as Sexp
 import qualified StmContainers.Map as STM
 
 --------------------------------------------------------------------------------
@@ -60,7 +61,11 @@ data Error
   | AmbiguousSymbol Symbol
   | ModuleConflict Symbol [NameSymbol.T]
   | IllegalModuleSwitch NameSymbol.T
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Sexp.DefaultOptions Error
+
+instance Sexp.Serialize Error
 
 data Resolve = Res
   { resolved :: [Context.From],

@@ -5,6 +5,7 @@ import Juvix.Library
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Parsing.Types.Base as Types
 import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Structure.Parsing as Structure
 
 transTopLevel :: Types.TopLevel -> Sexp.T
 transTopLevel (Types.ModuleOpen (Types.Open m)) =
@@ -18,6 +19,11 @@ transTopLevel (Types.Module m) = transModule m
 transTopLevel Types.TypeClass = Sexp.atom ":type-class"
 transTopLevel (Types.Type t) = transType t
 transTopLevel (Types.Handler h) = transHand h
+
+transHeader :: Types.Header Types.TopLevel -> [Sexp.T]
+transHeader (Types.NoHeader xs) = fmap transTopLevel xs
+transHeader (Types.Header name xs) =
+  [(Structure.Header name (Sexp.list (fmap transTopLevel xs))) |> Structure.fromHeader]
 
 transExpr :: Types.Expression -> Sexp.T
 transExpr (Types.UniverseName n) = transUniverseExpression n

@@ -107,7 +107,7 @@ packages:
     hackage: stm-hamt-1.2.0.6@sha256:fba86ccb4b45c5706c19b0e1315ba63dcac3b5d71de945ec001ba921fae80061,3972
 snapshots:
 - completed:
-    size: 586286
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/16.yaml
-    sha256: cdead65fca0323144b346c94286186f4969bf85594d649c49c7557295675d8a5
-  original: lts-18.16
+    size: 590102
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/26.yaml
+    sha256: e76d109964d9335abb412e22139c5bce3078be290ac6d90b8ecea6cc009bb198
+  original: lts-18.26

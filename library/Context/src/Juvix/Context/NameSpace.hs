@@ -106,6 +106,10 @@ extractValue :: From a -> a
 extractValue (Pub aa) = aa
 extractValue (Priv a) = a
 
+modifyFrom :: (a -> b) -> From a -> From b
+modifyFrom f (Pub aa) = Pub (f aa)
+modifyFrom f (Priv a) = Priv (f a)
+
 --------------------------------------------------------------------------------
 -- Aeson Instances
 --------------------------------------------------------------------------------

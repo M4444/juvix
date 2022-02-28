@@ -1,5 +1,9 @@
 module Test.Sexp.Helpers where
 
+import Control.Lens (view, (^.))
+import qualified Juvix.BerlinPasses as BerlinPasses
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Contextify as Contextify
 import qualified Juvix.Desugar as Desugar
@@ -9,6 +13,7 @@ import qualified Juvix.Parsing.Parser as Parser
 import qualified Juvix.Parsing.Types.Base as Parsing
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Translate.Pipeline.TopLevel as TopLevel
+import Test.Context.Helpers (runPipelineToStep, runSexpPipelineEnv)
 import Prelude (error)
 
 ----------------------------------------------------------------------
@@ -23,39 +28,49 @@ unwrapLookup symbol ctx =
     _ -> Nothing
 
 contextualizeFoo ::
-  ByteString -> IO (Either Contextify.ResolveErr Context.T)
-contextualizeFoo byte =
-  Contextify.op
-    ( ( "A",
-        parseDesugarSexp
-          "declare infixl (+) 8 \
-          \ let (+) = 3 \
-          \ declare infixl (*) 9 \
-          \ let (*) = 3 \
-          \ declare infix (**) 7 \
-          \ let (**) = 3 \
-          \ declare infix (***) 7 \
-          \ let (**) = 3 \
-          \ let a = 3 \
-          \ let x = 2 "
-      )
-        :| [("Foo", parseDesugarSexp byte)]
-    )
+  ByteString -> IO Context.T
+contextualizeFoo byte = do
+  contextualizeFooEnv byte
+    >>| view (Pipeline.languageData . Pipeline.context)
+
+contextualizeFooEnv ::
+  ByteString -> IO Pipeline.CIn
+contextualizeFooEnv byte =
+  [("A", juvix), ("Foo", parsedSexp byte)]
+    |> runSexpPipelineEnv BerlinPasses.eval
+  where
+    juvix =
+      parsedSexp
+        "declare infixl (+) 8 \
+        \ let (+) = 3 \
+        \ declare infixl (*) 9 \
+        \ let (*) = 3 \
+        \ declare infix (**) 7 \
+        \ let (**) = 3 \
+        \ declare infix (***) 7 \
+        \ let (**) = 3 \
+        \ let a = 3 \
+        \ let x = 2 "
 
 contextualizeFooAmbi ::
-  ByteString -> IO (Either Contextify.ResolveErr Context.T)
+  ByteString -> IO Context.T
 contextualizeFooAmbi byte =
-  Contextify.op
-    ( ( "A",
-        parseDesugarSexp "declare infixl (+) 9 let (+) = 3 "
-      )
-        :| [ ("B", parseDesugarSexp "declare infixl (+) 9 let (+) = 3"),
-             ("Foo", parseDesugarSexp byte)
-           ]
-    )
+  contextualizeFooAmbiEnv byte
+    >>| view (Pipeline.languageData . Pipeline.context)
 
-parseDesugarSexp :: ByteString -> [Sexp.T]
-parseDesugarSexp = Desugar.op . parsedSexp
+contextualizeFooAmbiEnv ::
+  ByteString -> IO Pipeline.CIn
+contextualizeFooAmbiEnv byte =
+  [ ( "A",
+      parsedSexp "declare infixl (+) 9 let (+) = 3 "
+    ),
+    ("B", parsedSexp "declare infixl (+) 9 let (+) = 3"),
+    ("Foo", parsedSexp byte)
+  ]
+    |> runSexpPipelineEnv BerlinPasses.eval
+
+parseDesugarSexp :: ByteString -> IO [Sexp.T]
+parseDesugarSexp = desugarLisp . parsedSexp
 
 parsedSexp :: ByteString -> [Sexp.T]
 parsedSexp xs = ignoreHeader (Parser.parse xs) >>| TopLevel.transTopLevel
@@ -63,3 +78,11 @@ parsedSexp xs = ignoreHeader (Parser.parse xs) >>| TopLevel.transTopLevel
 ignoreHeader :: Either a (Parsing.Header topLevel) -> [topLevel]
 ignoreHeader (Right (Parsing.NoHeader xs)) = xs
 ignoreHeader _ = error "not no header"
+
+desugarLisp :: [Sexp.T] -> IO [Sexp.T]
+desugarLisp xs =
+  runPipelineToStep "Context.initContext" [("Juvix-User", xs)]
+    >>| view Pipeline.currentExp
+    >>| sexps
+  where
+    sexps xs = [s | (Pipeline.Sexp s) <- xs]

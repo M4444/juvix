@@ -5,6 +5,10 @@ module Juvix.Contextify.Passes
     inifixSoloPass,
     recordDeclaration,
     notFoundSymbolToLookup,
+    openResolution,
+    infixConversion,
+    primiveOrSymbol,
+    figureRecord,
   )
 where
 
@@ -89,10 +93,12 @@ atomResolution context (atom@Sexp.A {atomName = name}) = do
       let qualified =
             context ^. Context._currentNameSpace . Context.record . Context.qualifiedMap
       looked <- liftIO $ atomically $ STM.lookup symbolName qualified
-      case looked of
-        Just Context.SymInfo {mod = prefix} ->
-          pure $ Sexp.addMetaToCar atom (Sexp.atom (prefix <> name))
-        Nothing -> pure (Sexp.Atom atom)
+      case Context.lookup (pure symbolName) context of
+        Nothing -> case looked of
+          Just Context.SymInfo {mod = prefix} ->
+            pure $ Sexp.addMetaToCar atom (Sexp.atom (prefix <> name))
+          Nothing -> pure (Sexp.Atom atom)
+        Just _ -> pure (Sexp.Atom atom)
 atomResolution _ s = pure (Sexp.Atom s)
 
 --------------------------------------------------------------------------------
@@ -149,9 +155,9 @@ infixConversion context atom rec' =
         Right shunted ->
           rec' (convertShunt shunted)
         Left (Shunt.Clash pred1 pred2) ->
-          throw @"error" (Env.Clash pred1 pred2)
+          Env.throwSexp (Env.Clash pred1 pred2)
         Left Shunt.MoreEles ->
-          throw @"error" Env.ImpossibleMoreEles
+          Env.throwSexp Env.ImpossibleMoreEles
     _ -> Env.handleAtom context atom rec' >>| Sexp.Atom
 
 ------------------------------------------------------------
@@ -201,7 +207,7 @@ convertShunt (Shunt.App s app1 app2) =
 recordDeclaration ::
   ExpressionIO m => Context.T -> m Context.T
 recordDeclaration context =
-  Context.traverseContext context figureRecord
+  Context.traverseContext context (\Context.Input {info} -> figureRecord info)
 
 -- - input form
 --   1. (type name₁ (arg₁ … argₙ)
@@ -218,8 +224,8 @@ recordDeclaration context =
 --                               (fieldₙ usageₙ typeₙ))))
 --      }
 figureRecord ::
-  ExpressionIO m => Context.Input Context.Info -> m (Context.Additional Context.Info)
-figureRecord Context.Input {info} =
+  ExpressionIO m => Context.Info -> m (Context.Additional Context.Info)
+figureRecord info =
   case info ^. Context.def of
     Context.Term (Structure.toType -> Just type')
       | -- make sure it's a record only declaration
@@ -243,22 +249,22 @@ figureRecord Context.Input {info} =
 ------------------------------------------------------------
 
 recordToFields ::
-  (HasThrow "error" Env.ErrorS m) => Structure.RecordDec -> m [CoreNamed.Field]
+  Env.ErrS m => Structure.RecordDec -> m [CoreNamed.Field]
 recordToFields record =
   traverse notPunnedToField (record ^. value)
 
 notPunnedToField ::
-  (HasThrow "error" Env.ErrorS m) => Structure.NameUsage -> m CoreNamed.Field
+  Env.ErrS m => Structure.NameUsage -> m CoreNamed.Field
 notPunnedToField notPunned = do
   name <- sexpToNameSymbolErr (notPunned ^. name)
   pure $ CoreNamed.Field name (notPunned ^. usage) (notPunned ^. value)
 
 sexpToNameSymbolErr ::
-  HasThrow "error" Env.ErrorS m => Sexp.T -> m NameSymbol.T
+  Env.ErrS m => Sexp.T -> m NameSymbol.T
 sexpToNameSymbolErr sexp =
   case Sexp.atomFromT sexp of
     Nothing ->
-      throw @"error" (Env.ImproperForm sexp)
+      Env.throwSexp (Env.ImproperForm sexp)
     Just form ->
       pure (Sexp.atomName form)
 

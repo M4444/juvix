@@ -10,10 +10,10 @@ data Associativity
   = Left'
   | Right'
   | NonAssoc
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Precedence sym = Pred sym Associativity Int
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Error sym
   = Clash (Precedence sym) (Precedence sym)

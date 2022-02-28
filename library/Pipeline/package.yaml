@@ -33,6 +33,7 @@ dependencies:
   - translate
   - context
   - data-structures
+  - berlin-pipeline
   ###########################
   # Dependency for Structs
   ###########################

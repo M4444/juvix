@@ -14,6 +14,7 @@ import qualified Juvix.Parsing.Types as AST
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified Juvix.Translate.Pipeline.TopLevel as TopLevel
+import Test.Context.Helpers (desugarLisp, emptyContextify)
 import qualified Test.Tasty as T
 import qualified Test.Tasty.HUnit as T
 
@@ -46,8 +47,9 @@ sumConTestS =
     ]
   where
     test str = do
+      xs <- desugared
       Right (ctx, _) <-
-        Contextify.contextify (("Foo", desugared) :| [])
+        emptyContextify (("Foo", xs) :| [])
       ctx Context.!? str
         |> fmap ((^. Context.def) . Context.extractValue)
         |> (T.@=? Just (Context.Term (Sexp.serialize (Structure.SumCon "bool"))))
@@ -59,8 +61,9 @@ defunTransfomrationWorks =
   T.testCase "defun properly added" test
   where
     test = do
+      xs <- desugared
       Right (ctx, _) <-
-        Contextify.contextify (("Foo", desugared) :| [])
+        emptyContextify (("Foo", xs) :| [])
       let Just info =
             ctx Context.!? "foo" >>| Context.extractValue
           Context.Term x =
@@ -74,7 +77,11 @@ defunTransfomrationWorks =
     Right sig =
       Sexp.parse "(:infix -> int int)"
 
-extract :: ByteString -> Either Internal.ParserError [Sexp.T]
+extract :: ByteString -> Either Internal.ParserError (IO [Sexp.T])
 extract s =
   Parser.parse s
-    >>| DesugarS.op . fmap TopLevel.transTopLevel . AST.extractTopLevel
+    >>| desugarLisp . fmap TopLevel.transTopLevel . AST.extractTopLevel
+
+--------------------------------------------------------------------------------
+-- helpers
+--------------------------------------------------------------------------------

@@ -2,6 +2,11 @@
 
 module Test.RecGroups where
 
+import Control.Lens hiding ((|>))
+import qualified Juvix.BerlinPasses as BerlinPasses
+import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
+import qualified Juvix.BerlinPipeline.Meta as Meta
+import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.Context as Context
 import qualified Juvix.Core.Common.Context.Traverse as Traverse
 import Juvix.Library
@@ -32,11 +37,11 @@ toSexp paths = do
   x <- Parsing.parseFiles paths
   case x of
     Left er -> pure $ Left (Pipeline.ParseErr er)
-    Right x -> do
-      from <- ToSexp.contextify x
-      case from of
-        Left err -> pure $ Left (Pipeline.ContextErr err)
-        Right con -> pure $ Right con
+    Right x ->
+      second (fmap ToSexp.transTopLevel) <$> x
+        |> Pipeline.runSexpPipelineEnv BerlinPasses.eval
+        >>| view (Pipeline.languageData . Pipeline.context)
+        >>| Right
 
 pipeline :: T.TestTree
 pipeline =
