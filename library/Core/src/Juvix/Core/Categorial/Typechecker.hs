@@ -139,10 +139,10 @@ checkObject ::
   AbstractChecks m uncheckedAlg checkedAlg ->
   Object uncheckedAlg ->
   CheckResultT m (Object checkedAlg) uncheckedAlg
-checkObject checks (AlgebraObject obj) = do
-  checked <- Trans.lift $ checkAsType checks obj
-  return $ AlgebraObject checked
-checkObject _checks HigherTerminalObject = return HigherTerminalObject
+checkObject checks (AlgebraObject obj) =
+  Trans.lift $ AlgebraObject <$> checkAsType checks obj
+checkObject checks (HigherObject cat) =
+  HigherObject <$> checkCategory checks cat
 
 instance (Eq freeAlgObj) => Equiv (Object freeAlgObj) where
   equiv = (==)

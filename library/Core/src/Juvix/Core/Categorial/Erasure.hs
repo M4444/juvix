@@ -11,6 +11,7 @@ import Juvix.Core.Categorial.Errors as CategorialErrors
   )
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
+    Category (..),
     MinimalInstanceAlgebra,
     Morphism (..),
     Object (..),
@@ -81,7 +82,7 @@ eraseAbstract checks (MorphismTerm morphism) =
 -- non-functional term as translation into a term that contains no information:
 -- that is a terminal object.  We have available the higher terminal
 -- category, which is a terminal object in a higher category.
-eraseAbstract _checks _term = return $ ObjectTerm HigherTerminalObject
+eraseAbstract _checks _term = return $ ObjectTerm $ HigherObject TerminalCat
 
 erase ::
   ( Monad m,

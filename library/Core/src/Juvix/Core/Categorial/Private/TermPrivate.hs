@@ -99,7 +99,7 @@ data Symbol freeAlgObj
     )
 
 data Object freeAlgObj
-  = HigherTerminalObject
+  = HigherObject (Category freeAlgObj)
   | AlgebraObject freeAlgObj
   deriving
     ( Read,
@@ -121,10 +121,6 @@ data Object freeAlgObj
       Foldable,
       Traversable
     )
-
-FunctorTemplates.makeBaseFunctor ''Object
-
-type instance Foldable.Base (Object a) = ObjectF a
 
 data Category freeAlgObj
   = DirectedGraphCat
@@ -157,10 +153,6 @@ data Category freeAlgObj
       Foldable,
       Traversable
     )
-
-FunctorTemplates.makeBaseFunctor ''Category
-
-type instance Foldable.Base (Category a) = CategoryF a
 
 data Annotation freeAlgObj = Annotation freeAlgObj freeAlgObj
   deriving
@@ -231,14 +223,6 @@ data Morphism freeAlgObj
       Traversable
     )
 
-FunctorTemplates.makeBaseFunctor ''UnannotatedMorphism
-
-type instance Foldable.Base (UnannotatedMorphism a) = UnannotatedMorphismF a
-
-FunctorTemplates.makeBaseFunctor ''Morphism
-
-type instance Foldable.Base (Morphism a) = MorphismF a
-
 data Functor' freeAlgObj
   = IdentityFunctor (Category freeAlgObj)
   | ComposeFunctors (Functor' freeAlgObj) (Functor' freeAlgObj)
@@ -281,10 +265,6 @@ data Functor' freeAlgObj
       Traversable
     )
 
-FunctorTemplates.makeBaseFunctor ''Functor'
-
-type instance Foldable.Base (Functor' a) = Functor'F a
-
 data NaturalTransformation freeAlgObj
   = IdentityNaturalTransformation (Functor' freeAlgObj)
   | Substitution (Functor' freeAlgObj) (Functor' freeAlgObj)
@@ -308,10 +288,6 @@ data NaturalTransformation freeAlgObj
       Foldable,
       Traversable
     )
-
-FunctorTemplates.makeBaseFunctor ''NaturalTransformation
-
-type instance Foldable.Base (NaturalTransformation a) = NaturalTransformationF a
 
 data Adjunction freeAlgObj
   = IdentityAdjunction (Category freeAlgObj)
@@ -343,10 +319,6 @@ data Adjunction freeAlgObj
       Traversable
     )
 
-FunctorTemplates.makeBaseFunctor ''Adjunction
-
-type instance Foldable.Base (Adjunction a) = AdjunctionF a
-
 data HigherCategory freeAlgObj
   = MinimalMetalogic
   | -- | Interpret a category as a higher category by specifying
@@ -372,6 +344,34 @@ data HigherCategory freeAlgObj
       Foldable,
       Traversable
     )
+
+FunctorTemplates.makeBaseFunctor ''Object
+
+type instance Foldable.Base (Object a) = ObjectF a
+
+FunctorTemplates.makeBaseFunctor ''Category
+
+type instance Foldable.Base (Category a) = CategoryF a
+
+FunctorTemplates.makeBaseFunctor ''UnannotatedMorphism
+
+type instance Foldable.Base (UnannotatedMorphism a) = UnannotatedMorphismF a
+
+FunctorTemplates.makeBaseFunctor ''Morphism
+
+type instance Foldable.Base (Morphism a) = MorphismF a
+
+FunctorTemplates.makeBaseFunctor ''Functor'
+
+type instance Foldable.Base (Functor' a) = Functor'F a
+
+FunctorTemplates.makeBaseFunctor ''NaturalTransformation
+
+type instance Foldable.Base (NaturalTransformation a) = NaturalTransformationF a
+
+FunctorTemplates.makeBaseFunctor ''Adjunction
+
+type instance Foldable.Base (Adjunction a) = AdjunctionF a
 
 FunctorTemplates.makeBaseFunctor ''HigherCategory
 
