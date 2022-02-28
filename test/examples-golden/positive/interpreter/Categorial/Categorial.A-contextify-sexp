@@ -93,7 +93,7 @@ ShowMod
                                                                                                                                 ( ":infix" ":"
                                                                                                                                     ( "cat-cons"
                                                                                                                                         ( ":paren"
-                                                                                                                                            ( "cat-keyword" "KFreeAlgMorphism" ) )
+                                                                                                                                            ( "cat-keyword" "KCarrierMorphism" ) )
                                                                                                                                         ( ":paren"
                                                                                                                                             ( "cat-cons"
                                                                                                                                                 ( ":paren"
@@ -132,7 +132,7 @@ ShowMod
                             ( ( "f" )
                                 ( "cat-cons"
                                     ( ":paren"
-                                        ( "cat-keyword" "KFreeAlgMorphism" ) )
+                                        ( "cat-keyword" "KCarrierMorphism" ) )
                                     ( ":paren"
                                         ( "cat-cons"
                                             ( ":paren" ( "cat-atom" "int" ) )

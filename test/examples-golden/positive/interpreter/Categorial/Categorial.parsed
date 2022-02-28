@@ -64,7 +64,7 @@ Right
                                                 ( "cat-keyword" :| [] )
                                             , applicationArgs = Constant
                                                 ( String
-                                                    ( Sho "KFreeAlgMorphism" )
+                                                    ( Sho "KCarrierMorphism" )
                                                 ) :| []
                                             }
                                         )
@@ -786,7 +786,7 @@ Right
                                                                                                                                                                                                                                                         ( "cat-keyword" :| [] )
                                                                                                                                                                                                                                                     , applicationArgs = Constant
                                                                                                                                                                                                                                                         ( String
-                                                                                                                                                                                                                                                            ( Sho "KFreeAlgMorphism" )
+                                                                                                                                                                                                                                                            ( Sho "KCarrierMorphism" )
                                                                                                                                                                                                                                                         ) :| []
                                                                                                                                                                                                                                                     }
                                                                                                                                                                                                                                                 )
