@@ -99,8 +99,11 @@ data Symbol freeAlgObj
     )
 
 data Object freeAlgObj
-  = HigherObject (Category freeAlgObj)
-  | AlgebraObject freeAlgObj
+  = -- | Any category is a "higher object" -- that is, an object of the category
+    -- of all categories enriched over RefinedADTCategory.
+    HigherObject (Category freeAlgObj)
+  | -- | An AlgebraObject is an object of the carrier category.
+    AlgebraObject freeAlgObj
   deriving
     ( Read,
       Show,
