@@ -228,7 +228,9 @@ checkCategory ::
   AbstractChecks m uncheckedCarrier checkedCarrier ->
   Category uncheckedCarrier ->
   CheckResultT m (Category checkedCarrier) uncheckedCarrier
-checkCategory _checks DirectedGraphCat = return DirectedGraphCat
+checkCategory checks (DirectedGraphCat vertexObject) = do
+  checked <- checkObject checks vertexObject
+  return $ DirectedGraphCat checked
 checkCategory _checks InitialCat = return InitialCat
 checkCategory _checks TerminalCat = return TerminalCat
 checkCategory _checks RefinedADTCat = return RefinedADTCat

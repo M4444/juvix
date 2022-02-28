@@ -126,7 +126,7 @@ data Object carrier
     )
 
 data Category carrier
-  = DirectedGraphCat
+  = DirectedGraphCat (Object carrier)
   | InitialCat
   | TerminalCat
   | ProductCat (Category carrier) (Category carrier)
