@@ -16,7 +16,7 @@
   + [[Core/Categorial]]
   + [[Ann]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[NameSymbol]]
   + [[Juvix/Sexp/Serialize]]
 ******* Parameterization <<Interpreter/Parameterization>>
@@ -61,7 +61,7 @@ The basic connection between the backend and the Juvix pipeline.
   + [[Ann]]
   + [[HR/Types]]
   + [[Library]]
-  + [[Feedback]]
+  + [[Library/Feedback]]
   + [[Library/Test/Golden]]
   + [[Juvix/Pipeline]]
   + [[Juvix/Pipeline]]
