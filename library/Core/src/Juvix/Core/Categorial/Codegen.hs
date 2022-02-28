@@ -16,27 +16,27 @@ import Juvix.Library
     ($),
   )
 
-data CodegenFunctions m operation freeAlgObj = CodegenFunctions
-  { genObj :: freeAlgObj -> m operation,
-    genFunc :: Maybe (operation, operation) -> freeAlgObj -> m operation,
+data CodegenFunctions m operation carrier = CodegenFunctions
+  { genObj :: carrier -> m operation,
+    genFunc :: Maybe (operation, operation) -> carrier -> m operation,
     genAtom :: operation -> m operation,
     genIdentity :: Maybe operation -> m operation,
     genCompose :: operation -> operation -> m operation
   }
 
-type CodegenResultT m a freeAlgObj =
-  ExceptT.ExceptT (CategorialErrors.CodegenError freeAlgObj) m a
+type CodegenResultT m a carrier =
+  ExceptT.ExceptT (CategorialErrors.CodegenError carrier) m a
 
 generateMorphismUsingSignature ::
   Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
+  CodegenFunctions m operation carrier ->
   Maybe (operation, operation) ->
-  TermPrivate.UnannotatedMorphism freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
+  TermPrivate.UnannotatedMorphism carrier ->
+  CodegenResultT m operation carrier
 generateMorphismUsingSignature
   cf
   signature
-  (TermPrivate.FreeAlgMorphism morphism) =
+  (TermPrivate.CarrierMorphism morphism) =
     Trans.lift $ genFunc cf signature morphism
 generateMorphismUsingSignature
   cf
@@ -59,10 +59,10 @@ generateMorphismUsingSignature
 
 generateMorphismCommon ::
   Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.UnannotatedMorphism freeAlgObj ->
-  Maybe (TermPrivate.Annotation freeAlgObj) ->
-  CodegenResultT m operation freeAlgObj
+  CodegenFunctions m operation carrier ->
+  TermPrivate.UnannotatedMorphism carrier ->
+  Maybe (TermPrivate.Annotation carrier) ->
+  CodegenResultT m operation carrier
 generateMorphismCommon
   cf
   unannotated
@@ -77,17 +77,17 @@ generateMorphismCommon
 
 generateMorphism ::
   Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.Morphism freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
+  CodegenFunctions m operation carrier ->
+  TermPrivate.Morphism carrier ->
+  CodegenResultT m operation carrier
 generateMorphism cf (TermPrivate.Morphism unannotated annotation) =
   generateMorphismCommon cf unannotated annotation
 
 generateAbstract ::
   Monad m =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.AbstractTerm freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
+  CodegenFunctions m operation carrier ->
+  TermPrivate.AbstractTerm carrier ->
+  CodegenResultT m operation carrier
 generateAbstract cf (TermPrivate.MorphismTerm morphism) =
   generateMorphism cf morphism
 -- Morphisms are the only terms from which code can be generated -- other
@@ -97,11 +97,11 @@ generateAbstract _cf term =
 
 generateCode ::
   ( Monad m,
-    TermPrivate.MinimalInstanceAlgebra freeAlgObj
+    TermPrivate.MinimalInstanceAlgebra carrier
   ) =>
-  CodegenFunctions m operation freeAlgObj ->
-  TermPrivate.Term freeAlgObj ->
-  CodegenResultT m operation freeAlgObj
+  CodegenFunctions m operation carrier ->
+  TermPrivate.Term carrier ->
+  CodegenResultT m operation carrier
 generateCode _cf (TermPrivate.SexpRepresentation sexp) =
   ExceptT.throwE $ CategorialErrors.CodegenUnchecked sexp
 generateCode cf (TermPrivate.RepresentedTerm term) =

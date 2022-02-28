@@ -27,33 +27,33 @@ import Juvix.Library
 import qualified Juvix.Sexp.Serialize as Serialize
 import qualified Juvix.Sexp.Types as SexpTypes
 
-type AllInstanceAlgebra freeAlgObj =
-  ( Read freeAlgObj,
-    Show freeAlgObj,
-    Eq freeAlgObj,
-    Hashable freeAlgObj,
-    Ord freeAlgObj,
-    Generic freeAlgObj,
-    Typeable freeAlgObj,
-    Data freeAlgObj,
-    NFData freeAlgObj,
-    Aeson.ToJSON freeAlgObj,
-    Aeson.FromJSON freeAlgObj,
-    Aeson.ToJSONKey freeAlgObj,
-    Aeson.FromJSONKey freeAlgObj,
-    Serialize.DefaultOptions freeAlgObj,
-    Serialize.Serialize freeAlgObj
+type AllInstanceAlgebra carrier =
+  ( Read carrier,
+    Show carrier,
+    Eq carrier,
+    Hashable carrier,
+    Ord carrier,
+    Generic carrier,
+    Typeable carrier,
+    Data carrier,
+    NFData carrier,
+    Aeson.ToJSON carrier,
+    Aeson.FromJSON carrier,
+    Aeson.ToJSONKey carrier,
+    Aeson.FromJSONKey carrier,
+    Serialize.DefaultOptions carrier,
+    Serialize.Serialize carrier
   )
 
-type MinimalInstanceAlgebra freeAlgObj =
-  ( Show freeAlgObj,
-    Eq freeAlgObj
+type MinimalInstanceAlgebra carrier =
+  ( Show carrier,
+    Eq carrier
   )
 
 data Keyword
   = KRefinedADTCat
-  | KAlgObject
-  | KFreeAlgMorphism
+  | KCarrierObject
+  | KCarrierMorphism
   deriving
     ( Read,
       Show,
@@ -74,9 +74,9 @@ data Keyword
       Serialize.Serialize
     )
 
-data Symbol freeAlgObj
+data Symbol carrier
   = Keyword Keyword
-  | Variable freeAlgObj
+  | Variable carrier
   deriving
     ( Read,
       Show,
@@ -98,12 +98,12 @@ data Symbol freeAlgObj
       Traversable
     )
 
-data Object freeAlgObj
+data Object carrier
   = -- | Any category is a "higher object" -- that is, an object of the category
     -- of all categories enriched over RefinedADTCategory.
-    HigherObject (Category freeAlgObj)
-  | -- | An AlgebraObject is an object of the carrier category.
-    AlgebraObject freeAlgObj
+    HigherObject (Category carrier)
+  | -- | An CarrierObject is an object of the carrier category.
+    CarrierObject carrier
   deriving
     ( Read,
       Show,
@@ -125,15 +125,15 @@ data Object freeAlgObj
       Traversable
     )
 
-data Category freeAlgObj
+data Category carrier
   = DirectedGraphCat
   | InitialCat
   | TerminalCat
-  | ProductCat (Category freeAlgObj) (Category freeAlgObj)
-  | OppositeCat (Category freeAlgObj)
-  | SliceCat (Object freeAlgObj)
-  | CosliceCat (Object freeAlgObj)
-  | FunctorCat (Category freeAlgObj) (Category freeAlgObj)
+  | ProductCat (Category carrier) (Category carrier)
+  | OppositeCat (Category carrier)
+  | SliceCat (Object carrier)
+  | CosliceCat (Object carrier)
+  | FunctorCat (Category carrier) (Category carrier)
   | RefinedADTCat
   | HigherOrderRefinedADTCat
   deriving
@@ -157,7 +157,7 @@ data Category freeAlgObj
       Traversable
     )
 
-data Annotation freeAlgObj = Annotation freeAlgObj freeAlgObj
+data Annotation carrier = Annotation carrier carrier
   deriving
     ( Read,
       Show,
@@ -179,9 +179,9 @@ data Annotation freeAlgObj = Annotation freeAlgObj freeAlgObj
       Traversable
     )
 
-data UnannotatedMorphism freeAlgObj
-  = FreeAlgMorphism freeAlgObj
-  | Composition [Morphism freeAlgObj]
+data UnannotatedMorphism carrier
+  = CarrierMorphism carrier
+  | Composition [Morphism carrier]
   deriving
     ( Read,
       Show,
@@ -203,8 +203,8 @@ data UnannotatedMorphism freeAlgObj
       Traversable
     )
 
-data Morphism freeAlgObj
-  = Morphism (UnannotatedMorphism freeAlgObj) (Maybe (Annotation freeAlgObj))
+data Morphism carrier
+  = Morphism (UnannotatedMorphism carrier) (Maybe (Annotation carrier))
   deriving
     ( Read,
       Show,
@@ -226,27 +226,27 @@ data Morphism freeAlgObj
       Traversable
     )
 
-data Functor' freeAlgObj
-  = IdentityFunctor (Category freeAlgObj)
-  | ComposeFunctors (Functor' freeAlgObj) (Functor' freeAlgObj)
+data Functor' carrier
+  = IdentityFunctor (Category carrier)
+  | ComposeFunctors (Functor' carrier) (Functor' carrier)
   | -- | The diagonal functor from the parameter category to its
     -- product with itself.
-    DiagonalFunctor (Category freeAlgObj)
+    DiagonalFunctor (Category carrier)
   | -- | The right adjoint of the diagonal functor with the same
     -- parameter.
-    ProductFunctor (Category freeAlgObj)
+    ProductFunctor (Category carrier)
   | -- | The left adjoint of the diagonal functor with the same
     -- parameter.
-    CoproductFunctor (Category freeAlgObj)
-  | LeftFunctor (Functor' freeAlgObj)
-  | RightFunctor (Functor' freeAlgObj)
-  | ConstFunctor (Object freeAlgObj)
-  | FreeFunctor (Object freeAlgObj)
-  | CofreeFunctor (Object freeAlgObj)
-  | ForgetAlgebraFunctor (Object freeAlgObj)
-  | ProductExponentialFunctor (Object freeAlgObj)
-  | BaseChangeFunctor (Object freeAlgObj) (Object freeAlgObj)
-  | CobaseChangeFunctor (Object freeAlgObj) (Object freeAlgObj)
+    CoproductFunctor (Category carrier)
+  | LeftFunctor (Functor' carrier)
+  | RightFunctor (Functor' carrier)
+  | ConstFunctor (Object carrier)
+  | FreeFunctor (Object carrier)
+  | CofreeFunctor (Object carrier)
+  | ForgetAlgebraFunctor (Object carrier)
+  | ProductExponentialFunctor (Object carrier)
+  | BaseChangeFunctor (Object carrier) (Object carrier)
+  | CobaseChangeFunctor (Object carrier) (Object carrier)
   deriving
     ( Read,
       Show,
@@ -268,9 +268,9 @@ data Functor' freeAlgObj
       Traversable
     )
 
-data NaturalTransformation freeAlgObj
-  = IdentityNaturalTransformation (Functor' freeAlgObj)
-  | Substitution (Functor' freeAlgObj) (Functor' freeAlgObj)
+data NaturalTransformation carrier
+  = IdentityNaturalTransformation (Functor' carrier)
+  | Substitution (Functor' carrier) (Functor' carrier)
   deriving
     ( Read,
       Show,
@@ -292,15 +292,15 @@ data NaturalTransformation freeAlgObj
       Traversable
     )
 
-data Adjunction freeAlgObj
-  = IdentityAdjunction (Category freeAlgObj)
-  | ComposeAdjunctions (Adjunction freeAlgObj) (Adjunction freeAlgObj)
-  | ProductAdjunction (Category freeAlgObj)
-  | CoproductAdjunction (Category freeAlgObj)
-  | SliceAdjunction (Object freeAlgObj)
-  | CosliceAdjunction (Object freeAlgObj)
-  | FreeAlgebraAdjunction (Object freeAlgObj)
-  | CofreeAlgebraAdjunction (Object freeAlgObj)
+data Adjunction carrier
+  = IdentityAdjunction (Category carrier)
+  | ComposeAdjunctions (Adjunction carrier) (Adjunction carrier)
+  | ProductAdjunction (Category carrier)
+  | CoproductAdjunction (Category carrier)
+  | SliceAdjunction (Object carrier)
+  | CosliceAdjunction (Object carrier)
+  | FreeAlgebraAdjunction (Object carrier)
+  | CofreeAlgebraAdjunction (Object carrier)
   deriving
     ( Read,
       Show,
@@ -322,11 +322,11 @@ data Adjunction freeAlgObj
       Traversable
     )
 
-data HigherCategory freeAlgObj
+data HigherCategory carrier
   = MinimalMetalogic
   | -- | Interpret a category as a higher category by specifying
     -- an adjunction category.
-    FromCategory (Category freeAlgObj) (Category freeAlgObj)
+    FromCategory (Category carrier) (Category carrier)
   deriving
     ( Read,
       Show,
@@ -380,14 +380,14 @@ FunctorTemplates.makeBaseFunctor ''HigherCategory
 
 type instance Foldable.Base (HigherCategory a) = HigherCategoryF a
 
-data AbstractTerm freeAlgObj
-  = HigherCategoryTerm (HigherCategory freeAlgObj)
-  | CategoryTerm (Category freeAlgObj)
-  | ObjectTerm (Object freeAlgObj)
-  | MorphismTerm (Morphism freeAlgObj)
-  | FunctorTerm (Functor' freeAlgObj)
-  | NaturalTransformationTerm (NaturalTransformation freeAlgObj)
-  | AdjunctionTerm (Adjunction freeAlgObj)
+data AbstractTerm carrier
+  = HigherCategoryTerm (HigherCategory carrier)
+  | CategoryTerm (Category carrier)
+  | ObjectTerm (Object carrier)
+  | MorphismTerm (Morphism carrier)
+  | FunctorTerm (Functor' carrier)
+  | NaturalTransformationTerm (NaturalTransformation carrier)
+  | AdjunctionTerm (Adjunction carrier)
   deriving
     ( Read,
       Show,
@@ -413,11 +413,11 @@ FunctorTemplates.makeBaseFunctor ''AbstractTerm
 
 type instance Foldable.Base (AbstractTerm a) = AbstractTermF a
 
-type ConcreteTerm freeAlgObj = SexpTypes.Base (Symbol freeAlgObj)
+type ConcreteTerm carrier = SexpTypes.Base (Symbol carrier)
 
-data Term freeAlgObj
-  = RepresentedTerm (AbstractTerm freeAlgObj)
-  | SexpRepresentation (ConcreteTerm freeAlgObj)
+data Term carrier
+  = RepresentedTerm (AbstractTerm carrier)
+  | SexpRepresentation (ConcreteTerm carrier)
   deriving
     ( Read,
       Show,

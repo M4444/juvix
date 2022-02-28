@@ -15,7 +15,7 @@ import Prelude
   ( id,
   )
 
-type EvalResultT m a freeAlgObj = ExceptT.ExceptT (EvalError freeAlgObj) m a
+type EvalResultT m a carrier = ExceptT.ExceptT (EvalError carrier) m a
 
 -- | This is a no-op at the moment, but it is a single place where
 -- | compile-time transformations can be performed on categorial
@@ -23,8 +23,8 @@ type EvalResultT m a freeAlgObj = ExceptT.ExceptT (EvalError freeAlgObj) m a
 -- | optimizations such as fusion.
 reduce ::
   ( Monad m,
-    MinimalInstanceAlgebra freeAlgObj
+    MinimalInstanceAlgebra carrier
   ) =>
-  Term freeAlgObj ->
-  EvalResultT m (Term freeAlgObj) freeAlgObj
+  Term carrier ->
+  EvalResultT m (Term carrier) carrier
 reduce = return . id

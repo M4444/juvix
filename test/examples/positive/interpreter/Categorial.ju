@@ -5,7 +5,7 @@ open Interpreter
 
 sig morphism-intro : (int -> int) -> categorial-type SAny
 let morphism-intro f = cat-cons
-    (cat-keyword "KFreeAlgMorphism")
+    (cat-keyword "KCarrierMorphism")
     (cat-cons (cat-atom int)
     (cat-cons (cat-atom int)
     (cat-cons (cat-atom f)
@@ -41,7 +41,7 @@ let main =
   let string-if-left = string-if or-true "foo" "bar" : string in
   let string-if-right = string-if and-false "foo" "bar" : string in
   let inc-intro = cat-cons
-    (cat-keyword "KFreeAlgMorphism")
+    (cat-keyword "KCarrierMorphism")
     (cat-cons (cat-atom int)
     (cat-cons (cat-atom int)
     (cat-cons (cat-atom int-inc)

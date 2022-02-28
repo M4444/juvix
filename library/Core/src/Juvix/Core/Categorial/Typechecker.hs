@@ -44,24 +44,24 @@ import Juvix.Library
   )
 import qualified Juvix.Sexp.Types as SexpTypes
 
-type CheckResultT m a freeAlgObj = ExceptT.ExceptT (CheckError freeAlgObj) m a
+type CheckResultT m a carrier = ExceptT.ExceptT (CheckError carrier) m a
 
 decodeAlgebra ::
   ( Monad m,
-    MinimalInstanceAlgebra freeAlgObj
+    MinimalInstanceAlgebra carrier
   ) =>
-  ConcreteTerm freeAlgObj ->
-  CheckResultT m freeAlgObj freeAlgObj
+  ConcreteTerm carrier ->
+  CheckResultT m carrier carrier
 decodeAlgebra (SexpTypes.Atom (SexpTypes.P (Variable v) _)) =
   return v
 decodeAlgebra term = ExceptT.throwE $ CategorialErrors.ExpectedAlgebraTerm term
 
 decode ::
   ( Monad m,
-    MinimalInstanceAlgebra freeAlgObj
+    MinimalInstanceAlgebra carrier
   ) =>
-  ConcreteTerm freeAlgObj ->
-  CheckResultT m (AbstractTerm freeAlgObj) freeAlgObj
+  ConcreteTerm carrier ->
+  CheckResultT m (AbstractTerm carrier) carrier
 decode _term@(SexpTypes.Atom (SexpTypes.P (Keyword k) _)) =
   case k of
     KRefinedADTCat -> return $ CategoryTerm RefinedADTCat
@@ -71,7 +71,7 @@ decode term@(SexpTypes.Atom a) =
 decode SexpTypes.Nil = ExceptT.throwE CategorialErrors.EmptySexp
 decode
   ( SexpTypes.Cons
-      (SexpTypes.Atom (SexpTypes.P (Keyword KFreeAlgMorphism) _))
+      (SexpTypes.Atom (SexpTypes.P (Keyword KCarrierMorphism) _))
       sexp
     ) =
     case sexp of
@@ -86,22 +86,22 @@ decode
           morphism <- decodeAlgebra morphism
           return $
             MorphismTerm $
-              Morphism (FreeAlgMorphism morphism) (Just (Annotation domain codomain))
+              Morphism (CarrierMorphism morphism) (Just (Annotation domain codomain))
       _ ->
         ExceptT.throwE $
-          CategorialErrors.WrongNumberOfArgumentsForKeyword KFreeAlgMorphism
+          CategorialErrors.WrongNumberOfArgumentsForKeyword KCarrierMorphism
 decode
   ( SexpTypes.Cons
-      (SexpTypes.Atom (SexpTypes.P (Keyword KAlgObject) _))
+      (SexpTypes.Atom (SexpTypes.P (Keyword KCarrierObject) _))
       sexp
     ) =
     case sexp of
       SexpTypes.Cons object SexpTypes.Nil -> do
         object <- decodeAlgebra object
-        return $ ObjectTerm $ AlgebraObject object
+        return $ ObjectTerm $ CarrierObject object
       _ ->
         ExceptT.throwE $
-          CategorialErrors.WrongNumberOfArgumentsForKeyword KAlgObject
+          CategorialErrors.WrongNumberOfArgumentsForKeyword KCarrierObject
 decode term@(SexpTypes.Cons _ _) =
   ExceptT.throwE $ CategorialErrors.IllFormedSExpression term
 
@@ -110,58 +110,58 @@ class Equiv a where
 
 checkVariableAsType ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  uncheckedAlg ->
-  CheckResultT m checkedAlg uncheckedAlg
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  uncheckedCarrier ->
+  CheckResultT m checkedCarrier uncheckedCarrier
 checkVariableAsType checks var = Trans.lift $ checkAsType checks var
 
 checkVariableAsFunction ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  checkedAlg ->
-  checkedAlg ->
-  uncheckedAlg ->
-  CheckResultT m checkedAlg uncheckedAlg
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  checkedCarrier ->
+  checkedCarrier ->
+  uncheckedCarrier ->
+  CheckResultT m checkedCarrier uncheckedCarrier
 checkVariableAsFunction checks domain codomain var =
   Trans.lift $ checkAsFunction checks domain codomain var
 
 checkObject ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  Object uncheckedAlg ->
-  CheckResultT m (Object checkedAlg) uncheckedAlg
-checkObject checks (AlgebraObject obj) =
-  Trans.lift $ AlgebraObject <$> checkAsType checks obj
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Object uncheckedCarrier ->
+  CheckResultT m (Object checkedCarrier) uncheckedCarrier
+checkObject checks (CarrierObject obj) =
+  Trans.lift $ CarrierObject <$> checkAsType checks obj
 checkObject checks (HigherObject cat) =
   HigherObject <$> checkCategory checks cat
 
-instance (Eq freeAlgObj) => Equiv (Object freeAlgObj) where
+instance (Eq carrier) => Equiv (Object carrier) where
   equiv = (==)
 
 checkMorphismWithSignature ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  uncheckedAlg ->
-  uncheckedAlg ->
-  UnannotatedMorphism uncheckedAlg ->
-  CheckResultT m (Morphism checkedAlg) uncheckedAlg
-checkMorphismWithSignature checks domain codomain (FreeAlgMorphism function) = do
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  uncheckedCarrier ->
+  uncheckedCarrier ->
+  UnannotatedMorphism uncheckedCarrier ->
+  CheckResultT m (Morphism checkedCarrier) uncheckedCarrier
+checkMorphismWithSignature checks domain codomain (CarrierMorphism function) = do
   domain <- checkVariableAsType checks domain
   codomain <- checkVariableAsType checks codomain
   function <- checkVariableAsFunction checks domain codomain function
-  return $ Morphism (FreeAlgMorphism function) $ Just (Annotation domain codomain)
+  return $ Morphism (CarrierMorphism function) $ Just (Annotation domain codomain)
 checkMorphismWithSignature checks domain codomain (Composition []) = do
   unless (domain == codomain) $
     ExceptT.throwE $
@@ -209,12 +209,12 @@ checkMorphismWithSignature
 
 checkMorphism ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  Morphism uncheckedAlg ->
-  CheckResultT m (Morphism checkedAlg) uncheckedAlg
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Morphism uncheckedCarrier ->
+  CheckResultT m (Morphism checkedCarrier) uncheckedCarrier
 checkMorphism checks (Morphism morphism (Just (Annotation domain codomain))) =
   checkMorphismWithSignature checks domain codomain morphism
 checkMorphism _checks (Morphism morphism Nothing) =
@@ -222,12 +222,12 @@ checkMorphism _checks (Morphism morphism Nothing) =
 
 checkCategory ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  Category uncheckedAlg ->
-  CheckResultT m (Category checkedAlg) uncheckedAlg
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Category uncheckedCarrier ->
+  CheckResultT m (Category checkedCarrier) uncheckedCarrier
 checkCategory _checks DirectedGraphCat = return DirectedGraphCat
 checkCategory _checks InitialCat = return InitialCat
 checkCategory _checks TerminalCat = return TerminalCat
@@ -252,22 +252,22 @@ checkCategory checks (FunctorCat cat cat') = do
   checked' <- checkCategory checks cat'
   return $ FunctorCat checked checked'
 
-instance (Eq freeAlgObj) => Equiv (Category freeAlgObj) where
+instance (Eq carrier) => Equiv (Category carrier) where
   equiv = (==)
 
 -- | Returns the functor signature (its domain and codomain categories)
 -- | along with the checked version of the functor.
 checkFunctor ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  Functor' uncheckedAlg ->
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Functor' uncheckedCarrier ->
   CheckResultT
     m
-    (Category checkedAlg, Category checkedAlg, Functor' checkedAlg)
-    uncheckedAlg
+    (Category checkedCarrier, Category checkedCarrier, Functor' checkedCarrier)
+    uncheckedCarrier
 checkFunctor checks (IdentityFunctor cat) = do
   checked <- checkCategory checks cat
   return (checked, checked, IdentityFunctor checked)
@@ -302,28 +302,28 @@ checkFunctor _checks functor =
       (FunctorTerm functor)
       "Categorial.checkFunctor"
 
-instance (Eq freeAlgObj) => Equiv (Functor' freeAlgObj) where
+instance (Eq carrier) => Equiv (Functor' carrier) where
   equiv = (==)
 
-data AbstractChecks m uncheckedAlg checkedAlg = AbstractChecks
+data AbstractChecks m uncheckedCarrier checkedCarrier = AbstractChecks
   { checkAsType ::
-      uncheckedAlg ->
-      m checkedAlg,
+      uncheckedCarrier ->
+      m checkedCarrier,
     checkAsFunction ::
-      checkedAlg ->
-      checkedAlg ->
-      uncheckedAlg ->
-      m checkedAlg
+      checkedCarrier ->
+      checkedCarrier ->
+      uncheckedCarrier ->
+      m checkedCarrier
   }
 
 checkAbstract ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  AbstractChecks m uncheckedAlg checkedAlg ->
-  AbstractTerm uncheckedAlg ->
-  CheckResultT m (AbstractTerm checkedAlg) uncheckedAlg
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  AbstractTerm uncheckedCarrier ->
+  CheckResultT m (AbstractTerm checkedCarrier) uncheckedCarrier
 checkAbstract checks (CategoryTerm category) =
   CategoryTerm <$> checkCategory checks category
 checkAbstract checks (FunctorTerm functor) = do
@@ -337,46 +337,46 @@ checkAbstract _checks term =
   ExceptT.throwE $
     CategorialErrors.CheckUnimplemented term "Categorial.checkAbstract"
 
-newtype IntroChecks m uncheckedAlg checkedAlg = IntroChecks
-  { introAbstractChecks :: AbstractChecks m uncheckedAlg checkedAlg
+newtype IntroChecks m uncheckedCarrier checkedCarrier = IntroChecks
+  { introAbstractChecks :: AbstractChecks m uncheckedCarrier checkedCarrier
   }
 
 checkIntroAbstract ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  IntroChecks m uncheckedAlg checkedAlg ->
-  AbstractTerm uncheckedAlg ->
-  CheckResultT m (AbstractTerm checkedAlg) uncheckedAlg
+  IntroChecks m uncheckedCarrier checkedCarrier ->
+  AbstractTerm uncheckedCarrier ->
+  CheckResultT m (AbstractTerm checkedCarrier) uncheckedCarrier
 checkIntroAbstract = checkAbstract . introAbstractChecks
 
 checkIntro ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
   ) =>
-  IntroChecks m uncheckedAlg checkedAlg ->
-  Term uncheckedAlg ->
-  CheckResultT m (Term checkedAlg) uncheckedAlg
+  IntroChecks m uncheckedCarrier checkedCarrier ->
+  Term uncheckedCarrier ->
+  CheckResultT m (Term checkedCarrier) uncheckedCarrier
 checkIntro checks (SexpRepresentation sexp) =
   (decode sexp >>= checkIntroAbstract checks) <&> RepresentedTerm
 checkIntro _checks (RepresentedTerm abstract) =
   ExceptT.throwE $ CategorialErrors.AlreadyCheckedTerm abstract
 
-newtype ElimChecks m uncheckedAlg checkedAlg resultType = ElimChecks
-  { elimAbstractChecks :: AbstractChecks m uncheckedAlg checkedAlg
+newtype ElimChecks m uncheckedCarrier checkedCarrier resultType = ElimChecks
+  { elimAbstractChecks :: AbstractChecks m uncheckedCarrier checkedCarrier
   }
 
 checkElimAbstract ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier,
     MinimalInstanceAlgebra resultType
   ) =>
-  ElimChecks m uncheckedAlg checkedAlg resultType ->
-  AbstractTerm uncheckedAlg ->
-  CheckResultT m resultType uncheckedAlg
+  ElimChecks m uncheckedCarrier checkedCarrier resultType ->
+  AbstractTerm uncheckedCarrier ->
+  CheckResultT m resultType uncheckedCarrier
 checkElimAbstract checks term = do
   checked <- checkAbstract (elimAbstractChecks checks) term
   case checked of
@@ -391,13 +391,13 @@ checkElimAbstract checks term = do
 
 checkElim ::
   ( Monad m,
-    MinimalInstanceAlgebra uncheckedAlg,
-    MinimalInstanceAlgebra checkedAlg,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier,
     MinimalInstanceAlgebra resultType
   ) =>
-  ElimChecks m uncheckedAlg checkedAlg resultType ->
-  Term uncheckedAlg ->
-  CheckResultT m resultType uncheckedAlg
+  ElimChecks m uncheckedCarrier checkedCarrier resultType ->
+  Term uncheckedCarrier ->
+  CheckResultT m resultType uncheckedCarrier
 checkElim checks (SexpRepresentation sexp) =
   decode sexp >>= checkElimAbstract checks
 checkElim _checks (RepresentedTerm abstract) =

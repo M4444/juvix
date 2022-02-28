@@ -28,7 +28,7 @@ import Juvix.Library
     (<$>),
   )
 
-type EraseResultT m a freeAlgObj = ExceptT.ExceptT (EraseError freeAlgObj) m a
+type EraseResultT m a carrier = ExceptT.ExceptT (EraseError carrier) m a
 
 newtype EraseChecks m annotated erased = EraseChecks
   { eraseFunction ::
@@ -44,9 +44,9 @@ eraseUnannotatedMorphism ::
   EraseChecks m annotated erased ->
   UnannotatedMorphism annotated ->
   EraseResultT m (UnannotatedMorphism erased) annotated
-eraseUnannotatedMorphism checks (FreeAlgMorphism morphism) = do
+eraseUnannotatedMorphism checks (CarrierMorphism morphism) = do
   erased <- Trans.lift $ eraseFunction checks morphism
-  return $ FreeAlgMorphism erased
+  return $ CarrierMorphism erased
 eraseUnannotatedMorphism checks (Composition morphisms) =
   Composition <$> mapM (eraseMorphism checks) morphisms
 

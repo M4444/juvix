@@ -31,29 +31,29 @@ import Juvix.Library
 import qualified Juvix.Sexp.Serialize as Serialize
 import qualified Juvix.Sexp.Types as SexpTypes
 
-data CheckError freeAlgObj
-  = CheckUnimplemented (TermPrivate.AbstractTerm freeAlgObj) Text
-  | AlreadyCheckedTerm (TermPrivate.AbstractTerm freeAlgObj)
-  | IllFormedSExpression (TermPrivate.ConcreteTerm freeAlgObj)
-  | InvalidTermRepresentation (TermPrivate.ConcreteTerm freeAlgObj)
+data CheckError carrier
+  = CheckUnimplemented (TermPrivate.AbstractTerm carrier) Text
+  | AlreadyCheckedTerm (TermPrivate.AbstractTerm carrier)
+  | IllFormedSExpression (TermPrivate.ConcreteTerm carrier)
+  | InvalidTermRepresentation (TermPrivate.ConcreteTerm carrier)
   | InvalidAtom
-      (TermPrivate.ConcreteTerm freeAlgObj)
-      (SexpTypes.Atom (TermPrivate.Symbol freeAlgObj))
+      (TermPrivate.ConcreteTerm carrier)
+      (SexpTypes.Atom (TermPrivate.Symbol carrier))
   | EmptySexp
-  | NonEliminatableTerm (TermPrivate.AbstractTerm freeAlgObj)
+  | NonEliminatableTerm (TermPrivate.AbstractTerm carrier)
   | IllegalFunctorComposition
-      (TermPrivate.Functor' freeAlgObj)
-      (TermPrivate.Functor' freeAlgObj)
+      (TermPrivate.Functor' carrier)
+      (TermPrivate.Functor' carrier)
   | WrongNumberOfArgumentsForKeyword TermPrivate.Keyword
   | KeywordRequiresArguments TermPrivate.Keyword
-  | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm freeAlgObj)
-  | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism freeAlgObj)
-  | IdentityBetweenDifferentObjects freeAlgObj freeAlgObj
+  | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm carrier)
+  | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism carrier)
+  | IdentityBetweenDifferentObjects carrier carrier
   | IllTypedMorphismComposition
-      (TermPrivate.UnannotatedMorphism freeAlgObj)
-      freeAlgObj
-      freeAlgObj
-  | ProjectingNonProductFunctor (TermPrivate.Functor' freeAlgObj)
+      (TermPrivate.UnannotatedMorphism carrier)
+      carrier
+      carrier
+  | ProjectingNonProductFunctor (TermPrivate.Functor' carrier)
   deriving
     ( Read,
       Show,
@@ -75,9 +75,9 @@ data CheckError freeAlgObj
       Serialize.Serialize
     )
 
-data CodegenError freeAlgObj
-  = CodegenUnchecked (TermPrivate.ConcreteTerm freeAlgObj)
-  | CodegenErased (TermPrivate.AbstractTerm freeAlgObj)
+data CodegenError carrier
+  = CodegenUnchecked (TermPrivate.ConcreteTerm carrier)
+  | CodegenErased (TermPrivate.AbstractTerm carrier)
   deriving
     ( Read,
       Show,
@@ -99,9 +99,9 @@ data CodegenError freeAlgObj
       Serialize.Serialize
     )
 
-data SyntaxError freeAlgObj
+data SyntaxError carrier
   = NoSuchKeyword Text
-  | ConsOfRepresentedTerm (TermPrivate.AbstractTerm freeAlgObj)
+  | ConsOfRepresentedTerm (TermPrivate.AbstractTerm carrier)
   deriving
     ( Read,
       Show,
@@ -123,7 +123,7 @@ data SyntaxError freeAlgObj
       Serialize.Serialize
     )
 
-data EvalError freeAlgObj
+data EvalError carrier
   = EvalError
   deriving
     ( Read,
@@ -146,9 +146,9 @@ data EvalError freeAlgObj
       Serialize.Serialize
     )
 
-data EraseError freeAlgObj
-  = ErasingUncheckedTerm (TermPrivate.Term freeAlgObj)
-  | AlreadyErasedMorphism (TermPrivate.UnannotatedMorphism freeAlgObj)
+data EraseError carrier
+  = ErasingUncheckedTerm (TermPrivate.Term carrier)
+  | AlreadyErasedMorphism (TermPrivate.UnannotatedMorphism carrier)
   deriving
     ( Read,
       Show,

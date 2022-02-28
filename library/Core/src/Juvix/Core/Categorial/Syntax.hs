@@ -26,7 +26,7 @@ import Juvix.Library
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Types as SexpTypes
 
-type SyntaxResultT m a freeAlgObj = ExceptT.ExceptT (SyntaxError freeAlgObj) m a
+type SyntaxResultT m a carrier = ExceptT.ExceptT (SyntaxError carrier) m a
 
 nilText :: Text
 nilText = "nil"

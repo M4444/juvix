@@ -31,17 +31,17 @@ deriving anyclass instance
   PrettyText (Term primTy primVal)
 
 deriving anyclass instance
-  ( Show freeAlgObj,
-    PrettyText freeAlgObj
+  ( Show carrier,
+    PrettyText carrier
   ) =>
-  PrettyText (Categorial.Term freeAlgObj)
+  PrettyText (Categorial.Term carrier)
 
 deriving anyclass instance
-  ( Show freeAlgObj,
-    PrettyText freeAlgObj,
-    PrettySyntax freeAlgObj
+  ( Show carrier,
+    PrettyText carrier,
+    PrettySyntax carrier
   ) =>
-  PrettySyntax (Categorial.Term freeAlgObj)
+  PrettySyntax (Categorial.Term carrier)
 
 instance
   ( Show primTy,
