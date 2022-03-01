@@ -14,6 +14,7 @@ where
 import qualified Data.Aeson as Aeson
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm,
+    Adjunction,
     Category,
     ConcreteTerm,
     Functor',
@@ -56,6 +57,7 @@ data CheckError carrier
   | ProjectingNonProductFunctor (Functor' carrier)
   | CheckingErasedMorphism (Morphism carrier)
   | HigherCategoryMismatch (Category carrier) (Category carrier)
+  | IllegalAdjunctionComposition (Adjunction carrier) (Adjunction carrier)
   deriving
     ( Read,
       Show,

@@ -380,8 +380,64 @@ checkAdjunction ::
       Adjunction checkedCarrier
     )
     uncheckedCarrier
-checkAdjunction _checks adj =
-  ExceptT.throwE $ CheckUnimplemented (AdjunctionTerm adj) "adjunction checking"
+checkAdjunction checks (IdentityAdjunction cat) = do
+  (higher, checked) <- checkCategory checks cat
+  return
+    ( higher,
+      checked,
+      checked,
+      IdentityFunctor checked,
+      IdentityFunctor checked,
+      IdentityAdjunction checked
+    )
+checkAdjunction checks (ComposedAdjunction adj []) =
+  checkAdjunction checks adj
+checkAdjunction checks (ComposedAdjunction adj (adj' : adjs)) = do
+  (higher, dom, cod, left, right, checked) <-
+    checkAdjunction checks adj
+  (higher', dom', cod', left', right', checked') <-
+    checkAdjunction checks (ComposedAdjunction adj' adjs)
+  unless (equiv higher higher') $
+    ExceptT.throwE $
+      IllegalAdjunctionComposition adj (ComposedAdjunction adj' adjs)
+  unless (equiv dom cod') $
+    ExceptT.throwE $
+      IllegalAdjunctionComposition adj (ComposedAdjunction adj' adjs)
+  return
+    ( higher,
+      dom',
+      cod,
+      ComposedFunctor left [left'],
+      ComposedFunctor right' [right],
+      ComposedAdjunction checked [checked']
+    )
+checkAdjunction _checks term@(InitialAdjunction _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "InitialAdjunction"
+checkAdjunction _checks term@(TerminalAdjunction _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "TerminalAdjunction"
+checkAdjunction _checks term@(ProductAdjunction _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "ProductAdjunction"
+checkAdjunction _checks term@(CoproductAdjunction _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "CoproductAdjunction"
+checkAdjunction _checks term@(FreeForgetfulAlgebra _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "FreeForgetfulAlgebra"
+checkAdjunction _checks term@(ForgetfulCofreeAlgebra _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "ForgetfulCofreeAlgebra"
+checkAdjunction _checks term@(ProductHomAdjunction _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "ProductHomAdjunction"
+checkAdjunction _checks term@(DependentSum _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "DependentSum"
+checkAdjunction _checks term@(DependentProduct _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "DependentProduct"
 
 instance (Eq carrier) => Equiv (Adjunction carrier) where
   equiv = (==)

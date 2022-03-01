@@ -237,7 +237,7 @@ data Functor' carrier
 
 data Adjunction carrier
   = IdentityAdjunction (Category carrier)
-  | AdjunctionComposition (Adjunction carrier) [Adjunction carrier]
+  | ComposedAdjunction (Adjunction carrier) [Adjunction carrier]
   | InitialAdjunction (Category carrier)
   | TerminalAdjunction (Category carrier)
   | ProductAdjunction (Category carrier)
