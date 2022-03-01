@@ -12,7 +12,16 @@ module Juvix.Core.Categorial.Errors
 where
 
 import qualified Data.Aeson as Aeson
-import qualified Juvix.Core.Categorial.Private.TermPrivate as TermPrivate
+import Juvix.Core.Categorial.Private.TermPrivate
+  ( AbstractTerm,
+    Category,
+    ConcreteTerm,
+    Functor',
+    Keyword,
+    Morphism,
+    Symbol,
+    Term,
+  )
 import Juvix.Library
   ( Data,
     Eq,
@@ -32,28 +41,21 @@ import qualified Juvix.Sexp.Serialize as Serialize
 import qualified Juvix.Sexp.Types as SexpTypes
 
 data CheckError carrier
-  = CheckUnimplemented (TermPrivate.AbstractTerm carrier) Text
-  | AlreadyCheckedTerm (TermPrivate.AbstractTerm carrier)
-  | IllFormedSExpression (TermPrivate.ConcreteTerm carrier)
-  | InvalidTermRepresentation (TermPrivate.ConcreteTerm carrier)
-  | InvalidAtom
-      (TermPrivate.ConcreteTerm carrier)
-      (SexpTypes.Atom (TermPrivate.Symbol carrier))
+  = CheckUnimplemented (AbstractTerm carrier) Text
+  | AlreadyCheckedTerm (AbstractTerm carrier)
+  | IllFormedSExpression (ConcreteTerm carrier)
+  | InvalidTermRepresentation (ConcreteTerm carrier)
+  | InvalidAtom (ConcreteTerm carrier) (SexpTypes.Atom (Symbol carrier))
   | EmptySexp
-  | NonEliminatableTerm (TermPrivate.AbstractTerm carrier)
-  | IllegalFunctorComposition
-      (TermPrivate.Functor' carrier)
-      (TermPrivate.Functor' carrier)
-  | WrongNumberOfArgumentsForKeyword TermPrivate.Keyword
-  | KeywordRequiresArguments TermPrivate.Keyword
-  | ExpectedAlgebraTerm (TermPrivate.ConcreteTerm carrier)
-  | CheckingMorphismAfterErasure (TermPrivate.UnannotatedMorphism carrier)
-  | IdentityBetweenDifferentObjects carrier carrier
-  | IllTypedMorphismComposition
-      (TermPrivate.UnannotatedMorphism carrier)
-      carrier
-      carrier
-  | ProjectingNonProductFunctor (TermPrivate.Functor' carrier)
+  | NonEliminatableTerm (AbstractTerm carrier)
+  | IllegalFunctorComposition (Functor' carrier) (Functor' carrier)
+  | WrongNumberOfArgumentsForKeyword Keyword
+  | KeywordRequiresArguments Keyword
+  | ExpectedAlgebraTerm (ConcreteTerm carrier)
+  | IllegalMorphismComposition (Morphism carrier) (Morphism carrier)
+  | ProjectingNonProductFunctor (Functor' carrier)
+  | CheckingErasedMorphism (Morphism carrier)
+  | HigherCategoryMismatch (Category carrier) (Category carrier)
   deriving
     ( Read,
       Show,
@@ -76,8 +78,9 @@ data CheckError carrier
     )
 
 data CodegenError carrier
-  = CodegenUnchecked (TermPrivate.ConcreteTerm carrier)
-  | CodegenErased (TermPrivate.AbstractTerm carrier)
+  = CodegenUnchecked (ConcreteTerm carrier)
+  | CodegenErased (AbstractTerm carrier)
+  | CodegenUnimplemented (AbstractTerm carrier) Text
   deriving
     ( Read,
       Show,
@@ -101,7 +104,7 @@ data CodegenError carrier
 
 data SyntaxError carrier
   = NoSuchKeyword Text
-  | ConsOfRepresentedTerm (TermPrivate.AbstractTerm carrier)
+  | ConsOfRepresentedTerm (AbstractTerm carrier)
   deriving
     ( Read,
       Show,
@@ -147,8 +150,8 @@ data EvalError carrier
     )
 
 data EraseError carrier
-  = ErasingUncheckedTerm (TermPrivate.Term carrier)
-  | AlreadyErasedMorphism (TermPrivate.UnannotatedMorphism carrier)
+  = ErasingUncheckedTerm (Term carrier)
+  | AlreadyErasedMorphism (Morphism carrier)
   deriving
     ( Read,
       Show,

@@ -4,27 +4,28 @@ module Juvix.Core.Categorial.Typechecker
     ElimChecks (..),
     checkElim,
     AbstractChecks (..),
+    Equiv,
   )
 where
 
 import qualified Control.Monad.Trans as Trans
 import qualified Control.Monad.Trans.Except as ExceptT
-import Juvix.Core.Categorial.Errors as CategorialErrors
+import Juvix.Core.Categorial.Errors
   ( CheckError (..),
   )
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
-    Annotation (..),
+    Adjunction (..),
     Category (..),
     ConcreteTerm,
     Functor' (..),
+    HigherCategory (..),
     Keyword (..),
     MinimalInstanceAlgebra,
     Morphism (..),
     Object (..),
     Symbol (..),
     Term (..),
-    UnannotatedMorphism (..),
   )
 import Juvix.Core.Categorial.Private.Theory ()
 import qualified Juvix.Core.Categorial.Private.Utils ()
@@ -35,10 +36,8 @@ import Juvix.Library
     Monad (..),
     return,
     unless,
-    void,
     ($),
     (.),
-    (<$>),
     (<&>),
     (==),
   )
@@ -54,7 +53,7 @@ decodeAlgebra ::
   CheckResultT m carrier carrier
 decodeAlgebra (SexpTypes.Atom (SexpTypes.P (Variable v) _)) =
   return v
-decodeAlgebra term = ExceptT.throwE $ CategorialErrors.ExpectedAlgebraTerm term
+decodeAlgebra term = ExceptT.throwE $ ExpectedAlgebraTerm term
 
 decode ::
   ( Monad m,
@@ -64,11 +63,11 @@ decode ::
   CheckResultT m (AbstractTerm carrier) carrier
 decode _term@(SexpTypes.Atom (SexpTypes.P (Keyword k) _)) =
   case k of
-    KRefinedADTCat -> return $ CategoryTerm RefinedADTCat
-    _ -> ExceptT.throwE $ CategorialErrors.KeywordRequiresArguments k
+    KRefinedADTCat -> return $ CategoryTerm $ RefinedADTCat MinimalMetalogic
+    _ -> ExceptT.throwE $ KeywordRequiresArguments k
 decode term@(SexpTypes.Atom a) =
-  ExceptT.throwE $ CategorialErrors.InvalidAtom term a
-decode SexpTypes.Nil = ExceptT.throwE CategorialErrors.EmptySexp
+  ExceptT.throwE $ InvalidAtom term a
+decode SexpTypes.Nil = ExceptT.throwE EmptySexp
 decode
   ( SexpTypes.Cons
       (SexpTypes.Atom (SexpTypes.P (Keyword KCarrierMorphism) _))
@@ -85,11 +84,10 @@ decode
           codomain <- decodeAlgebra codomain
           morphism <- decodeAlgebra morphism
           return $
-            MorphismTerm $
-              Morphism (CarrierMorphism morphism) (Just (Annotation domain codomain))
+            MorphismTerm (CarrierMorphism (Just (domain, codomain)) morphism)
       _ ->
         ExceptT.throwE $
-          CategorialErrors.WrongNumberOfArgumentsForKeyword KCarrierMorphism
+          WrongNumberOfArgumentsForKeyword KCarrierMorphism
 decode
   ( SexpTypes.Cons
       (SexpTypes.Atom (SexpTypes.P (Keyword KCarrierObject) _))
@@ -101,9 +99,9 @@ decode
         return $ ObjectTerm $ CarrierObject object
       _ ->
         ExceptT.throwE $
-          CategorialErrors.WrongNumberOfArgumentsForKeyword KCarrierObject
+          WrongNumberOfArgumentsForKeyword KCarrierObject
 decode term@(SexpTypes.Cons _ _) =
-  ExceptT.throwE $ CategorialErrors.IllFormedSExpression term
+  ExceptT.throwE $ IllFormedSExpression term
 
 class Equiv a where
   equiv :: a -> a -> Bool
@@ -131,6 +129,60 @@ checkVariableAsFunction ::
 checkVariableAsFunction checks domain codomain var =
   Trans.lift $ checkAsFunction checks domain codomain var
 
+checkCategory ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Category uncheckedCarrier ->
+  CheckResultT
+    m
+    (HigherCategory checkedCarrier, Category checkedCarrier)
+    uncheckedCarrier
+checkCategory checks (DirectedGraphCat higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, DirectedGraphCat checked)
+checkCategory checks (InitialCat higher) = do
+  (higher', cat') <- checkHigherCategory checks higher
+  return (higher', InitialCat cat')
+checkCategory checks (TerminalCat higher) = do
+  (higher', cat') <- checkHigherCategory checks higher
+  return (higher', TerminalCat cat')
+checkCategory checks (RefinedADTCat higher) = do
+  (higher', cat') <- checkHigherCategory checks higher
+  return (higher', RefinedADTCat cat')
+checkCategory checks (HigherOrderRefinedADTCat higher) = do
+  (higher', cat') <- checkHigherCategory checks higher
+  return (higher', HigherOrderRefinedADTCat cat')
+checkCategory checks (ProductCat cat cat') = do
+  (higher, checked) <- checkCategory checks cat
+  (higher', checked') <- checkCategory checks cat'
+  unless (equiv higher higher') $
+    ExceptT.throwE $ HigherCategoryMismatch cat cat'
+  return (higher, ProductCat checked checked')
+checkCategory checks (OppositeCat cat) = do
+  (higher, checked) <- checkCategory checks cat
+  return (higher, OppositeCat checked)
+checkCategory checks (SliceCat object) = do
+  (higher, _cat, checked) <- checkObject checks object
+  return (higher, SliceCat checked)
+checkCategory checks (CosliceCat object) = do
+  (higher, _cat, checked) <- checkObject checks object
+  return (higher, CosliceCat checked)
+checkCategory checks (FunctorCat cat cat') = do
+  (higher, checked) <- checkCategory checks cat
+  (higher', checked') <- checkCategory checks cat'
+  unless (equiv higher higher') $
+    ExceptT.throwE $ HigherCategoryMismatch cat cat'
+  return (higher, FunctorCat checked checked')
+checkCategory _checks term@(AdjunctionCat _adj) =
+  ExceptT.throwE $
+    CheckUnimplemented (CategoryTerm term) "checking adjunction category"
+
+instance (Eq carrier) => Equiv (Category carrier) where
+  equiv = (==)
+
 checkObject ::
   ( Monad m,
     MinimalInstanceAlgebra uncheckedCarrier,
@@ -138,74 +190,27 @@ checkObject ::
   ) =>
   AbstractChecks m uncheckedCarrier checkedCarrier ->
   Object uncheckedCarrier ->
-  CheckResultT m (Object checkedCarrier) uncheckedCarrier
-checkObject checks (CarrierObject obj) =
-  Trans.lift $ CarrierObject <$> checkAsType checks obj
-checkObject checks (HigherObject cat) =
-  HigherObject <$> checkCategory checks cat
+  CheckResultT
+    m
+    ( HigherCategory checkedCarrier,
+      Category checkedCarrier,
+      Object checkedCarrier
+    )
+    uncheckedCarrier
+checkObject checks (CarrierObject obj) = do
+  checked <- checkVariableAsType checks obj
+  return
+    ( MinimalMetalogic,
+      HigherOrderRefinedADTCat MinimalMetalogic,
+      CarrierObject checked
+    )
+checkObject _checks term@(HigherObject _cat) =
+  ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking higherObject"
+checkObject _checks term@(FunctorApply _functor _object) =
+  ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking functorApply"
 
 instance (Eq carrier) => Equiv (Object carrier) where
   equiv = (==)
-
-checkMorphismWithSignature ::
-  ( Monad m,
-    MinimalInstanceAlgebra uncheckedCarrier,
-    MinimalInstanceAlgebra checkedCarrier
-  ) =>
-  AbstractChecks m uncheckedCarrier checkedCarrier ->
-  uncheckedCarrier ->
-  uncheckedCarrier ->
-  UnannotatedMorphism uncheckedCarrier ->
-  CheckResultT m (Morphism checkedCarrier) uncheckedCarrier
-checkMorphismWithSignature checks domain codomain (CarrierMorphism function) = do
-  domain <- checkVariableAsType checks domain
-  codomain <- checkVariableAsType checks codomain
-  function <- checkVariableAsFunction checks domain codomain function
-  return $ Morphism (CarrierMorphism function) $ Just (Annotation domain codomain)
-checkMorphismWithSignature checks domain codomain (Composition []) = do
-  unless (domain == codomain) $
-    ExceptT.throwE $
-      CategorialErrors.IdentityBetweenDifferentObjects domain codomain
-  domain' <- checkVariableAsType checks domain
-  return $ Morphism (Composition []) $ Just (Annotation domain' domain')
-checkMorphismWithSignature
-  checks
-  _domain
-  _codomain
-  (Composition [morphism]) =
-    checkMorphism checks morphism
-checkMorphismWithSignature
-  checks
-  domain
-  codomain
-  ( Composition
-      (Morphism morphism (Just (Annotation domain' codomain')) : morphisms)
-    ) = do
-    left <-
-      checkMorphism checks $
-        Morphism morphism (Just $ Annotation domain' codomain')
-    checkedDomain <- checkVariableAsType checks domain
-    checkedDomain' <- checkVariableAsType checks domain'
-    checkedCodomain <- checkVariableAsType checks codomain
-    unless (checkedDomain == checkedDomain') $
-      ExceptT.throwE $
-        CategorialErrors.IllTypedMorphismComposition morphism domain domain'
-    void $ checkVariableAsType checks codomain'
-    right <-
-      checkMorphismWithSignature
-        checks
-        codomain'
-        codomain
-        (Composition morphisms)
-    return $
-      Morphism (Composition [left, right]) $
-        Just (Annotation checkedDomain checkedCodomain)
-checkMorphismWithSignature
-  _checks
-  _domain
-  _codomain
-  (Composition (Morphism morphism Nothing : _morphims)) =
-    ExceptT.throwE $ CategorialErrors.CheckingMorphismAfterErasure morphism
 
 checkMorphism ::
   ( Monad m,
@@ -214,47 +219,58 @@ checkMorphism ::
   ) =>
   AbstractChecks m uncheckedCarrier checkedCarrier ->
   Morphism uncheckedCarrier ->
-  CheckResultT m (Morphism checkedCarrier) uncheckedCarrier
-checkMorphism checks (Morphism morphism (Just (Annotation domain codomain))) =
-  checkMorphismWithSignature checks domain codomain morphism
-checkMorphism _checks (Morphism morphism Nothing) =
-  ExceptT.throwE $ CategorialErrors.CheckingMorphismAfterErasure morphism
+  CheckResultT
+    m
+    ( HigherCategory checkedCarrier,
+      Category checkedCarrier,
+      Object checkedCarrier,
+      Object checkedCarrier,
+      Morphism checkedCarrier
+    )
+    uncheckedCarrier
+checkMorphism _checks morphism@(CarrierMorphism Nothing _function) =
+  ExceptT.throwE $ CheckingErasedMorphism morphism
+checkMorphism checks (CarrierMorphism (Just (domain, codomain)) function) = do
+  domain <- checkVariableAsType checks domain
+  codomain <- checkVariableAsType checks codomain
+  function <- checkVariableAsFunction checks domain codomain function
+  return
+    ( MinimalMetalogic,
+      HigherOrderRefinedADTCat MinimalMetalogic,
+      CarrierObject domain,
+      CarrierObject codomain,
+      CarrierMorphism (Just (domain, codomain)) function
+    )
+checkMorphism _checks morphism@(IdentityMorphism Nothing) =
+  ExceptT.throwE $ CheckingErasedMorphism morphism
+checkMorphism checks (IdentityMorphism (Just object)) = do
+  (_, _, checked) <- checkObject checks object
+  return
+    ( MinimalMetalogic,
+      HigherOrderRefinedADTCat MinimalMetalogic,
+      checked,
+      checked,
+      IdentityMorphism $ Just checked
+    )
+checkMorphism checks (ComposedMorphism f []) =
+  checkMorphism checks f
+checkMorphism checks (ComposedMorphism f (g : gs)) = do
+  (_, _, fDom, fCod, f') <- checkMorphism checks f
+  (_, _, gsDom, gsCod, gs') <- checkMorphism checks (ComposedMorphism g gs)
+  unless (equiv fCod gsDom) $
+    ExceptT.throwE $ IllegalMorphismComposition f (ComposedMorphism g gs)
+  return
+    ( MinimalMetalogic,
+      HigherOrderRefinedADTCat MinimalMetalogic,
+      fDom,
+      gsCod,
+      ComposedMorphism f' [gs']
+    )
+checkMorphism _checks term@(HigherMorphism _morphism) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking HigherMorphism"
 
-checkCategory ::
-  ( Monad m,
-    MinimalInstanceAlgebra uncheckedCarrier,
-    MinimalInstanceAlgebra checkedCarrier
-  ) =>
-  AbstractChecks m uncheckedCarrier checkedCarrier ->
-  Category uncheckedCarrier ->
-  CheckResultT m (Category checkedCarrier) uncheckedCarrier
-checkCategory checks (DirectedGraphCat vertexObject) = do
-  checked <- checkObject checks vertexObject
-  return $ DirectedGraphCat checked
-checkCategory _checks InitialCat = return InitialCat
-checkCategory _checks TerminalCat = return TerminalCat
-checkCategory _checks RefinedADTCat = return RefinedADTCat
-checkCategory _checks HigherOrderRefinedADTCat =
-  return HigherOrderRefinedADTCat
-checkCategory checks (ProductCat cat cat') = do
-  checked <- checkCategory checks cat
-  checked' <- checkCategory checks cat'
-  return $ ProductCat checked checked'
-checkCategory checks (OppositeCat cat) = do
-  checked <- checkCategory checks cat
-  return $ OppositeCat checked
-checkCategory checks (SliceCat object) = do
-  checked <- checkObject checks object
-  return $ SliceCat checked
-checkCategory checks (CosliceCat object) = do
-  checked <- checkObject checks object
-  return $ CosliceCat checked
-checkCategory checks (FunctorCat cat cat') = do
-  checked <- checkCategory checks cat
-  checked' <- checkCategory checks cat'
-  return $ FunctorCat checked checked'
-
-instance (Eq carrier) => Equiv (Category carrier) where
+instance (Eq carrier) => Equiv (Morphism carrier) where
   equiv = (==)
 
 -- | Returns the functor signature (its domain and codomain categories)
@@ -268,43 +284,125 @@ checkFunctor ::
   Functor' uncheckedCarrier ->
   CheckResultT
     m
-    (Category checkedCarrier, Category checkedCarrier, Functor' checkedCarrier)
+    ( HigherCategory checkedCarrier,
+      Category checkedCarrier,
+      Category checkedCarrier,
+      Functor' checkedCarrier
+    )
     uncheckedCarrier
 checkFunctor checks (IdentityFunctor cat) = do
-  checked <- checkCategory checks cat
-  return (checked, checked, IdentityFunctor checked)
+  (higher, checked) <- checkCategory checks cat
+  return (higher, checked, checked, IdentityFunctor checked)
 checkFunctor checks (DiagonalFunctor cat) = do
-  checked <- checkCategory checks cat
-  return (checked, ProductCat checked checked, DiagonalFunctor checked)
+  (higher, checked) <- checkCategory checks cat
+  return (higher, checked, ProductCat checked checked, DiagonalFunctor checked)
 checkFunctor checks (ProductFunctor cat) = do
-  checked <- checkCategory checks cat
-  return (ProductCat checked checked, checked, ProductFunctor checked)
+  (higher, checked) <- checkCategory checks cat
+  return (higher, ProductCat checked checked, checked, ProductFunctor checked)
 checkFunctor checks (CoproductFunctor cat) = do
-  checked <- checkCategory checks cat
-  return (ProductCat checked checked, checked, CoproductFunctor checked)
-checkFunctor checks (ComposeFunctors g f) = do
-  (gDom, gCod, g') <- checkFunctor checks g
-  (fDom, fCod, f') <- checkFunctor checks f
-  unless (equiv fCod gDom) $
-    ExceptT.throwE $ CategorialErrors.IllegalFunctorComposition g f
-  return (fDom, gCod, ComposeFunctors g' f')
+  (higher, checked) <- checkCategory checks cat
+  return (higher, ProductCat checked checked, checked, CoproductFunctor checked)
+checkFunctor checks (ComposedFunctor f []) =
+  checkFunctor checks f
+checkFunctor checks (ComposedFunctor f (g : gs)) = do
+  (higher, fDom, fCod, f') <-
+    checkFunctor checks f
+  (higher', gsDom, gsCod, gs') <-
+    checkFunctor checks (ComposedFunctor g gs)
+  unless (equiv higher higher') $
+    ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
+  unless (equiv fCod gsDom) $
+    ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
+  return (higher, fDom, gsCod, ComposedFunctor f' [gs'])
 checkFunctor checks (LeftFunctor f) = do
-  (dom, cod, f') <- checkFunctor checks f
+  (higher, dom, cod, f') <- checkFunctor checks f
   case cod of
-    ProductCat codLeft _codRight -> return (dom, codLeft, f')
-    _ -> ExceptT.throwE $ CategorialErrors.ProjectingNonProductFunctor f
+    ProductCat codLeft _codRight -> return (higher, dom, codLeft, f')
+    _ -> ExceptT.throwE $ ProjectingNonProductFunctor f
 checkFunctor checks (RightFunctor f) = do
-  (dom, cod, f') <- checkFunctor checks f
+  (higher, dom, cod, f') <- checkFunctor checks f
   case cod of
-    ProductCat _codLeft codRight -> return (dom, codRight, f')
-    _ -> ExceptT.throwE $ CategorialErrors.ProjectingNonProductFunctor f
-checkFunctor _checks functor =
+    ProductCat _codLeft codRight -> return (higher, dom, codRight, f')
+    _ -> ExceptT.throwE $ ProjectingNonProductFunctor f
+checkFunctor _checks term@(InitialFunctor _cat) =
   ExceptT.throwE $
-    CategorialErrors.CheckUnimplemented
-      (FunctorTerm functor)
-      "Categorial.checkFunctor"
+    CheckUnimplemented (FunctorTerm term) "checking InitialFunctor"
+checkFunctor _checks term@(TerminalFunctor _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking TerminalFunctor"
+checkFunctor _checks term@(ConstFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking ConstFunctor"
+checkFunctor _checks term@(FreeFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking FreeFunctor"
+checkFunctor _checks term@(CofreeFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking CofreeFunctor"
+checkFunctor _checks term@(ForgetAlgebraFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking ForgetAlgebraFunctor"
+checkFunctor _checks term@(ForgetCoalgebraFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking ForgetCoalgebraFunctor"
+checkFunctor _checks term@(CurryFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking CurryFunctor"
+checkFunctor _checks term@(UncurryFunctor _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking UncurryFunctor"
+checkFunctor _checks term@(BaseChangeFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking BaseChangeFunctor"
+checkFunctor _checks term@(CobaseChangeFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking CobaseChangeFunctor"
 
 instance (Eq carrier) => Equiv (Functor' carrier) where
+  equiv = (==)
+
+-- | Returns the categories between which the adjoint functors map,
+-- as well as the adjoint functors themselves.
+checkAdjunction ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Adjunction uncheckedCarrier ->
+  CheckResultT
+    m
+    ( HigherCategory checkedCarrier,
+      Category checkedCarrier,
+      Category checkedCarrier,
+      Functor' checkedCarrier,
+      Functor' checkedCarrier,
+      Adjunction checkedCarrier
+    )
+    uncheckedCarrier
+checkAdjunction _checks adj =
+  ExceptT.throwE $ CheckUnimplemented (AdjunctionTerm adj) "adjunction checking"
+
+instance (Eq carrier) => Equiv (Adjunction carrier) where
+  equiv = (==)
+
+-- | Returns the higher category in terms over which the given higher
+-- category is enriched, as well as the checked higher category itself.
+checkHigherCategory ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  HigherCategory uncheckedCarrier ->
+  CheckResultT
+    m
+    (HigherCategory checkedCarrier, HigherCategory checkedCarrier)
+    uncheckedCarrier
+checkHigherCategory _checks MinimalMetalogic =
+  return (MinimalMetalogic, MinimalMetalogic)
+
+instance (Eq carrier) => Equiv (HigherCategory carrier) where
   equiv = (==)
 
 data AbstractChecks m uncheckedCarrier checkedCarrier = AbstractChecks
@@ -326,18 +424,24 @@ checkAbstract ::
   AbstractChecks m uncheckedCarrier checkedCarrier ->
   AbstractTerm uncheckedCarrier ->
   CheckResultT m (AbstractTerm checkedCarrier) uncheckedCarrier
-checkAbstract checks (CategoryTerm category) =
-  CategoryTerm <$> checkCategory checks category
+checkAbstract checks (ObjectTerm object) = do
+  (_, _, checked) <- checkObject checks object
+  return $ ObjectTerm checked
+checkAbstract checks (MorphismTerm morphism) = do
+  (_, _, _, _, checked) <- checkMorphism checks morphism
+  return $ MorphismTerm checked
+checkAbstract checks (CategoryTerm category) = do
+  (_, checked) <- checkCategory checks category
+  return $ CategoryTerm checked
 checkAbstract checks (FunctorTerm functor) = do
-  (_, _, checked) <- checkFunctor checks functor
+  (_, _, _, checked) <- checkFunctor checks functor
   return $ FunctorTerm checked
-checkAbstract checks (ObjectTerm object) =
-  ObjectTerm <$> checkObject checks object
-checkAbstract checks (MorphismTerm morphism) =
-  MorphismTerm <$> checkMorphism checks morphism
-checkAbstract _checks term =
-  ExceptT.throwE $
-    CategorialErrors.CheckUnimplemented term "Categorial.checkAbstract"
+checkAbstract checks (AdjunctionTerm adj) = do
+  (_, _, _, _, _, checked) <- checkAdjunction checks adj
+  return $ AdjunctionTerm checked
+checkAbstract checks (HigherCategoryTerm category) = do
+  (_, checked) <- checkHigherCategory checks category
+  return $ HigherCategoryTerm checked
 
 newtype IntroChecks m uncheckedCarrier checkedCarrier = IntroChecks
   { introAbstractChecks :: AbstractChecks m uncheckedCarrier checkedCarrier
@@ -364,7 +468,7 @@ checkIntro ::
 checkIntro checks (SexpRepresentation sexp) =
   (decode sexp >>= checkIntroAbstract checks) <&> RepresentedTerm
 checkIntro _checks (RepresentedTerm abstract) =
-  ExceptT.throwE $ CategorialErrors.AlreadyCheckedTerm abstract
+  ExceptT.throwE $ AlreadyCheckedTerm abstract
 
 newtype ElimChecks m uncheckedCarrier checkedCarrier resultType = ElimChecks
   { elimAbstractChecks :: AbstractChecks m uncheckedCarrier checkedCarrier
@@ -384,12 +488,12 @@ checkElimAbstract checks term = do
   case checked of
     ObjectTerm _o ->
       ExceptT.throwE $
-        CategorialErrors.CheckUnimplemented term "object elimination"
+        CheckUnimplemented term "object elimination"
     MorphismTerm _m ->
       ExceptT.throwE $
-        CategorialErrors.CheckUnimplemented term "morphism elimination"
+        CheckUnimplemented term "morphism elimination"
     _ ->
-      ExceptT.throwE $ CategorialErrors.NonEliminatableTerm term
+      ExceptT.throwE $ NonEliminatableTerm term
 
 checkElim ::
   ( Monad m,
@@ -403,4 +507,4 @@ checkElim ::
 checkElim checks (SexpRepresentation sexp) =
   decode sexp >>= checkElimAbstract checks
 checkElim _checks (RepresentedTerm abstract) =
-  ExceptT.throwE $ CategorialErrors.AlreadyCheckedTerm abstract
+  ExceptT.throwE $ AlreadyCheckedTerm abstract

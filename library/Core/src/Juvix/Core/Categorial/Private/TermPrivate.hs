@@ -98,44 +98,18 @@ data Symbol carrier
       Traversable
     )
 
-data Object carrier
-  = -- | Any category is a "higher object" -- that is, an object of the category
-    -- of all categories enriched over RefinedADTCategory.
-    HigherObject (Category carrier)
-  | -- | An CarrierObject is an object of the carrier category.
-    CarrierObject carrier
-  deriving
-    ( Read,
-      Show,
-      Eq,
-      Hashable,
-      Ord,
-      Generic,
-      Typeable,
-      Data,
-      NFData,
-      Aeson.ToJSON,
-      Aeson.FromJSON,
-      Aeson.ToJSONKey,
-      Aeson.FromJSONKey,
-      Serialize.DefaultOptions,
-      Serialize.Serialize,
-      Functor,
-      Foldable,
-      Traversable
-    )
-
 data Category carrier
-  = DirectedGraphCat (Object carrier)
-  | InitialCat
-  | TerminalCat
-  | ProductCat (Category carrier) (Category carrier)
+  = DirectedGraphCat (HigherCategory carrier)
+  | InitialCat (HigherCategory carrier)
+  | TerminalCat (HigherCategory carrier)
   | OppositeCat (Category carrier)
+  | ProductCat (Category carrier) (Category carrier)
+  | FunctorCat (Category carrier) (Category carrier)
+  | AdjunctionCat (HigherCategory carrier)
   | SliceCat (Object carrier)
   | CosliceCat (Object carrier)
-  | FunctorCat (Category carrier) (Category carrier)
-  | RefinedADTCat
-  | HigherOrderRefinedADTCat
+  | RefinedADTCat (HigherCategory carrier)
+  | HigherOrderRefinedADTCat (HigherCategory carrier)
   deriving
     ( Read,
       Show,
@@ -157,31 +131,15 @@ data Category carrier
       Traversable
     )
 
-data Annotation carrier = Annotation carrier carrier
-  deriving
-    ( Read,
-      Show,
-      Eq,
-      Hashable,
-      Ord,
-      Generic,
-      Typeable,
-      Data,
-      NFData,
-      Aeson.ToJSON,
-      Aeson.FromJSON,
-      Aeson.ToJSONKey,
-      Aeson.FromJSONKey,
-      Serialize.DefaultOptions,
-      Serialize.Serialize,
-      Functor,
-      Foldable,
-      Traversable
-    )
-
-data UnannotatedMorphism carrier
-  = CarrierMorphism carrier
-  | Composition [Morphism carrier]
+data Object carrier
+  = -- | An CarrierObject is an object of the carrier category.
+    CarrierObject carrier
+  | -- | Because functors are used to generate objects, one way of obtaining
+    -- | an object is to apply a functor to an existing object.
+    FunctorApply (Functor' carrier) (Object carrier)
+  | -- | Any category is a "higher object" -- that is, an object of the category
+    -- of all categories enriched over RefinedADTCategory.
+    HigherObject (Category carrier)
   deriving
     ( Read,
       Show,
@@ -204,7 +162,12 @@ data UnannotatedMorphism carrier
     )
 
 data Morphism carrier
-  = Morphism (UnannotatedMorphism carrier) (Maybe (Annotation carrier))
+  = CarrierMorphism (Maybe (carrier, carrier)) carrier
+  | IdentityMorphism (Maybe (Object carrier))
+  | ComposedMorphism (Morphism carrier) [Morphism carrier]
+  | -- | Any functor is a "higher morphism" -- that is, an morphism of the
+    -- category of all categories enriched over RefinedADTCategory.
+    HigherMorphism (Functor' carrier)
   deriving
     ( Read,
       Show,
@@ -228,7 +191,9 @@ data Morphism carrier
 
 data Functor' carrier
   = IdentityFunctor (Category carrier)
-  | ComposeFunctors (Functor' carrier) (Functor' carrier)
+  | ComposedFunctor (Functor' carrier) [Functor' carrier]
+  | InitialFunctor (Category carrier)
+  | TerminalFunctor (Category carrier)
   | -- | The diagonal functor from the parameter category to its
     -- product with itself.
     DiagonalFunctor (Category carrier)
@@ -244,7 +209,9 @@ data Functor' carrier
   | FreeFunctor (Object carrier)
   | CofreeFunctor (Object carrier)
   | ForgetAlgebraFunctor (Object carrier)
-  | ProductExponentialFunctor (Object carrier)
+  | ForgetCoalgebraFunctor (Object carrier)
+  | CurryFunctor (Object carrier)
+  | UncurryFunctor (Object carrier)
   | BaseChangeFunctor (Object carrier) (Object carrier)
   | CobaseChangeFunctor (Object carrier) (Object carrier)
   deriving
@@ -268,39 +235,18 @@ data Functor' carrier
       Traversable
     )
 
-data NaturalTransformation carrier
-  = IdentityNaturalTransformation (Functor' carrier)
-  | Substitution (Functor' carrier) (Functor' carrier)
-  deriving
-    ( Read,
-      Show,
-      Eq,
-      Hashable,
-      Ord,
-      Generic,
-      Typeable,
-      Data,
-      NFData,
-      Aeson.ToJSON,
-      Aeson.FromJSON,
-      Aeson.ToJSONKey,
-      Aeson.FromJSONKey,
-      Serialize.DefaultOptions,
-      Serialize.Serialize,
-      Functor,
-      Foldable,
-      Traversable
-    )
-
 data Adjunction carrier
   = IdentityAdjunction (Category carrier)
-  | ComposeAdjunctions (Adjunction carrier) (Adjunction carrier)
+  | AdjunctionComposition (Adjunction carrier) [Adjunction carrier]
+  | InitialAdjunction (Category carrier)
+  | TerminalAdjunction (Category carrier)
   | ProductAdjunction (Category carrier)
   | CoproductAdjunction (Category carrier)
-  | SliceAdjunction (Object carrier)
-  | CosliceAdjunction (Object carrier)
-  | FreeAlgebraAdjunction (Object carrier)
-  | CofreeAlgebraAdjunction (Object carrier)
+  | FreeForgetfulAlgebra (Object carrier)
+  | ForgetfulCofreeAlgebra (Object carrier)
+  | ProductHomAdjunction (Object carrier)
+  | DependentSum (Object carrier)
+  | DependentProduct (Object carrier)
   deriving
     ( Read,
       Show,
@@ -324,9 +270,6 @@ data Adjunction carrier
 
 data HigherCategory carrier
   = MinimalMetalogic
-  | -- | Interpret a category as a higher category by specifying
-    -- an adjunction category.
-    FromCategory (Category carrier) (Category carrier)
   deriving
     ( Read,
       Show,
@@ -348,46 +291,13 @@ data HigherCategory carrier
       Traversable
     )
 
-FunctorTemplates.makeBaseFunctor ''Object
-
-type instance Foldable.Base (Object a) = ObjectF a
-
-FunctorTemplates.makeBaseFunctor ''Category
-
-type instance Foldable.Base (Category a) = CategoryF a
-
-FunctorTemplates.makeBaseFunctor ''UnannotatedMorphism
-
-type instance Foldable.Base (UnannotatedMorphism a) = UnannotatedMorphismF a
-
-FunctorTemplates.makeBaseFunctor ''Morphism
-
-type instance Foldable.Base (Morphism a) = MorphismF a
-
-FunctorTemplates.makeBaseFunctor ''Functor'
-
-type instance Foldable.Base (Functor' a) = Functor'F a
-
-FunctorTemplates.makeBaseFunctor ''NaturalTransformation
-
-type instance Foldable.Base (NaturalTransformation a) = NaturalTransformationF a
-
-FunctorTemplates.makeBaseFunctor ''Adjunction
-
-type instance Foldable.Base (Adjunction a) = AdjunctionF a
-
-FunctorTemplates.makeBaseFunctor ''HigherCategory
-
-type instance Foldable.Base (HigherCategory a) = HigherCategoryF a
-
 data AbstractTerm carrier
-  = HigherCategoryTerm (HigherCategory carrier)
-  | CategoryTerm (Category carrier)
+  = CategoryTerm (Category carrier)
   | ObjectTerm (Object carrier)
   | MorphismTerm (Morphism carrier)
   | FunctorTerm (Functor' carrier)
-  | NaturalTransformationTerm (NaturalTransformation carrier)
   | AdjunctionTerm (Adjunction carrier)
+  | HigherCategoryTerm (HigherCategory carrier)
   deriving
     ( Read,
       Show,
@@ -408,10 +318,6 @@ data AbstractTerm carrier
       Foldable,
       Traversable
     )
-
-FunctorTemplates.makeBaseFunctor ''AbstractTerm
-
-type instance Foldable.Base (AbstractTerm a) = AbstractTermF a
 
 type ConcreteTerm carrier = SexpTypes.Base (Symbol carrier)
 
@@ -438,6 +344,34 @@ data Term carrier
       Foldable,
       Traversable
     )
+
+FunctorTemplates.makeBaseFunctor ''Category
+
+type instance Foldable.Base (Category a) = CategoryF a
+
+FunctorTemplates.makeBaseFunctor ''Object
+
+type instance Foldable.Base (Object a) = ObjectF a
+
+FunctorTemplates.makeBaseFunctor ''Morphism
+
+type instance Foldable.Base (Morphism a) = MorphismF a
+
+FunctorTemplates.makeBaseFunctor ''Functor'
+
+type instance Foldable.Base (Functor' a) = Functor'F a
+
+FunctorTemplates.makeBaseFunctor ''Adjunction
+
+type instance Foldable.Base (Adjunction a) = AdjunctionF a
+
+FunctorTemplates.makeBaseFunctor ''HigherCategory
+
+type instance Foldable.Base (HigherCategory a) = HigherCategoryF a
+
+FunctorTemplates.makeBaseFunctor ''AbstractTerm
+
+type instance Foldable.Base (AbstractTerm a) = AbstractTermF a
 
 FunctorTemplates.makeBaseFunctor ''Term
 

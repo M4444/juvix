@@ -6,17 +6,17 @@ where
 
 import qualified Control.Monad.Trans as Trans
 import qualified Control.Monad.Trans.Except as ExceptT
-import Juvix.Core.Categorial.Errors as CategorialErrors
+import Juvix.Core.Categorial.Errors
   ( EraseError (..),
   )
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
     Category (..),
+    HigherCategory (..),
     MinimalInstanceAlgebra,
     Morphism (..),
     Object (..),
     Term (..),
-    UnannotatedMorphism (..),
   )
 import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
@@ -26,6 +26,7 @@ import Juvix.Library
     return,
     ($),
     (<$>),
+    (<&>),
   )
 
 type EraseResultT m a carrier = ExceptT.ExceptT (EraseError carrier) m a
@@ -36,20 +37,6 @@ newtype EraseChecks m annotated erased = EraseChecks
       m erased
   }
 
-eraseUnannotatedMorphism ::
-  ( Monad m,
-    MinimalInstanceAlgebra annotated,
-    MinimalInstanceAlgebra erased
-  ) =>
-  EraseChecks m annotated erased ->
-  UnannotatedMorphism annotated ->
-  EraseResultT m (UnannotatedMorphism erased) annotated
-eraseUnannotatedMorphism checks (CarrierMorphism morphism) = do
-  erased <- Trans.lift $ eraseFunction checks morphism
-  return $ CarrierMorphism erased
-eraseUnannotatedMorphism checks (Composition morphisms) =
-  Composition <$> mapM (eraseMorphism checks) morphisms
-
 eraseMorphism ::
   ( Monad m,
     MinimalInstanceAlgebra annotated,
@@ -58,11 +45,16 @@ eraseMorphism ::
   EraseChecks m annotated erased ->
   Morphism annotated ->
   EraseResultT m (Morphism erased) annotated
-eraseMorphism checks (Morphism unannotated (Just _annotation)) = do
-  erased <- eraseUnannotatedMorphism checks unannotated
-  return $ Morphism erased Nothing
-eraseMorphism _checks (Morphism unannotated Nothing) =
-  ExceptT.throwE $ CategorialErrors.AlreadyErasedMorphism unannotated
+eraseMorphism checks (CarrierMorphism _signature morphism) =
+  Trans.lift (eraseFunction checks morphism) <&> CarrierMorphism Nothing
+eraseMorphism _checks (IdentityMorphism _object) =
+  return $ IdentityMorphism Nothing
+eraseMorphism checks (ComposedMorphism morphism morphisms) = do
+  morphism' <- eraseMorphism checks morphism
+  morphisms' <- mapM (eraseMorphism checks) morphisms
+  return $ ComposedMorphism morphism' morphisms'
+eraseMorphism _checks term@(HigherMorphism _functor) =
+  ExceptT.throwE $ AlreadyErasedMorphism term
 
 eraseAbstract ::
   ( Monad m,
@@ -82,7 +74,8 @@ eraseAbstract checks (MorphismTerm morphism) =
 -- non-functional term as translation into a term that contains no information:
 -- that is a terminal object.  We have available the higher terminal
 -- category, which is a terminal object in a higher category.
-eraseAbstract _checks _term = return $ ObjectTerm $ HigherObject TerminalCat
+eraseAbstract _checks _term =
+  return $ ObjectTerm $ HigherObject $ TerminalCat MinimalMetalogic
 
 erase ::
   ( Monad m,
@@ -92,8 +85,7 @@ erase ::
   EraseChecks m annotated erased ->
   Term annotated ->
   EraseResultT m (Term erased) annotated
-erase _eraseChecks term@(SexpRepresentation _) =
-  ExceptT.throwE $ CategorialErrors.ErasingUncheckedTerm term
-erase checks (RepresentedTerm abstract) = do
-  erased <- eraseAbstract checks abstract
-  return $ RepresentedTerm erased
+erase _checks term@(SexpRepresentation _) =
+  ExceptT.throwE $ ErasingUncheckedTerm term
+erase checks (RepresentedTerm abstract) =
+  RepresentedTerm <$> eraseAbstract checks abstract

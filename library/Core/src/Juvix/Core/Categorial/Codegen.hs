@@ -6,13 +6,18 @@ where
 
 import qualified Control.Monad.Trans as Trans
 import qualified Control.Monad.Trans.Except as ExceptT
-import qualified Juvix.Core.Categorial.Errors as CategorialErrors
-import qualified Juvix.Core.Categorial.Private.TermPrivate as TermPrivate
+import Juvix.Core.Categorial.Errors (CodegenError (..))
+import Juvix.Core.Categorial.Private.TermPrivate
+  ( AbstractTerm (..),
+    MinimalInstanceAlgebra,
+    Morphism (..),
+    Object (..),
+    Term (..),
+  )
 import Juvix.Library
   ( Maybe (..),
     Monad,
-    fst,
-    map,
+    mapM,
     ($),
   )
 
@@ -25,84 +30,65 @@ data CodegenFunctions m operation carrier = CodegenFunctions
   }
 
 type CodegenResultT m a carrier =
-  ExceptT.ExceptT (CategorialErrors.CodegenError carrier) m a
+  ExceptT.ExceptT (CodegenError carrier) m a
 
-generateMorphismUsingSignature ::
+generateObject ::
   Monad m =>
   CodegenFunctions m operation carrier ->
-  Maybe (operation, operation) ->
-  TermPrivate.UnannotatedMorphism carrier ->
+  Object carrier ->
   CodegenResultT m operation carrier
-generateMorphismUsingSignature
-  cf
-  signature
-  (TermPrivate.CarrierMorphism morphism) =
-    Trans.lift $ genFunc cf signature morphism
-generateMorphismUsingSignature
-  cf
-  signature
-  (TermPrivate.Composition []) =
-    Trans.lift $ genIdentity cf $ map fst signature
-generateMorphismUsingSignature
-  cf
-  _signature
-  (TermPrivate.Composition [morphism]) =
-    generateMorphism cf morphism
-generateMorphismUsingSignature
-  cf
-  _signature
-  (TermPrivate.Composition (morphism : morphisms)) = do
-    left <- generateMorphism cf morphism
-    right <-
-      generateMorphismUsingSignature cf Nothing (TermPrivate.Composition morphisms)
-    Trans.lift $ genCompose cf left right
-
-generateMorphismCommon ::
-  Monad m =>
-  CodegenFunctions m operation carrier ->
-  TermPrivate.UnannotatedMorphism carrier ->
-  Maybe (TermPrivate.Annotation carrier) ->
-  CodegenResultT m operation carrier
-generateMorphismCommon
-  cf
-  unannotated
-  (Just (TermPrivate.Annotation domain codomain)) = do
-    domain' <- Trans.lift $ genObj cf domain
-    codomain' <- Trans.lift $ genObj cf codomain
-    generateMorphismUsingSignature cf (Just (domain', codomain')) unannotated
-generateMorphismCommon
-  cf
-  unannotated
-  Nothing = generateMorphismUsingSignature cf Nothing unannotated
+generateObject checks (CarrierObject object) =
+  Trans.lift $ genObj checks object
+generateObject _checks term@(FunctorApply _functor _object) =
+  ExceptT.throwE $ CodegenUnimplemented (ObjectTerm term) "FunctorApply"
+generateObject _checks term@(HigherObject _object) =
+  ExceptT.throwE $ CodegenErased $ ObjectTerm term
 
 generateMorphism ::
   Monad m =>
   CodegenFunctions m operation carrier ->
-  TermPrivate.Morphism carrier ->
+  Morphism carrier ->
   CodegenResultT m operation carrier
-generateMorphism cf (TermPrivate.Morphism unannotated annotation) =
-  generateMorphismCommon cf unannotated annotation
+generateMorphism cf (CarrierMorphism signature morphism) =
+  case signature of
+    Just (domain, codomain) -> do
+      domain' <- Trans.lift $ genObj cf domain
+      codomain' <- Trans.lift $ genObj cf codomain
+      Trans.lift $ genFunc cf (Just (domain', codomain')) morphism
+    Nothing ->
+      Trans.lift $ genFunc cf Nothing morphism
+generateMorphism cf (IdentityMorphism obj) = do
+  obj' <- mapM (generateObject cf) obj
+  Trans.lift $ genIdentity cf obj'
+generateMorphism cf (ComposedMorphism f []) =
+  generateMorphism cf f
+generateMorphism cf (ComposedMorphism f (g : gs)) = do
+  f' <- generateMorphism cf f
+  gs' <- generateMorphism cf (ComposedMorphism g gs)
+  Trans.lift $ genCompose cf f' gs'
+generateMorphism _cf morphism@(HigherMorphism _) =
+  ExceptT.throwE $ CodegenErased $ MorphismTerm morphism
 
 generateAbstract ::
   Monad m =>
   CodegenFunctions m operation carrier ->
-  TermPrivate.AbstractTerm carrier ->
+  AbstractTerm carrier ->
   CodegenResultT m operation carrier
-generateAbstract cf (TermPrivate.MorphismTerm morphism) =
+generateAbstract cf (MorphismTerm morphism) =
   generateMorphism cf morphism
 -- Morphisms are the only terms from which code can be generated -- other
 -- term types are pure specifications.
 generateAbstract _cf term =
-  ExceptT.throwE $ CategorialErrors.CodegenErased term
+  ExceptT.throwE $ CodegenErased term
 
 generateCode ::
   ( Monad m,
-    TermPrivate.MinimalInstanceAlgebra carrier
+    MinimalInstanceAlgebra carrier
   ) =>
   CodegenFunctions m operation carrier ->
-  TermPrivate.Term carrier ->
+  Term carrier ->
   CodegenResultT m operation carrier
-generateCode _cf (TermPrivate.SexpRepresentation sexp) =
-  ExceptT.throwE $ CategorialErrors.CodegenUnchecked sexp
-generateCode cf (TermPrivate.RepresentedTerm term) =
+generateCode _cf (SexpRepresentation sexp) =
+  ExceptT.throwE $ CodegenUnchecked sexp
+generateCode cf (RepresentedTerm term) =
   generateAbstract cf term
