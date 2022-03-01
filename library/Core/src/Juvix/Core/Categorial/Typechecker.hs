@@ -257,13 +257,13 @@ checkMorphism checks (ComposedMorphism f []) =
 checkMorphism checks (ComposedMorphism f (g : gs)) = do
   (_, _, fDom, fCod, f') <- checkMorphism checks f
   (_, _, gsDom, gsCod, gs') <- checkMorphism checks (ComposedMorphism g gs)
-  unless (equiv fCod gsDom) $
+  unless (equiv fDom gsCod) $
     ExceptT.throwE $ IllegalMorphismComposition f (ComposedMorphism g gs)
   return
     ( MinimalMetalogic,
       HigherOrderRefinedADTCat MinimalMetalogic,
-      fDom,
-      gsCod,
+      gsDom,
+      fCod,
       ComposedMorphism f' [gs']
     )
 checkMorphism _checks term@(HigherMorphism _morphism) =
@@ -311,9 +311,9 @@ checkFunctor checks (ComposedFunctor f (g : gs)) = do
     checkFunctor checks (ComposedFunctor g gs)
   unless (equiv higher higher') $
     ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
-  unless (equiv fCod gsDom) $
+  unless (equiv fDom gsCod) $
     ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
-  return (higher, fDom, gsCod, ComposedFunctor f' [gs'])
+  return (higher, gsDom, fCod, ComposedFunctor f' [gs'])
 checkFunctor checks (LeftFunctor f) = do
   (higher, dom, cod, f') <- checkFunctor checks f
   case cod of
