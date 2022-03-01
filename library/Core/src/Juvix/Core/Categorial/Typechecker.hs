@@ -104,14 +104,24 @@ decode
 decode term@(SexpTypes.Cons _ _) =
   ExceptT.throwE $ IllFormedSExpression term
 
-class Equiv a where
-  equiv ::
-    ( Monad m,
-      MinimalInstanceAlgebra a
-    ) =>
-    a ->
-    a ->
-    m Bool
+class Normalize m a where
+  normalize :: (Monad m, MinimalInstanceAlgebra a) => a -> m a
+
+class Equiv m a where
+  equiv :: (Monad m, MinimalInstanceAlgebra a) => a -> a -> m Bool
+
+normalizedEq ::
+  ( Monad m,
+    MinimalInstanceAlgebra a,
+    Normalize m a
+  ) =>
+  a ->
+  a ->
+  m Bool
+normalizedEq x x' = do
+  n <- normalize x
+  n' <- normalize x'
+  return $ n == n'
 
 checkVariableAsType ::
   ( Monad m,
@@ -184,8 +194,11 @@ checkCategory _checks term@(AdjunctionCat _adj) =
   ExceptT.throwE $
     CheckUnimplemented (CategoryTerm term) "checking adjunction category"
 
-instance (Eq carrier) => Equiv (Category carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Category carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Category carrier) where
+  equiv = normalizedEq
 
 checkDiagram ::
   ( Monad m,
@@ -217,8 +230,11 @@ checkDiagram checks (Cospan higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, Cospan checked)
 
-instance (Eq carrier) => Equiv (Diagram carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Diagram carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Diagram carrier) where
+  equiv = normalizedEq
 
 checkObject ::
   ( Monad m,
@@ -246,8 +262,11 @@ checkObject _checks term@(HigherObject _cat) =
 checkObject _checks term@(FunctorApply _functor _object) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking functorApply"
 
-instance (Eq carrier) => Equiv (Object carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Object carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Object carrier) where
+  equiv = normalizedEq
 
 checkMorphism ::
   ( Monad m,
@@ -308,8 +327,11 @@ checkMorphism _checks term@(HigherMorphism _morphism) =
   ExceptT.throwE $
     CheckUnimplemented (MorphismTerm term) "checking HigherMorphism"
 
-instance (Eq carrier) => Equiv (Morphism carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Morphism carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Morphism carrier) where
+  equiv = normalizedEq
 
 -- | Returns the functor signature (its domain and codomain categories)
 -- | along with the checked version of the functor.
@@ -392,8 +414,11 @@ checkFunctor _checks term@(CobaseChangeFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking CobaseChangeFunctor"
 
-instance (Eq carrier) => Equiv (Functor' carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Functor' carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Functor' carrier) where
+  equiv = normalizedEq
 
 -- | Returns the categories between which the adjoint functors map,
 -- as well as the adjoint functors themselves.
@@ -469,8 +494,11 @@ checkAdjunction _checks term@(DependentProduct _obj) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "DependentProduct"
 
-instance (Eq carrier) => Equiv (Adjunction carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (Adjunction carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (Adjunction carrier) where
+  equiv = normalizedEq
 
 -- | Returns the higher category in terms over which the given higher
 -- category is enriched, as well as the checked higher category itself.
@@ -488,8 +516,11 @@ checkHigherCategory ::
 checkHigherCategory _checks MinimalMetalogic =
   return (MinimalMetalogic, MinimalMetalogic)
 
-instance (Eq carrier) => Equiv (HigherCategory carrier) where
-  equiv x y = return $ x == y
+instance (Monad m, Eq carrier) => Normalize m (HigherCategory carrier) where
+  normalize = return
+
+instance (Monad m, Eq carrier) => Equiv m (HigherCategory carrier) where
+  equiv = normalizedEq
 
 data AbstractChecks m uncheckedCarrier checkedCarrier = AbstractChecks
   { checkAsType ::
