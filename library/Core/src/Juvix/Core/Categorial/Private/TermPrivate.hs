@@ -98,10 +98,37 @@ data Symbol carrier
       Traversable
     )
 
+data Diagram carrier
+  = EmptyDiagram (HigherCategory carrier)
+  | SingletonDiagram (HigherCategory carrier)
+  | DiscretePair (HigherCategory carrier)
+  | ParallelPair (HigherCategory carrier)
+  | Span (HigherCategory carrier)
+  | Cospan (HigherCategory carrier)
+  deriving
+    ( Read,
+      Show,
+      Eq,
+      Hashable,
+      Ord,
+      Generic,
+      Typeable,
+      Data,
+      NFData,
+      Aeson.ToJSON,
+      Aeson.FromJSON,
+      Aeson.ToJSONKey,
+      Aeson.FromJSONKey,
+      Serialize.DefaultOptions,
+      Serialize.Serialize,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
 data Category carrier
   = DirectedGraphCat (HigherCategory carrier)
-  | InitialCat (HigherCategory carrier)
-  | TerminalCat (HigherCategory carrier)
+  | DiagramCat (Diagram carrier)
   | OppositeCat (Category carrier)
   | ProductCat (Category carrier) (Category carrier)
   | FunctorCat (Category carrier) (Category carrier)
@@ -192,20 +219,14 @@ data Morphism carrier
 data Functor' carrier
   = IdentityFunctor (Category carrier)
   | ComposedFunctor (Functor' carrier) [Functor' carrier]
-  | InitialFunctor (Category carrier)
-  | TerminalFunctor (Category carrier)
-  | -- | The diagonal functor from the parameter category to its
-    -- product with itself.
-    DiagonalFunctor (Category carrier)
+  | ConstFunctor (Object carrier)
+  | DiagonalFunctor (Diagram carrier) (Category carrier)
   | -- | The right adjoint of the diagonal functor with the same
-    -- parameter.
-    ProductFunctor (Category carrier)
+    -- parameters.
+    LimitFunctor (Diagram carrier) (Category carrier)
   | -- | The left adjoint of the diagonal functor with the same
     -- parameter.
-    CoproductFunctor (Category carrier)
-  | LeftFunctor (Functor' carrier)
-  | RightFunctor (Functor' carrier)
-  | ConstFunctor (Object carrier)
+    ColimitFunctor (Diagram carrier) (Category carrier)
   | FreeFunctor (Object carrier)
   | CofreeFunctor (Object carrier)
   | ForgetAlgebraFunctor (Object carrier)
@@ -213,6 +234,8 @@ data Functor' carrier
   | CurryFunctor (Object carrier)
   | UncurryFunctor (Object carrier)
   | BaseChangeFunctor (Object carrier) (Object carrier)
+  | DependentProductFunctor (Object carrier) (Object carrier)
+  | DependentSumFunctor (Object carrier) (Object carrier)
   | CobaseChangeFunctor (Object carrier) (Object carrier)
   deriving
     ( Read,
@@ -238,10 +261,8 @@ data Functor' carrier
 data Adjunction carrier
   = IdentityAdjunction (Category carrier)
   | ComposedAdjunction (Adjunction carrier) [Adjunction carrier]
-  | InitialAdjunction (Category carrier)
-  | TerminalAdjunction (Category carrier)
-  | ProductAdjunction (Category carrier)
-  | CoproductAdjunction (Category carrier)
+  | LimitAdjunction (Diagram carrier) (Category carrier)
+  | ColimitAdjunction (Diagram carrier) (Category carrier)
   | FreeForgetfulAlgebra (Object carrier)
   | ForgetfulCofreeAlgebra (Object carrier)
   | ProductHomAdjunction (Object carrier)

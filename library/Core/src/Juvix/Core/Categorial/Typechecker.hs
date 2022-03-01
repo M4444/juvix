@@ -18,6 +18,7 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Adjunction (..),
     Category (..),
     ConcreteTerm,
+    Diagram (..),
     Functor' (..),
     HigherCategory (..),
     Keyword (..),
@@ -143,12 +144,6 @@ checkCategory ::
 checkCategory checks (DirectedGraphCat higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, DirectedGraphCat checked)
-checkCategory checks (InitialCat higher) = do
-  (higher', cat') <- checkHigherCategory checks higher
-  return (higher', InitialCat cat')
-checkCategory checks (TerminalCat higher) = do
-  (higher', cat') <- checkHigherCategory checks higher
-  return (higher', TerminalCat cat')
 checkCategory checks (RefinedADTCat higher) = do
   (higher', cat') <- checkHigherCategory checks higher
   return (higher', RefinedADTCat cat')
@@ -161,6 +156,9 @@ checkCategory checks (ProductCat cat cat') = do
   unless (equiv higher higher') $
     ExceptT.throwE $ HigherCategoryMismatch cat cat'
   return (higher, ProductCat checked checked')
+checkCategory checks (DiagramCat diagram) = do
+  (higher, checked) <- checkDiagram checks diagram
+  return (higher, DiagramCat checked)
 checkCategory checks (OppositeCat cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, OppositeCat checked)
@@ -181,6 +179,39 @@ checkCategory _checks term@(AdjunctionCat _adj) =
     CheckUnimplemented (CategoryTerm term) "checking adjunction category"
 
 instance (Eq carrier) => Equiv (Category carrier) where
+  equiv = (==)
+
+checkDiagram ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Diagram uncheckedCarrier ->
+  CheckResultT
+    m
+    (HigherCategory checkedCarrier, Diagram checkedCarrier)
+    uncheckedCarrier
+checkDiagram checks (EmptyDiagram higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, EmptyDiagram checked)
+checkDiagram checks (SingletonDiagram higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, SingletonDiagram checked)
+checkDiagram checks (DiscretePair higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, DiscretePair checked)
+checkDiagram checks (ParallelPair higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, ParallelPair checked)
+checkDiagram checks (Span higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, Span checked)
+checkDiagram checks (Cospan higher) = do
+  (_, checked) <- checkHigherCategory checks higher
+  return (checked, Cospan checked)
+
+instance (Eq carrier) => Equiv (Diagram carrier) where
   equiv = (==)
 
 checkObject ::
@@ -293,15 +324,12 @@ checkFunctor ::
 checkFunctor checks (IdentityFunctor cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, checked, checked, IdentityFunctor checked)
-checkFunctor checks (DiagonalFunctor cat) = do
-  (higher, checked) <- checkCategory checks cat
-  return (higher, checked, ProductCat checked checked, DiagonalFunctor checked)
-checkFunctor checks (ProductFunctor cat) = do
-  (higher, checked) <- checkCategory checks cat
-  return (higher, ProductCat checked checked, checked, ProductFunctor checked)
-checkFunctor checks (CoproductFunctor cat) = do
-  (higher, checked) <- checkCategory checks cat
-  return (higher, ProductCat checked checked, checked, CoproductFunctor checked)
+checkFunctor checks functor@(DiagonalFunctor diagram cat) = do
+  (higher, diagram') <- checkDiagram checks diagram
+  (higher', cat') <- checkCategory checks cat
+  unless (equiv higher higher') $
+    ExceptT.throwE $ FunctorAcrossHigherCategories functor
+  return (higher, DiagramCat diagram', cat', DiagonalFunctor diagram' cat')
 checkFunctor checks (ComposedFunctor f []) =
   checkFunctor checks f
 checkFunctor checks (ComposedFunctor f (g : gs)) = do
@@ -314,25 +342,15 @@ checkFunctor checks (ComposedFunctor f (g : gs)) = do
   unless (equiv fDom gsCod) $
     ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
   return (higher, gsDom, fCod, ComposedFunctor f' [gs'])
-checkFunctor checks (LeftFunctor f) = do
-  (higher, dom, cod, f') <- checkFunctor checks f
-  case cod of
-    ProductCat codLeft _codRight -> return (higher, dom, codLeft, f')
-    _ -> ExceptT.throwE $ ProjectingNonProductFunctor f
-checkFunctor checks (RightFunctor f) = do
-  (higher, dom, cod, f') <- checkFunctor checks f
-  case cod of
-    ProductCat _codLeft codRight -> return (higher, dom, codRight, f')
-    _ -> ExceptT.throwE $ ProjectingNonProductFunctor f
-checkFunctor _checks term@(InitialFunctor _cat) =
-  ExceptT.throwE $
-    CheckUnimplemented (FunctorTerm term) "checking InitialFunctor"
-checkFunctor _checks term@(TerminalFunctor _cat) =
-  ExceptT.throwE $
-    CheckUnimplemented (FunctorTerm term) "checking TerminalFunctor"
 checkFunctor _checks term@(ConstFunctor _obj) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking ConstFunctor"
+checkFunctor _checks term@(LimitFunctor _diagram _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking LimitFunctor"
+checkFunctor _checks term@(ColimitFunctor _diagram _cat) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking ColimitFunctor"
 checkFunctor _checks term@(FreeFunctor _obj) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking FreeFunctor"
@@ -354,6 +372,12 @@ checkFunctor _checks term@(UncurryFunctor _obj) =
 checkFunctor _checks term@(BaseChangeFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking BaseChangeFunctor"
+checkFunctor _checks term@(DependentProductFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking DependentProductFunctor"
+checkFunctor _checks term@(DependentSumFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking DependentSumFunctor"
 checkFunctor _checks term@(CobaseChangeFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking CobaseChangeFunctor"
@@ -411,18 +435,12 @@ checkAdjunction checks (ComposedAdjunction adj (adj' : adjs)) = do
       ComposedFunctor right' [right],
       ComposedAdjunction checked [checked']
     )
-checkAdjunction _checks term@(InitialAdjunction _cat) =
+checkAdjunction _checks term@(LimitAdjunction _diagram _cat) =
   ExceptT.throwE $
-    CheckUnimplemented (AdjunctionTerm term) "InitialAdjunction"
-checkAdjunction _checks term@(TerminalAdjunction _cat) =
+    CheckUnimplemented (AdjunctionTerm term) "LimitAdjunction"
+checkAdjunction _checks term@(ColimitAdjunction _diagram _cat) =
   ExceptT.throwE $
-    CheckUnimplemented (AdjunctionTerm term) "TerminalAdjunction"
-checkAdjunction _checks term@(ProductAdjunction _cat) =
-  ExceptT.throwE $
-    CheckUnimplemented (AdjunctionTerm term) "ProductAdjunction"
-checkAdjunction _checks term@(CoproductAdjunction _cat) =
-  ExceptT.throwE $
-    CheckUnimplemented (AdjunctionTerm term) "CoproductAdjunction"
+    CheckUnimplemented (AdjunctionTerm term) "ColimitAdjunction"
 checkAdjunction _checks term@(FreeForgetfulAlgebra _obj) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "FreeForgetfulAlgebra"

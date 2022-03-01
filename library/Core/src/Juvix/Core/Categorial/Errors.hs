@@ -50,6 +50,7 @@ data CheckError carrier
   | EmptySexp
   | NonEliminatableTerm (AbstractTerm carrier)
   | IllegalFunctorComposition (Functor' carrier) (Functor' carrier)
+  | FunctorAcrossHigherCategories (Functor' carrier)
   | WrongNumberOfArgumentsForKeyword Keyword
   | KeywordRequiresArguments Keyword
   | ExpectedAlgebraTerm (ConcreteTerm carrier)
