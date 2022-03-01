@@ -29,6 +29,7 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Term (..),
   )
 import Juvix.Core.Categorial.Private.Theory ()
+import Juvix.Core.Categorial.Private.TermLibrary ()
 import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
   ( Bool (..),
