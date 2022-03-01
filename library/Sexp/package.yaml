@@ -32,6 +32,7 @@ dependencies:
 - unordered-containers
 - recursion-schemes
 - data-fix
+- prettyprinter
 
 default-extensions:
   - NoImplicitPrelude
