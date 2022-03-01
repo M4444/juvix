@@ -69,7 +69,7 @@ import Juvix.Library hiding (foldM, foldr, init, list, map, reverse, show, toLis
 import qualified Juvix.Library as Std
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import Juvix.Sexp.Parser
-import Juvix.Sexp.Serialize hiding (car, cdr, foldr)
+import Juvix.Sexp.Serialize
 import Juvix.Sexp.Types hiding (double)
 import Prelude (error)
 

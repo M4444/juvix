@@ -171,7 +171,7 @@ instance (GSerializeOptions a) => GSerializeOptions (D1 i a) where
 -- Make an alternative version that cares about the selector
 -- constructor
 instance (Selector i, GSerializeOptions a) => GSerializeOptions (S1 i a) where
-  gputOpt opt y@(M1 x) =
+  gputOpt opt (M1 x) =
     gputOpt opt x
   ggetOpt opt xs =
     -- see if car is correct

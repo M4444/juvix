@@ -33,7 +33,6 @@ module Juvix.Sexp.Structure.CoreNamed where
 import Juvix.Library hiding (Field, Meta, fromInteger, toInteger)
 import qualified Juvix.Library.NameSymbol as NameSymbol
 import qualified Juvix.Sexp as Sexp
-import Juvix.Sexp.Structure
 import Juvix.Sexp.Structure.Helpers
 
 newtype Star = Star {starUniverse :: Integer} deriving (Show)
