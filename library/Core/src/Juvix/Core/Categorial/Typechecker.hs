@@ -105,7 +105,13 @@ decode term@(SexpTypes.Cons _ _) =
   ExceptT.throwE $ IllFormedSExpression term
 
 class Equiv a where
-  equiv :: a -> a -> Bool
+  equiv ::
+    ( Monad m,
+      MinimalInstanceAlgebra a
+    ) =>
+    a ->
+    a ->
+    m Bool
 
 checkVariableAsType ::
   ( Monad m,
@@ -153,8 +159,8 @@ checkCategory checks (HigherOrderRefinedADTCat higher) = do
 checkCategory checks (ProductCat cat cat') = do
   (higher, checked) <- checkCategory checks cat
   (higher', checked') <- checkCategory checks cat'
-  unless (equiv higher higher') $
-    ExceptT.throwE $ HigherCategoryMismatch cat cat'
+  catMatch <- equiv higher higher'
+  unless catMatch $ ExceptT.throwE $ HigherCategoryMismatch cat cat'
   return (higher, ProductCat checked checked')
 checkCategory checks (DiagramCat diagram) = do
   (higher, checked) <- checkDiagram checks diagram
@@ -171,15 +177,15 @@ checkCategory checks (CosliceCat object) = do
 checkCategory checks (FunctorCat cat cat') = do
   (higher, checked) <- checkCategory checks cat
   (higher', checked') <- checkCategory checks cat'
-  unless (equiv higher higher') $
-    ExceptT.throwE $ HigherCategoryMismatch cat cat'
+  catMatch <- equiv higher higher'
+  unless catMatch $ ExceptT.throwE $ HigherCategoryMismatch cat cat'
   return (higher, FunctorCat checked checked')
 checkCategory _checks term@(AdjunctionCat _adj) =
   ExceptT.throwE $
     CheckUnimplemented (CategoryTerm term) "checking adjunction category"
 
 instance (Eq carrier) => Equiv (Category carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 checkDiagram ::
   ( Monad m,
@@ -212,7 +218,7 @@ checkDiagram checks (Cospan higher) = do
   return (checked, Cospan checked)
 
 instance (Eq carrier) => Equiv (Diagram carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 checkObject ::
   ( Monad m,
@@ -241,7 +247,7 @@ checkObject _checks term@(FunctorApply _functor _object) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking functorApply"
 
 instance (Eq carrier) => Equiv (Object carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 checkMorphism ::
   ( Monad m,
@@ -288,7 +294,8 @@ checkMorphism checks (ComposedMorphism f []) =
 checkMorphism checks (ComposedMorphism f (g : gs)) = do
   (_, _, fDom, fCod, f') <- checkMorphism checks f
   (_, _, gsDom, gsCod, gs') <- checkMorphism checks (ComposedMorphism g gs)
-  unless (equiv fDom gsCod) $
+  objMatch <- equiv fDom gsCod
+  unless objMatch $
     ExceptT.throwE $ IllegalMorphismComposition f (ComposedMorphism g gs)
   return
     ( MinimalMetalogic,
@@ -302,7 +309,7 @@ checkMorphism _checks term@(HigherMorphism _morphism) =
     CheckUnimplemented (MorphismTerm term) "checking HigherMorphism"
 
 instance (Eq carrier) => Equiv (Morphism carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 -- | Returns the functor signature (its domain and codomain categories)
 -- | along with the checked version of the functor.
@@ -327,7 +334,8 @@ checkFunctor checks (IdentityFunctor cat) = do
 checkFunctor checks functor@(DiagonalFunctor diagram cat) = do
   (higher, diagram') <- checkDiagram checks diagram
   (higher', cat') <- checkCategory checks cat
-  unless (equiv higher higher') $
+  catMatch <- equiv higher higher'
+  unless catMatch $
     ExceptT.throwE $ FunctorAcrossHigherCategories functor
   return (higher, DiagramCat diagram', cat', DiagonalFunctor diagram' cat')
 checkFunctor checks (ComposedFunctor f []) =
@@ -337,9 +345,11 @@ checkFunctor checks (ComposedFunctor f (g : gs)) = do
     checkFunctor checks f
   (higher', gsDom, gsCod, gs') <-
     checkFunctor checks (ComposedFunctor g gs)
-  unless (equiv higher higher') $
+  catMatch <- equiv higher higher'
+  unless catMatch $
     ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
-  unless (equiv fDom gsCod) $
+  objMatch <- equiv fDom gsCod
+  unless objMatch $
     ExceptT.throwE $ IllegalFunctorComposition f (ComposedFunctor g gs)
   return (higher, gsDom, fCod, ComposedFunctor f' [gs'])
 checkFunctor _checks term@(ConstFunctor _obj) =
@@ -383,7 +393,7 @@ checkFunctor _checks term@(CobaseChangeFunctor _x _y) =
     CheckUnimplemented (FunctorTerm term) "checking CobaseChangeFunctor"
 
 instance (Eq carrier) => Equiv (Functor' carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 -- | Returns the categories between which the adjoint functors map,
 -- as well as the adjoint functors themselves.
@@ -421,10 +431,12 @@ checkAdjunction checks (ComposedAdjunction adj (adj' : adjs)) = do
     checkAdjunction checks adj
   (higher', dom', cod', left', right', checked') <-
     checkAdjunction checks (ComposedAdjunction adj' adjs)
-  unless (equiv higher higher') $
+  catMatch <- equiv higher higher'
+  unless catMatch $
     ExceptT.throwE $
       IllegalAdjunctionComposition adj (ComposedAdjunction adj' adjs)
-  unless (equiv dom cod') $
+  objMatch <- equiv dom cod'
+  unless objMatch $
     ExceptT.throwE $
       IllegalAdjunctionComposition adj (ComposedAdjunction adj' adjs)
   return
@@ -458,7 +470,7 @@ checkAdjunction _checks term@(DependentProduct _obj) =
     CheckUnimplemented (AdjunctionTerm term) "DependentProduct"
 
 instance (Eq carrier) => Equiv (Adjunction carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 -- | Returns the higher category in terms over which the given higher
 -- category is enriched, as well as the checked higher category itself.
@@ -477,7 +489,7 @@ checkHigherCategory _checks MinimalMetalogic =
   return (MinimalMetalogic, MinimalMetalogic)
 
 instance (Eq carrier) => Equiv (HigherCategory carrier) where
-  equiv = (==)
+  equiv x y = return $ x == y
 
 data AbstractChecks m uncheckedCarrier checkedCarrier = AbstractChecks
   { checkAsType ::
