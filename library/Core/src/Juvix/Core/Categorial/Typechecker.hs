@@ -259,7 +259,7 @@ checkObject checks (CarrierObject obj) = do
     )
 checkObject _checks term@(HigherObject _cat) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking higherObject"
-checkObject _checks term@(FunctorApply _functor _object) =
+checkObject _checks term@(FMapObject _functor _object) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking functorApply"
 
 instance (Monad m, Eq carrier) => Normalize m (Object carrier) where
@@ -323,6 +323,9 @@ checkMorphism checks (ComposedMorphism f (g : gs)) = do
       fCod,
       ComposedMorphism f' [gs']
     )
+checkMorphism _checks term@(FMapMorphism _functor _morphism) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking FMapMorphism"
 checkMorphism _checks term@(HigherMorphism _morphism) =
   ExceptT.throwE $
     CheckUnimplemented (MorphismTerm term) "checking HigherMorphism"
@@ -413,6 +416,12 @@ checkFunctor _checks term@(DependentSumFunctor _x _y) =
 checkFunctor _checks term@(CobaseChangeFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking CobaseChangeFunctor"
+checkFunctor _checks term@(CodependentProductFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking CodependentProductFunctor"
+checkFunctor _checks term@(CodependentSumFunctor _x _y) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking CodependentSumFunctor"
 
 instance (Monad m, Eq carrier) => Normalize m (Functor' carrier) where
   normalize = return
@@ -493,6 +502,12 @@ checkAdjunction _checks term@(DependentSum _obj) =
 checkAdjunction _checks term@(DependentProduct _obj) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "DependentProduct"
+checkAdjunction _checks term@(CodependentSum _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "CodependentSum"
+checkAdjunction _checks term@(CodependentProduct _obj) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "CodependentProduct"
 
 instance (Monad m, Eq carrier) => Normalize m (Adjunction carrier) where
   normalize = return

@@ -161,9 +161,7 @@ data Category carrier
 data Object carrier
   = -- | An CarrierObject is an object of the carrier category.
     CarrierObject carrier
-  | -- | Because functors are used to generate objects, one way of obtaining
-    -- | an object is to apply a functor to an existing object.
-    FunctorApply (Functor' carrier) (Object carrier)
+  | FMapObject (Functor' carrier) (Object carrier)
   | -- | Any category is a "higher object" -- that is, an object of the category
     -- of all categories enriched over RefinedADTCategory.
     HigherObject (Category carrier)
@@ -192,6 +190,7 @@ data Morphism carrier
   = CarrierMorphism (Maybe (carrier, carrier)) carrier
   | IdentityMorphism (Maybe (Object carrier))
   | ComposedMorphism (Morphism carrier) [Morphism carrier]
+  | FMapMorphism (Functor' carrier) (Morphism carrier)
   | -- | Any functor is a "higher morphism" -- that is, an morphism of the
     -- category of all categories enriched over RefinedADTCategory.
     HigherMorphism (Functor' carrier)
@@ -237,6 +236,8 @@ data Functor' carrier
   | DependentProductFunctor (Object carrier) (Object carrier)
   | DependentSumFunctor (Object carrier) (Object carrier)
   | CobaseChangeFunctor (Object carrier) (Object carrier)
+  | CodependentProductFunctor (Object carrier) (Object carrier)
+  | CodependentSumFunctor (Object carrier) (Object carrier)
   deriving
     ( Read,
       Show,
@@ -268,6 +269,8 @@ data Adjunction carrier
   | ProductHomAdjunction (Object carrier)
   | DependentSum (Object carrier)
   | DependentProduct (Object carrier)
+  | CodependentSum (Object carrier)
+  | CodependentProduct (Object carrier)
   deriving
     ( Read,
       Show,

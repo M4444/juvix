@@ -155,6 +155,7 @@ data EvalError carrier
 data EraseError carrier
   = ErasingUncheckedTerm (Term carrier)
   | AlreadyErasedMorphism (Morphism carrier)
+  | EraseUnimplemented (AbstractTerm carrier) Text
   deriving
     ( Read,
       Show,

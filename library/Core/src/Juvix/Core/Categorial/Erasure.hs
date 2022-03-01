@@ -53,6 +53,8 @@ eraseMorphism checks (ComposedMorphism morphism morphisms) = do
   morphism' <- eraseMorphism checks morphism
   morphisms' <- mapM (eraseMorphism checks) morphisms
   return $ ComposedMorphism morphism' morphisms'
+eraseMorphism _checks term@(FMapMorphism _functor _morphism) =
+  ExceptT.throwE $ EraseUnimplemented (MorphismTerm term) "FMapMorphism"
 eraseMorphism _checks term@(HigherMorphism _functor) =
   ExceptT.throwE $ AlreadyErasedMorphism term
 

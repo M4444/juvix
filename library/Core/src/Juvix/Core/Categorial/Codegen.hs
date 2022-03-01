@@ -39,8 +39,8 @@ generateObject ::
   CodegenResultT m operation carrier
 generateObject checks (CarrierObject object) =
   Trans.lift $ genObj checks object
-generateObject _checks term@(FunctorApply _functor _object) =
-  ExceptT.throwE $ CodegenUnimplemented (ObjectTerm term) "FunctorApply"
+generateObject _checks term@(FMapObject _functor _object) =
+  ExceptT.throwE $ CodegenUnimplemented (ObjectTerm term) "FMapObject"
 generateObject _checks term@(HigherObject _object) =
   ExceptT.throwE $ CodegenErased $ ObjectTerm term
 
@@ -66,6 +66,8 @@ generateMorphism cf (ComposedMorphism f (g : gs)) = do
   f' <- generateMorphism cf f
   gs' <- generateMorphism cf (ComposedMorphism g gs)
   Trans.lift $ genCompose cf f' gs'
+generateMorphism _cf term@(FMapMorphism _functor _obj) = do
+  ExceptT.throwE $ CodegenUnimplemented (MorphismTerm term) "FMapMorphism"
 generateMorphism _cf morphism@(HigherMorphism _) =
   ExceptT.throwE $ CodegenErased $ MorphismTerm morphism
 
