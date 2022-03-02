@@ -98,9 +98,9 @@ data Symbol carrier
       Traversable
     )
 
-data Diagram carrier
-  = EmptyDiagram (HigherCategory carrier)
-  | SingletonDiagram (HigherCategory carrier)
+data Shape carrier
+  = InitialCat (HigherCategory carrier)
+  | TerminalCat (HigherCategory carrier)
   | DiscretePair (HigherCategory carrier)
   | ParallelPair (HigherCategory carrier)
   | Span (HigherCategory carrier)
@@ -128,7 +128,7 @@ data Diagram carrier
 
 data Category carrier
   = DirectedGraphCat (HigherCategory carrier)
-  | DiagramCat (Diagram carrier)
+  | IndexCat (Shape carrier)
   | OppositeCat (Category carrier)
   | ProductCat (Category carrier) (Category carrier)
   | FunctorCat (Category carrier) (Category carrier)
@@ -219,13 +219,13 @@ data Functor' carrier
   = IdentityFunctor (Category carrier)
   | ComposedFunctor (Functor' carrier) [Functor' carrier]
   | ConstFunctor (Object carrier)
-  | DiagonalFunctor (Diagram carrier) (Category carrier)
+  | DiagonalFunctor (Shape carrier) (Category carrier)
   | -- | The right adjoint of the diagonal functor with the same
     -- parameters.
-    LimitFunctor (Diagram carrier) (Category carrier)
+    LimitFunctor (Shape carrier) (Category carrier)
   | -- | The left adjoint of the diagonal functor with the same
     -- parameter.
-    ColimitFunctor (Diagram carrier) (Category carrier)
+    ColimitFunctor (Shape carrier) (Category carrier)
   | FreeFunctor (Object carrier)
   | CofreeFunctor (Object carrier)
   | ForgetAlgebraFunctor (Object carrier)
@@ -262,8 +262,8 @@ data Functor' carrier
 data Adjunction carrier
   = IdentityAdjunction (Category carrier)
   | ComposedAdjunction (Adjunction carrier) [Adjunction carrier]
-  | LimitAdjunction (Diagram carrier) (Category carrier)
-  | ColimitAdjunction (Diagram carrier) (Category carrier)
+  | LimitAdjunction (Shape carrier) (Category carrier)
+  | ColimitAdjunction (Shape carrier) (Category carrier)
   | FreeForgetfulAlgebra (Object carrier)
   | ForgetfulCofreeAlgebra (Object carrier)
   | ProductHomAdjunction (Object carrier)

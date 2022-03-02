@@ -12,10 +12,10 @@ import Juvix.Core.Categorial.Errors
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
     Category (..),
-    Diagram (..),
     HigherCategory (..),
     MinimalInstanceAlgebra,
     Morphism (..),
+    Shape (..),
     Term (..),
   )
 import qualified Juvix.Core.Categorial.Private.Utils ()
@@ -74,9 +74,9 @@ eraseAbstract checks (MorphismTerm morphism) =
 -- clients, for simplicity, to erase categorial terms that might be
 -- non-functional (i.e. not morphisms), if we implement erasure of a
 -- non-functional term as translation into a term that contains no information.
--- One such term is an empty diagram.
+-- One such term is an empty category.
 eraseAbstract _checks _term =
-  return $ CategoryTerm $ DiagramCat $ EmptyDiagram MinimalMetalogic
+  return $ CategoryTerm $ IndexCat $ InitialCat MinimalMetalogic
 
 erase ::
   ( Monad m,

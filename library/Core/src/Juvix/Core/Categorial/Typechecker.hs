@@ -19,13 +19,13 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Adjunction (..),
     Category (..),
     ConcreteTerm,
-    Diagram (..),
     Functor' (..),
     HigherCategory (..),
     Keyword (..),
     MinimalInstanceAlgebra,
     Morphism (..),
     Object (..),
+    Shape (..),
     Symbol (..),
     Term (..),
   )
@@ -173,9 +173,9 @@ checkCategory checks (ProductCat cat cat') = do
   catMatch <- equiv higher higher'
   unless catMatch $ ExceptT.throwE $ HigherCategoryMismatch cat cat'
   return (higher, ProductCat checked checked')
-checkCategory checks (DiagramCat diagram) = do
-  (higher, checked) <- checkDiagram checks diagram
-  return (higher, DiagramCat checked)
+checkCategory checks (IndexCat shape) = do
+  (higher, checked) <- checkShape checks shape
+  return (higher, IndexCat checked)
 checkCategory checks (OppositeCat cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, OppositeCat checked)
@@ -201,40 +201,40 @@ instance (Monad m, Eq carrier) => Normalize m (Category carrier) where
 instance (Monad m, Eq carrier) => Equiv m (Category carrier) where
   equiv = normalizedEq
 
-checkDiagram ::
+checkShape ::
   ( Monad m,
     MinimalInstanceAlgebra uncheckedCarrier,
     MinimalInstanceAlgebra checkedCarrier
   ) =>
   AbstractChecks m uncheckedCarrier checkedCarrier ->
-  Diagram uncheckedCarrier ->
+  Shape uncheckedCarrier ->
   CheckResultT
     m
-    (HigherCategory checkedCarrier, Diagram checkedCarrier)
+    (HigherCategory checkedCarrier, Shape checkedCarrier)
     uncheckedCarrier
-checkDiagram checks (EmptyDiagram higher) = do
+checkShape checks (InitialCat higher) = do
   (_, checked) <- checkHigherCategory checks higher
-  return (checked, EmptyDiagram checked)
-checkDiagram checks (SingletonDiagram higher) = do
+  return (checked, InitialCat checked)
+checkShape checks (TerminalCat higher) = do
   (_, checked) <- checkHigherCategory checks higher
-  return (checked, SingletonDiagram checked)
-checkDiagram checks (DiscretePair higher) = do
+  return (checked, TerminalCat checked)
+checkShape checks (DiscretePair higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, DiscretePair checked)
-checkDiagram checks (ParallelPair higher) = do
+checkShape checks (ParallelPair higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, ParallelPair checked)
-checkDiagram checks (Span higher) = do
+checkShape checks (Span higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, Span checked)
-checkDiagram checks (Cospan higher) = do
+checkShape checks (Cospan higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, Cospan checked)
 
-instance (Monad m, Eq carrier) => Normalize m (Diagram carrier) where
+instance (Monad m, Eq carrier) => Normalize m (Shape carrier) where
   normalize = return
 
-instance (Monad m, Eq carrier) => Equiv m (Diagram carrier) where
+instance (Monad m, Eq carrier) => Equiv m (Shape carrier) where
   equiv = normalizedEq
 
 checkObject ::
@@ -357,13 +357,13 @@ checkFunctor ::
 checkFunctor checks (IdentityFunctor cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, checked, checked, IdentityFunctor checked)
-checkFunctor checks functor@(DiagonalFunctor diagram cat) = do
-  (higher, diagram') <- checkDiagram checks diagram
+checkFunctor checks functor@(DiagonalFunctor shape cat) = do
+  (higher, shape') <- checkShape checks shape
   (higher', cat') <- checkCategory checks cat
   catMatch <- equiv higher higher'
   unless catMatch $
     ExceptT.throwE $ FunctorAcrossHigherCategories functor
-  return (higher, DiagramCat diagram', cat', DiagonalFunctor diagram' cat')
+  return (higher, IndexCat shape', cat', DiagonalFunctor shape' cat')
 checkFunctor checks (ComposedFunctor f []) =
   checkFunctor checks f
 checkFunctor checks (ComposedFunctor f (g : gs)) = do
@@ -381,10 +381,10 @@ checkFunctor checks (ComposedFunctor f (g : gs)) = do
 checkFunctor _checks term@(ConstFunctor _obj) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking ConstFunctor"
-checkFunctor _checks term@(LimitFunctor _diagram _cat) =
+checkFunctor _checks term@(LimitFunctor _shape _cat) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking LimitFunctor"
-checkFunctor _checks term@(ColimitFunctor _diagram _cat) =
+checkFunctor _checks term@(ColimitFunctor _shape _cat) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking ColimitFunctor"
 checkFunctor _checks term@(FreeFunctor _obj) =
@@ -482,10 +482,10 @@ checkAdjunction checks (ComposedAdjunction adj (adj' : adjs)) = do
       ComposedFunctor right' [right],
       ComposedAdjunction checked [checked']
     )
-checkAdjunction _checks term@(LimitAdjunction _diagram _cat) =
+checkAdjunction _checks term@(LimitAdjunction _shape _cat) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "LimitAdjunction"
-checkAdjunction _checks term@(ColimitAdjunction _diagram _cat) =
+checkAdjunction _checks term@(ColimitAdjunction _shape _cat) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "ColimitAdjunction"
 checkAdjunction _checks term@(FreeForgetfulAlgebra _obj) =
