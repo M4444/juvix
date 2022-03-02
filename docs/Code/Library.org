@@ -860,12 +860,18 @@ keeps the extensions.
 ****** Typechecker <<Core/Categorial/Typechecker>>
 - _Relies on_
   + [[Errors]]
+  + [[TermLibrary]]
   + [[TermPrivate]]
   + [[Theory]]
   + [[Private/Utils]]
   + [[Library]]
   + [[Sexp/Types]]
 ****** Private
+******* TermLibrary
+- _Relies on_
+  + [[Errors]]
+  + [[TermPrivate]]
+  + [[Private/Utils]]
 ******* TermPrivate
 - _Relies on_
   + [[Library]]
