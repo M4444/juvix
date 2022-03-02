@@ -13,6 +13,7 @@ import qualified Control.Monad.Trans.Except as ExceptT
 import Juvix.Core.Categorial.Errors
   ( CheckError (..),
   )
+import Juvix.Core.Categorial.Private.TermLibrary ()
 import Juvix.Core.Categorial.Private.TermPrivate
   ( AbstractTerm (..),
     Adjunction (..),
@@ -29,7 +30,6 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Term (..),
   )
 import Juvix.Core.Categorial.Private.Theory ()
-import Juvix.Core.Categorial.Private.TermLibrary ()
 import qualified Juvix.Core.Categorial.Private.Utils ()
 import Juvix.Library
   ( Bool (..),
