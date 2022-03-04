@@ -83,7 +83,8 @@ runSexpPipelineEnv pipeline x =
             >>| workingEnv
 
     startingEnv
-    >>= Pipeline.Env.run pipeline
+    -- run up until the qualify Pass phase
+    >>= Pipeline.Env.run (Pipeline.Env.stopAt "QualifyPasses" >> pipeline)
       . Pipeline.emptyInput
   where
     inPackage name = Structure.InPackage name |> Sexp.serialize
