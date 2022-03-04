@@ -41,7 +41,6 @@ allParserTests =
       spacerSymb,
       vpsDashFrontFail,
       vpsDashMiddle,
-      reservedInfix,
       letwordFail,
       caseInfix,
       matchInfix,
@@ -55,7 +54,9 @@ allParserTests =
       fullEffect,
       ret,
       via_,
-      do_
+      do_,
+      alias,
+      include
     ]
 
 infixTests :: T.TestTree
@@ -1058,6 +1059,24 @@ caseInfix =
           |> AST.Func
           |> AST.Function
       ]
+
+include :: T.TestTree
+include =
+  shouldParseAs
+    "include"
+    Parser.parse
+    "include Foo.Bar"
+    $ AST.NoHeader
+      [AST.Include (AST.Inc ("Foo" :| ["Bar"]))]
+
+alias :: T.TestTree
+alias =
+  shouldParseAs
+    "alias"
+    Parser.parse
+    "alias F = Foo.Bar"
+    $ AST.NoHeader
+      [AST.Alias (AST.Ali ("F" :| []) ("Foo" :| ["Bar"]))]
 
 caseOfWords :: T.TestTree
 caseOfWords =
