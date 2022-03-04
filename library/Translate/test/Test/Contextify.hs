@@ -1,6 +1,7 @@
 module Test.Contextify (top) where
 
 import Control.Lens as Lens hiding ((|>))
+import qualified GHC.IO.Encoding.Iconv as Context
 import qualified Juvix.BerlinPipeline.Feedback as Feedback
 import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
@@ -140,9 +141,10 @@ lookupResolution =
         t <- contextualizeFoo "type foo = {x : int, y : int}"
         Nothing T.@=? unwrapLookup ":record-d" t,
       T.testCase "lookup of Includes works!" $ do
-        Right ctx <- contextualizeInclude
-        True T.@=? isJust (ctx Context.!? "Bar.x")
-        True T.@=? isJust (ctx Context.!? "Foo.x")
+        ctx <- contextualizeInclude
+        let Just newctx = Context.inNameSpace "Bar" ctx
+        True T.@=? isJust (newctx Context.!? "Bar.x")
+        True T.@=? isJust (newctx Context.!? "Foo.x")
     ]
 
 extractErr cin =

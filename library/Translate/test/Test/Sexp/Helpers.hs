@@ -52,25 +52,21 @@ contextualizeFooEnv byte =
         \ let a = 3 \
         \ let x = 2 "
 
-contextualizeInclude ::
-  IO (Either Contextify.ResolveErr Context.T)
-contextualizeInclude =
-  Contextify.op
-    ( ( "A",
-        parseDesugarSexp
-          "let x = 2 "
-      )
-        :| [ ( "Foo",
-               parseDesugarSexp
-                 "include TopLevel.A"
-             ),
-             ( "Bar",
-               parseDesugarSexp
-                 "include TopLevel.Foo \
-                 \ let fi = x"
-             )
-           ]
-    )
+contextualizeInclude :: IO Context.T
+contextualizeInclude = do
+  sexpA <- parseDesugarSexpWithname "let x = 2 " "A"
+  sexpFoo <- parseDesugarSexpWithname "include TopLevel.A" "Foo"
+  sexpBar <-
+    parseDesugarSexpWithname
+      "include TopLevel.Foo \
+      \ let fi = x"
+      "Bar"
+  [ ("Toplevel.A", sexpA),
+    ("Toplevel.Foo", sexpFoo),
+    ("Toplevel.Bar", sexpBar)
+    ]
+    |> runSexpPipelineEnv BerlinPasses.eval
+    >>| view (Pipeline.languageData . Pipeline.context)
 
 contextualizeFooAmbi ::
   ByteString -> IO Context.T
@@ -92,6 +88,9 @@ contextualizeFooAmbiEnv byte =
 parseDesugarSexp :: ByteString -> IO [Sexp.T]
 parseDesugarSexp = desugarLisp . parsedSexp
 
+parseDesugarSexpWithname :: ByteString -> NameSymbol.T -> IO [Sexp.T]
+parseDesugarSexpWithname bs name = parsedSexp bs |> (`desugarLispWithName` name)
+
 parsedSexp :: ByteString -> [Sexp.T]
 parsedSexp xs = ignoreHeader (Parser.parse xs) >>| TopLevel.transTopLevel
 
@@ -99,9 +98,17 @@ ignoreHeader :: Either a (Parsing.Header topLevel) -> [topLevel]
 ignoreHeader (Right (Parsing.NoHeader xs)) = xs
 ignoreHeader _ = error "not no header"
 
+desugarLispWithName :: [Sexp.T] -> NameSymbol.T -> IO [Sexp.T]
+desugarLispWithName xs name =
+  runPipelineToStep "Context.initContext" [(name, xs)]
+    >>| view Pipeline.currentExp
+    >>| sexps
+  where
+    sexps xs = [s | (Pipeline.Sexp s) <- xs]
+
 desugarLisp :: [Sexp.T] -> IO [Sexp.T]
 desugarLisp xs =
-  runPipelineToStep "Context.initContext" [("Juvix-User", xs)]
+  runPipelineToStep "Context.initContext" [("TopLevel.Juvix-User", xs)]
     >>| view Pipeline.currentExp
     >>| sexps
   where

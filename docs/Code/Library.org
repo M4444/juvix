@@ -443,6 +443,17 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Untyped]]
   + [[Library]]
   + [[Library/Usage]]
+** Plonk
+*** src
+**** Juvix
+***** Backends
+****** Plonk
+******* Circuit
+** llvm
+*** src
+**** Juvix
+***** Backends
+****** LLVM
 * BerlinPipeline
 ** Setup <<BerlinPipeline/Setup>>
 ** src
@@ -1123,6 +1134,14 @@ Tests that weak works as expected
   + [[Evaluator]]
   + [[IR/Types]]
   + [[Library]]
+* EasyPipeline
+** src
+* Frontend
+** src
+*** Juvix
+**** Frontend
+***** Types
+* HTTP
 * Parsing
 ** Setup <<Parsing/Setup>>
 ** src
@@ -1472,6 +1491,7 @@ would be a shame if the `a` was applied to `List a`!
 * Playground
 ** Easy
 *** Setup <<Easy/Setup>>
+*** juvix
 *** src
 **** Easy
 The easy module serves as the stop shop for getting anywhere in the
@@ -1543,6 +1563,9 @@ with any stage of the compiler while modifying the source code.
   + [[Fetch]]
 ** HTTP
 *** Setup <<HTTP/Setup>>
+*** compiler-debugger
+**** public
+**** src
 *** src
 **** Main <<src/Main>>
 - _Relies on_
@@ -1674,6 +1697,40 @@ ending in an @InfixNoMore@
   + [[Library]]
   + [[LineNum]]
   + [[NameSymbol]]
+***** Pretty
+****** Base <<Pretty/Base>>
+This module implements a pretty printer for S-expressions using the
+  prettyprinter library.
+__Examples:__
+@
+import qualified Juvix.Sexp as Sexp
+import qualified Juvix.Sexp.Pretty.Base as Sexp
+import Prettyprinter
+import Prettyprinter.Util (putDocW)
+mkAtom n = Sexp.Atom $ Sexp.N n Nothing
+mkCons = foldr Sexp.Cons
+mkList = mkCons Sexp.Nil
+-- A basic list
+ppSexp $ mkList [mkAtom 1, mkAtom 2, mkAtom 3]
+-- > (1 2 3)
+-- A basic cons
+ppSexp $ mkCons (mkAtom 3) [mkAtom 1, mkAtom 2]
+-- > (1 2 . 3)
+-- Nested list
+ppSexp $ mkList [mkAtom 1, mkList [mkAtom 2, mkAtom 3], mkAtom 4]
+-- > (1 (2 3) 4)
+-- An example showing aligning and wrapping (using an artificial width)
+putDocW 5 $ ppSexp $ mkList [mkAtom n | n <- [0..4]]
+-- >
+-- (0 1
+--    2
+--    3
+--    4
+@
+- _Relies on_
+  + [[Library]]
+  + [[NameSymbol]]
+  + [[Juvix/Sexp]]
 ***** Structure
 - _Relies on_
   + [[Library]]
@@ -1716,7 +1773,6 @@ _TODO_
   + [[Library]]
   + [[NameSymbol]]
   + [[Juvix/Sexp]]
-  + [[Structure]]
   + [[Structure/Helpers]]
 ****** Helpers <<Structure/Helpers>>
 - _Relies on_
@@ -2116,6 +2172,7 @@ TODO ∷ determine what has changed in the rebasing of this algo
   + [[ToContext/Sexp]]
   + [[ToContext/Types]]
   + [[Library]]
+  + [[NameSymbol]]
   + [[Juvix/Sexp]]
 ***** Binders <<Juvix/Contextify/Binders>>
 @Juvix.Contextify.Binders@ covers matching binders and the users
@@ -2255,6 +2312,10 @@ done with no extra information needed. Thus we export the following passes
   + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
+**** ToCore
+***** FromFrontend
+****** Transform
+***** Types
 **** Translate <<Juvix/Translate>>
 - _Relies on_
   + [[Juvix/Contextify]]
