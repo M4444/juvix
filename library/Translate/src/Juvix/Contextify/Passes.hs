@@ -9,16 +9,21 @@ module Juvix.Contextify.Passes
     infixConversion,
     primiveOrSymbol,
     figureRecord,
+    qualifyPass
   )
 where
 
 import Control.Lens hiding (op, (|>))
+import qualified Juvix.BerlinPipeline.Meta as Meta
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
 import qualified Juvix.Context as Context
+import qualified Juvix.BerlinPipeline.Step as Step
+import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.Context.NameSpace as NameSpace
 import qualified Juvix.Context.Traversal as Context
 import qualified Juvix.Contextify.Binders as Bind
+import qualified Juvix.BerlinPasses.Environment as Berlin.Env
 import qualified Juvix.Contextify.Environment as Env
 import qualified Juvix.Contextify.InfixPrecedence.ShuntYard as Shunt
 import Juvix.Library
@@ -31,6 +36,8 @@ import Juvix.Sexp.Structure.Lens
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
 import qualified StmContainers.Map as STM
+import qualified Juvix.Library.Trace as Trace
+import Juvix.BerlinPipeline.Lens
 
 type ExpressionIO m = (Env.ErrS m, Env.HasClosure m, MonadIO m)
 
@@ -101,6 +108,37 @@ atomResolution context (atom@Sexp.A {atomName = name}) = do
         Just _ -> pure (Sexp.Atom atom)
 atomResolution _ s = pure (Sexp.Atom s)
 
+qualifyPass :: Step.Named
+qualifyPass =
+  (Trace.withScope "Context.full-symbol-qualifcation" [] . Automation.simplify qualificaiton)
+    |> Automation.runSimplifiedPass
+    |> Step.T
+    |> Step.namePass "Context.full-symbol-qualifcation"
+
+qualificaiton :: Automation.SimplifiedPassArgument -> Berlin.Env.MinimalMIO Automation.Job
+qualificaiton simplify = do
+  Trace.withScope "Context.qualifcation" [show (simplify ^. current)] $ do
+    qualTransform simplify
+      >>| (`Automation.ProcessNoEnv` [])
+      >>| Automation.ProcessJob
+
+
+qualTransform :: (MonadIO m, Meta.HasMeta m) => Automation.SimplifiedPassArgument -> m Sexp.T
+qualTransform simplified = do
+  Trace.withScope "Context.qual" [show (simplified ^. current)] $
+    Sexp.mapOnAtoms (simplified ^. current) f
+      |> pure
+    where
+      f atom@Sexp.A {atomName = name}  _ =
+        Nothing
+          |> Sexp.A (lookupTrueName (simplified ^. context) name)
+          |> Sexp.Atom
+          |> Sexp.addMetaToCar atom
+      f atom _ = atom |> Sexp.Atom
+
+lookupTrueName :: Env.T -> NonEmpty Symbol -> NonEmpty Symbol
+lookupTrueName ctx s =
+  fromMaybe s (Context.trueNameofSymbol ctx s)
 --------------------------------------------------------------------------------
 -- Infix Form Transformation
 --------------------------------------------------------------------------------

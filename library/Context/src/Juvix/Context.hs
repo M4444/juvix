@@ -51,6 +51,7 @@ module Juvix.Context
     addTopName,
     removeTopName,
     qualifySymbol,
+    trueNameofSymbol,
 
     -- * Table Operations
     Table (..),
@@ -792,3 +793,8 @@ qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbol _ Outside = addTopName
 qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
 qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
+
+
+trueNameofSymbol :: T -> NameSymbol.T -> Maybe NameSymbol.T
+trueNameofSymbol ctx n =
+  fmap (^. trueName) (ctx !? n)
