@@ -19,6 +19,7 @@ import Juvix.Core.Categorial.Private.TermPrivate
     Adjunction (..),
     Category (..),
     ConcreteTerm,
+    Diagram,
     Functor' (..),
     HigherCategory (..),
     Keyword (..),
@@ -167,12 +168,6 @@ checkCategory checks (RefinedADTCat higher) = do
 checkCategory checks (HigherOrderRefinedADTCat higher) = do
   (higher', cat') <- checkHigherCategory checks higher
   return (higher', HigherOrderRefinedADTCat cat')
-checkCategory checks (ProductCat cat cat') = do
-  (higher, checked) <- checkCategory checks cat
-  (higher', checked') <- checkCategory checks cat'
-  catMatch <- equiv higher higher'
-  unless catMatch $ ExceptT.throwE $ HigherCategoryMismatch cat cat'
-  return (higher, ProductCat checked checked')
 checkCategory checks (IndexCat shape) = do
   (higher, checked) <- checkShape checks shape
   return (higher, IndexCat checked)
@@ -185,15 +180,36 @@ checkCategory checks (SliceCat object) = do
 checkCategory checks (CosliceCat object) = do
   (higher, _cat, checked) <- checkObject checks object
   return (higher, CosliceCat checked)
-checkCategory checks (FunctorCat cat cat') = do
+checkCategory checks (ProductCat cat cat') =
+  checkCategoryPair checks ProductCat cat cat'
+checkCategory checks (FunctorCat cat cat') =
+  checkCategoryPair checks FunctorCat cat cat'
+checkCategory _checks term@(AdjunctionCat _adj) =
+  ExceptT.throwE $
+    CheckUnimplemented (CategoryTerm term) "checking adjunction category"
+
+checkCategoryPair ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  ( Category checkedCarrier ->
+    Category checkedCarrier ->
+    Category checkedCarrier
+  ) ->
+  Category uncheckedCarrier ->
+  Category uncheckedCarrier ->
+  CheckResultT
+    m
+    (HigherCategory checkedCarrier, Category checkedCarrier)
+    uncheckedCarrier
+checkCategoryPair checks combine cat cat' = do
   (higher, checked) <- checkCategory checks cat
   (higher', checked') <- checkCategory checks cat'
   catMatch <- equiv higher higher'
   unless catMatch $ ExceptT.throwE $ HigherCategoryMismatch cat cat'
-  return (higher, FunctorCat checked checked')
-checkCategory _checks term@(AdjunctionCat _adj) =
-  ExceptT.throwE $
-    CheckUnimplemented (CategoryTerm term) "checking adjunction category"
+  return (higher, combine checked checked')
 
 instance (Monad m, Eq carrier) => Normalize m (Category carrier) where
   normalize = return
@@ -337,6 +353,25 @@ instance (Monad m, Eq carrier) => Normalize m (Morphism carrier) where
 instance (Monad m, Eq carrier) => Equiv m (Morphism carrier) where
   equiv = normalizedEq
 
+checkDiagram ::
+  ( Monad m,
+    MinimalInstanceAlgebra uncheckedCarrier,
+    MinimalInstanceAlgebra checkedCarrier
+  ) =>
+  AbstractChecks m uncheckedCarrier checkedCarrier ->
+  Diagram uncheckedCarrier ->
+  CheckResultT
+    m
+    ( HigherCategory checkedCarrier,
+      Category checkedCarrier,
+      Category checkedCarrier,
+      Diagram checkedCarrier
+    )
+    uncheckedCarrier
+checkDiagram _checks term =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm $ FunctorDiagram term) "checking diagram"
+
 -- | Returns the functor signature (its domain and codomain categories)
 -- | along with the checked version of the functor.
 checkFunctor ::
@@ -405,6 +440,9 @@ checkFunctor _checks term@(CurryFunctor _obj) =
 checkFunctor _checks term@(UncurryFunctor _obj) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking UncurryFunctor"
+checkFunctor checks (FunctorDiagram diagram) = do
+  (higher, checked, checked', diagram') <- checkDiagram checks diagram
+  return (higher, checked, checked', FunctorDiagram diagram')
 checkFunctor _checks term@(BaseChangeFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking BaseChangeFunctor"

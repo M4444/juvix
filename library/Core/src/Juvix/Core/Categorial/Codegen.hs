@@ -66,7 +66,7 @@ generateMorphism cf (ComposedMorphism f (g : gs)) = do
   f' <- generateMorphism cf f
   gs' <- generateMorphism cf (ComposedMorphism g gs)
   Trans.lift $ genCompose cf f' gs'
-generateMorphism _cf term@(FMapMorphism _functor _obj) = do
+generateMorphism _cf term@(FMapMorphism _functor _obj) =
   ExceptT.throwE $ CodegenUnimplemented (MorphismTerm term) "FMapMorphism"
 generateMorphism _cf morphism@(HigherMorphism _) =
   ExceptT.throwE $ CodegenErased $ MorphismTerm morphism
