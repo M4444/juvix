@@ -50,6 +50,7 @@ module Juvix.Context
     -- * Dealing with Top Level Naming
     addTopName,
     removeTopName,
+    qualifySymbolInternal,
     qualifySymbol,
     trueNameofSymbol,
 
@@ -264,7 +265,7 @@ tryPathLookup determineTableForFirstTask canGlobalLookup nameSymb t = do
       ---------------------
       nameSpace = nameFromTable table
       currName = t ^. _currentName
-      fullyQualifiedName = qualifySymbol t nameSpace newNameSymb
+      fullyQualifiedName = qualifySymbolInternal t nameSpace newNameSymb
       form =
         case table of
           Global _ table
@@ -790,9 +791,15 @@ currentRecord = _currentNameSpace . record
 --
 -- Thus we get TopLevel.Foo.Bar.x and not Toplevel.Baz.Chaz.x
 qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
-qualifySymbol _ Outside = addTopName
-qualifySymbol t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
-qualifySymbol t Public = (addTopName (t ^. _currentName) <>)
+qualifySymbol t namespace symbol =
+  let (_, newNameSymb) = determineTableForFirstLookup t symbol
+  in qualifySymbolInternal t namespace newNameSymb
+
+
+qualifySymbolInternal :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
+qualifySymbolInternal _ Outside = addTopName
+qualifySymbolInternal t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
+qualifySymbolInternal t Public = (addTopName (t ^. _currentName) <>)
 
 
 trueNameofSymbol :: T -> NameSymbol.T -> Maybe NameSymbol.T
