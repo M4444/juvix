@@ -52,6 +52,26 @@ contextualizeFooEnv byte =
         \ let a = 3 \
         \ let x = 2 "
 
+contextualizeInclude ::
+  IO (Either Contextify.ResolveErr Context.T)
+contextualizeInclude =
+  Contextify.op
+    ( ( "A",
+        parseDesugarSexp
+          "let x = 2 "
+      )
+        :| [("Foo",
+             parseDesugarSexp
+               "include TopLevel.A"
+            ),
+            ("Bar",
+             parseDesugarSexp
+               "include TopLevel.Foo \
+               \ let fi = x"
+            )]
+    )
+
+
 contextualizeFooAmbi ::
   ByteString -> IO Context.T
 contextualizeFooAmbi byte =

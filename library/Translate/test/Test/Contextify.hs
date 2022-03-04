@@ -138,7 +138,11 @@ lookupResolution =
         Just expected T.@=? unwrapLookup "foo" t,
       T.testCase "records don't have constructors added as sum con" $ do
         t <- contextualizeFoo "type foo = {x : int, y : int}"
-        Nothing T.@=? unwrapLookup ":record-d" t
+        Nothing T.@=? unwrapLookup ":record-d" t,
+      T.testCase "lookup of Includes works!" $ do
+        Right ctx <- contextualizeInclude
+        True T.@=? isJust (ctx Context.!? "Bar.x")
+        True T.@=? isJust (ctx Context.!? "Foo.x")
     ]
 
 extractErr cin =
