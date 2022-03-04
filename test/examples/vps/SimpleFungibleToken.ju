@@ -1,0 +1,57 @@
+-- TODO: Include proofs of constant supply, ownership, fungibility
+
+-- Pairs
+-- Records lookups
+-- Core needs a notion of IO
+-- extern keyword
+mod SimpleFungibleToken where
+
+open Prelude
+open LLVM.Data.Int
+open LLVM.Data.Bool
+open LLVM.Data.String
+open LLVM.Data.List
+
+sig address : ty
+let address = string
+
+sig key : ty 
+let key = string
+
+sig amount : ty 
+let amount = int
+
+sig read-pre : key -> option amount
+let read-pre = extern "read_pre"
+
+sig read-post : key -> option amount
+let read-post = extern "read_post"
+
+sig is-balance-key : key -> option 
+let is-balance-key = extern "is_balance_key"
+
+sig check-vp : list address -> key -> address -> int -> pair int bool
+let check-vp verifiers key owner change = 
+    let pre = unwrap (read-pre key) in 
+    let post = unwrap (read-post key) in
+    let this-change = post.change Int.- pre.change in -- TODO: Requires Records lookup
+    let new-change = change Int.+ this-change in
+    if  | this-change Int.< 0 = pair new-change (elem owner verifiers)
+        | else = pair new-change true
+
+sig check-keys : list address -> tuple int bool -> key -> pair int bool
+let check-keys verifiers tup key =
+    let change = tup.first in
+    let is-success = tup.second in
+    if  | is-success = case is-balance-key token key of 
+            | None -> pair 0 false
+            | Just owner -> check-vp verifiers key owner change
+        | else = pair 0 false
+
+sig vp : address -> list key -> list address -> bool
+let vp token keys-changed verifiers = 
+    let tup = foldl (check-keys verifiers) (pair 0 false) keys-changed in
+    let change = tup.first in
+    let all-checked = tup.second in
+    and (change Int.== 0) all-checked
+

@@ -1,34 +1,35 @@
 mod StringsWithClosures where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
+open LLVM.Data.String
 
-sig llvm-litint : int8
+sig llvm-litint : Int8.int8
 let llvm-litint = %LLVM.litint
 
 -- Typecheck something of "int8" type.
-sig test-int8 : int8
+sig test-int8 : Int8.int8
 let test-int8 = 42
 
 -- Typecheck something of "int16" type.
-sig test-int16 : int16
+sig test-int16 : Int16.int16
 let test-int16 = 48
 
 -- Typecheck the "litint" value.
-sig test-litint-add : int8
-let test-litint-add = Int.add llvm-litint 43
+sig test-litint-add : Int8.int8
+let test-litint-add = add llvm-litint 43
 
 -- Typecheck the "add" function.
-sig test-add : int8 -> int8
-let test-add = Int.add 44
+sig test-add : Int8.int8 -> Int8.int8
+let test-add = add 44
 
 -- Typecheck the "sub" function.
-sig test-sub : int8 -> int8
-let test-sub = Int.sub 46
+sig test-sub : Int8.int8 -> Int8.int8
+let test-sub = sub 46
 
 -- Typecheck the "mul" function.
-sig test-mul : int8 -> int8
-let test-mul = Int.mul 50
+sig test-mul : Int8.int8 -> Int8.int8
+let test-mul = mul 50
 
 -- Test "hello world".
 sig hello-world : string

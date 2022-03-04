@@ -1,7 +1,7 @@
 mod IdentityUnit where
 
 open Prelude
-open Michelson
+open Michelson.Prelude
 
 sig make-pair : list operation -> unit-t -> pair (list operation) unit-t
 let make-pair = %Michelson.pair

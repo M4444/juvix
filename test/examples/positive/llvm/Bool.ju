@@ -1,11 +1,8 @@
 mod Help where
 
 open Prelude
-open LLVM
-
-type bool : ty =
-  | True
-  | False
+open LLVM.Data.Bool
+open LLVM.Data.String
 
 sig is-false : bool -> bool
 let is-false True  = False

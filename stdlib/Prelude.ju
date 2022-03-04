@@ -27,6 +27,7 @@ let cat-coproduct-intro-left = %Builtin.CatCoproductIntroLeft
 let cat-coproduct-intro-right = %Builtin.CatCoproductIntroRight
 let cat-coproduct-elim = %Builtin.CatCoproductElim
 
+
 sig id : (a : ty) -> a -> a
 let id _ x = x
 

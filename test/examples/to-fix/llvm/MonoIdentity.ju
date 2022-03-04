@@ -3,7 +3,7 @@
 mod MonoIdentity where
 
 open Prelude
-open Prelude.LLVM
+open LLVM.Data.Int
 
 sig mono-id : int -> int
 let mono-id x = x

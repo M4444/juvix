@@ -1,7 +1,7 @@
 mod HelloWorld where
 
 open Prelude
-open LLVM
+open LLVM.Data.String
 
 sig main : string
 let main = "hello-world"

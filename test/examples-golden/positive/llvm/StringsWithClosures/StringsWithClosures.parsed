@@ -7,14 +7,26 @@ Right
             )
         , ModuleOpen
             ( Open
-                ( "LLVM" :| [] )
+                ( "LLVM" :|
+                    [ "Data"
+                    , "Int"
+                    ]
+                )
+            )
+        , ModuleOpen
+            ( Open
+                ( "LLVM" :|
+                    [ "Data"
+                    , "String"
+                    ]
+                )
             )
         , Signature
             ( Sig
                 { signatureName = "llvm-litint"
                 , signatureUsage = Nothing
                 , signatureArrowType = Name
-                    ( "int8" :| [] )
+                    ( "Int8" :| [ "int8" ] )
                 , signatureConstraints = []
                 }
             )
@@ -37,7 +49,7 @@ Right
                 { signatureName = "test-int8"
                 , signatureUsage = Nothing
                 , signatureArrowType = Name
-                    ( "int8" :| [] )
+                    ( "Int8" :| [ "int8" ] )
                 , signatureConstraints = []
                 }
             )
@@ -60,7 +72,7 @@ Right
                 { signatureName = "test-int16"
                 , signatureUsage = Nothing
                 , signatureArrowType = Name
-                    ( "int16" :| [] )
+                    ( "Int16" :| [ "int16" ] )
                 , signatureConstraints = []
                 }
             )
@@ -83,7 +95,7 @@ Right
                 { signatureName = "test-litint-add"
                 , signatureUsage = Nothing
                 , signatureArrowType = Name
-                    ( "int8" :| [] )
+                    ( "Int8" :| [ "int8" ] )
                 , signatureConstraints = []
                 }
             )
@@ -96,7 +108,7 @@ Right
                         ( Application
                             ( App
                                 { applicationName = Name
-                                    ( "Int" :| [ "add" ] )
+                                    ( "add" :| [] )
                                 , applicationArgs = Name
                                     ( "llvm-litint" :| [] ) :|
                                     [ Constant
@@ -117,10 +129,10 @@ Right
                 , signatureArrowType = Infix
                     ( Inf
                         { infixLeft = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         , infixOp = "->" :| []
                         , infixRight = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         }
                     )
                 , signatureConstraints = []
@@ -135,7 +147,7 @@ Right
                         ( Application
                             ( App
                                 { applicationName = Name
-                                    ( "Int" :| [ "add" ] )
+                                    ( "add" :| [] )
                                 , applicationArgs = Constant
                                     ( Number
                                         ( Integer' 44 )
@@ -153,10 +165,10 @@ Right
                 , signatureArrowType = Infix
                     ( Inf
                         { infixLeft = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         , infixOp = "->" :| []
                         , infixRight = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         }
                     )
                 , signatureConstraints = []
@@ -171,7 +183,7 @@ Right
                         ( Application
                             ( App
                                 { applicationName = Name
-                                    ( "Int" :| [ "sub" ] )
+                                    ( "sub" :| [] )
                                 , applicationArgs = Constant
                                     ( Number
                                         ( Integer' 46 )
@@ -189,10 +201,10 @@ Right
                 , signatureArrowType = Infix
                     ( Inf
                         { infixLeft = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         , infixOp = "->" :| []
                         , infixRight = Name
-                            ( "int8" :| [] )
+                            ( "Int8" :| [ "int8" ] )
                         }
                     )
                 , signatureConstraints = []
@@ -207,7 +219,7 @@ Right
                         ( Application
                             ( App
                                 { applicationName = Name
-                                    ( "Int" :| [ "mul" ] )
+                                    ( "mul" :| [] )
                                 , applicationArgs = Constant
                                     ( Number
                                         ( Integer' 50 )

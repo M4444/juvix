@@ -24,7 +24,15 @@ instance Pipeline.HasBackend BLLVM where
   type Val BLLVM = Primitive.RawPrimVal
   type Err BLLVM = Primitive.CompilationError
 
-  stdlibs _ = ["LLVM.ju", "LLVM/Int.ju"]
+  stdlibs _ =
+    [ "LLVM/Data/Char.ju",
+      "LLVM/Data/Bool.ju",
+      "LLVM/Data/Maybe.ju",
+      "LLVM/Data/Int.ju",
+      "LLVM/Data/Int/Int8.ju",
+      "LLVM/Data/Int/Int16.ju",
+      "LLVM/Data/String.ju"
+    ]
 
   param _ = Parameterization.llvm
 

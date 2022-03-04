@@ -105,8 +105,8 @@ defMichelson =
     { prelude =
         -- TODO: Avoid relative paths
         [ "../../../stdlib/Prelude.ju",
-          "../../../stdlib/Michelson.ju",
-          "../../../stdlib/MichelsonAlias.ju"
+          "../../../stdlib/Michelson/Prelude.ju",
+          "../../../stdlib/Michelson/Alias.ju"
         ],
       param = Michelson.Param.michelson,
       typeAgainst = Michelson.Param.Set
@@ -119,8 +119,8 @@ defLLVM =
     { prelude =
         -- TODO: Avoid relative paths
         [ "../../../stdlib/Prelude.ju",
-          "../../../stdlib/LLVM.ju",
-          "../../../stdlib/LLVM/Int.ju"
+          "../../../stdlib/LLVM/Int.ju",
+          "../../../stdlib/LLVM/Bool.ju"
         ],
       param = LLVM.Param.llvm,
       typeAgainst = LLVM.Prim.Set

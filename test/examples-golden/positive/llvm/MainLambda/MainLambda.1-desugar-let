@@ -1,7 +1,7 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "LLVM" )
+    ( "open" "LLVM.Data.Int" )
 ,
     ( ":defsig" "main" ( ":infix" "->" "int" ( ":infix" "->" "int" "int" ) ) )
 ,

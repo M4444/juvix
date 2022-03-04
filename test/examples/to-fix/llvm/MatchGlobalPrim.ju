@@ -1,8 +1,7 @@
 mod MatchGlobalPrim where
 
 open Prelude
-open LLVM
-open Int
+open LLVM.Data.Int
 
 type functionTypeInConstructor :
   ty = FTIC_Left int | FTIC_Right int -> int

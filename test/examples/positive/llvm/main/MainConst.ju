@@ -2,7 +2,7 @@ mod MainConst where
 
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 sig main : int
 let main = 3

@@ -35,7 +35,7 @@ data Command
   = Version
   | Config
   | Interactive
-  | Parse FilePath Backend
+  | Parse FilePath
   | Typecheck FilePath Backend
   | Compile FilePath FilePath Backend
   | Init
@@ -83,7 +83,7 @@ stdLibOptions :: Parser Command
 stdLibOptions = pure StdLib
 
 parseOptions :: Parser Command
-parseOptions = Parse <$> inputFileOptions <*> backendOptions
+parseOptions = Parse <$> inputFileOptions
 
 typecheckOptions :: Parser Command
 typecheckOptions = Typecheck <$> inputFileOptions <*> backendOptions

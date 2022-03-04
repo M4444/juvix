@@ -1,29 +1,31 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "LLVM" )
+    ( "open" "LLVM.Data.Int" )
 ,
-    ( ":defsig-match" "llvm-litint" "int8"
+    ( "open" "LLVM.Data.String" )
+,
+    ( ":defsig-match" "llvm-litint" "Int8.int8"
         ( () ( ":primitive" "LLVM.litint" ) ) )
 ,
-    ( ":defsig-match" "test-int8" "int8" ( () 42 ) )
+    ( ":defsig-match" "test-int8" "Int8.int8" ( () 42 ) )
 ,
-    ( ":defsig-match" "test-int16" "int16" ( () 48 ) )
+    ( ":defsig-match" "test-int16" "Int16.int16" ( () 48 ) )
 ,
-    ( ":defsig-match" "test-litint-add" "int8"
-        ( () ( "Int.add" "llvm-litint" 43 ) ) )
+    ( ":defsig-match" "test-litint-add" "Int8.int8"
+        ( () ( "add" "llvm-litint" 43 ) ) )
 ,
     ( ":defsig-match" "test-add"
-        ( ":infix" "->" "int8" "int8" )
-        ( () ( "Int.add" 44 ) ) )
+        ( ":infix" "->" "Int8.int8" "Int8.int8" )
+        ( () ( "add" 44 ) ) )
 ,
     ( ":defsig-match" "test-sub"
-        ( ":infix" "->" "int8" "int8" )
-        ( () ( "Int.sub" 46 ) ) )
+        ( ":infix" "->" "Int8.int8" "Int8.int8" )
+        ( () ( "sub" 46 ) ) )
 ,
     ( ":defsig-match" "test-mul"
-        ( ":infix" "->" "int8" "int8" )
-        ( () ( "Int.mul" 50 ) ) )
+        ( ":infix" "->" "Int8.int8" "Int8.int8" )
+        ( () ( "mul" 50 ) ) )
 ,
     ( ":defsig-match" "hello-world" "string" ( () "Hello, world!" ) )
 ,

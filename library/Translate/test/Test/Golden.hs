@@ -171,10 +171,15 @@ findFileDependencies f = do
 
 stdlibs :: [FilePath]
 stdlibs =
-  [ "LLVM.ju",
-    "LLVM/Int.ju",
-    "MichelsonAlias.ju",
-    "Michelson.ju",
+  [ "LLVM/Data/Char.ju",
+    "LLVM/Data/Bool.ju",
+    "LLVM/Data/Maybe.ju",
+    "LLVM/Data/Int.ju",
+    "LLVM/Data/Int/Int8.ju",
+    "LLVM/Data/Int/Int16.ju",
+    "LLVM/Data/String.ju",
+    "Michelson/Alias.ju",
+    "Michelson/Prelude.ju",
     "Prelude.ju"
   ]
 

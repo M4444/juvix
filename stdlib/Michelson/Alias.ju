@@ -1,7 +1,7 @@
-mod Prelude.Michelson.Alias where
+mod Michelson.Alias where
 
 open Prelude
-open Prelude.Michelson
+open Michelson.Prelude
 
 declare infixl (+) 5
 sig (+) : nat -> nat -> nat

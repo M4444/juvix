@@ -1,8 +1,8 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "LLVM" )
+    ( "open" "LLVM.Data.Int" )
 ,
     ( ":defsig" "main" "int" )
 ,
-    ( ":defun" "main" () ( "Int.add" 4 6 ) ) ]
+    ( ":defun" "main" () ( "add" 4 6 ) ) ]

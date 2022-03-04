@@ -5,7 +5,7 @@ ShowMod
                 ( "main"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.string" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.String.string" ) ]
                     , infoDef = Term
                         ( ":lambda-case"
                             ( ()
@@ -29,7 +29,7 @@ ShowMod
                 ( "llvm-litint"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.int8" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.Int.Int8.int8" ) ]
                     , infoDef = Term
                         ( ":lambda-case"
                             ( () ( ":primitive" "LLVM.litint" ) ) ) } )
@@ -40,15 +40,15 @@ ShowMod
                         [
                             ( "type"
                             ,
-                                ( "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int8" "TopLevel.Prelude.LLVM.int8" ) ) ]
+                                ( "TopLevel.Prelude.->" "TopLevel.LLVM.Data.Int.Int8.int8" "TopLevel.LLVM.Data.Int.Int8.int8" ) ) ]
                     , infoDef = Term
                         ( ":lambda-case"
-                            ( () ( "TopLevel.Prelude.LLVM.Int.mul" 50 ) ) ) } )
+                            ( () ( "TopLevel.LLVM.Data.Int.mul" 50 ) ) ) } )
             ,
                 ( "test-int16"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.int16" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.Int.Int16.int16" ) ]
                     , infoDef = Term
                         ( ":lambda-case" ( () 48 ) ) } )
             ,
@@ -58,10 +58,10 @@ ShowMod
                         [
                             ( "type"
                             ,
-                                ( "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int8" "TopLevel.Prelude.LLVM.int8" ) ) ]
+                                ( "TopLevel.Prelude.->" "TopLevel.LLVM.Data.Int.Int8.int8" "TopLevel.LLVM.Data.Int.Int8.int8" ) ) ]
                     , infoDef = Term
                         ( ":lambda-case"
-                            ( () ( "TopLevel.Prelude.LLVM.Int.sub" 46 ) ) ) } )
+                            ( () ( "TopLevel.LLVM.Data.Int.sub" 46 ) ) ) } )
             ,
                 ( "test-add"
                 , Info
@@ -69,40 +69,40 @@ ShowMod
                         [
                             ( "type"
                             ,
-                                ( "TopLevel.Prelude.->" "TopLevel.Prelude.LLVM.int8" "TopLevel.Prelude.LLVM.int8" ) ) ]
+                                ( "TopLevel.Prelude.->" "TopLevel.LLVM.Data.Int.Int8.int8" "TopLevel.LLVM.Data.Int.Int8.int8" ) ) ]
                     , infoDef = Term
                         ( ":lambda-case"
-                            ( () ( "TopLevel.Prelude.LLVM.Int.add" 44 ) ) ) } )
+                            ( () ( "TopLevel.LLVM.Data.Int.add" 44 ) ) ) } )
             ,
                 ( "test-int8"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.int8" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.Int.Int8.int8" ) ]
                     , infoDef = Term
                         ( ":lambda-case" ( () 42 ) ) } )
             ,
                 ( "hello-again-world"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.string" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.String.string" ) ]
                     , infoDef = Term
                         ( ":lambda-case" ( () "Hello again, world!" ) ) } )
             ,
                 ( "hello-world"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.string" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.String.string" ) ]
                     , infoDef = Term
                         ( ":lambda-case" ( () "Hello, world!" ) ) } )
             ,
                 ( "test-litint-add"
                 , Info
                     { infoTable = fromList
-                        [ ( "type", "TopLevel.Prelude.LLVM.int8" ) ]
+                        [ ( "type", "TopLevel.LLVM.Data.Int.Int8.int8" ) ]
                     , infoDef = Term
                         ( ":lambda-case"
                             ( ()
-                                ( "TopLevel.Prelude.LLVM.Int.add" "llvm-litint" 43 ) ) ) } ) ]
+                                ( "TopLevel.LLVM.Data.Int.add" "llvm-litint" 43 ) ) ) } ) ]
         , private = fromList [] }
     , openList = []
     , qualifiedMap = fromList
@@ -127,21 +127,31 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "LLVM"
+            ( "+"
             , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
         ,
             ( "cat-product-elim-left"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "add"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
+        ,
             ( "id"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "int8"
+            ( "Int8"
             , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
         ,
             ( "dpair"
             , SymInfo
@@ -151,31 +161,55 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "int16"
+            ( "sub"
             , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
+        ,
+            ( "mul"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
         ,
             ( "cat-coproduct"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "Int16"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
+        ,
+            ( "*"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
+        ,
             ( "ty"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
+            ( "-"
+            , SymInfo
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "Int" ] } )
+        ,
             ( "string"
             , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
+                { used = NotUsed
+                , mod = "TopLevel" :|
+                    [ "LLVM", "Data", "String" ] } )
         ,
             ( "->"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
             ( "arr"
-            , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
-        ,
-            ( "Michelson"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
@@ -191,10 +225,6 @@ ShowMod
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
-            ( "Int"
-            , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude", "LLVM" ] } )
-        ,
             ( "cat-product-intro"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
@@ -203,4 +233,4 @@ ShowMod
             , SymInfo
                 { used = NotUsed
                 , mod = "TopLevel" :|
-                    [ "Prelude", "LLVM" ] } ) ] }
+                    [ "LLVM", "Data", "Int" ] } ) ] }

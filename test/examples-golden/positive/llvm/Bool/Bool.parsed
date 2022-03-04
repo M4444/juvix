@@ -7,31 +7,19 @@ Right
             )
         , ModuleOpen
             ( Open
-                ( "LLVM" :| [] )
+                ( "LLVM" :|
+                    [ "Data"
+                    , "Bool"
+                    ]
+                )
             )
-        , Type
-            ( Typ
-                { typeUsage = Nothing
-                , typeName' = "bool"
-                , typeArgs = []
-                , typeForm = Arrowed
-                    { dataArrow = Name
-                        ( "ty" :| [] )
-                    , dataAdt' = Sum
-                        ( S
-                            { sumConstructor = "True"
-                            , sumValue = Just
-                                ( ADTLike [] )
-                            } :|
-                            [ S
-                                { sumConstructor = "False"
-                                , sumValue = Just
-                                    ( ADTLike [] )
-                                }
-                            ]
-                        )
-                    }
-                }
+        , ModuleOpen
+            ( Open
+                ( "LLVM" :|
+                    [ "Data"
+                    , "String"
+                    ]
+                )
             )
         , Signature
             ( Sig

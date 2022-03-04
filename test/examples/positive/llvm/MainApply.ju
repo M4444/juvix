@@ -3,7 +3,7 @@
 mod MainApply where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 sig f : int -> int -> int
 let f x _ = x

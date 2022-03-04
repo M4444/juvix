@@ -47,8 +47,8 @@ patternVarTests =
       (_patMap, x) <-
         Easy.coreify
           "open Prelude\
-          \ open Michelson\
-          \ open Alias\
+          \ open Michelson.Prelude\
+          \ open Michelson.Alias\
           \ sig foo : int -> int -> int\
           \ let foo x y = x + y"
           Easy.defMichelson
@@ -57,7 +57,7 @@ patternVarTests =
       IR.Elim
         ( IR.App
             ( IR.App
-                (IR.Free (Core.Global "Prelude.Michelson.Alias.+"))
+                (IR.Free (Core.Global "Michelson.Alias.+"))
                 (IR.Elim (IR.Free (Core.Pattern 0)))
             )
             (IR.Elim (IR.Free (Core.Pattern 1)))

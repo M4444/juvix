@@ -1,7 +1,7 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "Michelson" )
+    ( "open" "Michelson.Prelude" )
 ,
     ( ":defsig" "+" ( ":infix" "->" "nat" ( ":infix" "->" "nat" "nat" ) ) )
 ,

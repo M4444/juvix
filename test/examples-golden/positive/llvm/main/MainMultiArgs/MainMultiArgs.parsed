@@ -7,11 +7,11 @@ Right
             )
         , ModuleOpen
             ( Open
-                ( "LLVM" :| [] )
-            )
-        , ModuleOpen
-            ( Open
-                ( "LLVM" :| [ "Int" ] )
+                ( "LLVM" :|
+                    [ "Data"
+                    , "Int"
+                    ]
+                )
             )
         , Signature
             ( Sig

@@ -1,7 +1,7 @@
 mod HigherOrder where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 sig higherorder : (int -> int) -> int
 let higherorder f = f 10

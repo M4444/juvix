@@ -3,7 +3,7 @@
 mod MainLambda where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 sig main : int -> int -> int
 let main = \x y -> y

@@ -25,7 +25,7 @@ import Version (infoVersionRepo, progNameVersionTag)
 run' :: Context -> Options -> Pipeline.Pipeline ()
 run' _ (Options cmd _) = do
   case cmd of
-    Parse fin backend -> runCmd fin backend Pipeline.parse
+    Parse fin -> runCmd fin (LLVM LLVM.BLLVM) Pipeline.parse
     Typecheck fin backend -> case backend of
       LLVM b -> g b
       Michelson b -> g b

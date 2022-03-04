@@ -7,7 +7,7 @@ Right
             )
         , ModuleOpen
             ( Open
-                ( "Michelson" :| [] )
+                ( "Michelson" :| [ "Prelude" ] )
             )
         , Signature
             ( Sig

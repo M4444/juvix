@@ -1,8 +1,7 @@
 mod FlatDatatypes where
 
 open Prelude
-open LLVM
-open Int
+open LLVM.Data.Int
 
 type pq : ty = | P int int | Q int int int
 
@@ -11,4 +10,4 @@ let patternMatch (P x y) = x + y
 let patternMatch (Q x y z) = x + y + z
 
 sig main : int 
-let main =  patternMatch (P 1 2)
+let main = patternMatch (P 1 2)

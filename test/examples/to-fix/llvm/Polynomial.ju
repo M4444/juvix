@@ -3,8 +3,7 @@
 mod Polynomial where
 
 open Prelude
-open LLVM
-open Int
+open LLVM.Data.Int
 
 sig main : int -> int -> bool
 let main x y = x ^ 3 == y 

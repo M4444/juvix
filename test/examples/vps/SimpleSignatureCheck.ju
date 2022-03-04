@@ -1,0 +1,41 @@
+-- TODO: Include proofs of constant supply, ownership, fungibility
+mod SimpleFungibleToken where
+
+open Prelude
+open LLVM.Data.String
+open LLVM.Data.String
+
+sig address : ty
+let address = string
+
+sig key : ty 
+let key = string
+
+type Tx {
+    code : vec int,
+    data : maybe (vec int),
+    timestamp : int
+}
+
+type SignedTxData {
+    signature : signature,
+    tx  : Tx
+}
+
+sig pk-key : address -> key
+let pk-key = extern "pk_key"
+
+sig storage-read : key -> key
+let storage-read = extern "storage_read"
+
+sig read-pk : address -> key
+let read-pk addr = 
+    let k = pk-key addr
+    in storage-read k
+
+-- Multi-signature account which requires `k` of `n` signers to accept a transaction
+sig vp : address -> SignedTxData -> bool
+let vp owner signed = 
+    let pk = read-pk owner in
+    extern(verify_tx_sig)(pk, signed.tx, signed.signature)
+

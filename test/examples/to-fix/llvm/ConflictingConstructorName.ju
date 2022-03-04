@@ -1,7 +1,7 @@
 mod ConflictingConstructorName where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 type atomExpParameterized a = Atom a
 

@@ -1,7 +1,7 @@
 mod HigherOrder where
 
 open Prelude
-open Michelson
+open Michelson.Prelude
 
 sig higher-order : (nat -> nat) -> nat
 let higher-order f = f 10

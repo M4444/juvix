@@ -1,7 +1,10 @@
-mod Prelude.LLVM.Int where
+mod LLVM.Data.Int where
 
 open Prelude
-open LLVM
+open LLVM.Data
+
+sig int : ty
+let int = Int8.int8
 
 sig add : int -> int -> int
 let add = %LLVM.add
@@ -23,3 +26,7 @@ let mul = %LLVM.mul
 sig (*) : int -> int -> int
 let (*) = %LLVM.mul
 declare infixl (*) 7
+
+-- sig (==) : int -> int -> bool
+-- let (==) = %LLVM.eq
+-- declare infixl (==) 4

@@ -1,9 +1,9 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "LLVM" )
+    ( "open" "LLVM.Data.Bool" )
 ,
-    ( "type" ( "bool" ":type" "ty" ) () ( "True" ) ( "False" ) )
+    ( "open" "LLVM.Data.String" )
 ,
     ( ":defsig-match" "is-false"
         ( ":infix" "->" "bool" "bool" )

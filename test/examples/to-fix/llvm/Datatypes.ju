@@ -1,11 +1,7 @@
 mod Datatypes where
 
 open Prelude
-open LLVM
-
-sig (+) : int -> int -> int
-let (+) = %LLVM.add
-declare infixl (+) 5
+open LLVM.Data.Int
 
 type verySimpleType = One int
 

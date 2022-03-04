@@ -1,0 +1,31 @@
+mod LLVM.Data.Int.Int16 where
+
+open Prelude
+
+sig int16 : ty
+let int16 = %LLVM.int16
+
+sig add : int16 -> int16 -> int16
+let add = %LLVM.add
+
+sig (+) : int16 -> int16 -> int16
+let (+) = %LLVM.add
+declare infixl (+) 5
+
+sig sub : int16 -> int16 -> int16
+let sub = %LLVM.sub
+
+sig (-) : int16 -> int16 -> int16
+let (-) = %LLVM.sub
+declare infixl (-) 5
+
+sig mul : int16 -> int16 -> int16
+let mul = %LLVM.mul
+
+sig (*) : int16 -> int16 -> int16
+let (*) = %LLVM.mul
+declare infixl (*) 7
+
+-- sig (==) : int16 -> int16 -> bool
+-- let (==) = %LLVM.eq
+-- declare infixl (==) 4

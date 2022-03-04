@@ -19,7 +19,10 @@ instance HasBackend BMichelson where
   type Val BMichelson = Param.RawPrimVal
   type Err BMichelson = Param.CompilationError
 
-  stdlibs _ = ["Michelson.ju", "MichelsonAlias.ju"]
+  stdlibs _ =
+    [ "Michelson/Prelude.ju",
+      "Michelson/Alias.ju"
+    ]
 
   param _ = Param.michelson
 

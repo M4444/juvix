@@ -1,8 +1,7 @@
 mod MainMultArgs where
 
 open Prelude
-open LLVM
-open LLVM.Int
+open LLVM.Data.Int
 
 sig main : int -> int -> int
 let main x y = x + y

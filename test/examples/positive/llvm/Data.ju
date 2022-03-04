@@ -1,7 +1,7 @@
 mod Data where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 type bar : ty =
   | P    int int
@@ -10,8 +10,8 @@ type bar : ty =
 declare infixl (::) 10
 
 sig pattern-match : bar -> int
-let pattern-match (P x y)  = x Int.+ y
-let pattern-match (x :: y) = x Int.+ y
+let pattern-match (P x y)  = x + y
+let pattern-match (x :: y) = x + y
 
 sig main : int
 let main =

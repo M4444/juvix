@@ -7,7 +7,11 @@ Right
             )
         , ModuleOpen
             ( Open
-                ( "LLVM" :| [] )
+                ( "LLVM" :|
+                    [ "Data"
+                    , "Int"
+                    ]
+                )
             )
         , Signature
             ( Sig
@@ -27,7 +31,7 @@ Right
                         ( Application
                             ( App
                                 { applicationName = Name
-                                    ( "Int" :| [ "add" ] )
+                                    ( "add" :| [] )
                                 , applicationArgs = Constant
                                     ( Number
                                         ( Integer' 4 )

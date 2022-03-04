@@ -65,19 +65,16 @@ org-gen:
 test:
 	$(STACK) test --fast --jobs=$(THREADS) --test-arguments "--hide-successes --ansi-tricks false"
 
-test-parser: build
-	$(STACK) exec juvix -- fetch-stdlibs
-	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % $(STACK) exec juvix -- parse % -b "michelson"
+test-parser: build update-local-stdlibs
+	find test/examples/positive/llvm -name "*.ju" | xargs -t -n 1 -I % $(STACK) exec juvix -- parse % 
 
 
-test-typecheck: build
-	$(STACK) exec juvix -- fetch-stdlibs
-	find test/examples/positive/michelson/demo -name "*.ju" | xargs -t -n 1 -I % $(STACK) exec juvix -- typecheck % -b "michelson"
+test-typecheck: build update-local-stdlibs
+	find test/examples/positive/llvm -name "*.ju" | xargs -t -n 1 -I % $(STACK) exec juvix -- typecheck % -b "llvm"
 
-test-compile: build
-	$(STACK) exec juvix -- fetch-stdlibs
-	find test/examples/positive/michelson/demo -name "*.ju" | xargs -n 1 -I % basename % .ju | xargs -t -n 1 -I % $(STACK) exec juvix -- compile test/examples/positive/michelson/demo/%.ju test/examples/positive/michelson/demo/%.tz -b "michelson"
-	rm test/examples/positive/michelson/demo/*.tz
+test-compile: build update-local-stdlibs
+	find test/examples/positive/llvm -maxdepth 1 -name "*.ju" | xargs -n 1 -I % basename % .ju | xargs -t -n 1 -I % $(STACK) exec juvix -- compile test/examples/positive/llvm/%.ju test/examples/positive/llvm/%.ll -b "llvm"
+	rm test/examples/positive/llvm/*.ll
 
 bench:
 	$(STACK) bench --benchmark-arguments="--output ./doc/Code/bench.html"

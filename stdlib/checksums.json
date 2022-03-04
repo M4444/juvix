@@ -1,7 +1,8 @@
 {
+    "Builtins.ju": "cf1c2690e78a9ef56f8e59010dd2e7158300adb30a6fa4876c9989746798bc25",
     "LLVM.ju": "2b9d874203833e846f3e1831bacc2d5476ff1491aa55c24b7d55cbe5c0ea2a48",
-    "LLVM/Int.ju": "eae2fd23538b63aa90143b766e675fd2a9d18471356d79cfe31a59876be18ff8",
-    "Michelson.ju": "472431ea598b4dfffe6a01fcee6ded1cddd8dc123295ae6a5c3ce6550a9188b9",
-    "MichelsonAlias.ju": "dc048d1684edfe6e490589635da38df17e1505fb815f939945d59dab836ffaea",
-    "Prelude.ju": "322a6c14a0a19fe0018396a07b25cc379e382b41903db3e5d2c2381f6b72a9dc"
+    "LLVM/LLVM.ju": "66d32313ab8144818f2b4fd8d0b0bd0f1a9765065ae110eb1fac80c1039fd4b3",
+    "Michelson/Alias.ju": "4673d269b37dbfa1b68d3b4e96b1f527ae7220c977646c52453dcba61c71dc09",
+    "Michelson/Prelude.ju": "8db41e0e3e8a13f67b58c13167c3575c9828649a47ce314d4e0c1ffe443f55c4",
+    "Prelude.ju": "642a29457dcf93a8e545f276eec3efcdee02b0f4732975cc691a9f849360f4e5"
 }

@@ -1,8 +1,7 @@
 mod PatternMatch where
 
 open Prelude
-open LLVM
-open Int
+open LLVM.Data.Int
 
 type sExpField = Atom int | SPair sExpField sExpField
 

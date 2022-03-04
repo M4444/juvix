@@ -1,0 +1,7 @@
+mod LLVM.Data.Char where
+
+open Prelude
+open LLVM.Data.Int
+
+sig char : ty
+let char = int

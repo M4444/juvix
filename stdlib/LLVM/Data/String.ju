@@ -1,0 +1,7 @@
+mod LLVM.Data.String where
+
+open Prelude
+
+sig string : ty
+let string = %LLVM.string
+

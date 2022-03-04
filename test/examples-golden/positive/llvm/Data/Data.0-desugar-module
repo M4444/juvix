@@ -1,7 +1,7 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "LLVM" )
+    ( "open" "LLVM.Data.Int" )
 ,
     ( "type"
         ( "bar" ":type" "ty" ) ()
@@ -12,13 +12,11 @@
 ,
     ( ":defsig" "pattern-match" ( ":infix" "->" "bar" "int" ) )
 ,
-    ( ":defun" "pattern-match"
-        ( ( "P" "x" "y" ) )
-        ( ":infix" "Int.+" "x" "y" ) )
+    ( ":defun" "pattern-match" ( ( "P" "x" "y" ) ) ( ":infix" "+" "x" "y" ) )
 ,
     ( ":defun" "pattern-match"
         ( ( ":infix" "::" "x" "y" ) )
-        ( ":infix" "Int.+" "x" "y" ) )
+        ( ":infix" "+" "x" "y" ) )
 ,
     ( ":defsig" "main" "int" )
 ,

@@ -3,7 +3,7 @@
 mod Identity where
 
 open Prelude
-open Prelude.LLVM
+open LLVM.Data.Int
 
 sig main : int
 let main = id 10
