@@ -31,6 +31,7 @@ dependencies:
   - llvm-hs-pretty
   - llvm-hs-pure >= 9.0 && < 9.1
   - pipeline
+  - berlin-pipeline
   - safe
   - standard-library
   - text

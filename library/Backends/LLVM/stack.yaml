@@ -3,6 +3,7 @@ resolver: lts-18.26
 packages:
 - .
 - ../../StandardLibrary
+- ../../BerlinPipeline
 - ../../Core
 - ../../Context
 - ../../Pipeline

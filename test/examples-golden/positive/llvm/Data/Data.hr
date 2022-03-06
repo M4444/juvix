@@ -1431,7 +1431,7 @@ fromList
                     { rawClauseTel = []
                     , rawClausePats =
                         [ PCon
-                            ( "P" :| [] )
+                            ( "Data" :| [ "P" ] )
                             [ PatternX
                                 ( "x" :| [] )
                             , PatternX
@@ -1467,7 +1467,7 @@ fromList
                         { rawClauseTel = []
                         , rawClausePats =
                             [ PCon
-                                ( "::" :| [] )
+                                ( "Data" :| [ "::" ] )
                                 [ PatternX
                                     ( "x" :| [] )
                                 , PatternX

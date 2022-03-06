@@ -1785,9 +1785,8 @@
                     { rawClauseTel = []
                     , rawClausePats =
                         [ PCon
-                            ( "TopLevel" :|
-                                [ "LLVM"
-                                , "Data"
+                            ( "LLVM" :|
+                                [ "Data"
                                 , "Bool"
                                 , "True"
                                 ]
@@ -1810,9 +1809,8 @@
                         { rawClauseTel = []
                         , rawClausePats =
                             [ PCon
-                                ( "TopLevel" :|
-                                    [ "LLVM"
-                                    , "Data"
+                                ( "LLVM" :|
+                                    [ "Data"
                                     , "Bool"
                                     , "False"
                                     ]

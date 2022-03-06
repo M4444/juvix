@@ -22,6 +22,7 @@ import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
 import Prelude (error)
+import qualified Juvix.Context as Context
 
 ---------------------
 -- Core Definition --
@@ -129,12 +130,14 @@ transformPat p@(asCon Sexp.:> con)
     throwFF $ PatternUnimplemented p
   | Just args <- Sexp.toList con,
     Just Sexp.A {atomName} <- Sexp.atomFromT asCon = do
-    modify @"closure" (Closure.insertGeneric (NameSymbol.toSymbol atomName))
-    HR.PCon atomName <$> traverse transformPat args
+    let atomWithoutTop = Context.removeTopName atomName
+    modify @"closure" (Closure.insertGeneric (NameSymbol.toSymbol atomWithoutTop))
+    HR.PCon atomWithoutTop <$> traverse transformPat args
 transformPat n
   | Just x <- Sexp.nameFromT n = do
-    modify @"closure" (Closure.insertGeneric (NameSymbol.toSymbol x))
-    pure $ HR.PVar x
+    let atomWithoutTop = Context.removeTopName x
+    modify @"closure" (Closure.insertGeneric (NameSymbol.toSymbol atomWithoutTop))
+    pure $ HR.PVar atomWithoutTop
   | Just n@Sexp.N {} <- Sexp.atomFromT n =
     HR.PPrim <$> getParamConstant n
   | otherwise =

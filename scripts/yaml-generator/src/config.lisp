@@ -433,7 +433,15 @@ common ones to include"
   (make-stack-yaml
    :name "Backends/LLVM"
    :path-to-other "../../"
-   :packages (list *standard-library* *core* *context* *pipeline* *parsing* *sexp* *translate* *data-structures*)
+   :packages (list *standard-library*
+                   *berlin-pipeline*
+                   *core*
+                   *context*
+                   *pipeline*
+                   *parsing*
+                   *sexp*
+                   *translate*
+                   *data-structures*)
    :extra-deps (list (make-general-dependencies *capability* *extensible* *prettiest*)
                      *llvm-hs-deps*
 

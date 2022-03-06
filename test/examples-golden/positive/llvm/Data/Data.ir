@@ -1508,7 +1508,7 @@
                     { rawClauseTel = []
                     , rawClausePats =
                         [ PCon
-                            ( "P" :| [] )
+                            ( "Data" :| [ "P" ] )
                             [ PVar 0 ()
                             , PVar 1 ()
                             ] ()
@@ -1544,7 +1544,7 @@
                         { rawClauseTel = []
                         , rawClausePats =
                             [ PCon
-                                ( "::" :| [] )
+                                ( "Data" :| [ "::" ] )
                                 [ PVar 2 ()
                                 , PVar 3 ()
                                 ] ()

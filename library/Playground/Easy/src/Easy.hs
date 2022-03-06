@@ -427,6 +427,22 @@ coreifyFile juvix options = do
 -- Coreify Examples
 ----------------------------------------
 
+contextifyP :: IO ()
+contextifyP = do
+  bool <- contextifyDesugar "type bar : ty = | P int int | (::) int int let foo (P 1 2) = 3" defLLVM
+  printModule "Juvix-User" bool
+
+coreifyP = do
+  bool <- coreify "open Prelude \
+                  \ type bar : ty = | P int int | (::) int int \
+                  \ sig foo : bar -> int \
+                  \ let foo (P a b) = 3" defLLVM
+  printCoreFunction (snd bool) defMichelson "bar"
+  printCoreFunction (snd bool) defMichelson "P"
+  printCoreFunction (snd bool) defMichelson "::"
+  printCoreFunction (snd bool) defMichelson "foo"
+  pure bool
+
 contextifyBool :: IO ()
 contextifyBool = do
   bool <- contextifyDesugar "type Bool a = True a" defLLVM
