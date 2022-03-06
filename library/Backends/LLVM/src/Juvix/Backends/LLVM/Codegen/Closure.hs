@@ -80,7 +80,7 @@ environmentPtr =
 -- We want a pointer of pointers to simulate an array of pointers
 environmentPtrDeref :: Type.Type
 environmentPtrDeref =
-  (Types.pointerOf Type.i8)
+  Types.pointerOf Type.i8
 
 --------------------------------------------------------------------------------
 -- Pointer Storage

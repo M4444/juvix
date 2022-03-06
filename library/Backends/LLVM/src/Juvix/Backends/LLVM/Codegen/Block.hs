@@ -79,6 +79,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     addType,
     defineFunction,
     defineFunctionVarArgs,
+    addGlobal,
 
     -- * Unique Name Generation
     generateUniqueName,
@@ -150,6 +151,7 @@ module Juvix.Backends.LLVM.Codegen.Block
     alloca,
     load,
     store,
+    (<--),
     mapStore,
 
     -- ** Casting Operations
@@ -297,6 +299,16 @@ addDefn d = modify @"moduleDefinitions" (<> [d])
 addType :: HasState "moduleDefinitions" [Definition] m => Name -> Type -> m ()
 addType name typ =
   addDefn (TypeDefinition name (Just typ))
+
+addGlobal :: HasState "moduleDefinitions" [Definition] m => Name -> Type -> m ()
+addGlobal name typ = do
+  addDefn $
+    GlobalDefinition $
+      globalVariableDefaults
+        { Global.name = name,
+          Global.isConstant = False,
+          Global.type' = typ
+        }
 
 defineGen ::
   HasState "moduleDefinitions" [Definition] m =>
@@ -1251,6 +1263,11 @@ load typ ptr = instr typ $ Load False ptr Nothing 0 []
 -- See @load@ for an example call.
 store :: Instruct m => Operand -> Operand -> m ()
 store ptr val = unnminstr $ Store False ptr val Nothing 0 []
+
+
+-- | @<--@ is the same as store
+(<--) :: Instruct m => Operand -> Operand -> m ()
+(<--) ptr val = store ptr val
 
 -- | Performs a list of @store@ operations.
 mapStore :: Instruct m => [Operand] -> [Operand] -> m ()
