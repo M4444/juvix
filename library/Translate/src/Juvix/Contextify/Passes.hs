@@ -123,18 +123,28 @@ qualificaiton simplify = do
       >>| Automation.ProcessJob
 
 
-qualTransform :: (MonadIO m, Meta.HasMeta m) => Automation.SimplifiedPassArgument -> m Sexp.T
+qualTransform ::
+  (MonadIO m, Meta.HasMeta m, Env.HasClosure m) => Automation.SimplifiedPassArgument -> m Sexp.T
 qualTransform simplified = do
   Trace.withScope "Context.qual" [show (simplified ^. current)] $
-    Sexp.mapOnAtoms (simplified ^. current) f
-      |> pure
+    Sexp.withSerialization @(Bind.BinderPlus ()) (simplified ^. current)
+      $ \sexp ->
+          Sexp.traverseOnAtoms sexp f
     where
-      f atom@Sexp.A {atomName = name}  _ =
-        Nothing
-          |> Sexp.A (lookupTrueName (simplified ^. context) name)
-          |> Sexp.Atom
-          |> Sexp.addMetaToCar atom
-      f atom _ = atom |> Sexp.Atom
+      f atom rec' = do
+        res <- Env.handleAtom (simplified ^. context) atom rec'
+        case res of
+          atom@Sexp.A {atomName = name} -> do
+              closure <- ask @"closure"
+              let symbolName = NameSymbol.hd name
+              case Closure.lookup symbolName closure of
+                Just __ -> pure (Sexp.Atom atom)
+                Nothing -> Nothing
+                          |> Sexp.A (lookupTrueName (simplified ^. context) name)
+                          |> Sexp.Atom
+                          |> Sexp.addMetaToCar atom
+                          |> pure
+          ______________ -> pure (Sexp.Atom res)
 
 lookupTrueName :: Env.T -> NonEmpty Symbol -> NonEmpty Symbol
 lookupTrueName ctx s =
