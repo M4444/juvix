@@ -184,7 +184,7 @@ transformSpecialRhs q (Sexp.List [f, arg])
 transformSpecialRhs _ _ = pure Nothing
 
 conDefName :: NameSymbol.T -> NameSymbol.T
-conDefName = identity -- NameSymbol.applyBase (<> "$def")
+conDefName = Context.removeTopName -- NameSymbol.applyBase (<> "$def")
 
 eleToSymbol :: Sexp.T -> Maybe Symbol
 eleToSymbol x

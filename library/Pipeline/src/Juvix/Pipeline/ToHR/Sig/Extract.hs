@@ -58,7 +58,8 @@ getDataSig ::
   NameSymbol.T ->
   m (Core.Term ext primTy primVal, [NameSymbol.T])
 getDataSig q = getSig q \case
-  CoreSig (Core.DataSig ty cons) -> Just (ty, cons)
+  CoreSig (Core.DataSig ty cons) ->
+    Just (ty, cons)
   _ -> Nothing
 
 -- Lookup signature with a conditional
@@ -124,7 +125,7 @@ lookupSigWithSymbol q x' = do
   gets @"coreSigs" \sigs -> do
     case q of
       Nothing -> look x sigs
-      Just q -> look x sigs <|> look qx sigs
+      Just q -> look x sigs -- <|> look qx sigs
         where
           qx = Ctx.removeTopName $ NameSymbol.qualify q x'
   where

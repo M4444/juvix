@@ -427,6 +427,19 @@ coreifyFile juvix options = do
 -- Coreify Examples
 ----------------------------------------
 
+contextifyBool :: IO ()
+contextifyBool = do
+  bool <- contextifyDesugar "type Bool a = True a" defLLVM
+  printModule "Juvix-User" bool
+
+-- coreifyBool :: IO ()
+coreifyBool = do
+  bool <- coreify "type Bool a = True a" defLLVM
+  printCoreFunction (snd bool) defMichelson "Bool"
+  printCoreFunction (snd bool) defMichelson "True"
+  pure bool
+
+
 coreify1 :: IO ()
 coreify1 = do
   x <- coreify "type verySimpleType = One field" defMichelson

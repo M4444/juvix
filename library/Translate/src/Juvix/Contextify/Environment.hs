@@ -373,9 +373,16 @@ type' ::
   m (Bind.BinderPlus a)
 type' nameAndSig args body cont =
   let grabBindings = nameStar args
-   in local @"closure" (\cnt -> foldr Closure.insertGeneric cnt grabBindings) $
+      nameOfConstr = nameOf nameAndSig
+   in local @"closure" (\cnt -> foldr Closure.insertGeneric cnt (nameOfConstr <> grabBindings)) $
         Bind.Type' <$> cont nameAndSig <*> pure args <*> cont body
           >>| Bind.Type
+
+nameOf :: Sexp.B a -> [Symbol]
+nameOf sexp =
+  case Sexp.car (Sexp.car sexp) of
+    Sexp.Atom (Sexp.A {atomName}) -> [NameSymbol.toSymbol atomName]
+    _____________________________ -> []
 
 -- | @openIn@ opens @mod@, adding the contents to the closure of
 -- @body@. Note that we first =resolve= what mod is by calling the

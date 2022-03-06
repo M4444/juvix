@@ -155,7 +155,7 @@ typeTest =
     [ T.testCase "top level type" $ do
         [print] <-
           capture "type foo a b c = Cons (print-closure 3)"
-        Closure.keys print T.@=? Set.fromList ["a", "b", "c"],
+        Closure.keys print T.@=? Set.fromList ["a", "foo", "b", "c"],
       --
       T.testCase "let-type properly adds constructors" $ do
         [inside, body] <-

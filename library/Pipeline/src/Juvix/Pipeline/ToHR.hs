@@ -64,11 +64,14 @@ contextToHR ctx param =
         case tm of
           Context.Term tm
             | Just (Structure.SumCon sumTName) <- Structure.toSumCon tm -> do
+
               let dataCons = NameSpace.extractValue name
+                  fullName =
+                    Context.addTopName (NameSymbol.append  (Context.currentName currentContext) (pure dataCons))
               --
               modify @"closure" $ Closure.insertGeneric (NameSymbol.toSymbol sumTName)
               --
-              let dataConstructor = Sexp.atom $ NameSymbol.fromSymbol dataCons
+              let dataConstructor = Sexp.atom fullName
                   -- figure out the type it refers to, and if it's there,
                   -- start injecting information.
                   infoDef = do
@@ -79,6 +82,7 @@ contextToHR ctx param =
                         |> Context.infoDef
                         |> extractTypeDeclar
                     declaration <- Sexp.findKey Sexp.car dataConstructor t
+
                     --
                     let typeCons =
                           Context.removeTopName (looked ^. Context.qualifedName)
@@ -93,22 +97,22 @@ contextToHR ctx param =
                     case infoDef of
                       Just updatedTable ->
                         Structure.SumConFilled
-                          sumTName
+                          (Context.removeTopName sumTName)
                           (Sexp.list [Sexp.atom ":primitive", Sexp.atom "Builtin.Constructor"])
                           |> Structure.fromSumConFilled
                           |> Context.Term
                           |> Context.Info updatedTable
                       Nothing ->
-                        Structure.SumCon sumTName
+                        Structure.SumCon (Context.removeTopName sumTName)
                           |> Structure.fromSumCon
                           |> Context.Term
                           |> Context.Info tb
-              pure $ (Context.Additional term [])
+              pure (Context.Additional term [])
             | otherwise -> pure (Context.Additional info [])
           Context.CurrentNameSpace -> pure (Context.Additional info [])
           Context.Module _________ -> pure (Context.Additional info [])
 
-    generateSumConsSexp typeCons (Sexp.cdr -> declaration) = do
+    generateSumConsSexp typeCons (Sexp.cdr -> declaration) =
       sanitizeRecord $ Sexp.foldr f typeCons declaration
       where
         sanitizeRecord (x Sexp.:> fields)

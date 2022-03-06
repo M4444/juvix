@@ -11,6 +11,7 @@ import Juvix.Pipeline.ToHR.Types
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import Prelude (error)
+import qualified Juvix.Context as Context
 
 transformTypeSig ::
   ( ReduceEff HR.T primTy primVal m,
@@ -36,7 +37,7 @@ transformTypeSig q _name (_name2 Sexp.:> typeCon Sexp.:> args Sexp.:> typeForm)
       pure (HR.Star $ Core.U 0, Just $ HR.Star $ Core.U 0) -- TODO metavar for universe
     makeTPi name res =
       -- TODO metavars for the named args instead of defaulting to types
-      HR.Pi mempty (NameSymbol.fromSymbol name) (HR.Star $ Core.U 0) res
+      HR.Pi mempty name (HR.Star $ Core.U 0) res
 transformTypeSig _ _ _ = error "malformed type"
 
 transformConSigs ::
@@ -96,11 +97,11 @@ transformProduct ::
   Maybe (Core.Term HR.T primTy primVal) ->
   -- | type constructor
   Sexp.T ->
-  (Symbol, Sexp.T) ->
+  (NameSymbol.T, Sexp.T) ->
   m (NameSymbol.T, CoreSig HR.T primTy primVal)
 transformProduct q hd typeCon (x, prod) =
-  (NameSymbol.qualify1 q x,) . makeSig
-    <$> transformConSig q (NameSymbol.fromSymbol x) hd typeCon prod
+  (x,) . makeSig
+    <$> transformConSig q x hd typeCon prod
   where
     makeSig ty = CoreSig (Core.ConSig {sigConType = Just ty})
 
@@ -144,8 +145,8 @@ transformConSig q name mHd _ r
         makeFieldName i = NameSymbol.fromText $ "$field" <> show (i :: Int)
      in foldrM makeArr hd $ zip names xs
 
-eleToSymbol :: Sexp.T -> Maybe Symbol
+eleToSymbol :: Sexp.T -> Maybe NameSymbol.T
 eleToSymbol x
   | Just Sexp.A {atomName} <- Sexp.atomFromT x =
-    Just (NameSymbol.toSymbol atomName)
+    Just (Context.removeTopName atomName)
   | otherwise = Nothing
