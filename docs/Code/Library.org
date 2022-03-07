@@ -853,6 +853,7 @@ keeps the extensions.
 ****** Syntax
 - _Relies on_
   + [[Errors]]
+  + [[TermLibrary]]
   + [[TermPrivate]]
   + [[Library]]
   + [[Juvix/Sexp]]
@@ -872,6 +873,7 @@ keeps the extensions.
   + [[Errors]]
   + [[TermPrivate]]
   + [[Private/Utils]]
+  + [[Library]]
 ******* TermPrivate
 - _Relies on_
   + [[Library]]

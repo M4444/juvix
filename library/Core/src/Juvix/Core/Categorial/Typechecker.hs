@@ -228,12 +228,12 @@ checkShape ::
     m
     (HigherCategory checkedCarrier, Shape checkedCarrier)
     uncheckedCarrier
-checkShape checks (InitialCat higher) = do
+checkShape checks (EmptyIndex higher) = do
   (_, checked) <- checkHigherCategory checks higher
-  return (checked, InitialCat checked)
-checkShape checks (TerminalCat higher) = do
+  return (checked, EmptyIndex checked)
+checkShape checks (SingletonIndex higher) = do
   (_, checked) <- checkHigherCategory checks higher
-  return (checked, TerminalCat checked)
+  return (checked, SingletonIndex checked)
 checkShape checks (DiscretePair higher) = do
   (_, checked) <- checkHigherCategory checks higher
   return (checked, DiscretePair checked)

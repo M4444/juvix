@@ -8,6 +8,7 @@ where
 import qualified Control.Monad.Trans.Except as ExceptT
 import Data.Text (unpack)
 import Juvix.Core.Categorial.Errors (SyntaxError (..))
+import Juvix.Core.Categorial.Private.TermLibrary ()
 import Juvix.Core.Categorial.Private.TermPrivate
   ( MinimalInstanceAlgebra,
     Symbol (..),
