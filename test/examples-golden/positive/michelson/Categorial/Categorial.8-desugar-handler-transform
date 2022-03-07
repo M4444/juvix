@@ -1,7 +1,7 @@
 [
     ( "open" "Prelude" )
 ,
-    ( "open" "Michelson" )
+    ( "open" "Michelson.Prelude" )
 ,
     ( ":defsig-match" "nil"
         ( "list" "operation" )

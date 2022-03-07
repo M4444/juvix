@@ -192,10 +192,6 @@ ShowMod
                 , mod = "TopLevel" :|
                     [ "Prelude", "Interpreter" ] } )
         ,
-            ( "LLVM"
-            , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
-        ,
             ( "cat-product-elim-left"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
@@ -329,10 +325,6 @@ ShowMod
                     [ "Prelude", "Interpreter" ] } )
         ,
             ( "arr"
-            , SymInfo
-                { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
-        ,
-            ( "Michelson"
             , SymInfo
                 { used = NotUsed, mod = "TopLevel" :| [ "Prelude" ] } )
         ,
