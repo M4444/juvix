@@ -1,7 +1,7 @@
 mod Categorial where
 
 open Prelude
-open LLVM
+open LLVM.Data.Int
 
 sig main : int
 let main = 0

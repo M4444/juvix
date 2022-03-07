@@ -1,7 +1,7 @@
 mod Categorial where
 
 open Prelude
-open Michelson
+open Michelson.Prelude
 
 sig nil : list operation
 let nil = %Michelson.nil
