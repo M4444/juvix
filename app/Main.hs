@@ -4,6 +4,7 @@ module Main (main) where
 
 import qualified Data.ByteString as BS
 import qualified Juvix.Backends.Interpreter as Interpreter
+import qualified Juvix.Backends.LLVM as LLVM
 import qualified Juvix.Backends.Michelson as Michelson
 import Juvix.Library
 import qualified Juvix.Library.Feedback as Feedback
