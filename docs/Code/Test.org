@@ -14,13 +14,11 @@
 **** Const
 **** ConstAddPrim
 **** Data
-**** Datatypes
 **** HelloWorld
 **** Instructions
 **** MainApply
 **** MainLambda
 **** Nested
-**** Polynomial
 **** StringsWithClosures
 **** main
 ***** MainConst
@@ -35,13 +33,6 @@
 ***** IdentityUnit
 * examples
 ** negative
-*** circuit
-**** compile
-**** erased
-**** hr
-**** ir
-**** typecheck
-***** Datatypes
 *** llvm
 **** compile
 **** erased
@@ -65,3 +56,5 @@
 **** main
 *** rec-groups
 *** simplified-validity-predicate
+** vps
+*** rust-references

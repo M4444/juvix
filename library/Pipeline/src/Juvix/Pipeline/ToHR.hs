@@ -64,10 +64,9 @@ contextToHR ctx param =
         case tm of
           Context.Term tm
             | Just (Structure.SumCon sumTName) <- Structure.toSumCon tm -> do
-
               let dataCons = NameSpace.extractValue name
                   fullName =
-                    Context.addTopName (NameSymbol.append  (Context.currentName currentContext) (pure dataCons))
+                    Context.addTopName (NameSymbol.append (Context.currentName currentContext) (pure dataCons))
               --
               modify @"closure" $ Closure.insertGeneric (NameSymbol.toSymbol sumTName)
               --

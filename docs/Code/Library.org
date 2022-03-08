@@ -449,11 +449,6 @@ Module that implements the backend parameters for the Michelson backend.
 ***** Backends
 ****** Plonk
 ******* Circuit
-** llvm
-*** src
-**** Juvix
-***** Backends
-****** LLVM
 * BerlinPipeline
 ** Setup <<BerlinPipeline/Setup>>
 ** src
@@ -1134,8 +1129,6 @@ Tests that weak works as expected
   + [[Evaluator]]
   + [[IR/Types]]
   + [[Library]]
-* EasyPipeline
-** src
 * Frontend
 ** src
 *** Juvix
@@ -1361,6 +1354,7 @@ would be a shame if the `a` was applied to `List a`!
 - _Relies on_
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
+  + [[Juvix/Context]]
   + [[Core/Base]]
   + [[HR]]
   + [[Library]]
@@ -1398,6 +1392,7 @@ would be a shame if the `a` was applied to `List a`!
   + [[Juvix/Sexp]]
 ****** TypeSig
 - _Relies on_
+  + [[Juvix/Context]]
   + [[Core/Base]]
   + [[HR]]
   + [[Library]]
@@ -2115,6 +2110,8 @@ TODO ∷ determine what has changed in the rebasing of this algo
   + [[BerlinPipeline/Pipeline]]
   + [[Step]]
   + [[Juvix/Context]]
+  + [[Juvix/Context]]
+  + [[Contextify/Passes]]
   + [[Library]]
   + [[Juvix/Sexp]]
   + [[Transition]]
@@ -2197,6 +2194,11 @@ serialization works in Test.Contextify.Binders
   + [[Juvix/Sexp]]
 ***** Passes <<Contextify/Passes>>
 - _Relies on_
+  + [[BerlinPasses/Environment]]
+  + [[Automation]]
+  + [[BerlinPipeline/Lens]]
+  + [[Meta]]
+  + [[Step]]
   + [[Juvix/Closure]]
   + [[Juvix/Context]]
   + [[NameSpace]]
@@ -2207,6 +2209,7 @@ serialization works in Test.Contextify.Binders
   + [[Library]]
   + [[HashMap]]
   + [[NameSymbol]]
+  + [[Library/Trace]]
   + [[Juvix/Sexp]]
   + [[CoreNamed]]
   + [[Structure/Helpers]]

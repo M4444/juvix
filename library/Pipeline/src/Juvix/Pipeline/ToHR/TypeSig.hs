@@ -1,5 +1,6 @@
 module Juvix.Pipeline.ToHR.TypeSig where
 
+import qualified Juvix.Context as Context
 import qualified Juvix.Core.Base as Core
 import qualified Juvix.Core.HR as HR
 import Juvix.Library
@@ -11,7 +12,6 @@ import Juvix.Pipeline.ToHR.Types
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import Prelude (error)
-import qualified Juvix.Context as Context
 
 transformTypeSig ::
   ( ReduceEff HR.T primTy primVal m,

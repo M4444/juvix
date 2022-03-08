@@ -11,15 +11,15 @@ import qualified Juvix.BerlinPasses.Desugar as Desugar
 import qualified Juvix.BerlinPipeline.Automation as Automation
 import qualified Juvix.BerlinPipeline.CircularList as CircularList
 import qualified Juvix.BerlinPipeline.Env as Pipeline.Env
-import qualified Juvix.Contextify.Passes as Context.Pass
 import Juvix.BerlinPipeline.Lens
 import qualified Juvix.BerlinPipeline.Pipeline as Pipeline
 import qualified Juvix.BerlinPipeline.Step as Step
 import qualified Juvix.Context as Context
+import qualified Juvix.Context as Context.Pass
+import qualified Juvix.Contextify.Passes as Context.Pass
 import Juvix.Library hiding (trace)
 import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Transition as Structure
-import qualified Juvix.Context as Context.Pass
 
 --------------------------------------------------------------------------------
 -- Functions
@@ -65,7 +65,6 @@ qualificationPasses =
   ]
     >>| CircularList.init
     |> Pipeline.Env.defPipelineGroup "QualifyPasses"
-
 
 --------------------------------------------------------------------------------
 -- InPackage

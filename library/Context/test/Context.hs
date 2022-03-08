@@ -273,12 +273,12 @@ includeResolvesCorrectly =
             "TopLevel.London.new-mr-morden" T.@=? from2 ^. Context.trueName
         ),
       T.testCase
-      "Improper include does not loop forever"
-      ( do
-          ctx <- runImproper
-          let ctxIncludeMore = Context.includeMod "Shadows" ctx
-          Nothing T.@=? Context.lookup "ficticious" ctxIncludeMore
-      )
+        "Improper include does not loop forever"
+        ( do
+            ctx <- runImproper
+            let ctxIncludeMore = Context.includeMod "Shadows" ctx
+            Nothing T.@=? Context.lookup "ficticious" ctxIncludeMore
+        )
     ]
 
 runBasic :: IO Context.T

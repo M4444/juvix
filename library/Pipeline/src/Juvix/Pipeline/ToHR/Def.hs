@@ -9,6 +9,7 @@ where
 import Control.Lens hiding ((|>))
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Juvix.Closure as Closure
+import qualified Juvix.Context as Context
 import qualified Juvix.Context as Ctx
 import qualified Juvix.Core.Base as Core
 import qualified Juvix.Core.HR as HR
@@ -22,7 +23,6 @@ import qualified Juvix.Sexp as Sexp
 import qualified Juvix.Sexp.Structure.Parsing as Structure
 import qualified Juvix.Sexp.Structure.Transition as Structure
 import Prelude (error)
-import qualified Juvix.Context as Context
 
 ---------------------
 -- Core Definition --

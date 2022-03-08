@@ -433,10 +433,13 @@ contextifyP = do
   printModule "Juvix-User" bool
 
 coreifyP = do
-  bool <- coreify "open Prelude \
-                  \ type bar : ty = | P int int | (::) int int \
-                  \ sig foo : bar -> int \
-                  \ let foo (P a b) = 3" defLLVM
+  bool <-
+    coreify
+      "open Prelude \
+      \ type bar : ty = | P int int | (::) int int \
+      \ sig foo : bar -> int \
+      \ let foo (P a b) = 3"
+      defLLVM
   printCoreFunction (snd bool) defMichelson "bar"
   printCoreFunction (snd bool) defMichelson "P"
   printCoreFunction (snd bool) defMichelson "::"
@@ -455,18 +458,15 @@ coreifyBool = do
   printCoreFunction (snd bool) defMichelson "True"
   pure bool
 
-
 contextifyInclude :: IO ()
 contextifyInclude = do
   bool <- contextifyDesugar "include Prelude type verySimpleType = One field" defMichelson
   printModule "Juvix-User" bool
 
-
 coreifyInclude :: IO ()
 coreifyInclude = do
   x <- coreify "include Prelude type verySimpleType = One field" defMichelson
   printCoreFunction (snd x) defMichelson "One"
-
 
 coreify1 :: IO ()
 coreify1 = do

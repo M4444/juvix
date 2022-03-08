@@ -506,12 +506,12 @@ includeMod nameSymbol ctx =
   case lookup nameSymbol ctx of
     Just tm
       | isModule (tm ^. term . def) ->
-      over (_currentNameSpace . record . includeList) (tm ^. trueName :) ctx
+        over (_currentNameSpace . record . includeList) (tm ^. trueName :) ctx
     ________ -> ctx
-
 
 isModule (Module _) = True
 isModule __________ = False
+
 --------------------------------------------------------------------------------
 -- Global Functions
 --------------------------------------------------------------------------------
@@ -802,14 +802,12 @@ currentRecord = _currentNameSpace . record
 qualifySymbol :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbol t namespace symbol =
   let (_, newNameSymb) = determineTableForFirstLookup t symbol
-  in qualifySymbolInternal t namespace newNameSymb
-
+   in qualifySymbolInternal t namespace newNameSymb
 
 qualifySymbolInternal :: T -> NameSpace -> NameSymbol.T -> NameSymbol.T
 qualifySymbolInternal _ Outside = addTopName
 qualifySymbolInternal t Private = (addTopName (t ^. _currentName) <>) -- decide on private res!!!
 qualifySymbolInternal t Public = (addTopName (t ^. _currentName) <>)
-
 
 trueNameofSymbol :: T -> NameSymbol.T -> Maybe NameSymbol.T
 trueNameofSymbol ctx n =
