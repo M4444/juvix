@@ -498,11 +498,20 @@ publicNames t =
 toList :: T -> NameSpace.List Info
 toList t = NameSpace.toList (t ^. currentRecordContents)
 
--- | @includeMod@ Includes the given module to the current namespace
+-- | @includeMod@ Includes the given module to the current
+-- namespace. Resolution is had to the proper module if it exists. If
+-- the module does not exist, then it is not included.
 includeMod :: NameSymbol.T -> T -> T
-includeMod nameSymbol =
-  over (_currentNameSpace . record . includeList) (nameSymbol :)
+includeMod nameSymbol ctx =
+  case lookup nameSymbol ctx of
+    Just tm
+      | isModule (tm ^. term . def) ->
+      over (_currentNameSpace . record . includeList) (tm ^. trueName :) ctx
+    ________ -> ctx
 
+
+isModule (Module _) = True
+isModule __________ = False
 --------------------------------------------------------------------------------
 -- Global Functions
 --------------------------------------------------------------------------------

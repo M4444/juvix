@@ -271,7 +271,14 @@ includeResolvesCorrectly =
             "TopLevel.Shadows.mr-morden" T.@=? from1 ^. Context.trueName
             let Just from2 = (ctx Context.!? "new-mr-morden")
             "TopLevel.London.new-mr-morden" T.@=? from2 ^. Context.trueName
-        )
+        ),
+      T.testCase
+      "Improper include does not loop forever"
+      ( do
+          ctx <- runImproper
+          let ctxIncludeMore = Context.includeMod "Shadows" ctx
+          Nothing T.@=? Context.lookup "ficticious" ctxIncludeMore
+      )
     ]
 
 runBasic :: IO Context.T
@@ -308,6 +315,14 @@ runCraizer = do
   Right swap <-
     Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) preFilled
   let included = Context.includeMod (Context.addTopName "Shadows") swap
+  pure included
+
+runImproper :: IO Context.T
+runImproper = do
+  preFilled <- runCrazy
+  Right swap <-
+    Context.switchNameSpace ("Londo" :| ["Mollari", "Centauri"]) preFilled
+  let included = Context.includeMod "Vorlons" swap
   pure included
 
 privateFromAbove :: T.TestTree

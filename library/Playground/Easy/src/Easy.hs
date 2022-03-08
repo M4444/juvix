@@ -456,6 +456,18 @@ coreifyBool = do
   pure bool
 
 
+contextifyInclude :: IO ()
+contextifyInclude = do
+  bool <- contextifyDesugar "include Prelude type verySimpleType = One field" defMichelson
+  printModule "Juvix-User" bool
+
+
+coreifyInclude :: IO ()
+coreifyInclude = do
+  x <- coreify "include Prelude type verySimpleType = One field" defMichelson
+  printCoreFunction (snd x) defMichelson "One"
+
+
 coreify1 :: IO ()
 coreify1 = do
   x <- coreify "type verySimpleType = One field" defMichelson
