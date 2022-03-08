@@ -1,32 +1,29 @@
-mod LLVM.Data.List where
+mod Prelude.List where
 
+open Prelude.Base
 open Prelude
-open LLVM.Data.Product
-open LLVM.Data.Ord
-open LLVM.Data
-open LLVM.Data.Int
 
-type list a 
-    = Nil : (a : ty) -> list a
-    | Cons : (a : ty) -> a -> list a -> list a
+type t a = Nil : (a : ty) -> t a
+         | Cons : (a : ty) -> a -> t a -> t a
 
-sig foldr : (a : ty) -> (b : ty) -> (a -> b -> b) -> b -> list a -> b
-let foldr _ _ _ z Nil = z
-let foldr a b f z (h ∷ hs) = f h (foldr a b f z hs)
+sig foldr : (a : ty) -> (b : ty) -> (a -> b -> b) -> b -> t a -> b
+let foldr _ _ _ z Nil         = z
+let foldr a b f z (Cons h hs) = f h (foldr a b f z hs)
 
-sig foldl : (a : ty) -> (b : ty) -> (b -> a -> b) -> b -> list a -> b
-let foldl _ _ _ z Nil = z
+sig foldl : (a : ty) -> (b : ty) -> (b -> a -> b) -> b -> t a -> b
+let foldl _ _ _ z Nil         = z
 let foldl a b f z (Cons h hs) = foldl a b f (f z h) hs
 
-sig map : (a : ty) -> (b : ty) -> (a -> b) -> b -> list a -> b
-let map _ _ f Nil = Nil
+sig map : (a : ty) -> (b : ty) -> (a -> b) -> b -> t a -> b
+let map _ _ f Nil         = Nil
 let map a b f (Cons h hs) = Cons (f h) (map a b f hs)
 
 sig filter : (a : ty) -> (a -> Bool) -> list a -> list a
 let filter _ f Nil = Nil
-let filter a f (h ∷ hs) = case f h of
-    | True -> h ∷ filter a f hs
-    | False -> filter a f hs
+let filter a f (Cons _ h hs) =
+  case f h of
+  | True  -> Cons h (filter a f hs)
+  | False -> filter a f hs
 
 sig length : (a : ty) -> list a -> int
 let length _ (Nil _) = 0

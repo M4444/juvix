@@ -1,0 +1,22 @@
+mod Prelude.Bool where
+
+open Prelude.Base
+
+sig t : ty
+let t = bool
+
+sig not : t -> t
+let not True = False
+let not False = True
+
+declare infixl (||) 2
+
+sig (||) : t -> t -> t
+let (||) False False = False
+let (||) _fst _snd   = True
+
+declare infixl (&&) 2
+
+sig (&&) : t -> t -> t
+let (&&) True True = True
+let (&&) _fst _snd = False

@@ -1,3 +1,0 @@
-mod LLVM.Data.Ord where
-
-type ordering = LT | EQ | GT

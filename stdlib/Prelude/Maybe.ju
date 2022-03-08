@@ -1,0 +1,18 @@
+mod Prelude.Maybe where
+
+open Prelude
+open Prelude.Base
+
+type t a =
+  | Just a
+  | Nothing
+
+
+
+sig is-just : t a -> Bool.t
+let is-just (Just _) = True
+let is-just Nothing  = False
+
+-- sig unwrap : maybe amount -> amount
+-- let unwrap (Just a) = a
+-- let unwrap None = fail "TODO: Effects?"

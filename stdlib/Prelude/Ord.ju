@@ -1,0 +1,3 @@
+mod Prelude.Ord where
+
+type t = LT | EQ | GT

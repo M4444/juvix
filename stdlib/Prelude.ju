@@ -1,35 +1,9 @@
 mod Prelude where
 
--- it seems custom arrow syntax is not operational
+include Prelude.Base
 
-let ty_ = %Builtin.Type
+sig maybe : ty
+let maybe = Maybe.t
 
-sig ty : ty_ 1
-let ty = ty_ 0
-
-let SAny = %Builtin.SAny
-let arr = %Builtin.Arrow
-let dpair = %Builtin.Pair
-
-let (->) = arr SAny
-declare infixr (->) 1
-
-let (:) = %Builtin.Colon
-declare infixr (:) 2
-
-let cat-product = %Builtin.CatProduct
-let cat-coproduct = %Builtin.CatCoproduct
-
-let cat-product-intro = %Builtin.CatProductIntro
-let cat-product-elim-left = %Builtin.CatProductElimLeft
-let cat-product-elim-right = %Builtin.CatProductElimRight
-let cat-coproduct-intro-left = %Builtin.CatCoproductIntroLeft
-let cat-coproduct-intro-right = %Builtin.CatCoproductIntroRight
-let cat-coproduct-elim = %Builtin.CatCoproductElim
-
-
-sig id : (a : ty) -> a -> a
-let id _ x = x
-
-sig const : (a : ty) -> (b : ty) -> a -> b -> a
-let const _ _ x = \_ -> x
+sig ord : ty
+let ord = Ord.t

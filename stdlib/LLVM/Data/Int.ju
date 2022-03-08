@@ -3,30 +3,30 @@ mod LLVM.Data.Int where
 open Prelude
 open LLVM.Data
 
-sig int : ty
-let int = Int8.int8
+sig t : ty
+let t = T8.t8
 
-sig add : int -> int -> int
+sig add : t -> t -> t
 let add = %LLVM.add
 
-sig (+) : int -> int -> int
+sig (+) : t -> t -> t
 let (+) = %LLVM.add
 declare infixl (+) 5
 
-sig sub : int -> int -> int
+sig sub : t -> t -> t
 let sub = %LLVM.sub
 
-sig (-) : int -> int -> int
+sig (-) : t -> t -> t
 let (-) = %LLVM.sub
 declare infixl (-) 5
 
-sig mul : int -> int -> int
+sig mul : t -> t -> t
 let mul = %LLVM.mul
 
-sig (*) : int -> int -> int
+sig (*) : t -> t -> t
 let (*) = %LLVM.mul
 declare infixl (*) 7
 
--- sig (==) : int -> int -> bool
+-- sig (==) : t -> t -> bool
 -- let (==) = %LLVM.eq
 -- declare infixl (==) 4
