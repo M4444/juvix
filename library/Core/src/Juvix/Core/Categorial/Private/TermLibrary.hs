@@ -102,3 +102,85 @@ holProductObj x y =
   FMapObject
     (RightAdjoint $ LimitAdjunction discretePair holCat)
     (ProductObject discretePair [x, y])
+
+holCoproductObj :: Object a -> Object a -> Object a
+holCoproductObj x y =
+  FMapObject
+    (LeftAdjoint $ ColimitAdjunction discretePair holCat)
+    (ProductObject discretePair [x, y])
+
+holProductMorphism :: Morphism a -> Morphism a -> Morphism a
+holProductMorphism x y =
+  FMapMorphism
+    (RightAdjoint $ LimitAdjunction discretePair holCat)
+    (ProductMorphism discretePair [x, y])
+
+holCoproductMorphism :: Morphism a -> Morphism a -> Morphism a
+holCoproductMorphism x y =
+  FMapMorphism
+    (LeftAdjoint $ ColimitAdjunction discretePair holCat)
+    (ProductMorphism discretePair [x, y])
+
+holFixObj :: Functor' a -> Object a
+holFixObj f = FMapObject (LeftAdjoint $ FreeForgetfulAlgebra f) holVoid
+
+holFixMorphism :: Functor' a -> Morphism a -> Morphism a
+holFixMorphism f = FMapMorphism (LeftAdjoint $ FreeForgetfulAlgebra f)
+
+holCofixObj :: Functor' a -> Object a
+holCofixObj f = FMapObject (RightAdjoint $ ForgetfulCofreeAlgebra f) holUnit
+
+holCofixMorphism :: Functor' a -> Morphism a -> Morphism a
+holCofixMorphism f = FMapMorphism (RightAdjoint $ ForgetfulCofreeAlgebra f)
+
+holConstUnit :: Functor' a
+holConstUnit = ConstFunctor holUnit
+
+holIdentityFunctor :: Functor' a
+holIdentityFunctor = IdentityFunctor holCat
+
+holFunctorCat :: Category a
+holFunctorCat = FunctorCat holCat holCat
+
+holProductFunctor :: Functor' a -> Functor' a -> Functor' a
+holProductFunctor f g =
+  FunctorCatObject $
+    FMapObject
+      (RightAdjoint $ LimitAdjunction discretePair holFunctorCat)
+      (ProductObject discretePair [FunctorObject f, FunctorObject g])
+
+holCoproductFunctor :: Functor' a -> Functor' a -> Functor' a
+holCoproductFunctor f g =
+  FunctorCatObject $
+    FMapObject
+      (LeftAdjoint $ ColimitAdjunction discretePair holFunctorCat)
+      (ProductObject discretePair [FunctorObject f, FunctorObject g])
+
+holNatFunctor :: Functor' a
+holNatFunctor = holCoproductFunctor holConstUnit holIdentityFunctor
+
+holNat :: Object a
+holNat = holFixObj holNatFunctor
+
+holNatFold :: Morphism a -> Morphism a -> Morphism a
+holNatFold z s = holFixMorphism holNatFunctor $ holCoproductMorphism z s
+
+holInjectLeft :: Object a -> Object a -> Morphism a -> Morphism a
+holInjectLeft x y f =
+  ComposedMorphism
+    (ProjectMorphism discretePair x holCat)
+    [ AdjunctionUnit
+        (ColimitAdjunction discretePair holCat)
+        (ProductObject discretePair [x, y]),
+      FMapMorphism (DiagonalFunctor discretePair holCat) f
+    ]
+
+holInjectRight :: Object a -> Object a -> Morphism a -> Morphism a
+holInjectRight x y f =
+  ComposedMorphism
+    (ProjectMorphism discretePair y holCat)
+    [ AdjunctionUnit
+        (ColimitAdjunction discretePair holCat)
+        (ProductObject discretePair [x, y]),
+      FMapMorphism (DiagonalFunctor discretePair holCat) f
+    ]
