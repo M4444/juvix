@@ -100,12 +100,12 @@ data Symbol carrier
     )
 
 data Shape carrier
-  = EmptyIndex (HigherCategory carrier)
-  | SingletonIndex (HigherCategory carrier)
-  | DiscretePair (HigherCategory carrier)
-  | ParallelPair (HigherCategory carrier)
-  | Span (HigherCategory carrier)
-  | Cospan (HigherCategory carrier)
+  = EmptyIndex
+  | SingletonIndex
+  | DiscretePair
+  | ParallelPair
+  | Span
+  | Cospan
   deriving
     ( Read,
       Show,
@@ -129,7 +129,7 @@ data Shape carrier
 
 data Category carrier
   = DirectedGraphCat (HigherCategory carrier)
-  | IndexCat (Shape carrier)
+  | IndexCat (HigherCategory carrier) (Shape carrier)
   | OppositeCat (Category carrier)
   | ProductCat (Category carrier) (Category carrier)
   | FunctorCat (Category carrier) (Category carrier)

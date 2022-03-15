@@ -37,6 +37,7 @@ import Juvix.Library
     Eq,
     Maybe (..),
     Monad (..),
+    pure,
     return,
     unless,
     ($),
@@ -168,9 +169,10 @@ checkCategory checks (RefinedADTCat higher) = do
 checkCategory checks (HigherOrderRefinedADTCat higher) = do
   (higher', cat') <- checkHigherCategory checks higher
   return (higher', HigherOrderRefinedADTCat cat')
-checkCategory checks (IndexCat shape) = do
-  (higher, checked) <- checkShape checks shape
-  return (higher, IndexCat checked)
+checkCategory checks (IndexCat higher shape) = do
+  (_, higher') <- checkHigherCategory checks higher
+  shape' <- checkShape checks shape
+  return (higher', IndexCat higher' shape')
 checkCategory checks (OppositeCat cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, OppositeCat checked)
@@ -224,28 +226,13 @@ checkShape ::
   ) =>
   AbstractChecks m uncheckedCarrier checkedCarrier ->
   Shape uncheckedCarrier ->
-  CheckResultT
-    m
-    (HigherCategory checkedCarrier, Shape checkedCarrier)
-    uncheckedCarrier
-checkShape checks (EmptyIndex higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, EmptyIndex checked)
-checkShape checks (SingletonIndex higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, SingletonIndex checked)
-checkShape checks (DiscretePair higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, DiscretePair checked)
-checkShape checks (ParallelPair higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, ParallelPair checked)
-checkShape checks (Span higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, Span checked)
-checkShape checks (Cospan higher) = do
-  (_, checked) <- checkHigherCategory checks higher
-  return (checked, Cospan checked)
+  CheckResultT m (Shape checkedCarrier) uncheckedCarrier
+checkShape _checks EmptyIndex = pure EmptyIndex
+checkShape _checks SingletonIndex = pure SingletonIndex
+checkShape _checks DiscretePair = pure DiscretePair
+checkShape _checks ParallelPair = pure ParallelPair
+checkShape _checks Span = pure Span
+checkShape _checks Cospan = pure Cospan
 
 instance (Monad m, Eq carrier) => Normalize m (Shape carrier) where
   normalize = return
@@ -278,6 +265,12 @@ checkObject _checks term@(HigherObject _cat) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking higherObject"
 checkObject _checks term@(FMapObject _functor _object) =
   ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking functorApply"
+checkObject _checks term@(Vertex _shape _index) =
+  ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking Vertex"
+checkObject _checks term@(ProductObject _shape _objects) =
+  ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking ProductObject"
+checkObject _checks term@(FunctorObject _functor) =
+  ExceptT.throwE $ CheckUnimplemented (ObjectTerm term) "checking FunctorObject"
 
 instance (Monad m, Eq carrier) => Normalize m (Object carrier) where
   normalize = return
@@ -346,6 +339,21 @@ checkMorphism _checks term@(FMapMorphism _functor _morphism) =
 checkMorphism _checks term@(HigherMorphism _morphism) =
   ExceptT.throwE $
     CheckUnimplemented (MorphismTerm term) "checking HigherMorphism"
+checkMorphism _checks term@(Edge _shape _index) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking Edge"
+checkMorphism _checks term@(ProductMorphism _shape _morphisms) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking ProductMorphism"
+checkMorphism _checks term@(AdjunctionUnit _adjunction _object) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking AdjunctionUnit"
+checkMorphism _checks term@(AdjunctionCounit _adjunction _object) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking AdjunctionCounit"
+checkMorphism _checks term@(ProjectMorphism _shape _object _carrier) =
+  ExceptT.throwE $
+    CheckUnimplemented (MorphismTerm term) "checking ProjectMorphism"
 
 instance (Monad m, Eq carrier) => Normalize m (Morphism carrier) where
   normalize = return
@@ -392,13 +400,10 @@ checkFunctor ::
 checkFunctor checks (IdentityFunctor cat) = do
   (higher, checked) <- checkCategory checks cat
   return (higher, checked, checked, IdentityFunctor checked)
-checkFunctor checks functor@(DiagonalFunctor shape cat) = do
-  (higher, shape') <- checkShape checks shape
-  (higher', cat') <- checkCategory checks cat
-  catMatch <- equiv higher higher'
-  unless catMatch $
-    ExceptT.throwE $ FunctorAcrossHigherCategories functor
-  return (higher, IndexCat shape', cat', DiagonalFunctor shape' cat')
+checkFunctor checks (DiagonalFunctor shape cat) = do
+  shape' <- checkShape checks shape
+  (higher, cat') <- checkCategory checks cat
+  return (higher, IndexCat higher shape', cat', DiagonalFunctor shape' cat')
 checkFunctor checks (ComposedFunctor f []) =
   checkFunctor checks f
 checkFunctor checks (ComposedFunctor f (g : gs)) = do
@@ -461,6 +466,18 @@ checkFunctor _checks term@(CodependentProductFunctor _x _y) =
 checkFunctor _checks term@(CodependentSumFunctor _x _y) =
   ExceptT.throwE $
     CheckUnimplemented (FunctorTerm term) "checking CodependentSumFunctor"
+checkFunctor _checks term@(FunctorCatObject _object) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking FunctorCatObject"
+checkFunctor _checks term@(ProjectFunctor _shape _object _category) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking ProjectFunctor"
+checkFunctor _checks term@(LeftAdjoint _adjunction) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking LeftAdjoint"
+checkFunctor _checks term@(RightAdjoint _adjunction) =
+  ExceptT.throwE $
+    CheckUnimplemented (FunctorTerm term) "checking RightAdjoint"
 
 instance (Monad m, Eq carrier) => Normalize m (Functor' carrier) where
   normalize = return
@@ -547,6 +564,12 @@ checkAdjunction _checks term@(CodependentSum _obj) =
 checkAdjunction _checks term@(CodependentProduct _obj) =
   ExceptT.throwE $
     CheckUnimplemented (AdjunctionTerm term) "CodependentProduct"
+checkAdjunction _checks term@(InitialAdjunction _category) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "InitialAdjunction"
+checkAdjunction _checks term@(TerminalAdjunction _category) =
+  ExceptT.throwE $
+    CheckUnimplemented (AdjunctionTerm term) "TerminalAdjunction"
 
 instance (Monad m, Eq carrier) => Normalize m (Adjunction carrier) where
   normalize = return

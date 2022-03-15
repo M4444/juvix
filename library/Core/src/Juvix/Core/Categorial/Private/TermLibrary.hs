@@ -16,26 +16,8 @@ import Juvix.Library
   ( ($),
   )
 
-minimalEmptyIndex :: Shape a
-minimalEmptyIndex = EmptyIndex MinimalMetalogic
-
-minimalSingletonIndex :: Shape a
-minimalSingletonIndex = SingletonIndex MinimalMetalogic
-
 singletonVertex :: Object a
-singletonVertex = Vertex minimalSingletonIndex 0
-
-emptyIndex :: Category a
-emptyIndex = IndexCat minimalEmptyIndex
-
-singletonIndex :: Category a
-singletonIndex = IndexCat minimalSingletonIndex
-
-initialCat :: AbstractTerm a
-initialCat = CategoryTerm emptyIndex
-
-terminalCat :: AbstractTerm a
-terminalCat = CategoryTerm singletonIndex
+singletonVertex = Vertex SingletonIndex 0
 
 terminalCatObj :: AbstractTerm a
 terminalCatObj = ObjectTerm singletonVertex
@@ -85,41 +67,38 @@ holUnitTerm = ObjectTerm holUnit
 holToUnit :: Object a -> Morphism a
 holToUnit = AdjunctionUnit holTerminalAdjunction
 
-discretePair :: Shape a
-discretePair = DiscretePair MinimalMetalogic
-
 discretePairIndex :: Category a
-discretePairIndex = IndexCat discretePair
+discretePairIndex = IndexCat MinimalMetalogic DiscretePair
 
 discretePairCat :: AbstractTerm a
 discretePairCat = CategoryTerm discretePairIndex
 
 holDiagonal :: Functor' a
-holDiagonal = DiagonalFunctor discretePair holCat
+holDiagonal = DiagonalFunctor DiscretePair holCat
 
 holProductObj :: Object a -> Object a -> Object a
 holProductObj x y =
   FMapObject
-    (RightAdjoint $ LimitAdjunction discretePair holCat)
-    (ProductObject discretePair [x, y])
+    (RightAdjoint $ LimitAdjunction DiscretePair holCat)
+    (ProductObject DiscretePair [x, y])
 
 holCoproductObj :: Object a -> Object a -> Object a
 holCoproductObj x y =
   FMapObject
-    (LeftAdjoint $ ColimitAdjunction discretePair holCat)
-    (ProductObject discretePair [x, y])
+    (LeftAdjoint $ ColimitAdjunction DiscretePair holCat)
+    (ProductObject DiscretePair [x, y])
 
 holProductMorphism :: Morphism a -> Morphism a -> Morphism a
 holProductMorphism x y =
   FMapMorphism
-    (RightAdjoint $ LimitAdjunction discretePair holCat)
-    (ProductMorphism discretePair [x, y])
+    (RightAdjoint $ LimitAdjunction DiscretePair holCat)
+    (ProductMorphism DiscretePair [x, y])
 
 holCoproductMorphism :: Morphism a -> Morphism a -> Morphism a
 holCoproductMorphism x y =
   FMapMorphism
-    (LeftAdjoint $ ColimitAdjunction discretePair holCat)
-    (ProductMorphism discretePair [x, y])
+    (LeftAdjoint $ ColimitAdjunction DiscretePair holCat)
+    (ProductMorphism DiscretePair [x, y])
 
 holFixObj :: Functor' a -> Object a
 holFixObj f = FMapObject (LeftAdjoint $ FreeForgetfulAlgebra f) holVoid
@@ -146,15 +125,15 @@ holProductFunctor :: Functor' a -> Functor' a -> Functor' a
 holProductFunctor f g =
   FunctorCatObject $
     FMapObject
-      (RightAdjoint $ LimitAdjunction discretePair holFunctorCat)
-      (ProductObject discretePair [FunctorObject f, FunctorObject g])
+      (RightAdjoint $ LimitAdjunction DiscretePair holFunctorCat)
+      (ProductObject DiscretePair [FunctorObject f, FunctorObject g])
 
 holCoproductFunctor :: Functor' a -> Functor' a -> Functor' a
 holCoproductFunctor f g =
   FunctorCatObject $
     FMapObject
-      (LeftAdjoint $ ColimitAdjunction discretePair holFunctorCat)
-      (ProductObject discretePair [FunctorObject f, FunctorObject g])
+      (LeftAdjoint $ ColimitAdjunction DiscretePair holFunctorCat)
+      (ProductObject DiscretePair [FunctorObject f, FunctorObject g])
 
 holNatFunctor :: Functor' a
 holNatFunctor = holCoproductFunctor holConstUnit holIdentityFunctor
@@ -168,19 +147,19 @@ holNatFold z s = holFixMorphism holNatFunctor $ holCoproductMorphism z s
 holInjectLeft :: Object a -> Object a -> Morphism a -> Morphism a
 holInjectLeft x y f =
   ComposedMorphism
-    (ProjectMorphism discretePair x holCat)
+    (ProjectMorphism DiscretePair x holCat)
     [ AdjunctionUnit
-        (ColimitAdjunction discretePair holCat)
-        (ProductObject discretePair [x, y]),
-      FMapMorphism (DiagonalFunctor discretePair holCat) f
+        (ColimitAdjunction DiscretePair holCat)
+        (ProductObject DiscretePair [x, y]),
+      FMapMorphism (DiagonalFunctor DiscretePair holCat) f
     ]
 
 holInjectRight :: Object a -> Object a -> Morphism a -> Morphism a
 holInjectRight x y f =
   ComposedMorphism
-    (ProjectMorphism discretePair y holCat)
+    (ProjectMorphism DiscretePair y holCat)
     [ AdjunctionUnit
-        (ColimitAdjunction discretePair holCat)
-        (ProductObject discretePair [x, y]),
-      FMapMorphism (DiagonalFunctor discretePair holCat) f
+        (ColimitAdjunction DiscretePair holCat)
+        (ProductObject DiscretePair [x, y]),
+      FMapMorphism (DiagonalFunctor DiscretePair holCat) f
     ]

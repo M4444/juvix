@@ -76,7 +76,7 @@ eraseAbstract checks (MorphismTerm morphism) =
 -- non-functional term as translation into a term that contains no information.
 -- One such term is an empty category.
 eraseAbstract _checks _term =
-  return $ CategoryTerm $ IndexCat $ EmptyIndex MinimalMetalogic
+  return $ CategoryTerm $ IndexCat MinimalMetalogic EmptyIndex
 
 erase ::
   ( Monad m,
