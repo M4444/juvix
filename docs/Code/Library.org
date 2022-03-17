@@ -524,12 +524,6 @@ Module that implements the backend parameters for the Michelson backend.
   + [[Untyped]]
   + [[Library]]
   + [[Library/Usage]]
-** Plonk
-*** src
-**** Juvix
-***** Backends
-****** Plonk
-******* Circuit
 * BerlinPipeline
 ** Setup <<BerlinPipeline/Setup>>
 ** src
@@ -1299,12 +1293,6 @@ Tests that weak works as expected
   + [[Evaluator]]
   + [[IR/Types]]
   + [[Library]]
-* Frontend
-** src
-*** Juvix
-**** Frontend
-***** Types
-* HTTP
 * Parsing
 ** Setup <<Parsing/Setup>>
 ** src
@@ -1660,7 +1648,6 @@ would be a shame if the `a` was applied to `List a`!
 * Playground
 ** Easy
 *** Setup <<Easy/Setup>>
-*** juvix
 *** src
 **** Easy
 The easy module serves as the stop shop for getting anywhere in the
@@ -1732,9 +1719,6 @@ with any stage of the compiler while modifying the source code.
   + [[Fetch]]
 ** HTTP
 *** Setup <<HTTP/Setup>>
-*** compiler-debugger
-**** public
-**** src
 *** src
 **** Main <<src/Main>>
 - _Relies on_
@@ -2489,10 +2473,6 @@ done with no extra information needed. Thus we export the following passes
   + [[Structure/Lens]]
   + [[Structure/Parsing]]
   + [[Transition]]
-**** ToCore
-***** FromFrontend
-****** Transform
-***** Types
 **** Translate <<Juvix/Translate>>
 - _Relies on_
   + [[Juvix/Contextify]]
