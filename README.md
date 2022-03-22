@@ -185,7 +185,7 @@ Contributing
 ------------
 
 We welcome contributions to the development of Juvix. See
-[CONTRIBUTING.md](./doc/CONTRIBUTING.md) for contribution guidelines.
+[CONTRIBUTING.md](./docs/CONTRIBUTING.md) for contribution guidelines.
 
 Community
 ---------

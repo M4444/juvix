@@ -77,7 +77,7 @@ test-compile: build update-local-stdlibs
 	rm test/examples/positive/llvm/*.ll
 
 bench:
-	$(STACK) bench --benchmark-arguments="--output ./doc/Code/bench.html"
+	$(STACK) bench --benchmark-arguments="--output ./docs/Code/bench.html"
 
 repl-lib:
 	$(STACK) ghci juvix:lib

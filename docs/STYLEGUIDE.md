@@ -4,7 +4,7 @@ Juvix's Haskell Style Guide
 This document describes the preferred coding style for Juvix.
 When something isn't covered by this guide you should stay
 consistent with the existing code.
-See also [CONTRIBUTING.md](https://github.com/cryptiumlabs/juvix/blob/develop/doc/CONTRIBUTING.md).
+See also [CONTRIBUTING.md](https://github.com/cryptiumlabs/juvix/blob/develop/docs/CONTRIBUTING.md).
 
 HLint
 -----
